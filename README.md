@@ -1,2 +1,1 @@
-# python
-Logik Portal Python Scripts
+# Logik Portal Python Scripts
