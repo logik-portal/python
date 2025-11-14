@@ -1,0 +1,13 @@
+<Scale_Compensator_settings>
+    <proxy_x_res>1920</proxy_x_res>
+    <proxy_y_res>1080</proxy_y_res>
+    <full_x_res>4096</full_x_res>
+    <full_y_res>2164</full_y_res>
+    <offline_x_res>1920</offline_x_res>
+    <offline_y_res>1080</offline_y_res>
+    <online_x_res>1080</online_x_res>
+    <online_y_res>1920</online_y_res>
+    <anamorphic_footage>False</anamorphic_footage>
+    <pixel_ratio_value>2.00</pixel_ratio_value>
+    <combo_scale>83.33</combo_scale>
+</Scale_Compensator_settings>

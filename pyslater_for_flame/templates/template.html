@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flame Slater Copy Paster</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  .container {
+  /* text-align: center; */
+  /* width: 200px; */
+  /* margin: 0 auto; */
+  }
+
+  button {
+  background-color: #4CAF50; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px; 
+  text-align: center; 
+  text-decoration: none;
+  display: block;
+  font-size: 16px;
+  margin: 10px auto;
+  width: 50%;
+  }
+
+  button:hover {
+  background-color: #008CBA;
+  }
+
+  button:active {
+  background-color: #555555;
+  }
+</style>	
+</head>
+
+<body>
+<!-- 1. Define some markup -->
+<div class="container">
+  <button data-clipboard-text="master_name_goes_here">master_name_goes_here</button>
+</div>
+<!-- 2. Include library -->
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<!-- 3. Instantiate clipboard by passing a list of HTML elements -->
+<script>
+  var btns = document.querySelectorAll('button');
+  var clipboard = new ClipboardJS(btns);
+  clipboard.on('success', function(e) {
+      console.log(e);
+  });
+  clipboard.on('error', function(e) {
+      console.log(e);
+  });
+</script>
+</body>
+</html>
