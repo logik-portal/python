@@ -1,0 +1,28 @@
+Inference Node Disclaimer and Terms of Use
+
+1. License Compliance:
+
+    The models provided on this site are subject to their respective open-source licenses. Users are responsible for ensuring compliance with these licenses, which may include attribution, non-commercial use, distribution of modifications, or other requirements.
+    Please review the license associated with each model before downloading and using it.
+
+2. Intellectual Property Rights:
+
+    The models are provided as-is, and we do not guarantee that they are free from intellectual property claims by third parties. Users should conduct their own due diligence before using these models in any capacity.
+
+3. Limitation of Liability:
+
+    We are not responsible for any direct, indirect, incidental, or consequential damages arising from the use or misuse of the models provided on this site.
+    Users assume all risks associated with downloading, using, or modifying these models.
+
+4. No Warranty:
+
+    The models are provided "as is" without any warranties, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.
+    We do not guarantee the accuracy, reliability, or performance of the models.
+
+5. Third-Party Content:
+
+    Some models may include or reference third-party content. Users are responsible for adhering to any additional terms and conditions associated with that content.
+
+6. Verify Original Source:
+
+    Users are advised to review the original model source and its license to ensure it meets their intended use and compliance needs.

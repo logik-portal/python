@@ -1,0 +1,23 @@
+{
+    "script_name": "Social Versions Ui",
+    "setting_01": "1x1",
+    "setting_02": "4x5",
+    "setting_03": "2x3",
+    "setting_04": "9x16",
+    "setting_05": "UHD",
+    "button_01": true,
+    "button_02": true,
+    "button_03": false,
+    "button_04": true,
+    "button_05": false,
+    "x_res_01": 1080,
+    "x_res_02": 1080,
+    "x_res_03": 1080,
+    "x_res_04": 1080,
+    "x_res_05": 3840,
+    "y_res_01": 1080,
+    "y_res_02": 1350,
+    "y_res_03": 1620,
+    "y_res_04": 1920,
+    "y_res_05": 2160
+}

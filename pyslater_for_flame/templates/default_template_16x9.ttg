@@ -1,0 +1,195 @@
+Module Text
+Program Flame
+Version 2024.1.pr182
+FileVersion 4.19999981
+CreationDate Wed Oct  4 15:31:38 2023
+
+FrameWidth 1920
+FrameHeight 1080
+FrameAspectRatio 1.77777779
+
+	CurrentFrame 1
+	MaxFrames -1
+	UpdateMode yes
+	PlayLockMode no
+	UndoLevels 10
+	FieldRenderingModeAuto 2
+	GaussianBlur yes
+	GlobalBlur yes
+	BlurOn no
+	BlurLevel 5
+	AntiAliasingLevel 0
+	AntiAliasingSoftness 1
+	MultiSample 0
+	PreRender 1
+	CropBox no
+	CropLeft 0
+	CropRight 0
+	CropBottom 0
+	CropTop 0
+	MatteKey yes
+End
+NumberOfLayer 1
+
+#
+# text layer channels
+#
+Channel translation/x
+	Extrapolation constant
+	Value 0
+	Uncollapsed
+	End
+Channel translation/y
+	Extrapolation constant
+	Value 0
+	Uncollapsed
+	End
+Channel translation/speed
+	Extrapolation constant
+	Value 0
+	Uncollapsed
+	End
+Channel shear/x
+	Extrapolation constant
+	Value 0
+	End
+Channel shear/y
+	Extrapolation constant
+	Value 0
+	End
+Channel scale/x
+	Extrapolation constant
+	Value 100
+	End
+Channel scale/y
+	Extrapolation constant
+	Value 100
+	End
+Channel rotation
+	Extrapolation constant
+	Value 0
+	Uncollapsed
+	End
+ChannelEnd
+TransformHasOffset yes
+End
+
+#
+# text layer data
+#
+ExtraChannels
+Channel transparency
+	Extrapolation constant
+	Value 100
+	Uncollapsed
+	End
+ChannelEnd
+BlurShadow no
+BlurShadowFactor 5
+DocWidth 1000
+DocHeight 0
+LayerAxisLocked no
+DocBackground no
+ColourBack 100 100 100 100
+DocInterpType 0
+FontType 0
+FontName /opt/Autodesk/font/Discreet
+FontSize 28
+UnderlineWidth 50
+FontStyle Fill
+ColourFill 100 100 100 100
+ColourOut 0 0 100 100
+ColourDrop 0 0 0 100
+ColorUnderline 100 100 100 100
+TextLength 7
+Text 60 84 105 116 108 101 62
+ParagraphType Inside
+
+#
+# layer paragraph channels
+#
+ChannelEnd
+TransformHasOffset no
+End
+#
+# layer paragraph ruler
+#
+Justification Justify_Left
+LeftMargin 0
+LeftIndent 0
+RightMargin 1000
+End
+TextLength 11
+Text 60 83 112 111 116 32 67 111 100 101 62
+ParagraphType Inside
+
+#
+# layer paragraph channels
+#
+ChannelEnd
+TransformHasOffset no
+End
+#
+# layer paragraph ruler
+#
+Justification Justify_Left
+LeftMargin 0
+LeftIndent 0
+RightMargin 1000
+End
+TextLength 10
+Text 60 68 117 114 97 116 105 111 110 62
+ParagraphType Inside
+
+#
+# layer paragraph channels
+#
+ChannelEnd
+TransformHasOffset no
+End
+#
+# layer paragraph ruler
+#
+Justification Justify_Left
+LeftMargin 0
+LeftIndent 0
+RightMargin 1000
+End
+TextLength 7
+Text 60 65 117 100 105 111 62
+ParagraphType Inside
+
+#
+# layer paragraph channels
+#
+ChannelEnd
+TransformHasOffset no
+End
+#
+# layer paragraph ruler
+#
+Justification Justify_Left
+LeftMargin 0
+LeftIndent 0
+RightMargin 1000
+End
+TextLength 6
+Text 60 68 97 116 101 62
+ParagraphType Last
+
+#
+# layer paragraph channels
+#
+ChannelEnd
+TransformHasOffset no
+End
+#
+# layer paragraph ruler
+#
+Justification Justify_Left
+LeftMargin 0
+LeftIndent 0
+RightMargin 1000
+End
+EndLayer
+EndGen

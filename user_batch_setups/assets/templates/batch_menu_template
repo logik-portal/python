@@ -1,0 +1,107 @@
+# User Batch Setups - <BatchName>
+# Copyright (c) 2025 Michael Vaglienty
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+"""
+Script Name: User Batch Setups - <BatchName>
+Script Version: <ScriptVersion>
+Flame Version: <MinFlameVersion>
+Written by: Michael Vaglienty
+Creation Date: 03.29.22
+Update Date: 05.26.25
+
+License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+
+Script Type: Batch
+
+Description:
+
+    Menu created by User Batch Setups script. Adds menu for batch setup to batch right-click menu.
+
+Menu:
+
+    Right-click in batch -> User Batch Setups -> <BatchName>
+"""
+
+import os
+import flame
+
+from pyflame_lib_user_batch_setups import *
+
+SCRIPT_NAME = 'User Batch Setups'
+
+def add_batch(selection):
+
+    pyflame.print_title('User Batch Setups - <BatchName> v<ScriptVersion>')
+
+    setup_path = '<SetupPath>'
+
+    if not os.path.exists(setup_path):
+        PyFlameMessageWindow(
+            message=f'Batch setup not found: <BatchName>\n\nBatch path: {setup_path}',
+            message_type=MessageType.ERROR,
+            )
+        return
+
+    # Get list of existing nodes in batch
+    batch_node_list = flame.batch.nodes
+
+    # Append bin node setup to batch
+    flame.batch.append_setup(setup_path)
+
+    # Create list of new nodes added to batch from bin node setup
+    nodes_to_move = [node for node in flame.batch.nodes if node not in batch_node_list]
+
+    node_under_cursor(nodes_to_move)
+
+def node_under_cursor(nodes_to_move):
+
+    # Get cursor position
+    drop_position = flame.batch.cursor_position
+
+    repo_node(nodes_to_move, drop_position)
+
+    pyflame.print(f'Batch Setup Appended: <BatchName>', text_color=TextColor.GREEN)
+
+def repo_node(nodes_to_move, drop_position):
+
+    # Get position of first node from bin node setup
+    first_node = nodes_to_move[0]
+    first_node_pos_x = int(str(first_node.pos_x))
+    first_node_pos_y = int(str(first_node.pos_y))
+
+    # Repo first node to cursor position
+    first_node.pos_x = drop_position[0]
+    first_node.pos_y = drop_position[1]
+
+    # Reposition remainng nodes to cursor position relative to original position with first node
+    for node in nodes_to_move[1:]:
+        node.pos_x = int(str(first_node.pos_x)) - (first_node_pos_x - int(str(node.pos_x)))
+        node.pos_y = int(str(first_node.pos_y)) - (first_node_pos_y - int(str(node.pos_y)))
+
+    return first_node
+
+def get_batch_custom_ui_actions():
+
+    return [
+        {
+            'name': 'User Batch Setups',
+            'actions': [
+                {
+                    'name': '<BatchName>',
+                    'execute': add_batch,
+                    'minimumVersion': '<MinFlameVersion>'
+                }
+            ]
+        }
+    ]

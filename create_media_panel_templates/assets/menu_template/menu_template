@@ -1,0 +1,83 @@
+# Create Media Panel Templates Menu
+# Copyright (c) 2025 Michael Vaglienty
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# License:       GNU General Public License v3.0 (GPL-3.0)
+#                https://www.gnu.org/licenses/gpl-3.0.en.html
+
+"""
+Script Name: Create Media Panel Templates - Menu: <TemplateName>
+Script Version: 3.7.0
+Flame Version: 2023.2
+Written by: Michael Vaglienty
+Creation Date: 05.01.19
+Update Date: 01.02.25
+
+License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+
+Script Type: Media Panel
+
+Description:
+
+    Media panel right-click menu script for <TemplateName> template. Created with Create Media Panel Templates script.
+
+Menu:
+
+    Right-click on library or folder -> <TemplateMenuName> -> <TemplateName>
+"""
+
+import flame
+from pyflame_lib_create_media_panel_templates import *
+
+def create_template(selection):
+
+    pyflame.print(
+        text='Created: <TemplateName>',
+        script_name='Create Media Panel Templates',
+        )
+
+    folder_dict = <FolderDict>
+
+    def folder_loop(value, new_folder):
+        for k, v in iter(value.items()):
+            folder = new_folder.create_folder(k)
+            folder_loop(v, folder)
+
+    for item in selection:
+        for key1, value1 in iter(folder_dict.items()):
+            new_folder = <TopItem>(key1)
+            folder_loop(value1, new_folder)
+
+def scope(selection):
+    for item in selection:
+        if isinstance(item, (flame.PyFolder, flame.PyLibrary)):
+            return True
+    return False
+
+def get_media_panel_custom_ui_actions():
+
+    return [
+        {
+            'name': '<TemplateMenuName>',
+            'actions': [
+                {
+                    'name': '<TemplateName>',
+                    'isVisible': scope,
+                    'execute': create_template,
+                    'minimumVersion': '2023.2'
+                }
+            ]
+        }
+    ]

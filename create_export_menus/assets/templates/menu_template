@@ -1,0 +1,211 @@
+# Create Export Menus - Export Menu: <PresetName>
+# Copyright (c) 2025 Michael Vaglienty
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# License:       GNU General Public License v3.0 (GPL-3.0)
+#                https://www.gnu.org/licenses/gpl-3.0.en.html
+
+"""
+Script Name: Create Export Menus - Export Menu: <PresetName>
+Script Version: 5.3.1
+Flame Version: <FlameMinMaxVersion>
+Written by: Michael Vaglienty
+Creation Date: 04.27.20
+Update Date: 04.08.25
+
+License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+
+Script Type: Media Panel
+
+Description:
+
+    Export menu for <PresetName> export preset. Created with Create Export Menus script.
+
+Menu:
+
+    Right-click on clip to export -> <PresetType> Export Presets... -> <PresetName>
+"""
+
+#-------------------------------------
+# [Imports]
+#-------------------------------------
+
+import flame
+
+import re
+import datetime
+from pyflame_lib_create_export_menus import *
+
+FLAME_PROJECT = '<FlameProject>'
+
+#-------------------------------------
+# [Export Function]
+#-------------------------------------
+
+def export_clips(selection):
+
+    def translate_tokenized_path(clip, export_path):
+
+        def get_shot_name(name):
+
+            shot_name_split = re.split(r'(\d+)', name)
+
+            if len(shot_name_split) > 1:
+                if shot_name_split[1].isalnum():
+                    shot_name = shot_name_split[0] + shot_name_split[1]
+                else:
+                    shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
+            else:
+                shot_name = name
+
+            return shot_name
+
+        def get_seq_name(name):
+
+            # Return sequence name abreviation from shot name
+            return re.split('[^a-zA-Z]', name)[0]
+
+        print('Tokenized Export Path:', export_path)
+
+        date = datetime.datetime.now()
+
+        clip_name = str(clip.name)[1:-1]
+
+        # Get shot name
+        try:
+            if clip.versions[0].tracks[0].segments[0].shot_name != '':
+                shot_name = str(clip.versions[0].tracks[0].segments[0].shot_name)[1:-1]
+            else:
+                shot_name = get_shot_name(clip_name)
+        except:
+            shot_name = ''
+
+        # Get tape name
+        try:
+            tape_name = str(clip.versions[0].tracks[0].segments[0].tape_name)
+        except:
+            tape_name = ''
+
+        # Get Seq Name
+        seq_name = get_seq_name(shot_name)
+
+        # Replace tokens in path
+        translated_export_path = re.sub('<ProjectName>', flame.project.current_project.name, export_path)
+        translated_export_path = re.sub('<ProjectNickName>', flame.project.current_project.nickname, translated_export_path)
+        translated_export_path = re.sub('<ShotName>',shot_name, translated_export_path)
+        translated_export_path = re.sub('<SeqName>', seq_name, translated_export_path)
+        translated_export_path = re.sub('<SEQNAME>', seq_name.upper(), translated_export_path)
+        translated_export_path = re.sub('<UserName>', flame.users.current_user.name, translated_export_path)
+        translated_export_path = re.sub('<UserNickName>', flame.users.current_user.nickname, translated_export_path)
+        translated_export_path = re.sub('<ClipName>', str(clip.name)[1:-1], translated_export_path)
+        translated_export_path = re.sub('<Resolution>', str(clip.width) + 'x' + str(clip.height), translated_export_path)
+        translated_export_path = re.sub('<ClipHeight>', str(clip.height), translated_export_path)
+        translated_export_path = re.sub('<ClipWidth>', str(clip.width), translated_export_path)
+        translated_export_path = re.sub('<YYYY>', yyyy, translated_export_path)
+        translated_export_path = re.sub('<YY>', yy, translated_export_path)
+        translated_export_path = re.sub('<MM>', mm, translated_export_path)
+        translated_export_path = re.sub('<DD>', dd, translated_export_path)
+        translated_export_path = re.sub('<Hour>', hour, translated_export_path)
+        translated_export_path = re.sub('<hour>', hour_12, translated_export_path)
+        translated_export_path = re.sub('<Minute>', minute, translated_export_path)
+        translated_export_path = re.sub('<AMPM>', ampm_caps, translated_export_path)
+        translated_export_path = re.sub('<ampm>', ampm, translated_export_path)
+        translated_export_path = re.sub('<TapeName>', tape_name, translated_export_path)
+
+        print ('Translated Export Path:', translated_export_path, '\n')
+
+        return translated_export_path
+
+    pyflame.print_title('Create Export Menu - Clip Export v5.3.0')
+
+    pyflame.print(f'Exporting: <PresetName>')
+
+    # Get time values for token conversion
+    date = datetime.datetime.now()
+    yyyy = date.strftime('%Y')
+    yy = date.strftime('%y')
+    mm = date.strftime('%m')
+    dd = date.strftime('%d')
+    hour = date.strftime('%H')
+    hour_12 = date.strftime('%I')
+    if hour_12.startswith('0'):
+        hour_12 = hour_12[1:]
+    minute = date.strftime('%M')
+    ampm_caps = date.strftime('%p')
+    ampm = str(date.strftime('%p')).lower()
+
+    # Initialize Exporter
+    clip_output = flame.PyExporter()
+
+    # Export selected clips
+    for clip in selection:
+        pyflame.print (f'Exported: {str(clip.name)[1:-1]}\n', text_color=TextColor.GREEN)
+
+    # Open export path in MediaHub after export
+    reveal_in_mediahub = <RevealInMediaHub>
+
+    if reveal_in_mediahub:
+        flame.go_to('MediaHub')
+        flame.mediahub.files.set_path(new_export_path)
+        pyflame.print('MediaHub opened to export path.')
+
+    # Open export path in finder after export
+    reveal_in_finder = <RevealInFinder>
+
+    if reveal_in_finder:
+        pyflame.open_in_finder(
+            path=new_export_path,
+            )
+        pyflame.print('Finder opened to export path.')
+
+    pyflame.print('Export complete.', text_color=TextColor.GREEN)
+
+#-------------------------------------
+# [Scopes]
+#-------------------------------------
+
+def scope_clip(selection):
+
+
+    if FLAME_PROJECT == flame.project.current_project.name:
+        for item in selection:
+            if isinstance(item, flame.PyClip):
+                return True
+    if FLAME_PROJECT == 'None':
+        for item in selection:
+            if isinstance(item, flame.PyClip):
+                return True
+    return False
+
+#-------------------------------------
+# [Flame Menus]
+#-------------------------------------
+
+def get_media_panel_custom_ui_actions():
+
+
+    return [
+        {
+            'name': '<PresetType> Export Presets...',
+            'actions': [
+                {
+                    'name': '<PresetName>',
+                    'isVisible': scope_clip,
+                    'execute': export_clips,
+                    'minimumVersion': '<FlameMinMaxVersion>',
+                }
+            ]
+        }
+    ]
