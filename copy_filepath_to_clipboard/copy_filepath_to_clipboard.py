@@ -2,20 +2,21 @@
 Script Name: Copy Filepath to Clipboard
 Written by: Kieran Hanrahan
 
-Script Version: 1.2.1
+Script Version: 1.3.0
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/copy-filepath-to-clipboard
 
 Creation Date: 04.07.25
-Update Date: 05.09.25
+Update Date: 11.19.25
 
 Description:
 
-    Copy the filepaths of the segments contained within the selected clips or sequences.
+    Copy the filepaths of the selected items.
 
 Menus:
 
+    Right-click selected items in the MediaHub --> Copy... --> Filepath to Clipboard
     Right-click selected items on the Desktop --> Copy... --> Filepath to Clipboard
     Right-click selected items in the Media Panel --> Copy... --> Filepath to Clipboard
 
@@ -38,7 +39,7 @@ import flame
 from PySide6 import QtWidgets
 
 TITLE = 'Copy Filepath to Clipboard'
-VERSION_INFO = (1, 2, 1)
+VERSION_INFO = (1, 3, 0)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -50,8 +51,13 @@ IMAGE_SEQ_EXTS = (
         'tif',
 )
 
+MEDIAHUB_OBJECTS = (
+        flame.PyMediaHubFilesEntry,
+        flame.PyMediaHubFilesFolder,
+)
+
 MEDIA_PANEL_OBJECTS = (
-        flame.PyClip,
+        flame.PyMediaHubFilesEntry,
 )
 
 TIMELINE_OBJECTS = (
@@ -108,18 +114,30 @@ def get_clip_location(segment):
     return f'{path}.{file_and_sep}[{segment.start_frame}-{end_frame}]{ext}'
 
 
-def get_paths_media_panel(selection):
+def get_paths_mediahub(selection):
     """Loop through the selected clips and copy filepaths for each segment."""
     paths = []
-    for clip in selection:
-        for version in clip.versions:
-            for track in version.tracks:
-                for segment in track.segments:
-                    if test_image_seq(segment, IMAGE_SEQ_EXTS):
-                        paths.append(get_clip_location(segment))
-                    else:
-                        if segment.file_path:
-                            paths.append(segment.file_path)
+    for item in selection:
+        paths.append(item.path)
+    return paths
+
+
+def get_paths_media_panel(selection):
+    """Loop through the selected clips and copy filepaths for each segment."""
+    segments = (
+        segment for clip in selection
+        for version in clip.versions
+        for track in version.tracks
+        for segment in track.segments
+    )
+    paths = []
+
+    for segment in segments:
+        if test_image_seq(segment, IMAGE_SEQ_EXTS):
+            paths.append(get_clip_location(segment))
+        else:
+            if segment.file_path:
+                paths.append(segment.file_path)
     return paths
 
 
@@ -128,15 +146,20 @@ def get_paths_timeline(selection):
 
     Skip PyTransitions that might be included in the selection due to a range of
     segments selection performed using shift + click.
+
+    Only add the path to results once and therefore return a list of unique paths.
     """
+    segments = (item for item in selection if not isinstance(item, flame.PyTransition))
     paths = []
-    for item in selection:
-        if not isinstance(item, flame.PyTransition):
-            if test_image_seq(item, IMAGE_SEQ_EXTS):
-                paths.append(get_clip_location(item))
-            else:
-                if item.file_path:
-                    paths.append(item.file_path)
+    for segment in segments:
+        if (
+            test_image_seq(segment, IMAGE_SEQ_EXTS) and
+            get_clip_location(segment) not in paths
+        ):
+            paths.append(get_clip_location(segment))
+        else:
+            if segment.file_path and segment.file_path not in paths:
+                paths.append(segment.file_path)
     return paths
 
 
@@ -149,6 +172,16 @@ def plural_s(item):
     https://stackoverflow.com/questions/21872366/plural-string-formatting
     """
     return f'{"s"[:len(item) ^ 1]}'
+
+
+def process_selection_mediahub(selection):
+    """Process the selection."""
+    message(TITLE_VERSION)
+    message(f'Script called from {__file__}')
+    paths = get_paths_mediahub(selection)
+    copy_to_clipboard('\n'.join(paths))
+    message(f'Sent {len(paths)} filepath{plural_s(paths)} to the clipboard.')
+    message('Done!')
 
 
 def process_selection_media_panel(selection):
@@ -176,6 +209,11 @@ def scope_selection(selection, objects):
     return all(isinstance(item, objects) for item in selection)
 
 
+def scope_mediahub_objects(selection):
+    """Filter out only supported MediaHub exobjects."""
+    return scope_selection(selection, MEDIAHUB_OBJECTS)
+
+
 def scope_media_panel_objects(selection):
     """Filter for timeline objects."""
     return scope_selection(selection, MEDIA_PANEL_OBJECTS)
@@ -189,6 +227,17 @@ def scope_timeline_objects(selection):
     select multiple segments using ctrl + click which is less convenient.
     """
     return scope_selection(selection, TIMELINE_OBJECTS)
+
+
+def get_mediahub_files_custom_ui_actions():
+    """Python hook to add custom right click menu item to MediaHub."""
+    return [{'name': 'Copy...',
+             'actions': [{'name': 'Filepath to Clipboard',
+                          'isVisible': scope_mediahub_objects,
+                          'execute': process_selection_mediahub,
+                          'minimumVersion': '2025.0.0.0',
+                        }]
+            }]
 
 
 def get_media_panel_custom_ui_actions():
