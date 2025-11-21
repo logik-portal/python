@@ -6,16 +6,16 @@ Python library for Autodesk Flame providing PyQt widgets styled to
 match Flame’s UI and utility functions that streamline script development.
 
 **Version:** 5.0.0<br>
-**Creation Date:** 10.31.20
-**Update Date:** 09.03.25
+**Creation Date:** 10.31.20<br>
+**Update Date:** 09.03.25<br>
 **Written By:** Michael Vaglienty<br>
-**License:** MIT
+**License:** License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details<br>
 
 ## Compatibility
 
-- **Python:** 3.11
-- **Qt binding:** PySide6 (Pyside2 no longer supported)
-- **Autodesk Flame:** 2025+
+**Python:** 3.11<br>
+**Qt binding:** PySide6 (Pyside2 no longer supported)<br>
+**Autodesk Flame:** 2025+<br>
 
 ## Usage
 
