@@ -2,13 +2,13 @@
 Script Name: Copy Filepath to Clipboard
 Written by: Kieran Hanrahan
 
-Script Version: 1.3.0
+Script Version: 1.3.1
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/copy-filepath-to-clipboard
 
 Creation Date: 04.07.25
-Update Date: 11.19.25
+Update Date: 11.21.25
 
 Description:
 
@@ -16,9 +16,10 @@ Description:
 
 Menus:
 
-    Right-click selected items in the MediaHub --> Copy... --> Filepath to Clipboard
-    Right-click selected items on the Desktop --> Copy... --> Filepath to Clipboard
-    Right-click selected items in the Media Panel --> Copy... --> Filepath to Clipboard
+    Right-click selected items on the Desktop > Copy... > Filepath to Clipboard
+    Right-click selected items in the MediaHub > Copy... > Filepath to Clipboard
+    Right-click selected items in the Media Panel > Copy... > Filepath to Clipboard
+    Right-click selected items in the Timeline > Copy... > Filepath to Clipboard
 
 To Install:
 
@@ -39,7 +40,7 @@ import flame
 from PySide6 import QtWidgets
 
 TITLE = 'Copy Filepath to Clipboard'
-VERSION_INFO = (1, 3, 0)
+VERSION_INFO = (1, 3, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -57,7 +58,7 @@ MEDIAHUB_OBJECTS = (
 )
 
 MEDIA_PANEL_OBJECTS = (
-        flame.PyMediaHubFilesEntry,
+        flame.PyClip,
 )
 
 TIMELINE_OBJECTS = (
@@ -231,31 +232,38 @@ def scope_timeline_objects(selection):
 
 def get_mediahub_files_custom_ui_actions():
     """Python hook to add custom right click menu item to MediaHub."""
-    return [{'name': 'Copy...',
-             'actions': [{'name': 'Filepath to Clipboard',
-                          'isVisible': scope_mediahub_objects,
-                          'execute': process_selection_mediahub,
-                          'minimumVersion': '2025.0.0.0',
-                        }]
-            }]
+    menu_name = 'Copy...'
+    action = {
+        'name': 'Filepath to Clipboard',
+        'isVisible': scope_mediahub_objects,
+        'execute': process_selection_mediahub,
+        'minimumVersion': '2025.0.0.0'
+    }
+    menu = {'name': menu_name, 'actions': [action]}
+    return [menu]
 
 
 def get_media_panel_custom_ui_actions():
     """Python hook to add item to Media Panel or Desktop Reels right click menu."""
-    return [{'name': 'Copy...',
-             'actions': [{'name': 'Filepath to Clipboard',
-                          'isVisible': scope_media_panel_objects,
-                          'execute': process_selection_media_panel,
-                          'minimumVersion': '2025.0.0.0',
-                        }]
-            }]
+    menu_name = 'Copy...'
+    action = {
+        'name': 'Filepath to Clipboard',
+        'isVisible': scope_media_panel_objects,
+        'execute': process_selection_media_panel,
+        'minimumVersion': '2025.0.0.0'
+    }
+    menu = {'name': menu_name, 'actions': [action]}
+    return [menu]
 
 
 def get_timeline_custom_ui_actions():
     """Python hook to add custom right click menu item to Timeline."""
-    return [{'name': 'Copy...',
-             'actions': [{'name': 'Filepath to Clipboard',
-                          'isVisible': scope_timeline_objects,
-                          'execute': process_selection_timeline,
-                          'minimumVersion': '2025.0.0.0'}]
-           }]
+    menu_name = 'Copy...'
+    action = {
+        'name': 'Filepath to Clipboard',
+        'isVisible': scope_timeline_objects,
+        'execute': process_selection_timeline,
+        'minimumVersion': '2025.0.0.0'
+    }
+    menu = {'name': menu_name, 'actions': [action]}
+    return [menu]

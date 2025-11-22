@@ -2,7 +2,7 @@
 
 Plugin for [Autodesk Flame software](http://www.autodesk.com/products/flame).
 
-Copy the source filepaths of the segments contained within the selected clips or sequences.
+Copy the source filepaths of the selected items.
 
 ## Example
 The format will match what is listed in the **Clip Location** column in the Conform tab.  For example:
@@ -26,11 +26,13 @@ For specific users, copy `copy_filepath_to_clipboard.py` to the appropriate path
 |Mac|`/Users/<user_name>/Library/Preferences/Autodesk/flame/python/`|
 
 ### Last Step
-Finally, inside of Flame, go to Flame (fish) menu `->` Python `->` Rescan Python Hooks
+Finally, inside of Flame, go to Flame (fish) menu `>` Python `>` Rescan Python Hooks
 
 ## Menus
-- Right-click selected items on the Desktop `->` Copy... `->` Filepath to Clipboard
-- Right-click selected items in the Media Panel `->` Copy... `->` Filepath to Clipboard
+- Right-click selected items on the Desktop `>` Copy... `>` Filepath to Clipboard
+- Right-click selected items on the MediaHub `>` Copy... `>` Filepath to Clipboard
+- Right-click selected items in the Media Panel `>` Copy... `>` Filepath to Clipboard
+- Right-click selected items in the Timeline `>` Copy... `>` Filepath to Clipboard
 
 ## Acknowledgements
 Many thanks to [pyflame.com](http://www.pyflame.com)
