@@ -1,4 +1,4 @@
-# Slate Desktop Copy
+# slates desktop copy
 
 **Script Version:** 1.5  
 **Flame Version:** 2023.2  

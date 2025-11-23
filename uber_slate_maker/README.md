@@ -1,4 +1,4 @@
-# Uber Slate Maker
+# uber slate maker
 
 **Script Version:** 1.3.1  
 **Flame Version:** 2026  
@@ -43,6 +43,10 @@ See example Type Node Template files for reference.
 Example:
 Slate Name: <ISCI>
 If the ISCI values have changed in the CSVfor the updated slates, the script will not be able to match the correct templates to the slates.
+
+## URL
+
+https://github.com/logik-portal/python/uber_slate_maker
 
 ## Menus
 

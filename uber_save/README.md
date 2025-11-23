@@ -1,4 +1,4 @@
-# Uber Save
+# uber save
 
 **Script Version:** 4.9.0  
 **Flame Version:** 2023.2  
@@ -79,6 +79,10 @@ Example:
 <br><br>
 This allows you to save batch groups to the correct shot folder even when
 the batch group name doesn't contain the shot name.
+
+## URL
+
+https://github.com/logik-portal/python/uber_save
 
 ## Menus
 

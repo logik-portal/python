@@ -1,4 +1,4 @@
-# Delete All Markers
+# delete all markers
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2022  

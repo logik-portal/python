@@ -1,4 +1,4 @@
-# Add Audio
+# add audio
 
 **Script Version:** 1.4.0  
 **Flame Version:** 2023  
@@ -22,6 +22,10 @@ Order of 5.1 surround files does not matter when being selected.
 When added to the sequence they will be put in this order: LF, RF, C, LFE, LS, RS, Stereo
 <br><br>
 5.1 surround file names must end with _LF, _RF, _C, _LFE, _LS, _RS, or _Stereo. Case is not important.
+
+## URL
+
+https://github.com/logik-portal/python/add_audio
 
 ## Menus
 

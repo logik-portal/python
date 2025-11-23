@@ -1,38 +1,33 @@
-# Copy Filepath to Clipboard
+# copy filepath to clipboard
 
-Plugin for [Autodesk Flame software](http://www.autodesk.com/products/flame).
+**Script Version:** 1.3.1  
+**Flame Version:** 2025  
+**Written by:** Kieran Hanrahan  
+**Creation Date:** 04.07.25  
+**Update Date:** 11.21.25  
 
-Copy the source filepaths of the selected items.
+## Description
 
-## Example
-The format will match what is listed in the **Clip Location** column in the Conform tab.  For example:
+Copy the filepaths of the selected items.
 
-`/path/path/path/file.[0001-0100].ext`
+## URL
 
-## Compatibility
-|Release Version|Flame Version|
-|---|---|
-|v1.X.X|Flame 2025 and up|
+http://github.com/khanrahan/copy-filepath-to-clipboard
+
+## Menus
+
+- Right-click selected items on the Desktop > Copy... > Filepath to Clipboard
+- Right-click selected items in the MediaHub > Copy... > Filepath to Clipboard
+- Right-click selected items in the Media Panel > Copy... > Filepath to Clipboard
+- Right-click selected items in the Timeline > Copy... > Filepath to Clipboard
 
 ## Installation
 
-### Flame 2025 and newer
-To make available to all users on the workstation, copy `copy_filepath_to_clipboard.py` to `/opt/Autodesk/shared/python/`
-
-For specific users, copy `copy_filepath_to_clipboard.py` to the appropriate path below...
-|Platform|Path|
-|---|---|
-|Linux|`/home/<user_name>/flame/python/`|
-|Mac|`/Users/<user_name>/Library/Preferences/Autodesk/flame/python/`|
-
-### Last Step
-Finally, inside of Flame, go to Flame (fish) menu `>` Python `>` Rescan Python Hooks
-
-## Menus
-- Right-click selected items on the Desktop `>` Copy... `>` Filepath to Clipboard
-- Right-click selected items on the MediaHub `>` Copy... `>` Filepath to Clipboard
-- Right-click selected items in the Media Panel `>` Copy... `>` Filepath to Clipboard
-- Right-click selected items in the Timeline `>` Copy... `>` Filepath to Clipboard
-
-## Acknowledgements
-Many thanks to [pyflame.com](http://www.pyflame.com)
+For all users, copy this file to:
+/opt/Autodesk/shared/python/
+<br><br>
+For a specific user on Linux, copy this file to:
+/home/<user_name>/flame/python/
+<br><br>
+For a specific user on Mac, copy this file to:
+/Users/<user_name>/Library/Preferences/Autodesk/flame/python/

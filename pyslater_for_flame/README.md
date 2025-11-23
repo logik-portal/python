@@ -1,4 +1,4 @@
-# Pyslater For Flame
+# pyslater for flame
 
 **Script Version:** 2.0.0  
 **Flame Version:** 2025  

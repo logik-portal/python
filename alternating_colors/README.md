@@ -1,4 +1,4 @@
-# Alternating Colours
+# alternating colors
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2025.1  

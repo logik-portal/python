@@ -1,4 +1,4 @@
-# Flush Renders
+# flush renders
 
 **Script Version:** 1.3.0  
 **Flame Version:** 2025.1  
@@ -11,6 +11,10 @@
 ## Description
 
 Flush renders for all clips/sequences in selected folder or library.
+
+## URL
+
+https://github.com/logik-portal/python/flush_renders
 
 ## Menus
 

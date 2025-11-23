@@ -1,4 +1,4 @@
-# Find & Replace In Name Advance
+# find replace in name advance
 
 **Script Version:** 3.1.0  
 **Flame Version:** 2025  

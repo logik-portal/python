@@ -1,4 +1,4 @@
-# Copy Shot Name To Clipboard
+# copy shot name to clipboard
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2025  

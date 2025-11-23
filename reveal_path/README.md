@@ -1,4 +1,4 @@
-# Reveal Path
+# reveal path
 
 **Script Version:** 2.8.0  
 **Flame Version:** 2023.2  
@@ -13,6 +13,10 @@
 Reveal the path of a clip, open clip, or write node in the finder or Media Hub.
 <br><br>
 Path is also copied to clipboard.
+
+## URL
+
+https://github.com/logik-portal/python/reveal_path
 
 ## Menus
 

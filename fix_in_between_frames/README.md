@@ -1,4 +1,4 @@
-# Fix In Between Frames
+# fix in between frames
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2026.1  

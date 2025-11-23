@@ -1,4 +1,4 @@
-# Social Versions
+# social versions
 
 **Script Version:** 0.3.1  
 **Flame Version:** 2023  

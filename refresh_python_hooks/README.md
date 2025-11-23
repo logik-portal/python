@@ -1,4 +1,4 @@
-# Refresh Python Hooks
+# refresh python hooks
 
 **Script Version:** 1.8.0  
 **Flame Version:** 2023.2  
@@ -13,6 +13,10 @@
 Refresh python hooks and print message to Flame message window(Flame 2023.1+) and terminal.
 <br><br>
 Message to Flame message window only shows up in Flame 2023.1+.
+
+## URL
+
+https://github.com/logik-portal/python/refresh_python_hooks
 
 ## Menus
 

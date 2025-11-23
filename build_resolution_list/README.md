@@ -1,4 +1,4 @@
-# Build Resolution List
+# build resolution list
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2025  

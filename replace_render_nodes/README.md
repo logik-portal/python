@@ -1,4 +1,4 @@
-# Replace Render Nodes
+# replace render nodes
 
 **Script Version:** 2.2.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Use to replace all render nodes in comp when they fail to properly show up in render list.
+
+## URL
+
+https://github.com/logik-portal/python/replace_render_nodes
 
 ## Menus
 

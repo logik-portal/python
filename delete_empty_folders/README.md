@@ -1,4 +1,4 @@
-# Delete Empty Folders
+# delete empty folders
 
 **Script Version:** 1.5.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Delete any empty folders in selected Library or Folder.
+
+## URL
+
+https://github.com/logik-portal/python/delete_empty_folders
 
 ## Menus
 

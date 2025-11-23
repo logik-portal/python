@@ -1,4 +1,4 @@
-# Folders To File System
+# folders to file system
 
 **Script Version:** 1.6.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Create folders in selected file system path from folders in selected Library or Folder.
+
+## URL
+
+https://github.com/logik-portal/python/folders_to_file_system
 
 ## Menus
 

@@ -1,4 +1,4 @@
-# Copy Segment Name To Shot Name
+# copy name to shot name
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2022  

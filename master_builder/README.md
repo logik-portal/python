@@ -1,4 +1,4 @@
-# Master Builder
+# master builder
 
 **Script Version:** 1.5.0  
 **Flame Version:** 2023.2  
@@ -38,6 +38,10 @@ Each reel should contain either all clips or all sequences. Clips and sequences
 should not be mixed within the same reel.
 <br><br>
 Sequences can contain multiple tracks but not multiple versions.
+
+## URL
+
+https://github.com/logik-portal/python/master_builder
 
 ## Menus
 

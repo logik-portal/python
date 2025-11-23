@@ -1,4 +1,4 @@
-# Delete Iterations
+# delete iterations
 
 **Script Version:** 1.6.0  
 **Flame Version:** 2025  
@@ -21,6 +21,10 @@ Selecting a libraries will delete iterations from all batch groups in the librar
 Selecting batch groups will delete iterations from the selected batch groups.
 <br><br>
 Selecting folders will delete iterations from all batch groups in the folders.
+
+## URL
+
+https://github.com/logik-portal/python/delete_iterations
 
 ## Menus
 

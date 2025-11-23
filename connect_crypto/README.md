@@ -1,4 +1,4 @@
-# Connect Cryptomatte
+# connect crypto
 
 **Script Version:** 0.5  
 **Flame Version:** 2021  

@@ -1,4 +1,4 @@
-# Clip To Batch Group
+# clip to batch group
 
 **Script Version:** 2.7.0  
 **Flame Version:** 2025  
@@ -35,6 +35,10 @@ schematic_reel_list = [
 shelf_reel_list = [
 'Renders',
 ]
+
+## URL
+
+https://github.com/logik-portal/python/clip_to_batch_group
 
 ## Menus
 

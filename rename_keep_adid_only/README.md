@@ -1,4 +1,4 @@
-# Rename Keep Ad-Id Only
+# rename keep adid only
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

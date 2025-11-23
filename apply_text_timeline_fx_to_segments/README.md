@@ -1,4 +1,4 @@
-# Apply Text Timelinefx To Segments
+# apply text timeline fx to segments
 
 **Script Version:** 3.0.0  
 **Flame Version:** 2025  

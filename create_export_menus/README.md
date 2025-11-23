@@ -1,4 +1,4 @@
-# Create Export Menus
+# create export menus
 
 **Script Version:** 5.4.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Create custom right-click export menu's from saved export presets
+
+## URL
+
+https://github.com/logik-portal/python/create_export_menus
 
 ## Menus
 

@@ -1,4 +1,4 @@
-# Add Dated And Timed Folders
+# add dated and timed folders
 
 **Script Version:** 2.4.0  
 **Flame Version:** 2025  

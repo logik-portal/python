@@ -1,4 +1,4 @@
-# Ratio Bug Fix
+# ratio bug fix
 
 **Script Version:** 1.0  
 **Flame Version:** 2024.2  

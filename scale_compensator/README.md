@@ -1,4 +1,4 @@
-# Scale Compensator
+# scale compensator
 
 **Script Version:** 1.1.1  
 **Flame Version:** 2023.2  

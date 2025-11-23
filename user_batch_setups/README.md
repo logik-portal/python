@@ -1,4 +1,4 @@
-# User Batch Setups
+# user batch setups
 
 **Script Version:** 1.8.0  
 **Flame Version:** 2025  
@@ -17,6 +17,10 @@ Menu's for setups will only be visible in versions of Flame that setups are comp
 After saving or deleting batch setups to the chosen folder, use the Refresh Menus menu option to regenerate setup menus.
 <br><br>
 Setup menus are automatically regenerated each time Flame starts up.
+
+## URL
+
+https://github.com/logik-portal/python/user_batch_setups
 
 ## Menus
 

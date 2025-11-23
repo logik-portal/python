@@ -1,4 +1,4 @@
-# Srt To Xml
+# srt to xml
 
 **Script Version:** 3.7.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Convert SRT files to XML files that can be imported into Flame through MediaHub
+
+## URL
+
+https://github.com/logik-portal/python/srt_to_xml
 
 ## Menus
 

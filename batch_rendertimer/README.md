@@ -1,4 +1,4 @@
-# Batch Rendertimer
+# batch rendertimer
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2023  

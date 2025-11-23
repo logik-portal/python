@@ -1,4 +1,4 @@
-# Import Write Node
+# import write node
 
 **Script Version:** 2.11.0  
 **Flame Version:** 2025  
@@ -12,6 +12,10 @@
 
 Import open clip created by selected write node into batch schematic reel or
 shelf reel or auto-import write node image sequence when render is complete.
+
+## URL
+
+https://github.com/logik-portal/python/import_write_node
 
 ## Menus
 

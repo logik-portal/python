@@ -1,4 +1,4 @@
-# Color Segment Fx
+# color segment fx
 
 **Script Version:** 1.4.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Colors segments on selected sequence with selected FX type.
+
+## URL
+
+https://github.com/logik-portal/python/color_segment_fx
 
 ## Menus
 

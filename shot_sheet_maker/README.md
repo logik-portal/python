@@ -1,4 +1,4 @@
-# Shot Sheet Maker
+# shot sheet maker
 
 **Script Version:** 3.13.0  
 **Flame Version:** 2025  
@@ -19,6 +19,10 @@ Sequence should have all clips on one version/track.
 <br><br>
 *** First time script is run it will need to install xlsxWriter - System password required for this ***
 This will need to happen for each new version of Flame.
+
+## URL
+
+https://github.com/logik-portal/python/shot_sheet_maker
 
 ## Menus
 

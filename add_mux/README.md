@@ -1,4 +1,4 @@
-# Add Mux
+# add mux
 
 **Script Version:** 2.6.0  
 **Flame Version:** 2025  
@@ -13,6 +13,10 @@
 Add regular mux node or frame locked mux to batch.
 <br><br>
 Right-click on an existing node to add connected mux node after it.
+
+## URL
+
+https://github.com/logik-portal/python/add_mux
 
 ## Menus
 

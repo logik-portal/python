@@ -1,4 +1,4 @@
-# Find And Replace In Text Timelinefx
+# find replace in text fx
 
 **Script Version:** 3.0.0  
 **Flame Version:** 2025  

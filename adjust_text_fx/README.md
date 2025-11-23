@@ -1,4 +1,4 @@
-# Adjust Text Fx
+# adjust text fx
 
 **Script Version:** 2.10.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Interactively adjust timeline text fx settings that can then be applied to all selected timeline text fx
+
+## URL
+
+https://github.com/logik-portal/python/adjust_text_fx
 
 ## Menus
 

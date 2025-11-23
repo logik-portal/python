@@ -1,4 +1,4 @@
-# Tidy Nodes
+# tidy nodes
 
 **Script Version:** 2.0.1  
 **Flame Version:** 2025  

@@ -1,4 +1,4 @@
-# Remove Audio Gaps
+# remove audio gaps
 
 **Script Version:** 2.0.0  
 **Flame Version:** 2022  

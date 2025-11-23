@@ -1,4 +1,4 @@
-# Premiere Xml Mediahub
+# premiere xml mediahub
 
 **Script Version:** 1.91  
 **Flame Version:** 2023  

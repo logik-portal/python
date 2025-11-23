@@ -1,4 +1,4 @@
-# Set In And Out Plus One Frame
+# set in and out plus one frame
 
 **Script Version:** 1.3.0  
 **Flame Version:** 2023.2  
@@ -12,6 +12,10 @@
 
 Sets in and out marks for selected sequences/clips to their full duration, plus one additional frame.
 This extra frame ensures a clean black frame at the end of exports when using Export Between Marks.
+
+## URL
+
+https://github.com/logik-portal/python/set_in_and_out_plus_one_frame
 
 ## Menus
 

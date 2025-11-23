@@ -1,4 +1,4 @@
-# Add Gmask
+# add gmask
 
 **Script Version:** 2.9.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Adds right-click menu to batch to add GMask or GMask Tracer node to batch
+
+## URL
+
+https://github.com/logik-portal/python/add_gmask
 
 ## Menus
 

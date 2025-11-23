@@ -1,4 +1,4 @@
-# Render All Selected Clips
+# render all selected clips
 
 **Script Version:** 1.0  
 **Flame Version:** 2019.2  

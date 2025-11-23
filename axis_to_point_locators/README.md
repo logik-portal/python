@@ -1,4 +1,4 @@
-# Axis To Point Locators
+# axis to point locators
 
 **Script Version:** 1.5.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Convert selected axis nodes to point locators
+
+## URL
+
+https://github.com/logik-portal/python/axis_to_point_locators
 
 ## Menus
 

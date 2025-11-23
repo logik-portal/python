@@ -1,4 +1,4 @@
-# Create Media Panel Templates
+# create media panel templates
 
 **Script Version:** 3.9.0  
 **Flame Version:** 2025  
@@ -12,6 +12,10 @@
 
 Create templates from libraries and folders in the Media Panel.
 Right-click menus will be created for each template
+
+## URL
+
+https://github.com/logik-portal/python/create_media_panel_templates
 
 ## Menus
 

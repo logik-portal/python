@@ -1,4 +1,4 @@
-# Encompass Selected Nodes
+# encompass selected nodes
 
 **Script Version:** 2.8.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Creates compass around selected nodes in batch or action.
+
+## URL
+
+https://github.com/logik-portal/python/encompass_selected_nodes
 
 ## Menus
 

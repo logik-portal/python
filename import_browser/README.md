@@ -1,4 +1,4 @@
-# Import Browser
+# import browser
 
 **Script Version:** 2.6.0  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Opens import browser in batch through right click menu.
+
+## URL
+
+https://github.com/logik-portal/python/import_browser
 
 ## Menus
 

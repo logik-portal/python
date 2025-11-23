@@ -1,4 +1,4 @@
-# Logik Portal
+# logik portal
 
 **Script Version:** 6.5.1  
 **Flame Version:** 2023.2  
@@ -11,6 +11,10 @@
 ## Description
 
 Share/install python scripts, batch setups, inference nodes, and download matchboxes
+
+## URL
+
+https://github.com/logik-portal/python/logik_portal
 
 ## Menus
 

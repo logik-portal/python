@@ -1,4 +1,4 @@
-# Surround Sound Channels Mute
+# surround sound channels mute
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

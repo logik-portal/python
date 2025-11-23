@@ -1,4 +1,4 @@
-# Rename Shots
+# rename shots
 
 **Script Version:** 1.11.0  
 **Flame Version:** 2025  
@@ -13,6 +13,10 @@
 Save clip and/or shot name naming patterns with tokens, then apply both to segments in a timeline.
 <br><br>
 > **Note:** <index> token does not work as expected in python. Use other tokens to rename shots.
+
+## URL
+
+https://github.com/logik-portal/python/rename_shots
 
 ## Menus
 

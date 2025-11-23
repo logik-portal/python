@@ -1,4 +1,4 @@
-# Surround Sound Channels Unmute
+# surround sound channels unmute
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

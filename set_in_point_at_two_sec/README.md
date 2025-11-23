@@ -1,4 +1,4 @@
-# Set In Point At Two Sec
+# set in point at two sec
 
 **Script Version:** 1.1  
 **Flame Version:** 2019  

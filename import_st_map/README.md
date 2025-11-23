@@ -1,4 +1,4 @@
-# Import St Maps
+# import st map
 
 **Script Version:** 3.1.0  
 **Flame Version:** 2025  
@@ -13,6 +13,10 @@
 Imports ST Maps and builds ST Map setup
 <br><br>
 Comp work is recomped over original plate at end of setup
+
+## URL
+
+https://github.com/logik-portal/python/import_st_map
 
 ## Menus
 

@@ -1,4 +1,4 @@
-# Find And Replace
+# find and replace
 
 **Script Version:** 1.7  
 **Flame Version:** 2023.2  

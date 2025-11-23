@@ -1,4 +1,4 @@
-# Multi Batch Render
+# multi batch render
 
 **Script Version:** 4.13.0  
 **Flame Version:** 2025  
@@ -11,6 +11,10 @@
 ## Description
 
 Batch render multiple batch groups
+
+## URL
+
+https://github.com/logik-portal/python/multi_batch_render
 
 ## Menus
 

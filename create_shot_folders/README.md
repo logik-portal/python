@@ -1,4 +1,4 @@
-# Create Shot Folders
+# create shot folders
 
 **Script Version:** 5.4.0  
 **Flame Version:** 2025.1  
@@ -13,6 +13,10 @@
 Create shot folders in the Media Panel and/or file system based on folder structure templates.
 <br><br>
 Custom folder structure templates can be set up in the script setup window.
+
+## URL
+
+https://github.com/logik-portal/python/create_shot_folders
 
 ## Menus
 

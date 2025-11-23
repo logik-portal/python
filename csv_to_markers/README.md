@@ -1,4 +1,4 @@
-# Csv To Markers
+# csv to markers
 
 **Script Version:** 1.3  
 **Flame Version:** 2022  

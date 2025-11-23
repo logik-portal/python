@@ -1,4 +1,4 @@
-# Neat Freak
+# neat freak
 
 **Script Version:** 1.10.0  
 **Flame Version:** 2025  
@@ -18,6 +18,10 @@ Works with Neat OFX v5.x and Neat OFX v6.x.
 Render/Write node outputs are set to match each clip(name, duration, timecode, fps).
 <br><br>
 Write node options can be set in Script Setup.
+
+## URL
+
+https://github.com/logik-portal/python/neat_freak
 
 ## Menus
 

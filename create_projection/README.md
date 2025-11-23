@@ -1,4 +1,4 @@
-# Create Projection
+# create projection
 
 **Script Version:** 2.10.0  
 **Flame Version:** 2025  
@@ -13,6 +13,10 @@
 Create projector or diffuse projections in Action from selected action layer.
 <br><br>
 Action must have another camera added other than just the default camera.
+
+## URL
+
+https://github.com/logik-portal/python/create_projection
 
 ## Menus
 
