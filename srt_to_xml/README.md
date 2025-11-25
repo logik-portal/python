@@ -1,4 +1,4 @@
-# srt to xml
+# Srt To Xml
 
 **Script Version:** 3.7.0  
 **Flame Version:** 2023.2  

@@ -1,4 +1,4 @@
-# user batch setups
+# User Batch Setups
 
 **Script Version:** 1.8.0  
 **Flame Version:** 2025  

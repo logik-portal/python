@@ -1,4 +1,4 @@
-# encompass selected nodes
+# Encompass Selected Nodes
 
 **Script Version:** 2.8.0  
 **Flame Version:** 2025  

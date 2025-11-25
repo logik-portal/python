@@ -1,4 +1,4 @@
-# multi batch render
+# Multi Batch Render
 
 **Script Version:** 4.13.0  
 **Flame Version:** 2025  

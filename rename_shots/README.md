@@ -1,4 +1,4 @@
-# rename shots
+# Rename Shots
 
 **Script Version:** 1.11.0  
 **Flame Version:** 2025  

@@ -1,4 +1,4 @@
-# invert timewarps
+# Invert Timewarps
 
 **Script Version:** 1.1.1  
 **Flame Version:** 2026.1  

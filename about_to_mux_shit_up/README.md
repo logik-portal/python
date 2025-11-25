@@ -1,4 +1,4 @@
-# about to mux shit up
+# About To Mux Shit Up
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2022  

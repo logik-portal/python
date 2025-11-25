@@ -1,4 +1,4 @@
-# folders to file system
+# Folders To File System
 
 **Script Version:** 1.6.0  
 **Flame Version:** 2025  

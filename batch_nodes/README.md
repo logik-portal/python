@@ -1,4 +1,4 @@
-# batch nodes
+# Batch Nodes
 
 **Script Version:** 3.11.0  
 **Flame Version:** 2025  

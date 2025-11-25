@@ -1,4 +1,4 @@
-# add audio
+# Add Audio
 
 **Script Version:** 1.4.0  
 **Flame Version:** 2023  

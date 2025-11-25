@@ -1,4 +1,4 @@
-# create shot folders
+# Create Shot Folders
 
 **Script Version:** 5.4.0  
 **Flame Version:** 2025.1  

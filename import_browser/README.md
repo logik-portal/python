@@ -1,4 +1,4 @@
-# import browser
+# Import Browser
 
 **Script Version:** 2.6.0  
 **Flame Version:** 2023.2  

@@ -1,4 +1,4 @@
-# set in and out plus one frame
+# Set In And Out Plus One Frame
 
 **Script Version:** 1.3.0  
 **Flame Version:** 2023.2  

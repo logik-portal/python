@@ -1,4 +1,4 @@
-# find replace in type
+# Find Replace In Type
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2026  

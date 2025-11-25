@@ -1,4 +1,4 @@
-# frame io
+# Frame Io
 
 **Script Version:** 0.9  
 **Flame Version:** 2024.2  

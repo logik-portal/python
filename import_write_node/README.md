@@ -1,4 +1,4 @@
-# import write node
+# Import Write Node
 
 **Script Version:** 2.11.0  
 **Flame Version:** 2025  

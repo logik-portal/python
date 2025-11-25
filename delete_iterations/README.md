@@ -1,4 +1,4 @@
-# delete iterations
+# Delete Iterations
 
 **Script Version:** 1.6.0  
 **Flame Version:** 2025  

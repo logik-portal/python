@@ -1,4 +1,4 @@
-# logik portal
+# Logik Portal
 
 **Script Version:** 6.5.1  
 **Flame Version:** 2023.2  

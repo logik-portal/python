@@ -1,4 +1,4 @@
-# delete empty tracks
+# Delete Empty Tracks
 
 **Script Version:** 1.0  
 **Flame Version:** 2021.1  

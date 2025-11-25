@@ -1,4 +1,4 @@
-# clip to batch group
+# Clip To Batch Group
 
 **Script Version:** 2.7.0  
 **Flame Version:** 2025  

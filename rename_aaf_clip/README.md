@@ -1,4 +1,4 @@
-# rename aaf clip
+# Rename Aaf Clip
 
 **Script Version:** 2.0  
 **Flame Version:** 2020  

@@ -1,4 +1,4 @@
-# fix corrupt action
+# Fix Corrupt Action
 
 **Script Version:** 1.1  
 **Flame Version:** 2025  

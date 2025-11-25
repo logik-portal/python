@@ -1,4 +1,4 @@
-# copy name to shot name
+# Copy Name To Shot Name
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2022  

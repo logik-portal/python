@@ -1,4 +1,4 @@
-# renamer ui
+# Renamer Ui
 
 **Script Version:** 2.3  
 **Flame Version:** 2023.2  

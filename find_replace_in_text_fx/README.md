@@ -1,4 +1,4 @@
-# find replace in text fx
+# Find Replace In Text Fx
 
 **Script Version:** 3.0.0  
 **Flame Version:** 2025  

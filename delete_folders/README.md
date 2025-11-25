@@ -1,4 +1,4 @@
-# delete folders
+# Delete Folders
 
 **Script Version:** 2.10.0  
 **Flame Version:** 2025  

@@ -1,4 +1,4 @@
-# add gmask
+# Add Gmask
 
 **Script Version:** 2.9.0  
 **Flame Version:** 2025  

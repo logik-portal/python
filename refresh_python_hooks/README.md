@@ -1,4 +1,4 @@
-# refresh python hooks
+# Refresh Python Hooks
 
 **Script Version:** 1.8.0  
 **Flame Version:** 2023.2  

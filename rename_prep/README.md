@@ -1,4 +1,4 @@
-# rename prep
+# Rename Prep
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

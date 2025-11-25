@@ -1,4 +1,4 @@
-# continue folder
+# Continue Folder
 
 **Script Version:** 3.0.0  
 **Flame Version:** 2025  

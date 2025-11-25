@@ -1,4 +1,4 @@
-# copy filepath to clipboard
+# Copy Filepath To Clipboard
 
 **Script Version:** 1.3.1  
 **Flame Version:** 2025  

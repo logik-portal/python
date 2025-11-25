@@ -1,4 +1,4 @@
-# add mux
+# Add Mux
 
 **Script Version:** 2.6.0  
 **Flame Version:** 2025  

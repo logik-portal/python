@@ -1,4 +1,4 @@
-# go to frame number
+# Go To Frame Number
 
 **Script Version:** 3.0.1  
 **Flame Version:** 2025  

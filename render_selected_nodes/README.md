@@ -1,4 +1,4 @@
-# render selected nodes
+# Render Selected Nodes
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2025  

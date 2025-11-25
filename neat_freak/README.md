@@ -1,4 +1,4 @@
-# neat freak
+# Neat Freak
 
 **Script Version:** 1.10.0  
 **Flame Version:** 2025  

@@ -1,4 +1,4 @@
-# master builder
+# Master Builder
 
 **Script Version:** 1.5.0  
 **Flame Version:** 2023.2  

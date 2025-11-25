@@ -1,4 +1,4 @@
-# ultragrid
+# Ultragrid
 
 **Script Version:** 0.0.2  
 **Flame Version:** 2023.2  

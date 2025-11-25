@@ -1,4 +1,4 @@
-# uc bb archiver ui
+# Uc Bb Archiver Ui
 
 **Script Version:** 1.8  
 **Flame Version:** 2023.2  

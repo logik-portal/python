@@ -1,4 +1,4 @@
-# copy name to clipboard
+# Copy Name To Clipboard
 
 **Script Version:** 3.2.0  
 **Flame Version:** 2025  

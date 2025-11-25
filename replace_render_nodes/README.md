@@ -1,4 +1,4 @@
-# replace render nodes
+# Replace Render Nodes
 
 **Script Version:** 2.2.0  
 **Flame Version:** 2023.2  

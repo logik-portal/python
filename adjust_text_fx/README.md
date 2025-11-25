@@ -1,4 +1,4 @@
-# adjust text fx
+# Adjust Text Fx
 
 **Script Version:** 2.10.0  
 **Flame Version:** 2023.2  

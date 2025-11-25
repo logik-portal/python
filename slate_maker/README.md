@@ -1,4 +1,4 @@
-# slate maker
+# Slate Maker
 
 **Script Version:** 4.11.0  
 **Flame Version:** 2023.2  

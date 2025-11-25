@@ -1,4 +1,4 @@
-# copy positioner timecode to clipboard
+# Copy Positioner Timecode To Clipboard
 
 **Script Version:** 2.0.0  
 **Flame Version:** 2025  

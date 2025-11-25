@@ -1,4 +1,4 @@
-# rename keep adid only
+# Rename Keep Adid Only
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

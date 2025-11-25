@@ -1,4 +1,4 @@
-# go to frame1
+# Go To Frame1
 
 **Script Version:** 1.0  
 **Flame Version:** 2020  

@@ -1,4 +1,4 @@
-# reveal path
+# Reveal Path
 
 **Script Version:** 2.8.0  
 **Flame Version:** 2023.2  

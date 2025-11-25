@@ -1,4 +1,4 @@
-# create projection
+# Create Projection
 
 **Script Version:** 2.10.0  
 **Flame Version:** 2025  

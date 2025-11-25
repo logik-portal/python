@@ -1,4 +1,4 @@
-# flatten segments
+# Flatten Segments
 
 **Script Version:** 2.1.0  
 **Flame Version:** 2025  

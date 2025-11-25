@@ -1,4 +1,4 @@
-# mute 6 audio tracks
+# Mute 6 Audio Tracks
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2022  

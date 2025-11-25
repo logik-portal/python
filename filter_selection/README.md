@@ -1,4 +1,4 @@
-# filter selection
+# Filter Selection
 
 **Script Version:** 2.1.1  
 **Flame Version:** 2025  

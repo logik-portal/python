@@ -1,4 +1,4 @@
-# shot sheet maker
+# Shot Sheet Maker
 
 **Script Version:** 3.13.0  
 **Flame Version:** 2025  

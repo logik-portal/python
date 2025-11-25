@@ -1,4 +1,4 @@
-# set 10 frame handles
+# Set 10 Frame Handles
 
 **Script Version:** 1.1  
 **Flame Version:** 2019  

@@ -1,4 +1,4 @@
-# import camera
+# Import Camera
 
 **Script Version:** 4.16.0  
 **Flame Version:** 2025  

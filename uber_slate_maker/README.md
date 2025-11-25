@@ -1,4 +1,4 @@
-# uber slate maker
+# Uber Slate Maker
 
 **Script Version:** 1.3.1  
 **Flame Version:** 2026  

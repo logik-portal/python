@@ -1,4 +1,4 @@
-# color segment fx
+# Color Segment Fx
 
 **Script Version:** 1.4.0  
 **Flame Version:** 2025  

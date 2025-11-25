@@ -1,4 +1,4 @@
-# create media panel templates
+# Create Media Panel Templates
 
 **Script Version:** 3.9.0  
 **Flame Version:** 2025  

@@ -1,4 +1,4 @@
-# flush renders
+# Flush Renders
 
 **Script Version:** 1.3.0  
 **Flame Version:** 2025.1  

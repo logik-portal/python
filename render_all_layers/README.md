@@ -1,4 +1,4 @@
-# render all layers
+# Render All Layers
 
 **Script Version:** 1.0  
 **Flame Version:** 2021  
