@@ -1,4 +1,4 @@
-# Fix Premiere Xmls
+# Fix Premiere XMLs
 
 **Script Version:** 2.1.2  
 **Flame Version:** 2023.2  
