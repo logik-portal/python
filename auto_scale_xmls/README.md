@@ -1,4 +1,4 @@
-# Auto Scale Xmls
+# Auto Scale XMLs
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2025  

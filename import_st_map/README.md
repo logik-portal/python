@@ -1,4 +1,4 @@
-# Import St Map
+# Import ST Map
 
 **Script Version:** 3.1.0  
 **Flame Version:** 2025  
