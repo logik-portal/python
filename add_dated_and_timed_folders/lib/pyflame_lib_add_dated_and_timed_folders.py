@@ -1,15 +1,36 @@
+# PyFlame Library
+# Copyright (c) 2025 Michael Vaglienty
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# License:       GNU General Public License v3.0 (GPL-3.0)
+#                https://www.gnu.org/licenses/gpl-3.0.en.html
+
 """
 PyFlame Library
-https://github.com/logik-portal/pyflame
 Version: 5.0.0
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
 Update Date: 09.03.25
-License: MIT - see LICENSE file for details
+
+License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
 Description:
     This library provides custom PyQt widgets styled to resemble Autodesk Flame,
     along with other useful utility functions.
+
+    https://github.com/logik-portal/pyflame
 
 Usage:
     - Place this file inside a folder named "lib" located in the same directory
@@ -41,7 +62,6 @@ Notes:
 
 Import Example:
     from lib.pyflame_lib_<main_script_name> import *
-
 
 See README.md for more details.
 """
@@ -3230,19 +3250,24 @@ class _PyFlame:
         clip_name = str(clip.name)[1:-1]
         print('Clip Name:', clip_name)
 
-        # Split clip name into list by numbers in clip name
-        shot_name_split = re.split(r'(\d+)', clip_name)
-        shot_name_split = [s for s in shot_name_split if s != '']
-        #print('shot_name_split:', shot_name_split)
+        # Check if numbders are in clip name and extract shot name from clip name
+        if any(char.isdigit() for char in clip_name):
 
-        # If second part of split name contains only alphanumeric chars,
-        # combine first two parts (e.g. "Shot" + "01" -> "Shot01")
-        # Otherwise combine first three parts to handle separators
-        # (e.g. "Shot" + "_" + "01" -> "Shot_01")
-        if shot_name_split[1].isalnum():
-            shot_name = shot_name_split[0] + shot_name_split[1]
+            # Split clip name into list by numbers in clip name
+            shot_name_split = re.split(r'(\d+)', clip_name)
+            shot_name_split = [s for s in shot_name_split if s != '']
+            #print('shot_name_split:', shot_name_split)
+
+            # If second part of split name contains only alphanumeric chars,
+            # combine first two parts (e.g. "Shot" + "01" -> "Shot01")
+            # Otherwise combine first three parts to handle separators
+            # (e.g. "Shot" + "_" + "01" -> "Shot_01")
+            if shot_name_split[1].isalnum():
+                shot_name = shot_name_split[0] + shot_name_split[1]
+            else:
+                shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
         else:
-            shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
+            shot_name = clip_name
 
         # Tag clip with shot name, pass if Flame 2025 or older
         try:
@@ -4236,9 +4261,6 @@ class PyFlameButton(QtWidgets.QPushButton):
         # Connect button click
         self.connect_callback(connect)
 
-        # Set Button Stylesheet
-        self._set_stylesheet(color)
-
     #---------------------------
     # [Properties]
     #---------------------------
@@ -4346,6 +4368,9 @@ class PyFlameButton(QtWidgets.QPushButton):
 
         # Set property
         self._color = value
+
+        # Set button color
+        self._set_stylesheet(value)
 
     @property
     def enabled(self) -> bool:
