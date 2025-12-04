@@ -13,6 +13,10 @@
 Sets in and out marks for selected sequences/clips to their full duration, plus one additional frame.
 This extra frame ensures a clean black frame at the end of exports when using Export Between Marks.
 
+## URL
+
+https://github.com/logik-portal/python/set_in_and_out_plus_one_frame
+
 ## Menus
 
 - Right-click on selected sequences/clips in the Media Panel → Set In and Out → Set In and Out +1 Frame of Black

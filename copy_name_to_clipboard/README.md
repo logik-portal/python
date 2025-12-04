@@ -1,10 +1,10 @@
 # Copy Name To Clipboard
 
-**Script Version:** 3.1.0  
+**Script Version:** 3.2.0  
 **Flame Version:** 2025  
 **Written by:** Kieran Hanrahan  
 **Creation Date:** 10.12.23  
-**Update Date:** 04.08.25  
+**Update Date:** 11.19.25  
 
 ## Description
 
@@ -19,7 +19,7 @@ http://www.github.com/khanrahan/copy-name-to-clipboard
 - Right-click selected items on the Desktop → Copy... → Name to Clipboard
 - Right-click selected items in the Media Hub → Copy... → Name to Clipboard
 - Right-click selected items in the Media Panel → Copy... → Name to Clipboard
-- Right-click selected items in a Timeline → Copy... → Name to Clipboard
+- Right-click selected items in the Timeline → Copy... → Name to Clipboard
 
 ## Installation
 

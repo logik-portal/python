@@ -14,6 +14,10 @@ Refresh python hooks and print message to Flame message window(Flame 2023.1+) an
 <br><br>
 Message to Flame message window only shows up in Flame 2023.1+.
 
+## URL
+
+https://github.com/logik-portal/python/refresh_python_hooks
+
 ## Menus
 
 - Flame Main Menu → Refresh Python Hooks

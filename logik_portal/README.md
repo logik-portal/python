@@ -12,6 +12,10 @@
 
 Share/install python scripts, batch setups, inference nodes, and download matchboxes
 
+## URL
+
+https://github.com/logik-portal/python/logik_portal
+
 ## Menus
 
 - Flame Main Menu → Logik → Logik Portal

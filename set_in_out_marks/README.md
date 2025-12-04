@@ -1,4 +1,4 @@
-# Set In & Out Marks
+# Set In Out Marks
 
 **Script Version:** 3.0.1  
 **Flame Version:** 2025  

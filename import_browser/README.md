@@ -12,6 +12,10 @@
 
 Opens import browser in batch through right click menu.
 
+## URL
+
+https://github.com/logik-portal/python/import_browser
+
 ## Menus
 
 - Right-click in batch → Import Browser

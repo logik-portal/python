@@ -12,6 +12,10 @@
 
 Flush renders for all clips/sequences in selected folder or library.
 
+## URL
+
+https://github.com/logik-portal/python/flush_renders
+
 ## Menus
 
 - Right-click on Folder or Library in Media Panel → Flush Renders

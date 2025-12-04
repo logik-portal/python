@@ -1,4 +1,4 @@
-# Copy Directory Listing To Clipboard
+# Copy Dir Listing To Clipboard
 
 **Script Version:** 2.0.0  
 **Flame Version:** 2025  

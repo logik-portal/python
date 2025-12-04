@@ -36,6 +36,10 @@ shelf_reel_list = [
 'Renders',
 ]
 
+## URL
+
+https://github.com/logik-portal/python/clip_to_batch_group
+
 ## Menus
 
 ### To import clips into batch group with shot name extracted from clip name

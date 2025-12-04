@@ -12,6 +12,10 @@
 
 Batch render multiple batch groups
 
+## URL
+
+https://github.com/logik-portal/python/multi_batch_render
+
 ## Menus
 
 - Right-click in batch → Multi-Batch Render

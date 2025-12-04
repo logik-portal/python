@@ -12,6 +12,10 @@
 
 Create folders in selected file system path from folders in selected Library or Folder.
 
+## URL
+
+https://github.com/logik-portal/python/folders_to_file_system
+
 ## Menus
 
 - Select Library or Folder in Media Panel → Folders to File System

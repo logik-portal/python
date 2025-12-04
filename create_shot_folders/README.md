@@ -14,6 +14,10 @@ Create shot folders in the Media Panel and/or file system based on folder struct
 <br><br>
 Custom folder structure templates can be set up in the script setup window.
 
+## URL
+
+https://github.com/logik-portal/python/create_shot_folders
+
 ## Menus
 
 ### Script Setup

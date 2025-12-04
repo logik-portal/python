@@ -14,6 +14,10 @@ Reveal the path of a clip, open clip, or write node in the finder or Media Hub.
 <br><br>
 Path is also copied to clipboard.
 
+## URL
+
+https://github.com/logik-portal/python/reveal_path
+
 ## Menus
 
 - Right-click on clip in timeline → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub

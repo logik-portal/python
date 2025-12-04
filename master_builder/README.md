@@ -39,6 +39,10 @@ should not be mixed within the same reel.
 <br><br>
 Sequences can contain multiple tracks but not multiple versions.
 
+## URL
+
+https://github.com/logik-portal/python/master_builder
+
 ## Menus
 
 - Right-click on Reel Group → Master Builder

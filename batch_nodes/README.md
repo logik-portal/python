@@ -22,6 +22,10 @@ Nodes added by right-clicking on them in batch will be saved with current settin
 <br><br>
 All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus
 
+## URL
+
+https://github.com/logik-portal/python/batch_nodes
+
 ## Menus
 
 ### To create/rename/delete menus from node lists
@@ -32,8 +36,6 @@ All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/ba
 - Right-click on node in batch → Batch Nodes... → Create Menu For Selected Node
 ### To add node from menu to batch
 - Right-click in batch → Batch Nodes... → Select Node to be added
-### To add node from menu to batch connected to selected node
-- Right-click on node in batch → Batch Nodes... → Select Node to be added
 
 ## Installation
 

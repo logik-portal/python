@@ -23,6 +23,10 @@ When added to the sequence they will be put in this order: LF, RF, C, LFE, LS, R
 <br><br>
 5.1 surround file names must end with _LF, _RF, _C, _LFE, _LS, _RS, or _Stereo. Case is not important.
 
+## URL
+
+https://github.com/logik-portal/python/add_audio
+
 ## Menus
 
 - Right-click selection of sequences and audio → Audio → Insert Stereo Audio - 01:00:00:00

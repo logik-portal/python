@@ -14,6 +14,10 @@ The Action camera will be automatically switched to the new FBX/Alembic camera.
 <br><br>
 Options to load with simple re-comp or ST map setups.
 
+## URL
+
+https://github.com/logik-portal/python/import_camera
+
 ## Menus
 
 ### Setup

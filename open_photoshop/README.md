@@ -1,4 +1,4 @@
-# Open Psd In Photoshop
+# Open Photoshop
 
 **Script Version:** 1.0  
 **Flame Version:** 2024  

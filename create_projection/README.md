@@ -14,6 +14,10 @@ Create projector or diffuse projections in Action from selected action layer.
 <br><br>
 Action must have another camera added other than just the default camera.
 
+## URL
+
+https://github.com/logik-portal/python/create_projection
+
 ## Menus
 
 - Right-click on Action surface or geo  → Create Projection... → Projector Projection

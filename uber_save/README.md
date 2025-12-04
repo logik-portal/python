@@ -80,6 +80,10 @@ Example:
 This allows you to save batch groups to the correct shot folder even when
 the batch group name doesn't contain the shot name.
 
+## URL
+
+https://github.com/logik-portal/python/uber_save
+
 ## Menus
 
 - Flame Main Menu → Logik → Logik Portal Script Setup → Uber Save Setup

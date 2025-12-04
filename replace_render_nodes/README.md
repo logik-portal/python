@@ -12,6 +12,10 @@
 
 Use to replace all render nodes in comp when they fail to properly show up in render list.
 
+## URL
+
+https://github.com/logik-portal/python/replace_render_nodes
+
 ## Menus
 
 - Right-click in batch → Replace Render Nodes

@@ -18,6 +18,10 @@ After saving or deleting batch setups to the chosen folder, use the Refresh Menu
 <br><br>
 Setup menus are automatically regenerated each time Flame starts up.
 
+## URL
+
+https://github.com/logik-portal/python/user_batch_setups
+
 ## Menus
 
 ### Setup

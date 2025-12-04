@@ -12,6 +12,10 @@
 
 Adds right-click menu to batch to add GMask or GMask Tracer node to batch
 
+## URL
+
+https://github.com/logik-portal/python/add_gmask
+
 ## Menus
 
 - Right click anywhere in batch or on any node with a matte input → Add GMask... → Add GMask Tracer Node

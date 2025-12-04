@@ -13,6 +13,10 @@
 Import open clip created by selected write node into batch schematic reel or
 shelf reel or auto-import write node image sequence when render is complete.
 
+## URL
+
+https://github.com/logik-portal/python/import_write_node
+
 ## Menus
 
 ### Setup

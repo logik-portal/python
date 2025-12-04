@@ -19,6 +19,10 @@ Render/Write node outputs are set to match each clip(name, duration, timecode, f
 <br><br>
 Write node options can be set in Script Setup.
 
+## URL
+
+https://github.com/logik-portal/python/neat_freak
+
 ## Menus
 
 ### Script Setup

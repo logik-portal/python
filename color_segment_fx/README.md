@@ -12,6 +12,10 @@
 
 Colors segments on selected sequence with selected FX type.
 
+## URL
+
+https://github.com/logik-portal/python/color_segment_fx
+
 ## Menus
 
 - Right-Click on Sequence in Media Panel → Color Timeline FX

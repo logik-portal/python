@@ -22,6 +22,10 @@ Selecting batch groups will delete iterations from the selected batch groups.
 <br><br>
 Selecting folders will delete iterations from all batch groups in the folders.
 
+## URL
+
+https://github.com/logik-portal/python/delete_iterations
+
 ## Menus
 
 - Right-click on a desktop, library, batch group, or folder → Delete Batch Iterations

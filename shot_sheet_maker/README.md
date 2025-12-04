@@ -20,6 +20,10 @@ Sequence should have all clips on one version/track.
 *** First time script is run it will need to install xlsxWriter - System password required for this ***
 This will need to happen for each new version of Flame.
 
+## URL
+
+https://github.com/logik-portal/python/shot_sheet_maker
+
 ## Menus
 
 - Right-click on selected sequences in media panel → Export Shot Sheet

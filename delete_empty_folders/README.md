@@ -12,6 +12,10 @@
 
 Delete any empty folders in selected Library or Folder.
 
+## URL
+
+https://github.com/logik-portal/python/delete_empty_folders
+
 ## Menus
 
 - Right-click on Folder or Library in Media Panel → Delete Empty Folders

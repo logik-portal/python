@@ -12,6 +12,10 @@
 
 Convert selected axis nodes to point locators
 
+## URL
+
+https://github.com/logik-portal/python/axis_to_point_locators
+
 ## Menus
 
 - Right-click on axis node → Axis to Point Locator

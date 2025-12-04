@@ -12,6 +12,10 @@
 
 Interactively adjust timeline text fx settings that can then be applied to all selected timeline text fx
 
+## URL
+
+https://github.com/logik-portal/python/adjust_text_fx
+
 ## Menus
 
 - Right-click on selected clips on timeline with text fx → Adjust Text FX

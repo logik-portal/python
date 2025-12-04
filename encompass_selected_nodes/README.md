@@ -12,6 +12,10 @@
 
 Creates compass around selected nodes in batch or action.
 
+## URL
+
+https://github.com/logik-portal/python/encompass_selected_nodes
+
 ## Menus
 
 - Select nodes to encompass → Encompass Selected Nodes

@@ -12,6 +12,10 @@
 
 Create custom right-click export menu's from saved export presets
 
+## URL
+
+https://github.com/logik-portal/python/create_export_menus
+
 ## Menus
 
 ### To create or edit export menus

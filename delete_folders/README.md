@@ -14,6 +14,10 @@ Delete one or more folders along with contents in the MediaHub File Tab view
 <br><br>
 *** WARNING - THIS WILL DELETE ALL SELECTED FOLDERS/SUBFOLDERS - THIS IS CAN NOT BE UNDONE***
 
+## URL
+
+https://github.com/logik-portal/python/delete_folders
+
 ## Menus
 
 - Right-click with folders selected → Delete Selected Folders

@@ -13,6 +13,10 @@
 Create templates from libraries and folders in the Media Panel.
 Right-click menus will be created for each template
 
+## URL
+
+https://github.com/logik-portal/python/create_media_panel_templates
+
 ## Menus
 
 ### To create new template menus

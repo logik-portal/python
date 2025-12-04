@@ -14,6 +14,10 @@ Save clip and/or shot name naming patterns with tokens, then apply both to segme
 <br><br>
 > **Note:** <index> token does not work as expected in python. Use other tokens to rename shots.
 
+## URL
+
+https://github.com/logik-portal/python/rename_shots
+
 ## Menus
 
 ### Timeline

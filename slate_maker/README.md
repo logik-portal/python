@@ -18,6 +18,10 @@ Detailed instructions to use this script can be found on pyflame.com
 <br><br>
 Example CSV and Text Node Template files can be found in /opt/autodesk/shared/python/slate_maker/example_files
 
+## URL
+
+https://github.com/logik-portal/python/slate_maker
+
 ## Menus
 
 - Right-click on clip to be used as slate background → Slates... → Slate Maker
