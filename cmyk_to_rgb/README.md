@@ -1,4 +1,4 @@
-# CMYK to RGB
+# Cmyk To Rgb
 
 **Script Version:** 1.0.0  
 **Flame Version:** 2025  
