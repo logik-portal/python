@@ -970,8 +970,8 @@
     "Description": "Create and update slates from CSV file data using Type Node templates."
   },
   {
-    "Script Name": "bb_archiver_ui",
-    "Script Version": "1.8",
+    "Script Name": "BB Archiver UI",
+    "Script Version": "1.8.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
