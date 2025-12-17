@@ -35,6 +35,7 @@ import json
 import os
 import re
 import ssl
+import glob
 import urllib.request
 import urllib.error
 
@@ -131,6 +132,65 @@ def get_readme_content(folder, repo=REPO_NAME, branch=REPO_BRANCH):
         if e.code == 404:
             return None  # README.md doesn't exist in this folder
         raise
+
+
+def get_local_folders():
+    """
+    Get folders from local filesystem.
+
+    Returns
+    -------
+    list
+        Sorted list of folder names
+    """
+    current_dir = os.getcwd()
+    items = os.listdir(current_dir)
+    folders = [item for item in items
+               if os.path.isdir(os.path.join(current_dir, item))
+               and not item.startswith('.')]
+    return sorted(folders)
+
+
+def get_local_python_script_content(folder):
+    """
+    Get Python script content from local filesystem.
+    First tries {folder}.py, then searches for any .py file in the folder.
+
+    Args
+    ----
+    folder (str):
+        Folder name (e.g., 'add_audio')
+
+    Returns
+    -------
+    str or None
+        Python script content as string, or None if script doesn't exist
+    """
+    folder_path = os.path.join(os.getcwd(), folder)
+
+    if not os.path.exists(folder_path):
+        return None
+
+    # Try to find Python file - first try {folder}.py, then search for any .py file
+    script_path = os.path.join(folder_path, f'{folder}.py')
+
+    if os.path.exists(script_path):
+        try:
+            with open(script_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except (UnicodeDecodeError, IOError):
+            return None
+
+    # If exact match doesn't exist, find first .py file in folder
+    py_files = glob.glob(os.path.join(folder_path, '*.py'))
+    if py_files:
+        try:
+            with open(py_files[0], 'r', encoding='utf-8') as f:
+                return f.read()
+        except (UnicodeDecodeError, IOError):
+            return None
+
+    return None
 
 
 def get_python_script_content(folder, repo=REPO_NAME, branch=REPO_BRANCH):
@@ -415,6 +475,7 @@ def parse_docstring_metadata(docstring_content, folder_name):
 def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FILE):
     """
     Extract metadata from all Python script docstrings and create a JSON file.
+    Automatically detects if running locally (filesystem) or needs to fetch from GitHub API.
 
     Args
     ----
@@ -432,26 +493,47 @@ def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FI
     Raises
     ------
     urllib.error.HTTPError
-        If the repository is not found or is private
+        If the repository is not found or is private (when using GitHub API)
     urllib.error.URLError
-        If there's a connection error
+        If there's a connection error (when using GitHub API)
     json.JSONDecodeError
-        If the response is not valid JSON
+        If the response is not valid JSON (when using GitHub API)
     """
-    print(f'Fetching folders from {REPO_OWNER}/{repo}...')
-    folders = get_github_folders(repo, branch)
+    # Check if we're running locally (files exist) or need to fetch from API
+    # Simple check - if .git exists, we're in a checked-out repo
+    use_local = os.path.exists('.git')
 
-    print(f'\nFound {len(folders)} folders. Extracting metadata from Python script docstrings...\n')
+    if use_local:
+        print('Reading from local filesystem...')
+        folders = get_local_folders()
 
-    scripts_data = []
+        print(f'\nFound {len(folders)} folders. Extracting metadata from Python script docstrings...\n')
 
-    for i, folder in enumerate(folders, 1):
-        print(f'Processing {i}/{len(folders)}: {folder}...', end=' ')
-        python_content = get_python_script_content(folder, repo, branch)
-        docstring = extract_docstring(python_content)
-        metadata = parse_docstring_metadata(docstring, folder)
-        scripts_data.append(metadata)
-        print('✓')
+        scripts_data = []
+
+        for i, folder in enumerate(folders, 1):
+            print(f'Processing {i}/{len(folders)}: {folder}...', end=' ')
+            python_content = get_local_python_script_content(folder)
+            docstring = extract_docstring(python_content)
+            metadata = parse_docstring_metadata(docstring, folder)
+            scripts_data.append(metadata)
+            print('✓')
+    else:
+        # Fallback to GitHub API (for testing outside GitHub Actions)
+        print(f'Fetching folders from {REPO_OWNER}/{repo}...')
+        folders = get_github_folders(repo, branch)
+
+        print(f'\nFound {len(folders)} folders. Extracting metadata from Python script docstrings...\n')
+
+        scripts_data = []
+
+        for i, folder in enumerate(folders, 1):
+            print(f'Processing {i}/{len(folders)}: {folder}...', end=' ')
+            python_content = get_python_script_content(folder, repo, branch)
+            docstring = extract_docstring(python_content)
+            metadata = parse_docstring_metadata(docstring, folder)
+            scripts_data.append(metadata)
+            print('✓')
 
     print(f'\nSaving data to {output_file}...')
     with open(output_file, 'w', encoding='utf-8') as f:
