@@ -560,14 +560,14 @@
     "Description": "Import open clip created by selected write node into batch schematic reel or\nshelf reel or auto-import write node image sequence when render is complete."
   },
   {
-    "Script Name": "invert timewarps",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Name": "Invert Timewarps",
+    "Script Version": "1.1.1",
+    "Flame Version": "2026.1",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "Return a unique node name by appending a number if necessary."
+    "Author": "John Geehreng",
+    "Creation Date": "08.03.25",
+    "Update Date": "08.07.25",
+    "Description": "Script Name: Invert Timewarps\nScript Version: 1.1.1\nFlame Version: 2026.1\nWritten by: John Geehreng\nCreation Date: 08.03.25\nUpdate Date: 08.07.25\n\nScript Type: Batch\n\nUsage: Right click and look for Timewarp Tools -> Invert Timewarps\n\nDescription: Invert Timewarps assuming they're in Timing Mode.\n\nTo install: Copy script to whereever you keep your scripts.\n\nUpdates:\n08.07.25 - v1.1.1 - Added the unique names bit\n08.03.25 - v1.1.0 - Work for Speed based timewarps now too\n08.03.25 - v1.0.0 - Initial Release"
   },
   {
     "Script Name": "Logik Portal",
