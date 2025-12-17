@@ -19,7 +19,7 @@ jobs:
       - name: Trigger workflow in JSON Update
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ secrets.JSON_Update }}  # Personal Access Token with repo access to JSON Update
+          token: ${{ secrets.JSON_PAT }}  # Personal Access Token with repo access to JSON Update
           repository: ${{ env.REPO_B_OWNER }}/${{ env.REPO_B_NAME }}
           event-type: build-json
           client-payload: |
