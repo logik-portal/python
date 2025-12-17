@@ -1,15 +1,5 @@
 [
   {
-    "Script Name": "Add GMask1",
-    "Script Version": "2.9.0",
-    "Flame Version": "2025",
-    "Maximum Flame Version": "Latest",
-    "Author": "Michael Vaglienty",
-    "Creation Date": "01.05.20",
-    "Update Date": "07.10.25",
-    "Description": "Adds right-click menu to batch to add GMask or GMask Tracer node to batch"
-  },
-  {
     "Script Name": "about to mux shit up",
     "Script Version": "1.0.1",
     "Flame Version": "2022",
@@ -38,6 +28,16 @@
     "Creation Date": "07.04.20",
     "Update Date": "08.27.25",
     "Description": "Create folders with the current date and time, date only, or time only."
+  },
+  {
+    "Script Name": "add gmask",
+    "Script Version": "2.9.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "01.05.20",
+    "Update Date": "07.10.25",
+    "Description": "Adds right-click menu to batch to add GMask or GMask Tracer node to batch"
   },
   {
     "Script Name": "add mux",
