@@ -1,3 +1,5 @@
+# GitHub Actions workflow to build python_scripts.json file
+
 name: Build Python Scripts JSON
 
 on:

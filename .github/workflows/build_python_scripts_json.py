@@ -117,6 +117,7 @@ def get_readme_content(folder, repo=REPO_NAME, branch=REPO_BRANCH):
     urllib.error.URLError
         If there's a connection error
     """
+
     # Use raw GitHub URL for easier content retrieval
     url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{repo}/{branch}/{folder}/README.md"
 
@@ -143,6 +144,7 @@ def get_local_folders():
     list
         Sorted list of folder names
     """
+
     current_dir = os.getcwd()
     items = os.listdir(current_dir)
     folders = [item for item in items
@@ -166,6 +168,7 @@ def get_local_python_script_content(folder):
     str or None
         Python script content as string, or None if script doesn't exist
     """
+
     folder_path = os.path.join(os.getcwd(), folder)
 
     if not os.path.exists(folder_path):
@@ -219,6 +222,7 @@ def get_python_script_content(folder, repo=REPO_NAME, branch=REPO_BRANCH):
     urllib.error.URLError
         If there's a connection error
     """
+
     # Use raw GitHub URL for easier content retrieval
     # Script name matches folder name with .py extension
     script_name = f'{folder}.py'
@@ -254,6 +258,7 @@ def extract_docstring(python_content):
     str
         The extracted docstring, or 'unknown' if not found or content is None
     """
+
     if python_content is None:
         return 'unknown'
 
@@ -313,6 +318,7 @@ def extract_field_from_docstring(docstring_content, field_pattern):
     str
         The extracted value or 'unknown' if not found
     """
+
     if docstring_content is None or docstring_content == 'unknown':
         return 'unknown'
 
@@ -352,6 +358,7 @@ def extract_field_from_docstring_with_default(docstring_content, field_pattern, 
     str
         The extracted value or the default value if not found
     """
+
     if docstring_content is None or docstring_content == 'unknown':
         return default
 
@@ -385,6 +392,7 @@ def extract_description_from_docstring(docstring_content):
     str
         The description text, or the full docstring if no Description marker found
     """
+
     if docstring_content is None or docstring_content == 'unknown':
         return 'unknown'
 
@@ -426,6 +434,7 @@ def parse_docstring_metadata(docstring_content, folder_name):
     dict
         Dictionary with extracted metadata fields
     """
+
     if docstring_content is None or docstring_content == 'unknown':
         # Return minimal metadata with folder name as fallback
         return {
@@ -498,6 +507,7 @@ def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FI
     json.JSONDecodeError
         If the response is not valid JSON (when using GitHub API)
     """
+
     # Check if we're running locally (files exist) or need to fetch from API
     # Simple check - if .git exists, we're in a checked-out repo
     use_local = os.path.exists('.git')
