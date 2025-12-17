@@ -419,7 +419,7 @@ def parse_docstring_metadata(docstring_content, folder_name):
     docstring_content : str or None
         The Python script docstring content
     folder_name (str):
-        The folder name (used as fallback for Script Name)
+        The folder name (used for Script Name)
 
     Returns
     -------
@@ -440,10 +440,9 @@ def parse_docstring_metadata(docstring_content, folder_name):
         }
 
     # Extract metadata from docstring
+    # Script Name always comes from folder name, not docstring
     metadata = {
-        'Script Name': extract_field_from_docstring_with_default(
-            docstring_content, 'Script Name', default=folder_name.replace('_', ' ')
-        ),
+        'Script Name': folder_name.replace('_', ' '),
         'Script Version': extract_field_from_docstring(docstring_content, 'Script Version'),
         'Flame Version': extract_field_from_docstring(docstring_content, 'Flame Version'),
         'Maximum Flame Version': extract_field_from_docstring_with_default(
