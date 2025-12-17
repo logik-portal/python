@@ -970,14 +970,14 @@
     "Description": "Create and update slates from CSV file data using Type Node templates."
   },
   {
-    "Script Name": "uc bb archiver ui",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Name": "bb_archiver_ui",
+    "Script Version": "1.8",
+    "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "Get all flame projets from /opt/Autodesk/io/bin/flame_archive -l\n\nReturns:\nlist: This is a list of the flame projects that exist on the workstation"
+    "Author": "John Geehreng",
+    "Creation Date": "11.17.22",
+    "Update Date": "02.05.24",
+    "Description": "This is a simple UI for Background Archiving using Backburner Manager. The script only works with the local flame, it does not support remote project archiving."
   },
   {
     "Script Name": "ultragrid",
