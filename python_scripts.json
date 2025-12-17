@@ -1,6 +1,6 @@
 [
   {
-    "Script Name": "About to Mux Shit Up",
+    "Script Name": "about to mux shit up",
     "Script Version": "1.0.1",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -10,7 +10,7 @@
     "Description": "Attach Mux nodes to the output sockets of the selected Clip nodes in Batch."
   },
   {
-    "Script Name": "Add Audio",
+    "Script Name": "add audio",
     "Script Version": "1.4.0",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
@@ -20,7 +20,7 @@
     "Description": "Add stereo or 5.1 audio to selected sequences."
   },
   {
-    "Script Name": "Add Dated and Timed Folders",
+    "Script Name": "add dated and timed folders",
     "Script Version": "2.4.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -30,7 +30,7 @@
     "Description": "Create folders with the current date and time, date only, or time only."
   },
   {
-    "Script Name": "Add GMask",
+    "Script Name": "add gmask",
     "Script Version": "2.9.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -40,7 +40,7 @@
     "Description": "Adds right-click menu to batch to add GMask or GMask Tracer node to batch"
   },
   {
-    "Script Name": "Add Mux",
+    "Script Name": "add mux",
     "Script Version": "2.6.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -50,7 +50,7 @@
     "Description": "Add regular mux node or frame locked mux to batch."
   },
   {
-    "Script Name": "Adjust Text FX",
+    "Script Name": "adjust text fx",
     "Script Version": "2.10.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -60,7 +60,7 @@
     "Description": "Interactively adjust timeline text fx settings that can then be applied to all selected timeline text fx"
   },
   {
-    "Script Name": "Alternating Colours",
+    "Script Name": "alternating colors",
     "Script Version": "1.0.0",
     "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
@@ -70,7 +70,7 @@
     "Description": "For any group of items selected in the Media Panel you can apply an alternating colour scheme (light/dark versions of the color you select)."
   },
   {
-    "Script Name": "Apply Text TimelineFX to Segments",
+    "Script Name": "apply text timeline fx to segments",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -80,7 +80,7 @@
     "Description": "Find specific segments in the selected sequences then apply Text TimelineFX and load\nText setups based on a token pattern."
   },
   {
-    "Script Name": "auto_scale_xmls",
+    "Script Name": "auto scale xmls",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -90,7 +90,7 @@
     "Description": "The goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file."
   },
   {
-    "Script Name": "Axis to Point Locators",
+    "Script Name": "axis to point locators",
     "Script Version": "1.5.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -100,7 +100,7 @@
     "Description": "Convert selected axis nodes to point locators"
   },
   {
-    "Script Name": "Batch Nodes",
+    "Script Name": "batch nodes",
     "Script Version": "3.11.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -110,7 +110,7 @@
     "Description": "*** Does not work with Flame 2024.0 due to bug in Flame ***"
   },
   {
-    "Script Name": "Batch Rendertimer",
+    "Script Name": "batch rendertimer",
     "Script Version": "1.0.0",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
@@ -120,7 +120,7 @@
     "Description": "Prints render start and end times to the console and to the Flame message area."
   },
   {
-    "Script Name": "Build Resolution List",
+    "Script Name": "build resolution list",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -130,7 +130,7 @@
     "Description": "The goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file."
   },
   {
-    "Script Name": "Clip to Batch Group",
+    "Script Name": "clip to batch group",
     "Script Version": "2.7.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -140,7 +140,7 @@
     "Description": "Import selected clips from the mediahub into newly created batch groups set to clip length with a render node"
   },
   {
-    "Script Name": "CMYK to RGB",
+    "Script Name": "cmyk to rgb",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -150,7 +150,7 @@
     "Description": "Convert CMYK images to RGB."
   },
   {
-    "Script Name": "Color Segment FX",
+    "Script Name": "color segment fx",
     "Script Version": "1.4.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -160,7 +160,7 @@
     "Description": "Colors segments on selected sequence with selected FX type."
   },
   {
-    "Script Name": "Connect Cryptomatte",
+    "Script Name": "connect crypto",
     "Script Version": "0.5",
     "Flame Version": "2021",
     "Maximum Flame Version": "Latest",
@@ -170,7 +170,7 @@
     "Description": "Creates and connects a Cryptomatte node to a read file node if it's a cryptomatte."
   },
   {
-    "Script Name": "Continue Folder",
+    "Script Name": "continue folder",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -180,7 +180,7 @@
     "Description": "Create a new reel on the Desktop and/or folder in the MediaHub Files tab using\ntokens, including a token to continue a number sequence in a sequence of existing\nfolders."
   },
   {
-    "Script Name": "Copy Directory Listing to Clipboard",
+    "Script Name": "copy dir listing to clipboard",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -190,7 +190,7 @@
     "Description": "Takes the selected folders in the Media Hub, gets a listing of the directory,\nand copies the output to the clipboard."
   },
   {
-    "Script Name": "Copy Filepath to Clipboard",
+    "Script Name": "copy filepath to clipboard",
     "Script Version": "1.3.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -200,7 +200,7 @@
     "Description": "Copy the filepaths of the selected items."
   },
   {
-    "Script Name": "Copy Location",
+    "Script Name": "copy location",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -210,7 +210,7 @@
     "Description": "Copy location of item inside of Flame (as opposed to the path in the file system)."
   },
   {
-    "Script Name": "Copy Name to Clipboard",
+    "Script Name": "copy name to clipboard",
     "Script Version": "3.2.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -220,7 +220,7 @@
     "Description": "Copy names of selected items to clipboard."
   },
   {
-    "Script Name": "Copy Segment Name to Shot Name",
+    "Script Name": "copy name to shot name",
     "Script Version": "1.0.1",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -230,7 +230,7 @@
     "Description": "Simple script to copy segment name to shot name on all selected segments."
   },
   {
-    "Script Name": "Copy Positioner Timecode to Clipboard",
+    "Script Name": "copy positioner timecode to clipboard",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -240,7 +240,7 @@
     "Description": "Copy positioner timecode of selected timelines to the clipboard."
   },
   {
-    "Script Name": "Copy Shot Name to Clipboard",
+    "Script Name": "copy shot name to clipboard",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -250,7 +250,7 @@
     "Description": "Copy shot names of selected items to clipboard."
   },
   {
-    "Script Name": "Create Export Menus",
+    "Script Name": "create export menus",
     "Script Version": "5.4.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -260,7 +260,7 @@
     "Description": "Create custom right-click export menu's from saved export presets"
   },
   {
-    "Script Name": "Create Media Panel Templates",
+    "Script Name": "create media panel templates",
     "Script Version": "3.9.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -270,7 +270,7 @@
     "Description": "Create templates from libraries and folders in the Media Panel.\nRight-click menus will be created for each template"
   },
   {
-    "Script Name": "Create Projection",
+    "Script Name": "create projection",
     "Script Version": "2.10.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -280,7 +280,7 @@
     "Description": "Create projector or diffuse projections in Action from selected action layer."
   },
   {
-    "Script Name": "Create Shot Folders",
+    "Script Name": "create shot folders",
     "Script Version": "5.4.0",
     "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
@@ -290,7 +290,7 @@
     "Description": "Create shot folders in the Media Panel and/or file system based on folder structure templates."
   },
   {
-    "Script Name": "CSV to Markers",
+    "Script Name": "csv to markers",
     "Script Version": "1.3",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -300,7 +300,7 @@
     "Description": "Imports a CSV file exported from frame.io and adds markers to a clip in flame. There is no need to modify the CSV downloaded from FrameIO."
   },
   {
-    "Script Name": "Delete All Markers",
+    "Script Name": "delete all markers",
     "Script Version": "1.0.0",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -310,7 +310,7 @@
     "Description": "Delete all timeline or segment markers on the selected clips or sequences."
   },
   {
-    "Script Name": "Delete Empty Folders",
+    "Script Name": "delete empty folders",
     "Script Version": "1.5.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -320,7 +320,7 @@
     "Description": "Delete any empty folders in selected Library or Folder."
   },
   {
-    "Script Name": "Delete Empty Tracks",
+    "Script Name": "delete empty tracks",
     "Script Version": "1.0",
     "Flame Version": "2021.1",
     "Maximum Flame Version": "Latest",
@@ -330,7 +330,7 @@
     "Description": "This script adds three custom actions to delete empty video and/or audio\ntracks of a <PySequence>. The minimumVersion is set to 2021.1 because\n<PySegment>.type is used."
   },
   {
-    "Script Name": "Delete Folders",
+    "Script Name": "delete folders",
     "Script Version": "2.10.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -340,7 +340,7 @@
     "Description": "Delete one or more folders along with contents in the MediaHub File Tab view"
   },
   {
-    "Script Name": "Delete Iterations",
+    "Script Name": "delete iterations",
     "Script Version": "1.6.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -350,7 +350,7 @@
     "Description": "Delete iterations from batch groups. Keeps the specified number of iterations."
   },
   {
-    "Script Name": "Encompass Selected Nodes",
+    "Script Name": "encompass selected nodes",
     "Script Version": "2.8.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -360,7 +360,7 @@
     "Description": "Creates compass around selected nodes in batch or action."
   },
   {
-    "Script Name": "Filter Selection",
+    "Script Name": "filter selection",
     "Script Version": "2.1.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -380,7 +380,7 @@
     "Description": "Find and Replaces characters in a bunch of clips or sequences."
   },
   {
-    "Script Name": "Find Folder",
+    "Script Name": "find folder",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -390,7 +390,7 @@
     "Description": "Searches for a subdirectory of the current directory in the Media Hub.  Useful for\nnavigating a folder that contains many many subfolders with long names but you have\na search term that would quickly find the folder you need."
   },
   {
-    "Script Name": "Find & Replace in Name Advance",
+    "Script Name": "find replace in name advance",
     "Script Version": "3.1.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -400,7 +400,7 @@
     "Description": "Perform find & replace on names of selected items.  Functions on Workspaces,\nLibraries, Desktops, Reel Groups, Reels, Folders, Sequences, Clips, and Timeline\nSegments."
   },
   {
-    "Script Name": "Find and Replace in Text TimelineFX",
+    "Script Name": "find replace in text fx",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -410,7 +410,7 @@
     "Description": "This script will find a specified search string within a Text TimelineFX and\nreplace that search term with something else without having to enter the Text\neditor."
   },
   {
-    "Script Name": "Find and Replace in Type",
+    "Script Name": "find replace in type",
     "Script Version": "1.0.0",
     "Flame Version": "2026",
     "Maximum Flame Version": "Latest",
@@ -420,7 +420,7 @@
     "Description": "This script will find a specified search string within a Type TimelineFX and\nreplace that search term with something else without having to enter the Type\neditor."
   },
   {
-    "Script Name": "Fix Corrupt Actions",
+    "Script Name": "fix corrupt action",
     "Script Version": "1.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -430,7 +430,7 @@
     "Description": "Fixes corrupt TLactions by exporting and then reloading the setups"
   },
   {
-    "Script Name": "Fix In Between Frames",
+    "Script Name": "fix in between frames",
     "Script Version": "1.0.1",
     "Flame Version": "2026.1",
     "Maximum Flame Version": "Latest",
@@ -450,7 +450,7 @@
     "Description": "Fix and/or Resize Adobe Premiere XML's."
   },
   {
-    "Script Name": "Flatten Segments",
+    "Script Name": "flatten segments",
     "Script Version": "2.1.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -460,7 +460,7 @@
     "Description": "Takes vertically stacked segments and flattens them to just the top most segments."
   },
   {
-    "Script Name": "Flush Renders",
+    "Script Name": "flush renders",
     "Script Version": "1.3.0",
     "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
@@ -470,7 +470,7 @@
     "Description": "Flush renders for all clips/sequences in selected folder or library."
   },
   {
-    "Script Name": "Folders to File System",
+    "Script Name": "folders to file system",
     "Script Version": "1.6.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -490,7 +490,7 @@
     "Description": "Collection of scripts for Frame.IO integration within Flame."
   },
   {
-    "Script Name": "Go To Frame 0",
+    "Script Name": "go to frame0",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -500,7 +500,7 @@
     "Description": "Go to frame 0 in timeline."
   },
   {
-    "Script Name": "Go To Frame 1",
+    "Script Name": "go to frame1",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -510,7 +510,7 @@
     "Description": "Go to frame 1 in timeline."
   },
   {
-    "Script Name": "Go to Frame Number",
+    "Script Name": "go to frame number",
     "Script Version": "3.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -520,7 +520,7 @@
     "Description": "Takes one or more selected clips and/or sequences and moves the positioner to a\nspecific frame number."
   },
   {
-    "Script Name": "Import Browser",
+    "Script Name": "import browser",
     "Script Version": "2.6.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -530,7 +530,7 @@
     "Description": "Opens import browser in batch through right click menu."
   },
   {
-    "Script Name": "Import Camera",
+    "Script Name": "import camera",
     "Script Version": "4.16.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -540,7 +540,7 @@
     "Description": "Creates a new Action node with selected FBX or Alembic file loaded."
   },
   {
-    "Script Name": "Import ST Map",
+    "Script Name": "import st map",
     "Script Version": "3.1.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -550,7 +550,7 @@
     "Description": "Imports ST Maps and builds ST Map setup"
   },
   {
-    "Script Name": "Import Write Node",
+    "Script Name": "import write node",
     "Script Version": "2.11.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -560,7 +560,7 @@
     "Description": "Import open clip created by selected write node into batch schematic reel or\nshelf reel or auto-import write node image sequence when render is complete."
   },
   {
-    "Script Name": "Invert Timewarps",
+    "Script Name": "invert timewarps",
     "Script Version": "1.1.1",
     "Flame Version": "2026.1",
     "Maximum Flame Version": "Latest",
@@ -570,7 +570,7 @@
     "Description": "Script Name: Invert Timewarps\nScript Version: 1.1.1\nFlame Version: 2026.1\nWritten by: John Geehreng\nCreation Date: 08.03.25\nUpdate Date: 08.07.25\n\nScript Type: Batch\n\nUsage: Right click and look for Timewarp Tools -> Invert Timewarps\n\nDescription: Invert Timewarps assuming they're in Timing Mode.\n\nTo install: Copy script to whereever you keep your scripts.\n\nUpdates:\n08.07.25 - v1.1.1 - Added the unique names bit\n08.03.25 - v1.1.0 - Work for Speed based timewarps now too\n08.03.25 - v1.0.0 - Initial Release"
   },
   {
-    "Script Name": "Logik Portal",
+    "Script Name": "logik portal",
     "Script Version": "6.5.1",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -580,7 +580,7 @@
     "Description": "Share/install python scripts, batch setups, inference nodes, and download matchboxes"
   },
   {
-    "Script Name": "Master Builder",
+    "Script Name": "master builder",
     "Script Version": "1.5.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -590,7 +590,7 @@
     "Description": "Create masters from clips/sequences in a Reel Group."
   },
   {
-    "Script Name": "Multi Batch Render",
+    "Script Name": "multi batch render",
     "Script Version": "4.13.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -600,7 +600,7 @@
     "Description": "Batch render multiple batch groups"
   },
   {
-    "Script Name": "Mute 6 Audio Tracks",
+    "Script Name": "mute 6 audio tracks",
     "Script Version": "1.0.0",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -610,7 +610,7 @@
     "Description": "Toggles audio tracks 1-6 between mute or not on the selected sequences."
   },
   {
-    "Script Name": "Neat Freak",
+    "Script Name": "neat freak",
     "Script Version": "1.10.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -620,7 +620,7 @@
     "Description": "Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new\nbatch group with Neat/Render/Write nodes for all selected clips."
   },
   {
-    "Script Name": "Open PSD in Photoshop",
+    "Script Name": "open photoshop",
     "Script Version": "1.0",
     "Flame Version": "2024",
     "Maximum Flame Version": "Latest",
@@ -630,7 +630,7 @@
     "Description": "If a clip or timeline segment is a soft-imported PSD file >>> Open the source file in Photoshop.\nThis script was written for macOS and Photoshop must be your default app for PSD files."
   },
   {
-    "Script Name": "Path Translator",
+    "Script Name": "path translator",
     "Script Version": "2.1.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -640,7 +640,7 @@
     "Description": "Take a path, either Windows or POSIX, and extract part of the path using tokens.\nUseful for converting windows paths to POSIX for Flame, or even paths from other\nmachines that just have different mount points."
   },
   {
-    "Script Name": "premiere_xml_mediahub",
+    "Script Name": "premiere xml mediahub",
     "Script Version": "1.91",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
@@ -650,7 +650,7 @@
     "Description": "Script Name: premiere_xml_mediahub\nScript Version: 1.91\nFlame Version: 2023\nWritten by: Ted Stanley, John Geehreng, and Mike V\nCreation Date: 03.03.21\nUpdate Date: 04.18.22\n\nDescription: This provides a UI for Ted Stanley's awesome script found on the Logik Forums.\nWith Mike V's help, it also adds a scale factor to compensate for the difference between proxy resolution\nand the full resolution of the clips in Flame.\nTo obtain the scale factor, divide the proxy resolution by the full resolution of your clips and then multiply by 100.\nIf math is not your thing, you can also figure it out by creating a new axis in Action, parenting it under the axis that has the repo data on it, and manually find the scale difference.\n\nIf the aspect ratios of the proxy files are the same as the full res clips, you can use either the x or y value.\nIf the proxy files have a letterbox use (proxy x res / full res x res)\nIf the proxy files have pillar bars, use (proxy y res / full res y res)\nIf you have multiple resolutions, run the script as many times as needed. It will name them based on the scale factor.\n\n03.19.21 - Python3 Updates\n05.17.21 - Added the ability to select multiple .xml's and added Ted's nested layer fix\n06.04.21 - Change Default Scale Value to 100 for graphics. Renamed \"Cancel\" button to say \"Close\"\n08.13.21 - Change XML Bit Depth to Project Settings\n08.27.21 - Turned off the \"That Totally Worked\" message as you can see the update in the MediaHub\n09.03.21 - Made sanatizing the names optional\n11.15.21 - Added the ability to scale values over 100\n12.27.21 - Turned off \"v\" to \"V\" when sanatizing names\n02.19.22 - Created option for automatically using the xml's resolution (v1.9)\n04.19.22 - 2023 UI (v1.91)"
   },
   {
-    "Script Name": "PySlater for Flame",
+    "Script Name": "pyslater for flame",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -660,7 +660,7 @@
     "Description": "Menu for using PySlater class from within the Flame application."
   },
   {
-    "Script Name": "Ratio Bug Fix",
+    "Script Name": "ratio bug fix",
     "Script Version": "1.0",
     "Flame Version": "2024.2",
     "Maximum Flame Version": "Latest",
@@ -670,7 +670,7 @@
     "Description": "Script Name: Ratio Bug Fix\nScript Version: 1.0\nFlame Version: 2024.2\nWritten by: Bryan Bayley\nCreation Date: 02.14.24\n\nDescription: There is a bug when conforming an AAF/XML with footage at a different resolution than the offline edit.\nSegments with an Action timeline effect will not display the correct size/ratio. To fix this, we add a Source Color\nManagement timeline effect, and immediately remove it to get flame to recognize the correct resolution of the source footage."
   },
   {
-    "Script Name": "Refresh Python Hooks",
+    "Script Name": "refresh python hooks",
     "Script Version": "1.8.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -680,7 +680,7 @@
     "Description": "Refresh python hooks and print message to Flame message window(Flame 2023.1+) and terminal."
   },
   {
-    "Script Name": "Remove Audio Gaps",
+    "Script Name": "remove audio gaps",
     "Script Version": "2.0.0",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -690,7 +690,7 @@
     "Description": "Remove silent gaps on the audio tracks."
   },
   {
-    "Script Name": "Rename AAF Clip",
+    "Script Name": "rename aaf clip",
     "Script Version": "2.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -700,7 +700,7 @@
     "Description": "Removes all the extra bull shit that comes across in the file name when importing an aaf from avid."
   },
   {
-    "Script Name": "Rename Keep AD-ID Only",
+    "Script Name": "rename keep adid only",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -710,7 +710,7 @@
     "Description": "Script Name: Rename Keep AD-ID Only\nScript Version: 1.0\nFlame Version: 2020\nWritten by: John Geehreng\nCreation Date: 01.01.20\nUpdate Date: 01.01.20\n\nDescription:\n\nRename keeping only AD-ID"
   },
   {
-    "Script Name": "Rename Prep",
+    "Script Name": "rename prep",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -720,7 +720,7 @@
     "Description": "Script Name: Rename Prep\nScript Version: 1.0\nFlame Version: 2020\nWritten by: John Geehreng\nCreation Date: 01.01.20\nUpdate Date: 01.01.20\n\nDescription:\n\nRename AAF Prep"
   },
   {
-    "Script Name": "Rename Shots",
+    "Script Name": "rename shots",
     "Script Version": "1.11.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -730,7 +730,7 @@
     "Description": "Save clip and/or shot name naming patterns with tokens, then apply both to segments in a timeline."
   },
   {
-    "Script Name": "renamer_ui",
+    "Script Name": "renamer ui",
     "Script Version": "2.3",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -740,7 +740,7 @@
     "Description": "Script Name: renamer_ui\nScript Version: 2.3\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 12.11.20\nUpdate Date: 12.13.23\n\nDescription: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add \"_Generic\" or \"_v01\" to the end of a name.\n\nUpdates:\n12.13.23 - v2.3 Updated for pyflame lib v2\n08.25.22 - v2.2 2023.2 Ordering\n04.18.22 - v2.1 2023 UI Updates"
   },
   {
-    "Script Name": "Render All Layers",
+    "Script Name": "render all layers",
     "Script Version": "1.0",
     "Flame Version": "2021",
     "Maximum Flame Version": "Latest",
@@ -750,7 +750,7 @@
     "Description": "Render every layer in multiple sequences."
   },
   {
-    "Script Name": "Render All Selected Clips",
+    "Script Name": "render all selected clips",
     "Script Version": "1.0",
     "Flame Version": "2019.2",
     "Maximum Flame Version": "Latest",
@@ -760,7 +760,7 @@
     "Description": "This script adds a custom action that allows all the Timeline FX in\nthe currently selected clips to be rendered.\nThe minimumVersion is set to 2019.2 because <PyClip>.render() is used."
   },
   {
-    "Script Name": "Render Selected Nodes",
+    "Script Name": "render selected nodes",
     "Script Version": "1.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -770,7 +770,7 @@
     "Description": "Render selected Render or Write File nodes."
   },
   {
-    "Script Name": "Replace Render Nodes",
+    "Script Name": "replace render nodes",
     "Script Version": "2.2.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -780,7 +780,7 @@
     "Description": "Use to replace all render nodes in comp when they fail to properly show up in render list."
   },
   {
-    "Script Name": "Reveal Path",
+    "Script Name": "reveal path",
     "Script Version": "2.8.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -790,7 +790,7 @@
     "Description": "Reveal the path of a clip, open clip, or write node in the finder or Media Hub."
   },
   {
-    "Script Name": "Sanitize Names",
+    "Script Name": "sanitize names",
     "Script Version": "1.0.0",
     "Flame Version": "2022",
     "Maximum Flame Version": "Latest",
@@ -820,7 +820,7 @@
     "Description": "Renames files based on user input for start frame and padding."
   },
   {
-    "Script Name": "Set 10 Frame Handles",
+    "Script Name": "set 10 frame handles",
     "Script Version": "1.1",
     "Flame Version": "2019",
     "Maximum Flame Version": "Latest",
@@ -830,7 +830,7 @@
     "Description": "Script Name: Set 10 Frame Handles\nScript Version: 1.1\nFlame Version: 2019\nWritten by: John Geehreng\nCreation Date: 01.22.21\nUpdate Date:\n\nDescription:\n\nSet 10 frame handles"
   },
   {
-    "Script Name": "Set In and Out Plus One Frame",
+    "Script Name": "set in and out plus one frame",
     "Script Version": "1.3.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -840,7 +840,7 @@
     "Description": "Sets in and out marks for selected sequences/clips to their full duration, plus one additional frame.\nThis extra frame ensures a clean black frame at the end of exports when using Export Between Marks."
   },
   {
-    "Script Name": "Set In & Out Marks",
+    "Script Name": "set in out marks",
     "Script Version": "3.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -850,7 +850,7 @@
     "Description": "Set in/out or clear all marks on selected clips."
   },
   {
-    "Script Name": "Set In Point At Two Sec",
+    "Script Name": "set in point at two sec",
     "Script Version": "1.1",
     "Flame Version": "2019",
     "Maximum Flame Version": "Latest",
@@ -860,7 +860,7 @@
     "Description": "Script Name: Set In Point At Two Sec\nScript Version: 1.1\nFlame Version: 2019\nWritten by: John Geehreng\nCreation Date: 12.08.20\nUpdate Date: 12.08.20\n\nDescription: This script sets an In Point at two seconds. It will work for 23.976, 24, 25, 23.97 NDF, and 29.97 DF."
   },
   {
-    "Script Name": "Shot Sheet Maker",
+    "Script Name": "shot sheet maker",
     "Script Version": "3.13.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -870,7 +870,7 @@
     "Description": "Create shot sheets from selected sequence clips that can be loaded into Excel, Google Sheets, or Numbers."
   },
   {
-    "Script Name": "Slate Maker",
+    "Script Name": "slate maker",
     "Script Version": "4.11.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -880,7 +880,7 @@
     "Description": "Create slates from CSV file"
   },
   {
-    "Script Name": "slate_desktop_copy",
+    "Script Name": "slates desktop copy",
     "Script Version": "1.5",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -890,7 +890,7 @@
     "Description": "Script Name: slate_desktop_copy\nScript Version: 1.5\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 02.01.21\nUpdate Date: 01.15.24\n\nDescription: If you put your slates on one reel and your sequences on another reel, this script allows you to select your Reel Group and Reels\nto automatically insert your Slates to the corresponding Sequence.\n\n* Every Sequences needs a corresponding Slate and order is important. Slate 1 will go to Sequence 1, 2->2, 3->3...\n* Assumes your sequences start a 01:00:00:00.\n* It also automatically renames your sequences based on the slate names.\n\nUpdates:\n01.15.24 - v1.5 - Remove Error Message in Favor of the checking the amount of objects.\n12.13.23 - v1.4 - Updated for pyflame lib v2 and for Flame 2025.\n11.30.22 - v1.3 - Fixed a few issues with currentText and clip/sequence vs children issue.\n04.19.22 - v1.2 - Updated for 2023 UI"
   },
   {
-    "Script Name": "Social Versions",
+    "Script Name": "social versions",
     "Script Version": "0.3.1",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
@@ -900,7 +900,7 @@
     "Description": "Creates social timelines based on other, selected timelines."
   },
   {
-    "Script Name": "SRT to XML",
+    "Script Name": "srt to xml",
     "Script Version": "3.7.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -910,7 +910,7 @@
     "Description": "Convert SRT files to XML files that can be imported into Flame through MediaHub"
   },
   {
-    "Script Name": "Surround Sound Channels Mute",
+    "Script Name": "surround sound channels mute",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -920,7 +920,7 @@
     "Description": "Script Name: Surround Sound Channels Mute\nScript Version: 1.0\nFlame Version: 2020\nWritten by: John Geehreng\nCreation Date: 06.06.20\nUpdate Date: 06.06.20\n\nScript Type: MediaPanel\n\nDescription:\n\nMutes audio tracks 1-5 on all selected clips/sequences."
   },
   {
-    "Script Name": "Surround Sound Channels Unmute",
+    "Script Name": "surround sound channels unmute",
     "Script Version": "1.0",
     "Flame Version": "2020",
     "Maximum Flame Version": "Latest",
@@ -930,7 +930,7 @@
     "Description": "Script Name: Surround Sound Channels Unmute\nScript Version: 1.0\nFlame Version: 2020\nWritten by: John Geehreng\nCreation Date: 06.06.20\nUpdate Date: 06.06.20\n\nScript Type: MediaPanel\n\nDescription:\n\nUnmute audio tracks 1-5"
   },
   {
-    "Script Name": "Tidy Nodes",
+    "Script Name": "tidy nodes",
     "Script Version": "2.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -940,7 +940,7 @@
     "Description": "Align, distribute, or both (aka tidy) nodes in the Action or Batch schematic."
   },
   {
-    "Script Name": "Toggle TimelineFX",
+    "Script Name": "toggle timeline fx",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
@@ -950,7 +950,7 @@
     "Description": "Toggle TimelineFX on selected sequences between On & Off."
   },
   {
-    "Script Name": "Uber Save",
+    "Script Name": "uber save",
     "Script Version": "4.9.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -960,7 +960,7 @@
     "Description": "Save/Save Iterate batch group iteration and batch setup file to custom path in one click."
   },
   {
-    "Script Name": "Uber Slate Maker",
+    "Script Name": "uber slate maker",
     "Script Version": "1.3.1",
     "Flame Version": "2026",
     "Maximum Flame Version": "Latest",
@@ -970,7 +970,7 @@
     "Description": "Create and update slates from CSV file data using Type Node templates."
   },
   {
-    "Script Name": "BB Archiver UI",
+    "Script Name": "uc bb archiver ui",
     "Script Version": "1.8.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
@@ -990,7 +990,7 @@
     "Description": "A simple script for starting and stopping UltraGrid quickly."
   },
   {
-    "Script Name": "User Batch Setups",
+    "Script Name": "user batch setups",
     "Script Version": "1.8.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
