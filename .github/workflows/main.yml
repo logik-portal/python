@@ -1,0 +1,33 @@
+name: Trigger JSON Update Workflow
+
+on:
+  push:
+    branches:
+      - main  # Change to your default branch name if different
+
+# Repository configuration - easily changeable constants
+env:
+  REPO_B_OWNER: "logik-portal"
+  REPO_B_NAME: "utils"
+  REPO_A_OWNER: "logik-portal"
+  REPO_A_NAME: "python"
+
+jobs:
+  trigger-json-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger workflow in JSON Update
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.JSON_UPDATE_PAT }}  # Personal Access Token with repo access to JSON Update
+          repository: ${{ env.REPO_B_OWNER }}/${{ env.REPO_B_NAME }}
+          event-type: build-json
+          client-payload: |
+            {
+              "repo_a_owner": "${{ env.REPO_A_OWNER }}",
+              "repo_a_name": "${{ env.REPO_A_NAME }}",
+              "triggered_by": "${{ github.actor }}",
+              "commit_sha": "${{ github.sha }}",
+              "ref": "${{ github.ref }}",
+              "branch": "${{ github.ref_name }}"
+            }
