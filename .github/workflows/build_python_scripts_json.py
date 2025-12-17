@@ -1,8 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
-GitHub Repository Metadata Extractor
-====================================
+Script Name: Build Python Scripts JSON
+Script Version: 1.0.0
+Written by: Michael Vaglienty
+Creation Date: 12.17.25
+Update Date: 12.17.25
+
+Script Type: GitHub Actions
+
+Description:
+
+    Extracts metadata from all Python scripts in the repository by parsing their docstrings
+    and creates a JSON file (python_scripts.json) containing script information.
+
+    Output file is written as 'python_scripts.json' in the current working directory.
+
+URL:
+    https://github.com/logik-portal/python
+
+To install:
+
+    This script is automatically executed by GitHub Actions workflow.
+    No manual installation required.
+
+Updates:
+
+    v1.0.0 12.17.25
+        - Initial release.
 """
 
 import json
