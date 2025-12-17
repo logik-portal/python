@@ -14,6 +14,8 @@ env:
 jobs:
   build-json:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout python repository
         uses: actions/checkout@v3
@@ -39,5 +41,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git remote set-url origin https://x-access-token:${{ secrets.JSON_PAT }}@github.com/${{ github.repository }}
           git add python_scripts.json
           git diff --staged --quiet || (git commit -m "Auto-update python_scripts.json [skip ci]" && git push)
