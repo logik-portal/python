@@ -377,10 +377,60 @@ def extract_field_from_docstring_with_default(docstring_content, field_pattern, 
     return default
 
 
+def sanitize_for_json(text):
+    """
+    Sanitize text to be safe for JSON encoding.
+    Removes or escapes characters that could cause JSON encoding issues.
+
+    Args
+    ----
+    text (str):
+        The text to sanitize
+
+    Returns
+    -------
+    str
+        Sanitized text safe for JSON encoding
+    """
+    if text is None or text == 'unknown':
+        return 'unknown'
+
+    # Remove null bytes and other control characters (except newline, tab, carriage return)
+    # Keep newlines (\n), tabs (\t), and carriage returns (\r) as they're valid in JSON strings
+    # Remove other control characters (0x00-0x1F except \n, \t, \r)
+
+    # Replace null bytes
+    text = text.replace('\x00', '')
+
+    # Remove other control characters except \n, \t, \r
+    cleaned = []
+    for char in text:
+        code = ord(char)
+        # Keep printable characters, newline, tab, carriage return
+        if code >= 32 or char in '\n\t\r':
+            cleaned.append(char)
+        # Replace other control characters with space
+        elif code < 32:
+            cleaned.append(' ')
+        else:
+            cleaned.append(char)
+
+    text = ''.join(cleaned)
+
+    # Ensure valid UTF-8 encoding
+    try:
+        text = text.encode('utf-8', errors='replace').decode('utf-8')
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        # If encoding fails, replace problematic characters
+        text = text.encode('utf-8', errors='ignore').decode('utf-8')
+
+    return text
+
+
 def extract_description_from_docstring(docstring_content):
     """
-    Extract the description section from Python docstring content.
-    Description typically comes after "Description:" marker.
+    Extract the entire docstring as the description.
+    The full docstring content is used as the description.
 
     Args
     ----
@@ -390,32 +440,13 @@ def extract_description_from_docstring(docstring_content):
     Returns
     -------
     str
-        The description text, or the full docstring if no Description marker found
+        The full docstring content, sanitized for JSON
     """
-
     if docstring_content is None or docstring_content == 'unknown':
         return 'unknown'
 
-    # Try to find Description: marker
-    desc_pattern = re.compile(
-        r'Description[:\s]*\n(.*?)(?=\n(?:Menus|To Install|URL|Updates|$))',
-        re.IGNORECASE | re.DOTALL | re.MULTILINE
-    )
-
-    match = desc_pattern.search(docstring_content)
-    if match:
-        description = match.group(1).strip()
-        # Clean up leading/trailing whitespace from each line
-        lines = [line.strip() for line in description.split('\n')]
-        # Remove empty lines at start and end
-        while lines and not lines[0]:
-            lines.pop(0)
-        while lines and not lines[-1]:
-            lines.pop()
-        return '\n'.join(lines) if lines else 'unknown'
-
-    # If no Description marker, return the full docstring
-    return docstring_content
+    # Return the entire docstring, sanitized for JSON
+    return sanitize_for_json(docstring_content)
 
 
 def parse_docstring_metadata(docstring_content, folder_name):
