@@ -1,5 +1,5 @@
-'''
-Script Name: invert timewarps
+"""
+Script Name: Invert Timewarps
 Script Version: 1.1.1
 Flame Version: 2026.1
 Written by: John Geehreng
@@ -18,7 +18,7 @@ Updates:
 08.07.25 - v1.1.1 - Added the unique names bit
 08.03.25 - v1.1.0 - Work for Speed based timewarps now too
 08.03.25 - v1.0.0 - Initial Release
-'''
+"""
 
 #-------------------------------------#
 # Imports
@@ -114,7 +114,7 @@ def invert_time_warp(selection):
 
 #--------------------------------
 # Scopes
-    
+
 def scope_batch_tw_node(selection):
 
     for item in selection:
