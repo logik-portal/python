@@ -1,6 +1,6 @@
 """
-Script Name: bb_archiver_ui
-Script Version: 1.8
+Script Name: BB Archiver UI
+Script Version: 1.8.0
 Flame Version: 2023.2
 Written by: John Geehreng
 Creation Date: 11.17.22
