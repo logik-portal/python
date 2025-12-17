@@ -92,7 +92,7 @@ Updates:
 import os
 
 import flame
-from lib.pyflame_lib_Add_GMask import *
+from lib.pyflame_lib_add_gmask import *
 
 #-------------------------------------
 # [Constants]
