@@ -41,9 +41,9 @@ import re
 import subprocess
 import platform
 
-SCRIPT_NAME = 'BB Archiving UI'
+SCRIPT_NAME = 'BB Archiver UI'
 SCRIPT_PATH = '/opt/Autodesk/shared/python/bb_archiver_ui'
-SCRIPT_VERSION = 'v1.8'
+SCRIPT_VERSION = '1.8.0'
 
 #-------------------------------------#
 # Main Script
