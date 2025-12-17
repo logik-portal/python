@@ -20,14 +20,11 @@
 
 """
 Script Name: Logik Portal
-Script Version: 6.5.1
-Flame Version: 2023.2
+Script Version: 7.0.0
+Flame Version: 2025
 Written by: Michael Vaglienty
-Crying Croc Design by: Enid Dalkoff
 Creation Date: 10.31.20
-Update Date: 10.20.25
-
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+Update Date: 12.16.25
 
 Script Type: Flame Main Menu
 
@@ -44,9 +41,16 @@ Menu:
 
 To install:
 
-    Copy script folder into /opt/Autodesk/shared/python
+    Copy script into /opt/Autodesk/shared/python/logik_portal
 
 Updates:
+
+    v7.0.0 12.16.25
+        - Updated to PyFlameLib v5.0.0.
+        - Removed PySide2 support.
+        - Matchboxes are now pulled from GitHub repository instead of FTP server.
+        - Python scripts are now pulled from GitHub repository instead of FTP server.
+        - Fixed issue with python scripts not showing up in locally installed scripts list if they did not have a properly formatted header docstring.
 
     v6.5.1 10.20.25
         - Fixed issues with inference copyright window.
@@ -220,119 +224,101 @@ Updates:
         - Fixed problems with script running on Flame with extra .x in Flame version.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
-
+# ==============================================================================
 import os
 import re
+import html
+import json
 import shutil
+import base64
 import tarfile
+import zipfile
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 from ftplib import FTP
-from subprocess import PIPE, Popen, CalledProcessError
-from typing import Union
+from pathlib import Path
+from subprocess import PIPE, Popen
+from typing import Optional
+import ast
+import sys
 
 import flame
 from lib.pyflame_lib_logik_portal import *
 
-# Try to import PySide6, otherwise import PySide2
-try:
-    from PySide6 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide2 import QtCore, QtGui, QtWidgets
-
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Logik Portal'
-SCRIPT_VERSION = 'v6.5.1'
+SCRIPT_VERSION = 'v7.0.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 LOGIK_FTP = '45.79.19.175'
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
-class LogikPortal():
+class LogikPortal:
 
     def __init__(self, selection):
 
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
 
-        # Check script path
-        if not self.check_script_path():
+        # Check script path, if path is incorrect, stop script.
+        if not pyflame.verify_script_install():
             return
 
         # Get version of flame
         self.flame_full_version = flame.get_version()
         self.flame_version = pyflame.get_flame_version()
 
-        # Set Autodesk python scripts path
+        # Set Autodesk python scripts path for either Flame or Flare
         self.autodesk_scripts_path = f'/opt/Autodesk/flame_{self.flame_full_version}/python_utilities/scripts'
         if not os.path.isdir(self.autodesk_scripts_path):
             self.autodesk_scripts_path = f'/opt/Autodesk/flare_{self.flame_full_version}/python_utilities/scripts'
-        #print('autodesk_scripts_path:', self.autodesk_scripts_path)
 
         # Load config file
         self.settings = self.load_config()
 
-        # Get user
-        self.flame_current_user = flame.users.current_user.name
-
-        # Create temp folder
+        # Create temp folders
         self.temp_folder = os.path.join(SCRIPT_PATH, 'temp')
-        if not os.path.isdir(self.temp_folder):
-            try:
-                os.makedirs(self.temp_folder)
-            except:
-                PyFlameMessageWindow(
-                    message=f'{SCRIPT_NAME}: Script needs full permissions to script folder.\n\nIn shell/terminal type:\n\nchmod 777 /opt/Autodesk/shared/python/logik_portal',
-                    type=MessageType.ERROR,
-                )
-                return
+        self.temp_matchbox_folder = os.path.join(self.temp_folder, 'matchbox')
 
-        # Check internet connection to ftp
-        try:
-            self.ftp_download_connect()
-        except:
-            PyFlameMessageWindow(
-                message="Can't connect to Logik Portal.\nCheck internet connection and try again.",
-                type=MessageType.ERROR,
-            )
+        # Create temp folders
+        temp_folders_created = self.create_temp_folders()
+        if not temp_folders_created:
+            return
+
+        # Check internet connection
+        internet_connection_check = self.check_internet_connection()
+        if not internet_connection_check:
             return
 
         #  Init variables
-        self.ftp_script_list = []
         self.installed_script_dict = {}
         self.file_description = ''
         self.tar_path = ''
         self.tar_file_name = ''
         self.batch_setups_xml_path = ''
-        self.python_scripts_xml_path = ''
-        self.sudo_password = ''
         self.updates = ''
 
+        # Matchbox JSON Path
+        self.matchbox_json_path = os.path.join(self.temp_folder, 'matchbox_collection.json')
+        self.python_scripts_json_path = os.path.join(self.temp_folder, 'python_scripts.json')
+        self.download_github_jsons()
+
+        # Open main window
         self.main_window()
 
-        self.update_installed_scripts_tree()
-
         self.download_xmls()
-
-        self.update_matchbox_tree()
         self.update_batch_setups_tree()
         self.update_inference_node_tree()
-        self.update_logik_portal_scripts_tree()
-
         self.check_batch_flame_version()
-
-        #self.check_script_flame_version(self.portal_scripts_tree, 0)
         self.check_script_flame_version(self.portal_scripts_tree)
-
-        # Go to last used tab
-        self.window.go_to_tab(self.settings.last_tab)
 
         # Get updates file from FTP
         self.get_updates()
@@ -340,27 +326,10 @@ class LogikPortal():
         # Close ftp connection
         self.ftp.quit()
 
-        pyflame.print('Welcome To The Logik Portal.', text_color=TextColor.GREEN)
+        # Go to last used tab
+        self.tabs.set_current_tab(self.settings.last_tab)
 
-    def check_script_path(self) -> bool:
-        """
-        Check Script Path
-        =================
-
-        Check if script is installed in the correct location.
-
-        Returns:
-        --------
-            bool: True if script is installed in correct location, False if not.
-        """
-
-        if os.path.dirname(os.path.abspath(__file__)) != SCRIPT_PATH:
-            PyFlameMessageWindow(
-                message=f'Script path is incorrect. Please reinstall script.\n\nScript path should be:\n\n{SCRIPT_PATH}',
-                type=MessageType.ERROR,
-                )
-            return False
-        return True
+        pyflame.print('Welcome To The Logik Portal.', text_color=TextColor.BLUE)
 
     def load_config(self) -> PyFlameConfig:
         """
@@ -376,57 +345,76 @@ class LogikPortal():
             PyFlameConfig: PyFlameConfig object with config values.
         """
 
-        # Set install path for local python scripts
-        if float(self.flame_version) >= 2023.2:
-            install_local_path = self.autodesk_scripts_path
-        else:
-            install_local_path = '/opt/Autodesk'
-        #print('install_local_path:', install_local_path)
-
         settings = PyFlameConfig(
             config_values={
                 'python_submit_all_files': False,
                 'matchbox_path': f'/opt/Autodesk/presets/{self.flame_full_version}/matchbox/shaders',
+                'matchbox_submit_path': f'/opt/Autodesk/presets/{self.flame_full_version}/matchbox/shaders',
                 'batch_setup_download_path': '/opt/Autodesk',
                 'batch_submit_path': '/opt/Autodesk',
                 'script_submit_path': '/opt/Autodesk',
-                'script_install_local_path': install_local_path,
+                'script_install_local_path': self.autodesk_scripts_path,
                 'script_install_path': '/opt/Autodesk/shared/python',
                 'open_batch': False,
                 'inference_node_download_path': '/opt/Autodesk',
                 'inference_node_submit_path': '/opt/Autodesk',
                 'inference_node_add_to_batch': True,
-                'username': '',
-                'password': '',
                 'last_tab': 0,
                 }
             )
 
         return settings
 
-    def disclaimer(self) -> None:
+    def create_temp_folders(self) -> bool:
         """
-        Disclaimer
-        ==========
+        Create temp folders
+        ===================
 
-        Read disclaimer from text file.
+        Create temp folders for the script.
 
-        Disclaimer is printed to terminal when script is run and also shown when downloading inference nodes.
-
-        Returns:
-        --------
-            str:
-                Disclaimer text.
+        Returns
+        -------
+            bool:
+                True if temp folders were created successfully, False otherwise.
         """
 
-        # Open the text file in read mode
-        with open(os.path.join(SCRIPT_PATH, 'assets', 'inference_node_disclaimer.txt'), "r") as file:
-            # Read the contents of the file
-            return file.read()
+        # Remove temp folder if it exists and create new one
+        try:
+            if os.path.exists(self.temp_folder):
+                shutil.rmtree(self.temp_folder)
+            os.makedirs(self.temp_matchbox_folder)
+            return True
+        except:
+            PyFlameMessageWindow(
+                message=f'{SCRIPT_NAME}: Script needs full permissions to script folder.\n\nIn shell/terminal type:\n\nchmod 777 /opt/Autodesk/shared/python/logik_portal',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return False
 
-    #-------------------------------------
+    def check_internet_connection(self):
+        """
+        Check internet connection
+        ========================
+
+        Check internet connection to ftp.
+        """
+
+        # Check internet connection to ftp
+        try:
+            self.ftp_download_connect()
+            return True
+        except:
+            PyFlameMessageWindow(
+                message="Can't connect to Logik Portal.\nCheck internet connection and try again.",
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return False
+
+    # ==============================================================================
     # [FTP]
-    #-------------------------------------
+    # ==============================================================================
 
     def ftp_download_connect(self):
 
@@ -434,7 +422,7 @@ class LogikPortal():
         self.ftp = FTP(f'{LOGIK_FTP}')
         self.ftp.login('logik_portal_download', 'L0gikD0wnL0ad#20')
 
-        pyflame.print('Connected To Logik Portal.', text_color=TextColor.GREEN)
+        pyflame.print('Connected To Logik Portal.', text_color=TextColor.BLUE)
 
     def ftp_upload_connect(self):
 
@@ -450,453 +438,657 @@ class LogikPortal():
 
         pyflame.print('Disconnected From Logik Portal.', text_color=TextColor.GREEN)
 
-    #-------------------------------------
+    # ==============================================================================
+    # [GitHub]
+    # ==============================================================================
+
+    def download_github_folder(self, folder_name: str, repo_name: str, branch: str='main', destination: str=None) -> str:
+        """
+        Download a specific folder from a GitHub repository using the github API.
+        Only downloads the requested folder, not the entire repository.
+
+        Args
+        ----
+            folder_name (str):
+                Name of the folder to download from GitHub repository
+
+            repo_name (str):
+                GitHub repository name
+                (Example: 'matchbox')
+
+            branch (str):
+                GitHub branch name
+                (Default: main)
+
+            destination (str, optional):
+                Path to destination directory. If None, the folder will be downloaded to the temp folder.
+                (Default: None)
+
+        Returns
+        -------
+            str:
+                Path to destination folder
+        """
+
+        def get_github_api_url(repo_name: str, endpoint: str) -> str:
+            """
+            Construct a GitHub API URL.
+
+            Args
+            ----
+                endpoint (str):
+                    GitHub API endpoint
+
+            Returns
+            -------
+                str:
+                    GitHub API URL
+            """
+
+            return f'https://api.github.com/repos/logik-portal/{repo_name}/{endpoint}'
+
+        def make_api_request(url: str) -> dict:
+            """
+            Make a request to the GitHub API and return JSON response.
+
+            Args
+            ----
+                url (str):
+                    GitHub API URL
+
+            Returns
+            -------
+                dict:
+                    JSON response from the GitHub API
+            """
+
+            try:
+                request = urllib.request.Request(url)
+                # Add a User-Agent header (GitHub API requires this)
+                request.add_header('User-Agent', 'Python-GitHub-Folder-Downloader')
+
+                with urllib.request.urlopen(request) as response:
+                    return json.loads(response.read().decode())
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    raise FileNotFoundError(f'Resource not found: {url}')
+                raise Exception(f'GitHub API error: {e.code} - {e.reason}')
+            except urllib.error.URLError as e:
+                raise Exception(f'Network error: {e}')
+
+        def get_branch_sha(repo_name: str, branch: str) -> str:
+            """
+            Get the SHA of the specified branch.
+
+            Args
+            ----
+                repo_name (str):
+                    Name of Gihub repository
+
+                branch (str):
+                    GitHub branch name
+
+            Returns
+            -------
+                str:
+                    SHA of the specified branch
+            """
+
+            url = get_github_api_url(repo_name, endpoint=f'branches/{branch}')
+            data = make_api_request(url)
+
+            return data['commit']['sha']
+
+        def get_folder_tree(folder_name: str, repo_name: str, sha: str) -> list:
+            """
+            Get the tree for a specific folder recursively.
+
+            Args
+            ----
+                folder_name (str):
+                    Name of the folder to download from GitHub repository
+
+                repo_name (str):
+                    Name of Gihub repository
+
+                sha (str):
+                    Branch SHA
+
+            Returns
+            -------
+                list:
+                    Files in specified Gtihub folder
+            """
+
+            # First, get the root tree
+            url = get_github_api_url(repo_name, endpoint=f'git/trees/{sha}?recursive=1')
+            tree_data = make_api_request(url)
+
+            # Filter for files in the requested folder
+            folder_path = folder_name
+            folder_files = []
+
+            for item in tree_data.get('tree', []):
+                path = item['path']
+                # Check if the path starts with the folder name (with or without trailing slash)
+                if path.startswith(folder_path + '/') or path == folder_path:
+                    folder_files.append(item)
+
+            if not folder_files:
+                # Try to get list of available folders
+                available_folders = set()
+                for item in tree_data.get('tree', []):
+                    path = item['path']
+                    if item['type'] == 'tree' and '/' not in path:
+                        available_folders.add(path)
+
+                if available_folders:
+                    print(f'\nError: Folder: {folder_name} not found in repository.')
+                    print(f'\nAvailable folders ({len(available_folders)} total):')
+                    for folder in sorted(available_folders)[:30]:  # Show first 30
+                        print(f'  - {folder}')
+                    if len(available_folders) > 30:
+                        print(f'  ... and {len(available_folders) - 30} more')
+
+                raise FileNotFoundError(f'Folder: {folder_name} not found in repository')
+
+            return folder_files
+
+        def download_files():
+            """
+            Download files
+            ==============
+
+            Download files from GitHub repository and update progress window.
+            """
+
+            for i, file_item in enumerate(files_to_download, 1):
+
+                progress_window.processing_task = i
+
+                file_path = file_item['path']
+                # Remove the folder prefix from the path for local structure
+                relative_path = file_path[len(folder_name) + 1:] if file_path.startswith(folder_name + '/') else file_path
+
+                local_file_path = os.path.join(destination_folder, relative_path)
+
+                # Create subdirectories if needed
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+                # Get the file content URL
+                file_url = file_item['url']
+                file_data = make_api_request(file_url)
+
+                # Download the file (GitHub API returns base64 encoded content)
+                content = base64.b64decode(file_data['content'])
+
+                # Write the file
+                with open(local_file_path, 'wb') as f:
+                    f.write(content)
+
+                print(f"  [{i}/{len(files_to_download)}] {relative_path}")
+
+            progress_window.tasks_complete = True
+            progress_window.title = 'Download Completed'
+
+        if destination is None:
+            destination = self.temp_folder
+
+        # Destination folder path
+        destination_folder = os.path.join(destination, folder_name)
+        print('Destination folder:', destination_folder, '\n')
+
+        # Remove existing folder if it exists
+        if os.path.isdir(destination_folder):
+            print(f'Removing existing folder: {destination_folder}')
+            shutil.rmtree(destination_folder)
+
+        print(f'Fetching folder information for: {folder_name}')
+        print(f'Repository: logik-portal/{repo_name} (branch: {branch})')
+
+        try:
+            # Get the branch SHA
+            print('Getting branch information...')
+            sha = get_branch_sha(repo_name, branch)
+
+            # Get the folder tree
+            print(f'Finding files in folder:{folder_name}...')
+            folder_files = get_folder_tree(folder_name, repo_name, sha)
+
+            # Filter to only files (not subdirectories in the tree listing)
+            files_to_download = [f for f in folder_files if f['type'] == 'blob']
+
+            if not files_to_download:
+                raise FileNotFoundError(f'No files found in folder: {folder_name}')
+
+            print(f'Found {len(files_to_download)} file(s) to download\n')
+
+            # Create the destination folder
+            os.makedirs(destination_folder, exist_ok=True)
+
+            # Clean up script name for progress window
+            script_to_download = folder_name.replace('_', ' ')
+
+            # Open progress window
+            progress_window = PyFlameProgressWindow(
+                task='Downloading Files',
+                total_tasks=len(files_to_download),
+                task_progress_message='Downloading Script:\n\n{script_to_download}\n\n{{task}}: [{{processing_task}} of {{total_tasks}}]'.format(script_to_download=script_to_download),
+                title='Downloading Files...',
+                parent=self.window,
+                )
+
+            # Download files from GitHub repository and update progress window
+            download_files()
+
+            print(f'\nSuccessfully downloaded: {folder_name} to: {destination_folder}')
+            print(f'Total files: {len(files_to_download)}\n')
+
+            return destination_folder
+
+        except Exception as e:
+            # Clean up partial download on error
+            if os.path.isdir(destination_folder):
+                shutil.rmtree(destination_folder)
+            raise
+
+    # ==============================================================================
     # [Main Window]
-    #-------------------------------------
+    # ==============================================================================
 
     def main_window(self):
 
-        # Create main window
-        self.window = PyFlameTabWindow(
+        def close_window():
+
+            # Clean up temp folder
+            if os.path.exists(self.temp_folder):
+                shutil.rmtree(self.temp_folder)
+
+            # Close main window
+            self.window.close()
+
+        # Create Main Window
+        self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=self.done,
+            escape_pressed=close_window,
+            grid_layout_columns=1,
+            grid_layout_rows=1,
+            parent=None,
+            )
+
+        # Create Tab Widget
+        self.tabs = PyFlameTabWidget(
+            tab_names=[
+                'Python Scripts',
+                'Matchbox',
+                'Batch Setups',
+                'Inference Nodes',
+                ],
             grid_layout_columns=7,
-            grid_layout_rows=18,
+            grid_layout_rows=20,
             grid_layout_adjust_column_widths={
-                1: 200,
                 3: 50,
-                5: 200,
                 }
             )
 
-        # Add tabs to main window
-        self.tab1 = self.window.add_tab('Python Scripts')
-        self.tab2 = self.window.add_tab('Matchbox')
-        self.tab3 = self.window.add_tab('Batch Setups')
-        self.tab4 = self.window.add_tab('Inference Nodes')
-
-        # Load Tab UI's
+        # Load Tabs
         self.python_scripts_tab()
         self.matchbox_tab()
         self.batch_setups_tab()
         self.inference_nodes_tab()
 
+        # Add Tab Widget to Main Window
+        self.window.grid_layout.addWidget(self.tabs, 0, 0)
+
+        self.window.center_window()
+
     def python_scripts_tab(self):
 
-        def login_check() -> None:
+        def update_logik_portal_scripts_tree(search: str=None):
+            """
+            Update Logik Portal Scripts Tree
+            ================================
 
-            def check_login(username, password):
+            Add Logik Portal python scripts to Portal Python Scripts tree.
 
-                # Try connecting to ftp
-                try:
-                    ftp = FTP(f'{LOGIK_FTP}')
-                    ftp.login(username, password)
-                    ftp.cwd('/')
+            Get script info from xml file and add to tree list. If a newer version of the script exists on the ftp, highlight the script entry.
+            If the script requires a newer version of flame, grey out the script entry.
 
-                    self.settings.save_config(
-                        config_values={
-                            'username': username,
-                            'password': password
-                            }
-                        )
+            Args
+            ----
+                search (str, optional):
+                    The search string to filter the scripts in the tree. If no search string is provided, all scripts are displayed.
+                    (Default: None)
+            """
 
-                    submit_script()
-                except:
-                    PyFlameMessageWindow(
-                        message='Login incorrect, try again.',
-                        type=MessageType.ERROR,
-                        )
-                    return
+            def add_script(python_script) -> None:
+                """
+                Add Script
+                ==========
 
-            if self.settings.username and self.settings.password:
-                submit_script()
+                Add script to Portal Python Scripts tree.
+                """
+
+                # Get script info
+                script_name = python_script.get('Script Name')
+                script_version = python_script.get('Script Version')
+                flame_min_version = python_script.get('Flame Version')
+                flame_max_version = python_script.get('Maximum Flame Version')
+                date = python_script.get('Update Date')
+                if date == 'unknown':
+                    date = python_script.get('Creation Date')
+                developer_name = python_script.get('Author')
+
+                self.portal_scripts_tree.add_item_with_columns([script_name, script_version, flame_min_version, flame_max_version, date, developer_name])
+
+            def check_script_version_compatibility():
+                """
+                Check Script Version Compatibility
+                ==================================
+
+                Check if script version is compatible with current flame version.
+                If script is not compatible, grey out the script entry in tree widget.
+
+                Args
+                ----
+                    item (QTreeWidgetItem):
+                        The item to check the version compatibility of.
+                """
+
+                root = self.portal_scripts_tree.invisibleRootItem()
+                for i in range(root.childCount()):
+                    item = root.child(i)
+
+                    if item:
+                        script_name = item.text(0)
+                        script_version = item.text(1)
+
+                        # Get value for flame_max_version and flame_min_version
+                        flame_max_version = item.text(3)
+                        if flame_max_version == 'Latest':
+                            flame_max_version = str(self.flame_version)
+                        flame_min_version = item.text(2)
+
+                        if len(flame_max_version.split('.')) > 2:
+                            flame_max_version = flame_max_version.split('.')[0] + '.' + flame_max_version.split('.')[1]
+                        if len(flame_min_version.split('.')) > 2:
+                            flame_min_version = flame_min_version.split('.')[0] + '.' + flame_min_version.split('.')[1]
+                        flame_max_version = flame_max_version.split('.')[0] + '.' + flame_max_version.split('.')[1]
+
+                        # Check script flame version compatibility, grey out script entry if not compatible.
+                        if flame_max_version != self.flame_version:
+                            # Do something if values can be converted to floats
+                            if float(flame_min_version) and float(flame_max_version):
+                                #If newer version of script exists on ftp, highlight script entry
+                                if script_name in self.installed_script_dict:
+                                    installed_script_version = self.installed_script_dict.get(script_name)
+                                    try:
+                                        if float(script_version) > float(installed_script_version):
+                                            self.portal_scripts_tree.color_item(item, color='#ffffff')
+                                    except:
+                                        pass
+
+                                # if script requires newer version of flame grey out script entry
+                                if float(self.flame_version) < float(flame_min_version):
+                                    self.portal_scripts_tree.color_item(item, color='#555555')
+
+                                # If scripts max_flame_version if not equal to the current flame version or 'Latest', grey out the script entry.
+                                if flame_max_version != 'Latest':
+                                    if float(flame_max_version) < float(self.flame_version):
+                                        self.portal_scripts_tree.color_item(item, color='#555555')
+
+            pyflame.print('Updating Python Scripts List...', underline=True, new_line=False)
+
+            # Clear Portal Scripts tree
+            self.portal_scripts_tree.clear()
+
+            # Read in JSON
+            with open(self.python_scripts_json_path, 'r', encoding='utf-8') as f:
+                python_scripts = json.load(f)
+
+            # Add items to Python Scripts tree from JSON file
+            if search:
+                for python_script in python_scripts:
+                    script_name = python_script.get('Script Name')
+                    if search.lower() in script_name.lower():
+                        add_script(python_script)
             else:
-                password_window = PyFlamePasswordWindow(
-                    message='Logik Portal login required to submit a python script',
-                    title='Python Submit Login',
-                    user_name_prompt=True,
-                    )
-                username, password = password_window.username_password()
-                if not username or not password:
-                    return
+                for python_script in python_scripts:
+                    script_name = python_script.get('Script Name')
+                    add_script(python_script)
 
-                if username and password:
-                    check_login(username, password)
+            # Check script version compatibility for all items in portal scripts tree
+            check_script_version_compatibility()
 
-        def submit_script() -> None:
+            # Select top item in Portal Scripts tree
+            self.portal_scripts_tree.setCurrentItem(self.portal_scripts_tree.topLevelItem(0))
 
-            def upload_script():
+            # Get selected python script description if python script is selected.
+            try:
+                get_script_description()
+            except:
+                print('Unable to get Python Script description. No Python Script selected\n')
 
-                def upload():
+            # Set width of Portal Scripts tree headers
+            self.portal_scripts_tree.resizeColumnToContents(0)
+            self.portal_scripts_tree.resizeColumnToContents(4)
+            self.portal_scripts_tree.set_fixed_column_headers()
 
-                    def save_config():
-                        """
-                        Save Config
-                        ===========
+            pyflame.print('Python Scripts List Updated', text_color=TextColor.GREEN)
 
-                        Save path to config file
-                        """
+        def update_installed_scripts_tree(search: str=None):
+            """
+            Update Installed Scripts Tree
+            =============================
 
-                        self.settings.save_config(
-                            config_values={
-                                'script_submit_path': self.submit_script_path_entry.text(),
-                                'python_submit_all_files': self.all_files_button.isChecked(),
-                                }
-                            )
+            Update the installed scripts tree with the scripts found in the shared script path.
 
-                    def create_script_xml(self):
-                        """
-                        Create Script XML
-                        =================
+            Args
+            ----
+                search (str, optional):
+                    The search string to filter the scripts in the tree. If no search string is provided, all scripts are displayed.
+                    (Default: None)
+            """
 
-                        Create and save xml file for python script.
-                        """
+            def add_script():
+                """
+                Add Script
+                ==========
 
-                        description_text = self.submit_script_description_text_edit.toPlainText()
-                        description_text = description_text.replace("'", "\"")
-                        description_text = description_text.replace('&', '-')
+                Extract script metadata from docstring and add script to Installed Scripts tree.
+                """
 
-                        text = []
+                def extract_docstring(file_path: str) -> Optional[str]:
+                    """
+                    Extract Docstring
+                    =================
 
-                        text.insert(0, f"    <script name='{self.submit_script_name_field.text()}'>")
-                        text.insert(1, f"        <script_version>'{self.submit_script_version_entry.text()}'</script_version>")
-                        text.insert(2, f"        <flame_version>'{self.submit_script_flame_version_entry.text()}'</flame_version>")
-                        text.insert(3, f"        <date>'{self.submit_script_date_entry.text()}'</date>")
-                        text.insert(4, f"        <developer>'{self.submit_script_dev_name_entry.text()}'</developer>")
-                        text.insert(5, f"        <description>'{description_text}'</description>")
-                        text.insert(6, '    </script>')
+                    Extract the module-level docstring from a Python file.
 
-                        out_file = open(script_xml_path, 'w')
-                        for line in text:
-                            print(line, file=out_file)
-                        out_file.close()
+                    Args
+                    ----
+                        file_path: Path to the Python file
 
-                        print('--> Script xml created.\n')
+                    Returns
+                    -------
+                        The docstring as a string, or None if not found
+                    """
 
-                    def create_tar():
-                        """
-                        Create Tar
-                        ==========
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            source = f.read()
 
-                        Create tar file of python script file(s).
-                        """
+                        # Parse the AST to get the module docstring
+                        tree = ast.parse(source)
+                        if ast.get_docstring(tree):
+                            return ast.get_docstring(tree)
+                        return None
+                    except Exception as e:
+                        print(f"Error reading file {file_path}: {e}", file=sys.stderr)
+                        return None
 
-                        pyflame.print('Creating TAR File...')
+                def extract_metadata(docstring: str) -> Dict[str, str]:
+                    """
+                    Extract Metadata
+                    ================
 
-                        if self.all_files_button.isChecked():
-                            print('Upload All Files: True\n')
+                    Extract metadata fields from a docstring.
 
-                            # Loop through files in script folder avoiding hidden files and __pycache__ folder
-                            tar_file_list = ''
-                            skip = ('.', '__pycache__')
+                    Args
+                    ----
+                        docstring: The docstring text to parse
 
-                            for file in os.listdir(script_folder):
-                                if not any(file.startswith(prefix) for prefix in skip):
-                                    tar_file_list += ' ' + file
+                    Returns
+                    -------
+                        Dictionary with extracted metadata fields
+                    """
 
-                            print('tar_file_list:', tar_file_list)
-                            tar_file_list.strip()
+                    # Initialize result dictionary with empty strings
+                    metadata = {
+                        'Script Name': '',
+                        'Script Version': '',
+                        'Flame Version': '',
+                        'Written by': '',
+                        'Creation Date': '',
+                        'Update Date': ''
+                        }
 
-                            # Create tar command
-                            tar_command = f'tar -cvf {script_tar_path} {tar_file_list}'
+                    if not docstring:
+                        return None
 
-                        else:
-                            print('Upload All Files: False\n')
-                            tar_command = 'tar -cvf %s  %s' % (script_tar_path, script_name + '.py')
+                    # Split docstring into lines
+                    lines = docstring.split('\n')
 
-                        print('Adding files to tar:')
+                    # Pattern to match field names (case insensitive)
+                    # Format: "Field Name: value" or "Field Name:value"
+                    pattern = re.compile(r'^([^:]+):\s*(.+)$', re.IGNORECASE)
 
-                        os.chdir(script_folder)
-                        os.system(tar_command)
+                    for line in lines:
+                        line = line.strip()
+                        if not line:
+                            continue
 
-                        print('\n')
-                        pyflame.print(f'Python Script TAR File Created')
+                        match = pattern.match(line)
+                        if match:
+                            field_name = match.group(1).strip()
+                            field_value = match.group(2).strip()
 
-                    def upload_files():
-                        """
-                        Upload Files
-                        ============
+                            # Check each metadata field (case insensitive)
+                            field_name_lower = field_name.lower()
 
-                        Upload script and xml to ftp.
-                        """
+                            if field_name_lower == 'script name':
+                                metadata['Script Name'] = field_value
+                            elif field_name_lower == 'script version':
+                                metadata['Script Version'] = field_value
+                            elif field_name_lower == 'flame version':
+                                metadata['Flame Version'] = field_value
+                            elif field_name_lower == 'written by':
+                                metadata['Written by'] = field_value
+                            elif field_name_lower == 'creation date':
+                                metadata['Creation Date'] = field_value
+                            elif field_name_lower == 'update date':
+                                metadata['Update Date'] = field_value
 
-                        pyflame.print('Uploading Python Script...')
+                    # If Update Date is missing, use Creation Date
+                    if not metadata['Update Date'] and metadata['Creation Date']:
+                        metadata['Update Date'] = metadata['Creation Date']
 
-                        # Connect to ftp
-                        self.ftp = FTP(f'{LOGIK_FTP}')
-                        self.ftp.login(self.settings.username, self.settings.password)
-                        self.ftp.cwd('/Submit_Scripts')
+                    return metadata
 
-                        pyflame.print('Uploading Python Script...')
+                def date_flip(date):
+                    """
+                    Date Flip
+                    =========
 
-                        # Close window
-                        self.submit_script_window.close()
+                    Swap date from mm.dd.yy to yy.mm.dd for python scripts list sorting.
 
-                        # Upload tgz file to ftp
-                        self.upload_file(
-                            upload_type='Python Script',
-                            file_name=script_name,
-                            xml_path=script_xml_path,
-                            tgz_path=script_tar_path,
-                            )
+                    Args
+                    ----
+                        date:
+                            str: Date in mm.dd.yy format.
 
-                        # Bring back main window
-                        self.window.show()
+                    Returns
+                    -------
 
-                    # Upload script and xml to ftp
-                    script_xml_path = os.path.join(self.temp_folder, f'{self.submit_script_path_entry.text().rsplit("/", 1)[1][:-3]}.xml')
+                        str: Date flipped
+                    """
 
-                    save_config()
+                    date = date.split('.')
+                    date = date[2] + '.' + date[0] + '.' + date[1]
 
-                    create_script_xml(self)
+                    return date
 
-                    script_name = self.submit_script_path_entry.text().rsplit('/', 1)[1][:-3]
-                    script_path = self.submit_script_path_entry.text()
-                    script_folder = script_path.rsplit('/', 1)[0]
+                # Get script info
+                script_path = os.path.join(root, script)
+                docstring = extract_docstring(script_path)
+                metadata = extract_metadata(docstring)
 
-                    script_tar_path = os.path.join(self.temp_folder, script_name) + '.tgz'
+                script_name = script.replace('_', ' ')[:-3]
 
-                    create_tar()
+                if metadata:
+                    try:
+                        script_version = metadata['Script Version']
+                    except:
+                        script_version = ''
+                    try:
+                        flame_version = metadata['Flame Version']
+                    except:
+                        flame_version = ''
+                    try:
+                        script_dev = metadata['Written by']
+                    except:
+                        script_dev = ''
+                    try:
+                        script_date = metadata['Update Date']
+                        script_date = date_flip(script_date)
+                    except:
+                        script_date = ''
 
-                    upload_files()
-
-                # Check script path field
-                if not os.path.isfile(self.submit_script_path_entry.text()):
-                    PyFlameMessageWindow(
-                        message='Enter path to python script.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check script version field
-                elif not self.submit_script_version_entry.text():
-                    PyFlameMessageWindow(
-                        message='Enter script version.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check script version field for alpha characters
-                alpha = [n for n in self.submit_script_version_entry.text() if n.isalpha()]
-                if alpha:
-                    PyFlameMessageWindow(
-                        message='Script Version should be numbers only. Such as: 1.0.0',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check flame version field
-                if not self.submit_script_flame_version_entry.text():
-                    PyFlameMessageWindow(
-                        message='Enter minimum version of Flame needed to run script.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check flame version field for alpha characters
-                alpha = [n for n in self.submit_script_version_entry.text() if n.isalpha()]
-                if alpha:
-                    PyFlameMessageWindow(
-                        message='Flame Version should be numbers only. Such as: 2021.2.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check script date field
-                if not self.submit_script_date_entry.text():
-                    PyFlameMessageWindow(
-                        message='Enter date script was written or updated. Whichever is later.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check date field for proper formatting
-                if not re.search('^\\d{2}.\\d{2}.\\d{2}',self.submit_script_date_entry.text()):
-                    PyFlameMessageWindow(
-                        message='Script date should be entered in dd.mm.yy format.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                if not len(self.submit_script_date_entry.text()) == 8:
-                    PyFlameMessageWindow(
-                        message='Script date should be entered in dd.mm.yy format.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check script dev field
-                if not self.submit_script_dev_name_entry.text():
-                    PyFlameMessageWindow(
-                        message='Enter name of script author.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # Check script description field
-                elif not self.submit_script_description_text_edit.toPlainText():
-                    PyFlameMessageWindow(
-                        message='Enter description of script and any notes on working with script.',
-                        type=MessageType.ERROR,
-                        )
-                    return
-
-                # If script already exists on ftp confirm upload
-                elif self.submit_script_name_field.text() in self.ftp_script_list:
-                    if PyFlameMessageWindow(
-                        message='Script already exists on Logik Portal. Update?',
-                        type=MessageType.CONFIRM,
-                        ):
-                        upload()
                 else:
-                    upload()
+                    script_version = ''
+                    flame_version = ''
+                    script_dev = ''
+                    script_date = ''
 
-            def update_script_info():
-                """
-                Update Script Info
-                ==================
+                # Add script to tree
+                self.installed_scripts_tree.add_item_with_columns([script_name, script_version, flame_version, script_date, script_dev, script_path])
 
-                Clean submit window fields and get selected script info.
-                """
+                # Add script to dict of installed scripts
+                self.installed_script_dict.update({script_name : script_version})
 
-                # Clear submit fields
-                self.submit_script_version_entry.setText('')
-                self.submit_script_flame_version_entry.setText('')
-                self.submit_script_date_entry.setText('')
-                self.submit_script_dev_name_entry.setText('')
-                self.submit_script_description_text_edit.setPlainText('')
+            pyflame.print('Updating Installed Scripts List...', underline=True, new_line=False)
 
-                # Get selected script info
-                self.get_script_info()
+            # Clear installed scripts tree
+            self.installed_scripts_tree.clear()
 
-            def close_submit_window():
-                """
-                Close Submit Window
-                ===================
+            for root, dirs, files in os.walk(self.settings.script_install_path, followlinks=True):
+                if root[len(self.settings.script_install_path):].count(os.sep) < 2:
+                    for script in files:
+                        if script.endswith('.py'):
+                            if not script.startswith(('.', 'flame_widgets', 'pyflame_lib')):
 
-                Close submit window and bring back main window.
-                """
+                                # Get script name from .py file name
+                                script_name = script[:-3]
+                                script_name = script_name.replace('_', ' ')
 
-                # Close submit window
-                self.submit_script_window.close()
+                                # If search string is provided, filter scripts. Otherwise, add all scripts.
+                                if search:
+                                    if search.lower() in script_name.lower():
+                                        add_script()
+                                else:
+                                    add_script()
 
-                # Bring back main window
-                self.window.show()
+            # Set width of tree headers
+            self.installed_scripts_tree.resizeColumnToContents(0)
+            self.installed_scripts_tree.resizeColumnToContents(4)
+            self.installed_scripts_tree.resizeColumnToContents(5)
+            self.installed_scripts_tree.set_fixed_column_headers()
 
-            # Create submit window
-            self.submit_script_window = PyFlameWindow(
-                title='Submit Python Script',
-                return_pressed=upload_script,
-                grid_layout_columns=6,
-                grid_layout_rows=13,
-                )
+            # Select first item in tree
+            self.installed_scripts_tree.setCurrentItem(self.installed_scripts_tree.topLevelItem(0))
 
-            # Labels
-            self.submit_script_label = PyFlameLabel(
-                text='Logik Portal Python Script Submit',
-                style=Style.UNDERLINE,
-                )
-            self.submit_script_path_label = PyFlameLabel(
-                text='Script Path',
-                )
-            self.submit_script_name_label_01 = PyFlameLabel(
-                text='Script Name',
-                )
-            self.submit_script_version_label_01 = PyFlameLabel(
-                text='Script Version',
-                )
-            self.submit_script_flame_version_label_01 = PyFlameLabel(
-                text='Flame Version',
-                )
-            self.submit_script_date_label_01 = PyFlameLabel(
-                text='Date',
-                )
-            self.submit_script_dev_name_label_01 = PyFlameLabel(
-                text='Dev Name',
-                )
-            self.submit_script_description_label = PyFlameLabel(
-                text='Description',
-                )
-
-            # Entries
-            self.submit_script_name_field = PyFlameEntry(
-                text='',
-                )
-            self.submit_script_version_entry = PyFlameEntry(
-                text='',
-                )
-            self.submit_script_flame_version_entry = PyFlameEntry(
-                text='',
-                )
-            self.submit_script_date_entry = PyFlameEntry(
-                text='',
-                )
-            self.submit_script_dev_name_entry = PyFlameEntry(
-                text='',
-                )
-
-            # Entry File Browser
-            self.submit_script_path_entry = PyFlameEntryBrowser(
-                text=self.settings.script_submit_path,
-                connect=update_script_info,
-                browser_type=BrowserType.FILE,
-                browser_ext=['py'],
-                browser_title='Select Python File',
-                browser_window_to_hide=[self.window, self.submit_script_window],
-                )
-
-            # TextEdit
-            self.submit_script_description_text_edit = PyFlameTextEdit(
-                text=self.file_description,
-                read_only=False,
-                )
-
-            # Push Buttons
-            self.all_files_button = PyFlamePushButton(
-                text='All Files',
-                button_checked=self.settings.python_submit_all_files,
-                )
-
-            # Buttons
-            self.submit_script_upload_button = PyFlameButton(
-                text='Upload',
-                connect=upload_script,
-                color=Color.BLUE,
-                )
-            self.submit_script_cancel_button = PyFlameButton(
-                text='Cancel',
-                connect=close_submit_window,
-                )
-
-            #-------------------------------------
-            # [Widget Layout]
-            #-------------------------------------
-
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_label, 0, 0, 1, 6)
-
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_path_label, 1, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_name_label_01, 2, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_version_label_01, 3, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_flame_version_label_01, 4, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_date_label_01, 5, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_dev_name_label_01, 6, 0)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_description_label, 7, 0)
-
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_path_entry, 1, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_name_field, 2, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_version_entry, 3, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_flame_version_entry, 4, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_date_entry, 5, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_dev_name_entry, 6, 1, 1, 4)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_description_text_edit, 7, 1, 6, 4)
-
-            self.submit_script_window.grid_layout.addWidget(self.all_files_button, 2, 5)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_upload_button, 11, 5)
-            self.submit_script_window.grid_layout.addWidget(self.submit_script_cancel_button, 12, 5)
-
-            if self.submit_script_path_entry.text().endswith('.py'):
-                if os.path.isfile(self.submit_script_path_entry.text()):
-                    self.update_script_info()
+            pyflame.print('Installed Scripts List Updated', text_color=TextColor.GREEN)
 
         def install_local_script():
             """
@@ -924,23 +1116,24 @@ class LogikPortal():
                 title='Select Python File',
                 extension=['py'],
                 path=self.settings.script_install_local_path,
-                window_to_hide=[self.window]
-            )
+                window_to_hide=self.window
+                )
 
             if script_path:
-
                 save_config()
 
                 script_to_install = script_path.rsplit('/', 1)[1][:-3]
                 if PyFlameMessageWindow(
                     message=f'Install Python Script: {script_to_install.replace("_", " ")}',
-                    type=MessageType.CONFIRM
+                    message_type=MessageType.CONFIRM,
+                    parent=self.window,
                     ):
                     dest_folder = os.path.join(self.settings.script_install_path, script_to_install)
                     if os.path.isdir(dest_folder):
                         if not PyFlameMessageWindow(
                             message='Python script already exists. Overwrite?',
-                            type=MessageType.CONFIRM
+                            message_type=MessageType.CONFIRM,
+                            parent=self.window,
                             ):
                             pyflame.print('Python Script Not Installed')
                             return
@@ -954,15 +1147,16 @@ class LogikPortal():
                         except:
                             PyFlameMessageWindow(
                                 message='Could not create script folder.\n\nCheck path and permissions.',
-                                type=MessageType.ERROR,
-                            )
+                                message_type=MessageType.ERROR,
+                                parent=self.window,
+                                )
                             return
 
                     # Copy script to dest folder
                     shutil.copy(script_path, dest_folder)
 
                     # Refresh installed scripts tree list
-                    self.update_installed_scripts_tree()
+                    update_installed_scripts_tree()
 
                     # Refresh python hooks
                     flame.execute_shortcut('Rescan Python Hooks')
@@ -971,13 +1165,15 @@ class LogikPortal():
                     if os.path.isfile(os.path.join(dest_folder, script_to_install + '.py')):
                         PyFlameMessageWindow(
                             message=f'Python script installed: {script_to_install.replace("_", " ")}',
-                            type=MessageType.INFO,
-                        )
+                            message_type=MessageType.INFO,
+                            parent=self.window,
+                            )
                         return
                     PyFlameMessageWindow(
                         message=f'Python script not installed.',
-                        type=MessageType.ERROR,
-                    )
+                        message_type=MessageType.ERROR,
+                        parent=self.window,
+                        )
                     return
 
         def install_script() -> None:
@@ -985,76 +1181,10 @@ class LogikPortal():
             Install Script
             ==============
 
-            Get selected script info from selection and install script to shared script folder.
+            Get selected script info from selection and install script to script install path.
             """
 
-            def install_logik_portal_script() -> str:
-                """
-                Install Logik Portal Script
-                ===========================
-
-                Download selected python script from Logik Portal.
-
-                Returns:
-                --------
-                    (str): 'success' if script installed successfully, 'failed' if not, 'aborted' if user aborted install.
-                """
-
-                pyflame.print(f'Installing Logik Portal Script: {script_name}')
-
-                # Set source and destination paths
-                source_script_path = os.path.join('/Scripts', script_flame_version, script_name) + '.tgz'
-                #print('source_script_path: ', source_script_path)
-
-                # Set destination path
-                dest_script_path = os.path.join(self.settings.script_install_path, script_name, script_name) + '.tgz'
-                #print('dest_script_path: ', dest_script_path)
-
-                # Set destination folder
-                dest_folder = dest_script_path.rsplit('/', 1)[0]
-                #print('dest_folder:', dest_folder)
-
-                # Check if script already exists, if so prompt to overwrite, otherwise delete existing script folder
-                if os.path.isdir(dest_folder):
-                    if not PyFlameMessageWindow(
-                        message='Script Already Exists. Overwrite?',
-                        type=MessageType.CONFIRM,
-                        ):
-                        return False
-                    else:
-                        if 'logik_portal' in script_name:
-                            if not PyFlameMessageWindow(
-                                message='Installing the Logik Portal from within the Logik Portal will cause Flame to crash.\n\nSave work before continuing.\n\nAll will be fine after restarting Flame.\n\nContinue?',
-                                type=MessageType.CONFIRM,
-                                ):
-                                return False
-                        shutil.rmtree(dest_folder)
-
-                # Create new local folder for script
-                os.makedirs(dest_folder)
-
-                pyflame.print('Downloading Python Script From Logik Portal...')
-
-                # Download python script tgz file from ftp
-                self.download_file(
-                    download_type='Python Script',
-                    file_name=script_name,
-                    ftp_file_path=source_script_path,
-                    tgz_path=dest_script_path,
-                    )
-
-                # Uncompress tgz file
-                os.system(f'tar -xf {dest_script_path} -C {dest_folder}')
-
-                # Delete tgz file
-                os.remove(dest_script_path)
-
-                # Check if script is in correct path, if so install is complete, if not, install failed.
-                if os.path.isfile(dest_script_path[:-3] + 'py'):
-                    return True
-                return False
-
-            pyflame.print('Installing Python Script...')
+            pyflame.print('Installing Python Script...', underline=True, new_line=False)
 
             # Get selected script info from selection
             selected_script = self.portal_scripts_tree.selectedItems()
@@ -1069,26 +1199,40 @@ class LogikPortal():
             print('    Script Flame version:', script_flame_version)
             print('    Script Author:', script_author, '\n')
 
-            # Install script from Logik Portal
-            script_installed = install_logik_portal_script()
+            # Download python script from GitHub repository to temp python directory and return path to destination folder
+            temp_download_folder = self.download_github_folder(folder_name=script_name, repo_name="python")
+            print('Temp Download Folder: ', temp_download_folder)
 
-            # Refresh python hooks
-            flame.execute_shortcut('Rescan Python Hooks')
+            install_path = os.path.join(self.settings.script_install_path, script_name)
+            print('Install Path: ', install_path)
+
+            # Move script to python folder. overwrite if script already exists.
+            if os.path.exists(install_path):
+                shutil.rmtree(install_path)
+            shutil.move(temp_download_folder, install_path)
+
+            script_installed = os.path.exists(install_path)
+            print('Script Installed: ', script_installed)
 
             # Check if script is in correct path, if so install is complete, if not, install failed.
             if script_installed:
+
+                # Refresh python hooks
+                flame.execute_shortcut('Rescan Python Hooks')
+
                 # Refresh installed scripts tree list
-                self.update_installed_scripts_tree()
+                update_installed_scripts_tree()
 
                 # Set color of selected script in portal tree to normal color
-                script_item.setForeground(0, QtGui.QColor(154, 154, 154))
+                self.portal_scripts_tree.color_item(script_item, color='#9A9A9A')
 
                 pyflame.print(f'Script Installed: {script_name.replace("_", " ")}', text_color=TextColor.GREEN)
                 return
             else:
                 PyFlameMessageWindow(
                     message='Python Script Install Aborted.',
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return
 
@@ -1111,8 +1255,9 @@ class LogikPortal():
 
             # Confirm deletion
             if not PyFlameMessageWindow(
-                message=f'Delete python script: {script_to_delete}',
-                type=MessageType.WARNING,
+                message=f'Delete python script: {script_to_delete.replace("_", " ")}',
+                message_type=MessageType.WARNING,
+                parent=self.window,
                 ):
                 pyflame.print('Delete Cancelled')
             else:
@@ -1130,11 +1275,11 @@ class LogikPortal():
                 pyflame.print(f'Python Script Deleted: {script_to_delete}', text_color=TextColor.GREEN)
 
                 # Update list of installed scripts
-                self.update_installed_scripts_tree()
+                update_installed_scripts_tree()
 
         def installed_script_search() -> None:
 
-            self.update_installed_scripts_tree(search=self.installed_scripts_search_entry.text())
+            update_installed_scripts_tree(search=self.installed_scripts_search_entry.text)
 
         def get_installed_script_description() -> None:
             """
@@ -1165,43 +1310,87 @@ class LogikPortal():
             self.script_description_text_edit.setPlainText(file_description)
             #self.script_description_text_edit.setMarkdown(file_description)
 
+        def get_script_description() -> None:
+            """
+            Get Script Description
+            ======================
+
+            Get the description of the selected script from the python scripts tree.
+            """
+
+            self.check_script_flame_version(self.portal_scripts_tree)
+
+            pyflame.print('Getting Python Script Description...', underline=True, new_line=False)
+
+            # Switch text edit label to 'Script Description'. This is named 'Logik Portal Updates' when the script first loads.
+            self.script_description_label.text = 'Python Script Description'
+
+            # Get selected script info
+            selected_item = self.portal_scripts_tree.selectedItems()
+            script = selected_item[0]
+            script_name = script.text(0)
+            script_name = script_name.replace('_', ' ')
+            script_version = script.text(2)
+
+            script_max_version = script.text(3)
+            if script_max_version == 'Latest':
+                script_max_version = self.flame_version
+            else:
+                if len(script_max_version.split('.')) >= 2:
+                    script_max_version = script_max_version.split('.')[0] + '.' + script_max_version.split('.')[1]
+
+            # If script version is less than or equal to flame version, enable install button. Otherwise, disable it.
+            if float(script_version) <= self.flame_version and self.flame_version <= float(script_max_version):
+                self.install_script_button.enabled = True
+            else:
+                self.install_script_button.enabled = False
+
+            # Get script description from JSON file
+            with open(self.python_scripts_json_path, 'r') as f:
+                python_scripts = json.load(f)
+            for python_script in python_scripts:
+                if python_script.get('Script Name') == script_name:
+                    self.script_description_text_edit.text = python_script.get('Description')
+                    return
+
         def portal_script_search():
 
-            self.update_logik_portal_scripts_tree(search=self.portal_scripts_search_entry.text())
+            update_logik_portal_scripts_tree(search=self.portal_scripts_search_entry.text)
 
         def browse_script_install_path():
             """
             Browse Script Install Path
-            =========================
+            ==========================
 
             Open file browser to select python script install path.
             """
 
-            pyflame.print(f'Script Install Path Set: {self.script_install_path_browse.text()}')
+            pyflame.print(f'Script Install Path Set: {self.script_install_path_browse.path}')
 
             # Make sure path is writeable, if not, set path to default and show error message
-            if not os.access(self.script_install_path_browse.text(), os.W_OK):
+            if not os.access(self.script_install_path_browse.path, os.W_OK):
                 PyFlameMessageWindow(
                     message='Selected path is not writeable.\n\nCheck permissions or select a different path.',
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
-                self.script_install_path_browse.setText(self.settings.script_install_path)
+                self.script_install_path_browse.path = self.settings.script_install_path
                 return
 
             # Save settings
             self.settings.save_config(
                 config_values={
-                    'script_install_path': self.script_install_path_browse.text()
+                    'script_install_path': self.script_install_path_browse.path
                     }
                 )
 
             # Refresh script trees
-            self.update_installed_scripts_tree()
-            self.update_logik_portal_scripts_tree()
+            update_installed_scripts_tree()
+            update_logik_portal_scripts_tree()
 
-        #-------------------------------------
+        # ==============================================================================
         # [Tab 1: Python Scripts Tab]
-        #-------------------------------------
+        # ==============================================================================
 
         # Labels
         self.installed_scripts_label = PyFlameLabel(
@@ -1240,17 +1429,17 @@ class LogikPortal():
 
         # Entry File Browser
         self.script_install_path_browse = PyFlameEntryBrowser(
-            text=self.settings.script_install_path,
+            path=self.settings.script_install_path,
             browser_title='Set Python Script Install Path',
             browser_type=BrowserType.DIRECTORY,
-            browser_window_to_hide=[self.window],
+            window_to_hide=self.window,
             connect=browse_script_install_path,
             )
 
         # Text Edit
         self.script_description_text_edit = PyFlameTextEdit(
            text=self.file_description,
-           read_only=True,
+           text_style=TextStyle.READ_ONLY,
            )
 
         # Installed Scripts TreeWidget
@@ -1264,7 +1453,7 @@ class LogikPortal():
                 'Path',
                 ],
             connect=get_installed_script_description,
-            sorting=True,
+            sort=True,
             )
 
         # Portal Scripts TreeWidget
@@ -1277,16 +1466,11 @@ class LogikPortal():
                 'Date',
                 'Author',
                 ],
-            connect=self.get_script_description,
-            sorting=True,
+            connect=get_script_description,
+            sort=True,
             )
 
         # Buttons
-        self.script_submit_button = PyFlameButton(
-            text='Submit',
-            connect=login_check,
-            )
-
         self.install_script_button = PyFlameButton(
             text='Install',
             connect=install_script,
@@ -1310,37 +1494,49 @@ class LogikPortal():
             connect=self.done,
             )
 
-        #-------------------------------------
+        update_logik_portal_scripts_tree()
+        update_installed_scripts_tree()
+
+        # ==============================================================================
         # [Python Scripts Tab Layout]
-        #-------------------------------------
+        # ==============================================================================
 
-        self.tab1.grid_layout.addWidget(self.installed_scripts_label, 0, 0, 1, 3)
-        self.tab1.grid_layout.addWidget(self.portal_scripts_label, 0, 4, 1, 3)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_label, 0, 0, 1, 3)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.portal_scripts_label, 0, 4, 1, 3)
 
-        self.tab1.grid_layout.addWidget(self.installed_scripts_tree, 1, 0, 6, 3)
-        self.tab1.grid_layout.addWidget(self.portal_scripts_tree, 1, 4, 6, 3)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_tree, 1, 0, 7, 3)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.portal_scripts_tree, 1, 4, 7, 3)
 
-        self.tab1.grid_layout.addWidget(self.delete_script_button, 7, 0)
-        self.tab1.grid_layout.addWidget(self.install_local_script_button, 7, 2)
-        self.tab1.grid_layout.addWidget(self.script_submit_button, 7, 4)
-        self.tab1.grid_layout.addWidget(self.install_script_button, 7, 6)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.delete_script_button, 8, 0)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.install_local_script_button, 8, 2)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.install_script_button, 8, 6)
 
-        self.tab1.grid_layout.addWidget(self.installed_scripts_search_label, 8, 0)
-        self.tab1.grid_layout.addWidget(self.installed_scripts_search_entry, 8, 1, 1, 2)
-        self.tab1.grid_layout.addWidget(self.portal_scripts_search_label, 8, 4)
-        self.tab1.grid_layout.addWidget(self.portal_scripts_search_entry, 8, 5, 1, 2)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_search_label, 9, 0)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_search_entry, 9, 1, 1, 2)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.portal_scripts_search_label, 9, 4)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.portal_scripts_search_entry, 9, 5, 1, 2)
 
-        self.tab1.grid_layout.addWidget(self.script_install_path_label, 9, 4)
-        self.tab1.grid_layout.addWidget(self.script_install_path_browse, 9, 5, 1, 2)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.script_install_path_label, 10, 4)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.script_install_path_browse, 10, 5, 1, 2)
 
-        self.tab1.grid_layout.addWidget(self.script_description_label, 10, 0, 1, 7)
-        self.tab1.grid_layout.addWidget(self.script_description_text_edit, 11, 0, 8, 7)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.script_description_label, 12, 0, 1, 7)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.script_description_text_edit, 13, 0, 7, 7)
 
-        self.tab1.grid_layout.addWidget(self.python_done_button, 19, 6)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.python_done_button, 20, 6)
+
+        # ==============================================================================
+
+        self.installed_scripts_search_entry.set_focus()
 
     def matchbox_tab(self):
 
-        def download_logik_collection():
+        def download_logik_collection() -> None:
+            """
+            Download Logik Matchbox Collection
+            ================================
+
+            Download Logik Matchbox Collection from GitHub repository as a zip file, extract it, and delete the zip.
+            """
 
             def save_config():
 
@@ -1351,101 +1547,366 @@ class LogikPortal():
                         }
                     )
 
-            def download():
+            def download_matchbox_repo(system_password=''):
+                """
+                Download a GitHub repository as a zip file, extract it, rename to Logik, and move to destination.
 
-                # Change cursor to busy
-                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+                Args
+                ----
+                    system_password: System password for sudo (if needed)
+                """
 
-                pyflame.print('Downloading Logik Matchboxes From Logik-Matchbook.org...')
+                def remove_folder(path: str) -> bool:
+                    """
+                    Remove a folder, using sudo if permission is denied.
 
-                # Path to download from ftp
-                ftp_file_path = os.path.join('/Logik_Matchbox/MatchboxShaderCollection.tgz')
+                    Args
+                    ----
+                        path (str):
+                            Path to remove
 
-                # Download dest path
-                tgz_path = '/opt/Autodesk/shared/python/logik_portal/temp/MatchboxShaderCollection.tgz'
+                    Returns
+                    -------
+                        bool:
+                            True if folder was removed successfully, False if errors occurred
+                    """
 
-                # Download batch tgz file from ftp
-                self.download_file(
-                    download_type='Matchbox',
-                    file_name='Logik Matchbox',
-                    ftp_file_path=ftp_file_path,
-                    tgz_path=tgz_path,
+                    if not os.path.exists(str(path)):
+                        return True
+
+                    try:
+                        # Try normal removal first
+                        if os.path.isdir(str(path)):
+                            shutil.rmtree(str(path))
+                        else:
+                            os.remove(str(path))
+                        print(f'Removed: {path}')
+                        return True
+                    except PermissionError:
+                        # If permission denied, use sudo
+                        print(f'Permission denied. Attempting to remove with sudo...')
+                        try:
+                            remove_cmd = ['sudo', '-S', 'rm', '-rf', str(path)]
+                            process = subprocess.Popen(
+                                remove_cmd,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True
+                            )
+                            stdout, stderr = process.communicate(input=system_password + '\n')
+
+                            if process.returncode != 0:
+                                raise Exception(f'Failed to remove with sudo: {stderr}')
+
+                            print(f'Removed: {path} (using sudo)')
+                            return True
+                        except Exception as e:
+                            print(f'Error removing with sudo: {e}')
+                            raise
+                    except Exception as e:
+                        print(f'Error removing: {e}')
+                        raise
+
+                def move_repo(source: str, destination: str) -> bool:
+                    """
+                    Move a folder to destination, using sudo if permission is denied.
+
+                    Args
+                    ----
+                        source: Source path to move from
+                        destination: Destination path to move to
+                    """
+                    try:
+                        # Try normal move first
+                        shutil.move(str(source), str(destination))
+                        print(f'Moved folder to: {destination}\n')
+                        return True
+                    except PermissionError:
+                        # If permission denied, use sudo
+                        print(f'Permission denied. Attempting to move with sudo...')
+                        try:
+                            # Move with sudo
+                            move_cmd = ['sudo', '-S', 'mv', str(source), str(destination)]
+                            process = subprocess.Popen(
+                                move_cmd,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True
+                                )
+                            stdout, stderr = process.communicate(input=system_password + '\n')
+
+                            if process.returncode != 0:
+                                raise Exception(f'Failed to move with sudo: {stderr}')
+
+                            print(f'Moved folder to: {destination} (using sudo)\n')
+                            return True
+                        except Exception as e:
+                            print(f'Error moving with sudo: {e}')
+                            raise
+                    except Exception as e:
+                        print(f'Error moving folder: {e}')
+                        raise
+
+                def flatten_directory(root_path: str) -> bool:
+                    """
+                    Move all files and folders from top-level directories to the root path,
+                    then delete the empty directories. Also deletes any README.md files encountered.
+
+                    Args
+                    ----
+                        root_path (str):
+                            The root directory path to flatten
+
+                    Returns
+                    -------
+                        bool:
+                            True if successful, False if errors occurred
+                    """
+
+                    def delete_readme_files(path: str) -> None:
+                        """
+                        Recursively delete all README.md files in a directory.
+
+                        Args
+                        ----
+                            path (str):
+                                Path to search for README.md files
+                        """
+                        if os.path.isdir(path):
+                            for root_dir, dirs, files in os.walk(path):
+                                for file in files:
+                                    if file.upper() == 'README.MD':
+                                        try:
+                                            file_path = os.path.join(root_dir, file)
+                                            os.unlink(file_path)
+                                        except Exception:
+                                            pass
+                        elif os.path.isfile(path) and os.path.basename(path).upper() == 'README.MD':
+                            try:
+                                os.unlink(path)
+                            except Exception:
+                                pass
+
+                    if not os.path.exists(root_path):
+                        return False
+
+                    if not os.path.isdir(root_path):
+                        return False
+
+                    # Delete any README.md files in the root directory first
+                    try:
+                        for item in os.listdir(root_path):
+                            item_path = os.path.join(root_path, item)
+                            if os.path.isfile(item_path) and item.upper() == 'README.MD':
+                                try:
+                                    os.unlink(item_path)
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
+
+                    # Get all top-level items
+                    try:
+                        top_level_items = [os.path.join(root_path, item) for item in os.listdir(root_path)]
+                    except Exception:
+                        return False
+
+                    # Filter to only directories
+                    top_level_dirs = [item for item in top_level_items if os.path.isdir(item)]
+
+                    if not top_level_dirs:
+                        return True
+
+                    # Process each directory
+                    for dir_path in top_level_dirs:
+                        # Get all contents of this directory
+                        try:
+                            contents = [os.path.join(dir_path, item) for item in os.listdir(dir_path)]
+                        except Exception:
+                            continue
+
+                        if not contents:
+                            try:
+                                os.rmdir(dir_path)
+                            except Exception:
+                                pass
+                            continue
+
+                        # Move each item to root (or delete if README.md)
+                        for item in contents:
+                            item_name = os.path.basename(item)
+
+                            # Delete README.md files instead of moving them
+                            if os.path.isfile(item) and item_name.upper() == 'README.MD':
+                                try:
+                                    os.unlink(item)
+                                except Exception:
+                                    pass
+                                continue
+
+                            # If it's a directory, delete any README.md files inside it first
+                            if os.path.isdir(item):
+                                delete_readme_files(item)
+
+                            dest_path = os.path.join(root_path, item_name)
+
+                            # Handle naming conflicts
+                            if os.path.exists(dest_path):
+                                counter = 1
+                                base_name, extension = os.path.splitext(item_name)
+                                while os.path.exists(dest_path):
+                                    new_name = f'{base_name}_{counter}{extension}'
+                                    dest_path = os.path.join(root_path, new_name)
+                                    counter += 1
+
+                            try:
+                                shutil.move(item, dest_path)
+                            except Exception:
+                                pass
+
+                        # Delete the now-empty directory
+                        try:
+                            os.rmdir(dir_path)
+                        except Exception:
+                            pass
+
+                    return True
+
+                # Open download progress window to download matchbox collection
+                progress_window = PyFlameProgressWindow(
+                    task='Downloading Files',
+                    total_tasks=1,
+                    task_progress_message='Downloading Matchbox Collection [1/1]\n\nPlease wait...',
+                    title='Downloading Files...',
+                    parent=self.window,
                     )
 
-                # Untar matchbox archive
-                install_path = os.path.join(self.matchbox_install_path, 'LOGIK')
-                print('Matchbox install path:', install_path, '\n')
+                # Initialize and display the text by setting processing_task
+                progress_window.processing_task = 1
 
-                command = f'tar -xvf /opt/Autodesk/shared/python/logik_portal/temp/MatchboxShaderCollection.tgz --strip-components 1 -C {install_path}'
-                command = command.split(' ', 6)
+                # Create temporary folder if it doesn't exist
+                temp_path = Path(self.temp_matchbox_folder)
+                temp_path.mkdir(parents=True, exist_ok=True)
 
-                create_dir_command = f'mkdir -p {install_path}'
-                create_dir_command = create_dir_command.split(' ', 3)
+                # Create destination folder if it doesn't exist
+                destination_path = Path(self.matchbox_install_path)
+                destination_path.mkdir(parents=True, exist_ok=True)
 
-                if not folder_write_permission:
-                    try:
-                        # use popen to run create_dir_command as sudo
-                        p = Popen(['sudo', '-S'] + create_dir_command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
-                        p.communicate(system_password + '\n')[1]
+                # Parse the repository URL to get owner, repo, and branch
+                # URL format: https://github.com/owner/repo/tree/branch
+                url_parts = 'https://github.com/logik-portal/matchbox/tree/main'.rstrip('/').split('/')
+                if 'github.com' not in url_parts:
+                    raise ValueError('Invalid GitHub URL')
 
-                        # Sudo untar
-                        p = Popen(['sudo', '-S'] + command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
-                        p.communicate(system_password + '\n')[1]
+                github_index = url_parts.index('github.com')
+                if len(url_parts) < github_index + 3:
+                    raise ValueError('Invalid GitHub repository URL')
 
-                        QtWidgets.QApplication.restoreOverrideCursor()
+                owner = url_parts[github_index + 1]
+                repo = url_parts[github_index + 2]
 
-                    except:
-                        QtWidgets.QApplication.restoreOverrideCursor()
-                        PyFlameMessageWindow(
-                            message=f'Logik Matchbox Collection\n\n{install_path}',
-                            title=f'{SCRIPT_NAME}: Install Failed',
-                            type=MessageType.ERROR
-                            )
-                        return
-                else:
-                    # Create install_path directory if it doesn't exist
-                    if not os.path.isdir(install_path):
-                        os.makedirs(install_path)
+                # Get branch (default to 'main' if not specified)
+                branch = 'main'
+                if 'tree' in url_parts:
+                    tree_index = url_parts.index('tree')
+                    if len(url_parts) > tree_index + 1:
+                        branch = url_parts[tree_index + 1]
 
-                    # Make sure matchbox tgz file has been downloaded
-                    if not os.path.isfile(tgz_path):
-                        PyFlameMessageWindow(
-                            message=f'Logik Matchbox Collection\n\n Download failed.',
-                            type=MessageType.ERROR
-                            )
-                        QtWidgets.QApplication.restoreOverrideCursor()
-                        return
+                # Construct the zip download URL
+                zip_url = f'https://github.com/{owner}/{repo}/archive/refs/heads/{branch}.zip'
 
-                    # Create install_path directory if it doesn't exist
-                    if not os.path.isdir(install_path):
-                        os.makedirs(install_path)
+                # Set zip file path and filename
+                zip_filename = f'{repo}-{branch}.zip'
+                zip_filepath = os.path.join(temp_path, zip_filename)
+                zip_filepath_str = str(zip_filepath)
 
-                    # Normal untar
-                    process = Popen(command, stdin=PIPE, stderr=PIPE, stdout=PIPE, universal_newlines=True)
-                    output, error = process.communicate()
+                pyflame.print('Downloading Matchbox Collection...')
 
-                    if process.returncode != 0:
-                        raise CalledProcessError(process.returncode, command, output=output, stderr=error)
+                try:
+                    urllib.request.urlretrieve(zip_url, zip_filepath_str)
+                    pyflame.print(f'Download Complete')
 
-                    QtWidgets.QApplication.restoreOverrideCursor()
+                    # Extract the zip file to temporary folder
+                    pyflame.print(f'Extracting Matchbox Collection...')
+                    print(f'Extracting to: {temp_path}')
+                    with zipfile.ZipFile(zip_filepath_str, 'r') as zip_ref:
+                        zip_ref.extractall(str(temp_path))
+                    pyflame.print('Extraction Complete')
 
+                    # Rename the extracted folder from matchbox-main to Logik in temp folder
+                    extracted_folder = os.path.join(temp_path, f'{repo}-{branch}')
+                    logik_folder_temp = os.path.join(temp_path, 'LOGIK')
 
-                pyflame.print('Logik Matchbox Collection Installed', text_color=TextColor.GREEN)
+                    if os.path.exists(extracted_folder):
+                        if os.path.exists(logik_folder_temp):
+                            # Remove existing Logik folder if it exists in temp
+                            shutil.rmtree(str(logik_folder_temp))
+                        # Use string paths for os.rename compatibility
+                        os.rename(str(extracted_folder), str(logik_folder_temp))
+                        print(f"Renamed folder from '{os.path.basename(extracted_folder)}' to 'Logik' in temp folder")
 
-            # Open file browser to select install location
+                    # Delete the zip file
+                    os.remove(zip_filepath_str)
+                    print(f'Deleted zip file: {zip_filename}')
+
+                    # Delete any loose files in temp folder
+                    for file in os.listdir(os.path.join(temp_path, 'LOGIK')):
+                        if os.path.isfile(os.path.join(temp_path, 'LOGIK', file)):
+                            os.remove(os.path.join(temp_path, 'LOGIK', file))
+                            print(f'Deleted loose file: {file}')
+
+                    # Move the Logik folder from temp folder to destination folder
+                    logik_folder_dest = os.path.join(destination_path, 'LOGIK')
+
+                    if os.path.exists(logik_folder_temp):
+                        # Always remove existing Logik folder in destination to ensure clean overwrite
+                        if os.path.exists(logik_folder_dest):
+                            print(f'Removing existing Logik folder in destination: {logik_folder_dest}')
+                            remove_folder(logik_folder_dest)
+
+                        # Move the Logik folder to destination (will use sudo if needed)
+                        move_repo(logik_folder_temp, logik_folder_dest)
+
+                        # Flatten the Logik folder to remove any README.md files
+                        flatten_directory(logik_folder_dest)
+
+                    progress_window.title = 'Download Completed'
+                    progress_window.task_progress_message = f'Download Complete\n\nMatchbox Collection installed to:\n\n{logik_folder_dest}'
+                    progress_window.tasks_complete = True
+
+                except urllib.error.URLError as e:
+                    print(f'Error downloading file: {e}')
+                    if os.path.exists(zip_filepath_str):
+                        os.remove(zip_filepath_str)
+                    raise
+                except zipfile.BadZipFile as e:
+                    print(f'Error: Invalid zip file: {e}')
+                    if os.path.exists(zip_filepath_str):
+                        os.remove(zip_filepath_str)
+                    raise
+                except Exception as e:
+                    print(f'Error: {e}')
+                    import traceback
+                    traceback.print_exc()
+                    if os.path.exists(zip_filepath_str):
+                        os.remove(zip_filepath_str)
+                    raise
+
+            # Open file browser to select matchbox install location
             path = pyflame.file_browser(
                 title='Select Logik Matchbox Install Directory',
                 path=self.settings.matchbox_path,
                 select_directory=True,
-                window_to_hide=[self.window]
+                window_to_hide=self.window
                 )
-
             if path:
                 self.matchbox_install_path = path
             else:
                 return
 
-            # Save path to config file
+            # Save downloadpath to config file
             save_config()
 
             # Check if password is needed to install to selected location
@@ -1453,56 +1914,46 @@ class LogikPortal():
 
             # If matchbox install path is not writeable, get system password and then download and install, otherwise just download and install
             if not folder_write_permission:
-                print('Matchbox dest write permission: Not Writeable, need sudo.')
-                matchbox_password_window = PyFlamePasswordWindow(message=f'System password needed to install Logik Matchboxes to selected location.')
-                system_password = matchbox_password_window.password()
+                print('Matchbox destination write permission: Not Writeable, need system password.')
+                matchbox_password_window = PyFlamePasswordWindow(
+                    text=f'System password needed to install Logik Matchboxes to selected location.',
+                    parent=self.window,
+                    )
+                system_password = matchbox_password_window.password
                 if system_password:
-                    download()
+                    download_matchbox_repo(system_password)
+                else:
+                    return
             else:
-                print('Matchbox dest write permission: Writeable')
-                download()
+                print('Matchbox destination write permission: Writeable')
+                download_matchbox_repo()
 
         def add_matchbox_to_batch():
 
-            def create_matchbox_node(matchbox_file_name):
+            def create_matchbox_node(matchbox_file_name, destination_folder):
 
                 # Get cursor position
                 cursor_pos = flame.batch.cursor_position
 
                 # Create matchbox node
-                matchbox_node = flame.batch.create_node('Matchbox', os.path.join(temp_matchbox_path, matchbox_file_name))
+                matchbox_node = flame.batch.create_node('Matchbox', os.path.join(destination_folder, matchbox_file_name))
                 matchbox_node.pos_x = cursor_pos[0]
                 matchbox_node.pos_y = cursor_pos[1]
 
-                matchbox_node.load_node_setup(os.path.join(temp_matchbox_path, selected_matchbox_name))
+                matchbox_node.load_node_setup(os.path.join(destination_folder, selected_matchbox_name))
 
             # Switch to batch tab
             flame.set_current_tab('Batch')
 
             # Get selected matchbox name
             selected_matchbox_name = self.matchbox_tree.selectedItems()[0].text(0)
+            print('Selected matchbox to load:', selected_matchbox_name)
 
-            # Connect to ftp
-            self.ftp_download_connect()
+            # Download matchbox from GitHub repository to temp matchbox directory and return path to destination folder
+            destination_folder = self.download_github_folder(folder_name=selected_matchbox_name, repo_name="matchbox")
 
-            # Get list of matchbox files from ftp
-            matchbox_files = self.ftp.nlst('/Logik_Matchbox/Shaders/')
-            #print('matchbox_files:', matchbox_files, '\n')
-
-            # Get selected matchbox files
-            selected_matchbox_files = [file for file in matchbox_files if selected_matchbox_name + '.' in file]
-            #print('selected_matchbox_files:', selected_matchbox_files, '\n')
-
-            # Create temp matchbox directory in temp folder
-            temp_matchbox_path = os.path.join(self.temp_folder, selected_matchbox_name)
-            if not os.path.isdir(temp_matchbox_path):
-                os.makedirs(temp_matchbox_path)
-
-            # Download selected matchbox files from ftp to temp matchbox directory
-            for file_path in selected_matchbox_files:
-                file_name = file_path.split('/')[-1]
-                with open(os.path.join(temp_matchbox_path, file_name), 'wb') as local_file:
-                    self.ftp.retrbinary("RETR " + file_path, local_file.write)
+            # Get list of files in destination folder
+            selected_matchbox_files = os.listdir(destination_folder)
 
             # Get name of glsl file or mx file to load into matchbox node
             glsl_files = [file for file in selected_matchbox_files if file.endswith('.glsl')]
@@ -1512,20 +1963,86 @@ class LogikPortal():
                 matchbox_file_name = glsl_file.split('/')[-1]
             else:
                 matchbox_file_name = [file for file in selected_matchbox_files if file.endswith('.mx')][0].rsplit('/', 1)[-1]
-            #print('matchbox_file_name:', matchbox_file_name, '\n')
 
-            create_matchbox_node(matchbox_file_name)
-            PyFlameMessageWindow(
-                message=f'Matchbox added to Batch: {selected_matchbox_name}\n\nYou may have to click in Batch for the node to appear.',
-                    )
+            # Add matchbox node to batch
+            create_matchbox_node(matchbox_file_name, destination_folder)
+
+            # Delete destination folder
+            shutil.rmtree(destination_folder)
 
         def matchbox_search():
 
-            self.update_matchbox_tree(search=self.matchbox_search_entry.text())
+            update_matchbox_tree(search=self.matchbox_search_entry.text)
 
-        #-------------------------------------
+        def get_matchbox_description():
+
+            """
+            Get Matchbox Description
+            ========================
+
+            Get selected matchbox description from JSON file and display in text edit.
+            """
+
+            self.get_json_description(
+                label=self.matchbox_desciption_label,
+                label_text='Matchbox Description',
+                tree=self.matchbox_tree,
+                json_path=self.matchbox_json_path,
+                text_edit=self.matchbox_text_edit,
+                )
+
+        def update_matchbox_tree(search: str=None) -> None:
+            """
+            Update Matchbox Tree
+            =====================
+
+            Update matchbox tree with matchboxes from xml file.
+
+            Args
+            ----
+                search (str):
+                    String to search for in matchbox name. If search string is present, only add items that match the search string.
+                    (Default: None)
+            """
+
+            pyflame.print('Updating Matchbox List...', underline=True, new_line=False)
+
+            def add_matchbox(matchbox):
+                shader_type = matchbox.get('shader_type', '')
+                author_name = matchbox.get('author', '')
+                self.matchbox_tree.add_item_with_columns([matchbox_name, shader_type, author_name])
+
+            self.matchbox_tree.clear()
+
+            # Read in matchboxes from JSON
+            with open(self.matchbox_json_path, 'r', encoding='utf-8') as f:
+                matchboxes = json.load(f)
+
+            # Add items to matchbox tree
+            if search:
+                for matchbox in matchboxes:
+                    matchbox_name = matchbox.get('name', '')
+                    if search.lower() in matchbox_name.lower():
+                        add_matchbox(matchbox)
+            else:
+                for matchbox in matchboxes:
+                    matchbox_name = matchbox.get('name', '')
+                    add_matchbox(matchbox)
+
+            # Select top item in matchbox list
+            self.matchbox_tree.setCurrentItem(self.matchbox_tree.topLevelItem(0))
+
+            # Get selected Matchbox description if Matchbox is selected.
+            try:
+                get_matchbox_description()
+            except:
+                print('Unable to get Matchbox description. No Matchbox selected\n')
+
+            pyflame.print('Matchbox List Updated', text_color=TextColor.GREEN)
+
+        # ==============================================================================
         # [Tab 3: Matchbox Tab]
-        #-------------------------------------
+        # ==============================================================================
 
         # Labels
         self.matchbox_search_label = PyFlameLabel(
@@ -1548,9 +2065,10 @@ class LogikPortal():
             )
 
         # Text Edit
-        self.matchbox_text_edit = PyFlameTextEdit(
+        self.matchbox_text_edit = PyFlameTextBrowser(
             text=self.file_description,
-            read_only=True,
+            text_type=TextType.HTML,
+            text_style=TextStyle.READ_ONLY,
             )
 
         # Matchbox TreeWidget
@@ -1560,8 +2078,8 @@ class LogikPortal():
                 'Shader Type',
                 'Author',
                 ],
-            connect=self.get_matchbox_description,
-            sorting=True,
+            connect=get_matchbox_description,
+            sort=True,
             )
         self.matchbox_tree.setColumnWidth(0, 400)
         self.matchbox_tree.setColumnWidth(1, 300)
@@ -1582,23 +2100,25 @@ class LogikPortal():
             connect=self.done,
             )
 
-        #-------------------------------------
+        update_matchbox_tree()
+
+        # ==============================================================================
         # [Matchbox Tab Layout]
-        #-------------------------------------
+        # ==============================================================================
 
-        self.tab2.grid_layout.addWidget(self.matchbox_logik_matchbox_collection_label, 0, 0, 1, 7)
-        self.tab2.grid_layout.addWidget(self.matchbox_tree, 1, 0, 7, 7)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_logik_matchbox_collection_label, 0, 0, 1, 7)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_tree, 1, 0, 8, 7)
 
-        self.tab2.grid_layout.addWidget(self.matchbox_add_to_batch, 8, 5)
-        self.tab2.grid_layout.addWidget(self.matchbox_download_all_button, 8, 6)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_add_to_batch, 9, 5)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_download_all_button, 9, 6)
 
-        self.tab2.grid_layout.addWidget(self.matchbox_search_label, 9, 4)
-        self.tab2.grid_layout.addWidget(self.matchbox_search_entry, 9, 5, 1, 2)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_search_label, 10, 4)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_search_entry, 10, 5, 1, 2)
 
-        self.tab2.grid_layout.addWidget(self.matchbox_desciption_label, 10, 0, 1, 7)
-        self.tab2.grid_layout.addWidget(self.matchbox_text_edit, 11, 0, 7, 7)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_desciption_label, 12, 0, 1, 7)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_text_edit, 13, 0, 7, 7)
 
-        self.tab2.grid_layout.addWidget(self.matchbox_done_button, 18, 6)
+        self.tabs.tab_pages['Matchbox'].grid_layout.addWidget(self.matchbox_done_button, 20, 6)
 
     def batch_setups_tab(self):
 
@@ -1615,7 +2135,7 @@ class LogikPortal():
                 self.settings.save_config(
                     config_values={
                         'batch_setup_download_path': download_path,
-                        'open_batch': self.open_batch_button.isChecked(),
+                        'open_batch': self.open_batch_button.checked,
                         }
                     )
 
@@ -1650,7 +2170,7 @@ class LogikPortal():
                 title='Batch Setup Download Path',
                 path=self.settings.batch_setup_download_path,
                 select_directory=True,
-                window_to_hide=[self.window]
+                window_to_hide=self.window
                 )
 
             if download_path:
@@ -1669,7 +2189,8 @@ class LogikPortal():
                 if batch_exists:
                     if not PyFlameMessageWindow(
                         message='Batch Already Exists. Overwrite?',
-                        type=MessageType.CONFIRM
+                        message_type=MessageType.CONFIRM,
+                        parent=self.window,
                         ):
                         pyflame.print('Batch Setup Download Cancelled')
                         return
@@ -1690,7 +2211,7 @@ class LogikPortal():
                 tgz_path = os.path.join(self.settings.batch_setup_download_path, batch_name + '.tgz')
 
                 # Download batch tgz file from ftp
-                self.download_file(
+                self.download_ftp_file(
                     download_type='Batch Setup',
                     file_name=batch_name,
                     ftp_file_path=ftp_file_path,
@@ -1698,15 +2219,15 @@ class LogikPortal():
                     )
 
                 # Uncompress tgz file
-                tgz_escaped_path = tgz_path.replace(' ', '\ ')
-                download_escaped_path = self.settings.batch_setup_download_path.replace(' ', '\ ') + '/'
-                tar_command = f'tar -xvf {tgz_escaped_path} -C {download_escaped_path}'
+                tgz_escaped_path = tgz_path.replace(' ', '\\ ')
+                download_escaped_path = self.settings.batch_setup_download_path.replace(' ', '\\ ') + '/'
+                tar_command = f'tar -xvf "{tgz_escaped_path}" -C "{download_escaped_path}"'
                 os.system(tar_command)
 
                 # Delete tgz file
                 os.remove(tgz_path)
 
-                if self.open_batch_button.isChecked():
+                if self.open_batch_button.checked:
                     open_batch()
 
         def submit_batch_setup():
@@ -1717,27 +2238,27 @@ class LogikPortal():
                 If .flare is in file path, remove it
                 """
 
-                if self.submit_batch_path_entry.text().endswith('.batch'):
-                    batch_name = self.submit_batch_path_entry.text().rsplit('/', 1)[1][:-6]
+                if self.submit_batch_path_entry.path.endswith('.batch'):
+                    batch_name = self.submit_batch_path_entry.path.rsplit('/', 1)[1][:-6]
                     if batch_name.endswith('.flare'):
                         batch_name = batch_name[:-6]
-                    self.submit_batch_name_field.setText(batch_name)
+                    self.submit_batch_name_entry.text = batch_name
                 else:
-                    self.submit_batch_name_field.setText('')
+                    self.submit_batch_name_entry.text = ''
 
             def get_batch_setup_info():
                 """
                 Get selected batch setup info.
                 """
 
-                batch_setup_path = self.submit_batch_path_entry.text()
+                batch_setup_path = self.submit_batch_path_entry.path
 
                 if batch_setup_path:
-                    self.submit_batch_path_entry.setText(batch_setup_path)
+                    self.submit_batch_path_entry.path = batch_setup_path
                     batch_name = batch_setup_path.rsplit('/', 1)[1][:-6]
                     if batch_name.endswith('.flare'):
                         batch_name = batch_name[:-6]
-                    self.submit_batch_name_field.setText(batch_name)
+                    self.submit_batch_name_entry.text = batch_name
 
             def batch_setup_upload():
 
@@ -1751,7 +2272,7 @@ class LogikPortal():
 
                     self.settings.save_config(
                         config_values={
-                            'batch_submit_path': self.submit_batch_path_entry.text()
+                            'batch_submit_path': self.submit_batch_path_entry.path
                             }
                         )
 
@@ -1764,7 +2285,7 @@ class LogikPortal():
                     """
 
                     # Add batch files to tar file
-                    batch_folder_path = self.submit_batch_path_entry.text()[:-6]
+                    batch_folder_path = self.submit_batch_path_entry.path[:-6]
                     print('Batch folder path:', batch_folder_path)
 
                     batch_root_folder = batch_folder_path.rsplit('/', 1)[0]
@@ -1808,8 +2329,8 @@ class LogikPortal():
                     # Create batch info file
                     text = []
                     text.insert(0, f"    <batch name='{self.tar_file_name}'>")
-                    text.insert(1, f"        <artist>'{self.submit_batch_artist_name_entry.text()}'</artist>")
-                    text.insert(2, f"        <flame_version>'{self.submit_batch_flame_version_field.text()}'</flame_version>")
+                    text.insert(1, f"        <artist>'{self.submit_batch_artist_name_entry.text}'</artist>")
+                    text.insert(2, f"        <flame_version>'{self.submit_batch_flame_version_entry.text}'</flame_version>")
                     text.insert(3, f"        <description>'{description_text}'</description>")
                     text.insert(4, '    </batch>')
 
@@ -1833,11 +2354,12 @@ class LogikPortal():
                     ftp_file_list = self.ftp.nlst('/Submit_Batch_Setups')
 
                     if self.tar_file_name + '.tgz' in ftp_file_list:
-                        QtWidgets.QApplication.restoreOverrideCursor()
+                        pyflame.cursor_restore()
                         self.ftp.quit()
                         PyFlameMessageWindow(
                             message='Batch Setup Already Exists. Rename And Try Again.',
-                            type=MessageType.ERROR
+                            message_type=MessageType.ERROR,
+                            parent=self.submit_batch_window,
                             )
                         return
 
@@ -1854,22 +2376,25 @@ class LogikPortal():
                         tgz_path=self.tar_path,
                         )
 
-                if not os.path.isfile(self.submit_batch_path_entry.text()):
+                if not os.path.isfile(self.submit_batch_path_entry.path):
                     PyFlameMessageWindow(
                         message='Enter valid batch setup path.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=self.submit_batch_window,
                         )
                     return
-                elif self.submit_batch_artist_name_entry.text() == '':
+                elif self.submit_batch_artist_name_entry.text == '':
                     PyFlameMessageWindow(
                         message='Enter Artist name.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=self.submit_batch_window,
                         )
                     return
                 elif self.submit_batch_description_text_edit.toPlainText() == '':
                     PyFlameMessageWindow(
                         message='Enter batch setup description.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=self.submit_batch_window,
                         )
                     return
                 else:
@@ -1895,6 +2420,7 @@ class LogikPortal():
                 return_pressed=batch_setup_upload,
                 grid_layout_columns=6,
                 grid_layout_rows=13,
+                parent=self.window,
                 )
 
             # Labels
@@ -1918,27 +2444,27 @@ class LogikPortal():
                 text='Batch Description',
                 )
 
-            # Entry Fields
-            self.submit_batch_name_field = PyFlameEntry(
+            # Entries
+            self.submit_batch_name_entry = PyFlameEntry(
                 text='',
                 read_only=True,
                 )
             self.submit_batch_artist_name_entry = PyFlameEntry(
                 text='',
                 )
-            self.submit_batch_flame_version_field = PyFlameEntry(
+            self.submit_batch_flame_version_entry = PyFlameEntry(
                 text=flame_version,
                 read_only=True,
                 )
 
             # Entry File Browser
             self.submit_batch_path_entry = PyFlameEntryBrowser(
-                text=self.settings.batch_submit_path,
+                path=self.settings.batch_submit_path,
                 connect=get_batch_setup_info,
                 browser_type=BrowserType.FILE,
                 browser_ext=['batch'],
                 browser_title='Select Batch Setup',
-                browser_window_to_hide=[self.window, self.submit_batch_window]
+                window_to_hide=[self.window, self.submit_batch_window]
                 )
 
             get_batch_name()
@@ -1946,7 +2472,6 @@ class LogikPortal():
             # TextEdit
             self.submit_batch_description_text_edit = PyFlameTextEdit(
                 text=self.file_description,
-                read_only=False,
                 )
 
             # Buttons
@@ -1960,9 +2485,9 @@ class LogikPortal():
                 connect=close_submit_batch_window,
                 )
 
-            #-------------------------------------
+            # ==============================================================================
             # [Widget Layout]
-            #-------------------------------------
+            # ==============================================================================
 
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_label, 0, 0, 1, 6)
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_path_label, 1, 0)
@@ -1972,9 +2497,9 @@ class LogikPortal():
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_description_label, 5, 0)
 
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_path_entry, 1, 1, 1, 5)
-            self.submit_batch_window.grid_layout.addWidget(self.submit_batch_name_field, 2, 1, 1, 5)
+            self.submit_batch_window.grid_layout.addWidget(self.submit_batch_name_entry, 2, 1, 1, 5)
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_artist_name_entry, 3, 1, 1, 5)
-            self.submit_batch_window.grid_layout.addWidget(self.submit_batch_flame_version_field, 4, 1, 1, 5)
+            self.submit_batch_window.grid_layout.addWidget(self.submit_batch_flame_version_entry, 4, 1, 1, 5)
             self.submit_batch_window.grid_layout.addWidget(self.submit_batch_description_text_edit, 5, 1, 6, 5)
 
             self.submit_batch_window.grid_layout.addWidget(self.submit_cancel_button, 12, 4)
@@ -1982,11 +2507,11 @@ class LogikPortal():
 
         def batch_setup_search():
 
-            self.update_batch_setups_tree(search=self.batch_setups_search_entry.text())
+            self.update_batch_setups_tree(search=self.batch_setups_search_entry.text)
 
-        #-------------------------------------
+        # ==============================================================================
         # [Tab 4: Batch Setups Tab]
-        #-------------------------------------
+        # ==============================================================================
 
         # Labels
         self.batch_setups_label = PyFlameLabel(
@@ -2011,7 +2536,7 @@ class LogikPortal():
         # Text Edit
         self.batch_setups_text_edit = PyFlameTextEdit(
             text=self.file_description,
-            read_only=True,
+            text_style=TextStyle.READ_ONLY,
             )
 
         # Batch Setups TreeWidget
@@ -2022,7 +2547,7 @@ class LogikPortal():
                 'Artist',
                 ],
             connect=self.get_batch_description,
-            sorting=True,
+            sort=True,
             )
 
         self.batch_setups_tree.setColumnWidth(0, 600)
@@ -2030,12 +2555,12 @@ class LogikPortal():
         self.batch_setups_tree.setColumnWidth(2, 300)
 
         # Disable batch download button if current flame version older than batch minimum
-        self.batch_setups_tree.clicked.connect(self.check_batch_flame_version)
+        #self.batch_setups_tree.clicked.connect(self.check_batch_flame_version)
 
         # Push Buttons
         self.open_batch_button = PyFlamePushButton(
             text=' Open Batch',
-            button_checked=self.settings.open_batch,
+            checked=self.settings.open_batch,
             tooltip='Opens batch setup after download is finished',
             )
 
@@ -2054,25 +2579,25 @@ class LogikPortal():
             connect=self.done,
             )
 
-        #-------------------------------------
+        # ==============================================================================
         # [Batch Setups Tab Layout]
-        #-------------------------------------
+        # ==============================================================================
 
-        self.tab3.grid_layout.addWidget(self.batch_setups_label, 0, 0, 1, 7)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_label, 0, 0, 1, 7)
 
-        self.tab3.grid_layout.addWidget(self.batch_setups_tree, 1, 0, 7, 7)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_tree, 1, 0, 7, 7)
 
-        self.tab3.grid_layout.addWidget(self.batch_setups_submit_button, 8, 0)
-        self.tab3.grid_layout.addWidget(self.open_batch_button, 8, 5)
-        self.tab3.grid_layout.addWidget(self.batch_setups_download_button, 8, 6)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_submit_button, 8, 0)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.open_batch_button, 8, 5)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_download_button, 8, 6)
 
-        self.tab3.grid_layout.addWidget(self.batch_setups_search_label, 9, 4)
-        self.tab3.grid_layout.addWidget(self.batch_setups_search_entry, 9, 5, 1, 2)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_search_label, 9, 4)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_search_entry, 9, 5, 1, 2)
 
-        self.tab3.grid_layout.addWidget(self.batch_setups_desciption_label, 10, 0, 1, 7)
-        self.tab3.grid_layout.addWidget(self.batch_setups_text_edit, 11, 0, 7, 7)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_desciption_label, 10, 0, 1, 7)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_setups_text_edit, 11, 0, 7, 7)
 
-        self.tab3.grid_layout.addWidget(self.batch_done_button, 18, 6)
+        self.tabs.tab_pages['Batch Setups'].grid_layout.addWidget(self.batch_done_button, 19, 6)
 
     def inference_nodes_tab(self):
 
@@ -2101,7 +2626,7 @@ class LogikPortal():
                 self.settings.save_config(
                     config_values={
                             'inference_node_download_path': inference_node_download_path,
-                            'inference_node_add_to_batch': self.inference_node_add_to_batch_pushbutton.isChecked(),
+                            'inference_node_add_to_batch': self.inference_node_add_to_batch_pushbutton.checked,
                             }
                         )
 
@@ -2155,7 +2680,7 @@ class LogikPortal():
                 #print('tgz_path:', tgz_path, '\n')
 
                 # Download archive tgz file
-                self.download_file(
+                self.download_ftp_file(
                     download_type='Inference Node',
                     file_name=inference_node_name,
                     ftp_file_path=ftp_file_path,
@@ -2163,15 +2688,15 @@ class LogikPortal():
                     )
 
                 # Uncompress tgz file
-                tgz_escaped_path = tgz_path.replace(' ', '\ ')
-                download_escaped_path = inference_node_download_path.replace(' ', '\ ') + '/'
-                tar_command = f'tar -xvf {tgz_escaped_path} -C {download_escaped_path}'
+                tgz_escaped_path = tgz_path.replace(' ', '\\ ')
+                download_escaped_path = inference_node_download_path.replace(' ', '\\ ') + '/'
+                tar_command = f'tar -xvf "{tgz_escaped_path}" -C "{download_escaped_path}"'
                 os.system(tar_command)
 
                 # Delete tgz file
                 os.remove(tgz_path)
 
-                if self.inference_node_add_to_batch_pushbutton.isChecked():
+                if self.inference_node_add_to_batch_pushbutton.checked:
                     print('\n')
                     add_inference_node_to_batch()
 
@@ -2180,7 +2705,7 @@ class LogikPortal():
                 title='Select Download Path',
                 path=self.settings.inference_node_download_path,
                 select_directory=True,
-                window_to_hide=[self.window]
+                window_to_hide=self.window
                 )
 
             if inference_node_download_path:
@@ -2209,8 +2734,8 @@ class LogikPortal():
                 """
 
                 # Check if file is valid, if so fill in Inference Node Name field
-                if os.path.isfile(self.submit_inference_node_path_entry.text()):
-                    self.submit_inference_node_name_field.setText(os.path.basename(self.submit_inference_node_path_entry.text()).split('.')[0])
+                if os.path.isfile(self.submit_inference_node_path_entry.path):
+                    self.submit_inference_node_name_entry.text = os.path.basename(self.submit_inference_node_path_entry.path).split('.')[0]
 
             def inference_node_upload():
                 """
@@ -2237,7 +2762,7 @@ class LogikPortal():
 
                     self.settings.save_config(
                         config_values={
-                            'inference_node_submit_path': self.submit_inference_node_path_entry.text()
+                            'inference_node_submit_path': self.submit_inference_node_path_entry.path
                             }
                         )
 
@@ -2251,14 +2776,14 @@ class LogikPortal():
 
                     pyflame.print('Creating Inference Node TAR file...')
 
-                    inference_node = self.submit_inference_node_path_entry.text()
+                    inference_node = self.submit_inference_node_path_entry.path
                     #inference_node = inference_node.replace(' ', '\ ') # Escape spaces in file path
                     if inference_node.endswith('.onnx'):
                         inference_node_json = inference_node.replace('.onnx', '.json')
                     else:
                         inference_node_json = None
 
-                    self.tar_file_name = self.submit_inference_node_name_field.text()
+                    self.tar_file_name = self.submit_inference_node_name_entry.text
                     print('TAR file name:', self.tar_file_name)
 
                     self.tar_file_path = os.path.join(self.temp_folder, self.tar_file_name) + '.tgz'
@@ -2304,13 +2829,13 @@ class LogikPortal():
                         Get description text from text edit field and replace single quotes with double quotes and '&' with '-'.
                         """
 
-                        description_text = self.submit_inference_node_description_text_edit.text()
+                        description_text = self.submit_inference_node_description_text_edit.text
                         description_text = description_text.replace("'", "\"")
                         description_text = description_text.replace('&', '-')
 
                         return description_text
 
-                    def get_tar_file_size() -> Union[str, bool]:
+                    def get_tar_file_size() -> str | bool:
                         """
                         Get Tar File Size
                         =================
@@ -2321,12 +2846,12 @@ class LogikPortal():
 
                         Args
                         ----
-                            tar_file_path (str):
+                            `tar_file_path` (str):
                                 The path to the tar file.
 
                         Returns
                         -------
-                            Union[str, bool]:
+                            str | bool:
                                 The size of the tar file in MB as a string if the size is within the limit. Returns False
                                 if the file size exceeds 2GB or if there is an error accessing the file.
 
@@ -2355,8 +2880,9 @@ class LogikPortal():
                             if tar_file_size_bytes > SIZE_LIMIT_BYTES:
                                 PyFlameMessageWindow(
                                     message='File too large. Reduce size and try again.',
-                                    type=MessageType.ERROR
-                                )
+                                    message_type=MessageType.ERROR,
+                                    parent=self.submit_inference_node_window,
+                                    )
                                 return False
 
                             # Convert the file size to MB for display
@@ -2370,8 +2896,9 @@ class LogikPortal():
                         except OSError as e:
                             PyFlameMessageWindow(
                                 message=f"Error accessing file: {e}",
-                                type=MessageType.ERROR
-                            )
+                                message_type=MessageType.ERROR,
+                                parent=self.submit_inference_node_window,
+                                )
                             return False
 
                     def write_xml_file() -> None:
@@ -2385,7 +2912,7 @@ class LogikPortal():
                         text = [
                             "\n",
                             f"    <inference_node name='{self.tar_file_name}'>",
-                            f"        <flame_version>'{self.submit_inference_node_flame_version_field.text()}'</flame_version>",
+                            f"        <flame_version>'{self.submit_inference_node_flame_version_entry.text}'</flame_version>",
                             f"        <file_size>'{self.tar_file_size}'</file_size>",
                             f"        <description>'{description_text}'</description>",
                             "    </inference_node>"
@@ -2420,12 +2947,13 @@ class LogikPortal():
                     ftp_file_list = self.ftp.nlst('/Submit_Inference_Node')
 
                     if self.tar_file_name + '.tgz' in ftp_file_list:
-                        QtWidgets.QApplication.restoreOverrideCursor()
+                        pyflame.cursor_restore()
                         self.ftp.quit()
                         PyFlameMessageWindow(
                             message='Inference Node already exists. Rename and try again.',
-                            type=MessageType.ERROR
-                        )
+                            message_type=MessageType.ERROR,
+                            parent=self.submit_inference_node_window,
+                            )
                         return
 
                     # Close window
@@ -2440,21 +2968,23 @@ class LogikPortal():
                         )
 
                 # Check for valid path to ONNX or INF file
-                if not os.path.isfile(self.submit_inference_node_path_entry.text()):
+                if not os.path.isfile(self.submit_inference_node_path_entry.path):
                     PyFlameMessageWindow(
                         message='Path to ONNX of INF file is not valid. Try selecting file again.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=self.submit_inference_node_window,
                         )
                     return
 
                 # If ONNX file, check for matching JSON file, if not give error.
-                if self.submit_inference_node_path_entry.text().endswith('.onnx'):
-                    node_path = self.submit_inference_node_path_entry.text().rsplit('/', 1)[0]
-                    json_file = self.submit_inference_node_path_entry.text().replace('.onnx', '.json')
+                if self.submit_inference_node_path_entry.path.endswith('.onnx'):
+                    node_path = self.submit_inference_node_path_entry.path.rsplit('/', 1)[0]
+                    json_file = self.submit_inference_node_path_entry.path.replace('.onnx', '.json')
                     if not os.path.isfile(os.path.join(node_path, json_file)):
                         PyFlameMessageWindow(
                             message='ONNX file must have a JSON file with a matching file name.\n\nExample:\n\n    inference_node.onnx\n    inference_node.json',
-                            type=MessageType.ERROR
+                            message_type=MessageType.ERROR,
+                            parent=self.submit_inference_node_window,
                             )
                         return
 
@@ -2462,7 +2992,8 @@ class LogikPortal():
                 if self.submit_inference_node_description_text_edit.toPlainText() == '':
                     PyFlameMessageWindow(
                         message='Enter Inference Node description.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=self.submit_inference_node_window,
                         )
                     return
 
@@ -2474,17 +3005,6 @@ class LogikPortal():
                     if xml_file_created:
                         upload_inference_node()
 
-            PyFlameMessageWindow(
-                message="""
-Please ensure that any inference nodes you upload are open source and include a link to the original model source in the description. Nodes without a source link will not be accepted.
-
-If you would like to take credit for creating or submitting a node, just add your name to the description, as names are no longer being added to the node list.
-
-Thanks for contributing!
-            """,
-            title='Inference Node Upload Requirements',
-            )
-
             flame_version = str(self.flame_version)
             if flame_version.endswith('.0'):
                 flame_version = flame_version[:-2]
@@ -2495,6 +3015,7 @@ Thanks for contributing!
                 return_pressed=inference_node_upload,
                 grid_layout_columns=6,
                 grid_layout_rows=13,
+                parent=self.window,
                 )
 
             # Labels
@@ -2516,32 +3037,28 @@ Thanks for contributing!
                 )
 
             # Entries
-            self.submit_inference_node_name_field = PyFlameEntry(
+            self.submit_inference_node_name_entry = PyFlameEntry(
                 text='',
                 read_only=True,
                 )
-            self.submit_inference_node_flame_version_field = PyFlameEntry(
+            self.submit_inference_node_flame_version_entry = PyFlameEntry(
                 text=flame_version,
                 read_only=True,
                 )
-            self.submit_inference_node_path_entry = PyFlameEntry(
-                text=self.settings.inference_node_submit_path,
-                )
-            get_inference_node_name()
 
             # Entry File Browser
             self.submit_inference_node_path_entry = PyFlameEntryBrowser(
-                text=self.settings.inference_node_submit_path,
+                path=self.settings.inference_node_submit_path,
                 connect=get_inference_node_name,
                 browser_ext=['onnx', 'inf'],
                 browser_title='Select Inference Node (ONNX/INF)',
-                browser_window_to_hide=[self.window, self.submit_inference_node_window]
+                window_to_hide=[self.window, self.submit_inference_node_window]
                 )
+            get_inference_node_name()
 
             # TextEdit
             self.submit_inference_node_description_text_edit = PyFlameTextEdit(
                 text=self.file_description,
-                read_only=False,
                 )
 
             # Buttons
@@ -2555,9 +3072,9 @@ Thanks for contributing!
                 connect=self.submit_inference_node_window.close,
                 )
 
-            #-------------------------------------
+            # ==============================================================================
             # [Widget Layout]
-            #-------------------------------------
+            # ==============================================================================
 
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_label, 0, 0, 1, 6)
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_path_label, 1, 0)
@@ -2566,8 +3083,8 @@ Thanks for contributing!
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_description_label, 4, 0)
 
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_path_entry, 1, 1, 1, 5)
-            self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_name_field, 2, 1, 1, 5)
-            self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_flame_version_field, 3, 1, 1, 5)
+            self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_name_entry, 2, 1, 1, 5)
+            self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_flame_version_entry, 3, 1, 1, 5)
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_inference_node_description_text_edit, 4, 1, 7, 5)
 
             self.submit_inference_node_window.grid_layout.addWidget(self.submit_archive_cancel_button, 12, 4)
@@ -2581,11 +3098,11 @@ Thanks for contributing!
             Search for inference nodes in the inference node tree. Update tree with search results as user types.
             """
 
-            self.update_inference_node_tree(search=self.inference_node_search_entry.text())
+            self.update_inference_node_tree(search=self.inference_node_search_entry.text)
 
-        #-------------------------------------
+        # ==============================================================================
         # [Tab 5: Inference Nodes]
-        #-------------------------------------
+        # ==============================================================================
 
         # Labels
         self.inference_nodes_label = PyFlameLabel(
@@ -2610,7 +3127,7 @@ Thanks for contributing!
         # Text Edit
         self.inference_node_description_text_edit = PyFlameTextEdit(
             text=self.file_description,
-            read_only=True,
+            text_style=TextStyle.READ_ONLY,
             )
 
         # TreeWidgets
@@ -2621,18 +3138,18 @@ Thanks for contributing!
                 'Size',
                 ],
             connect=self.get_inference_node_description,
-            sorting=True,
+            sort=True,
+            elide_text=True,
             )
 
         self.inference_node_tree.setColumnWidth(0, 1000)
         self.inference_node_tree.setColumnWidth(1, 100)
         self.inference_node_tree.setColumnWidth(2, 100)
-        self.inference_node_tree.setTextElideMode(QtCore.Qt.ElideNone)
 
         #Push Buttons
         self.inference_node_add_to_batch_pushbutton = PyFlamePushButton(
             text=' Add to Batch',
-            button_checked=self.settings.inference_node_add_to_batch,
+            checked=self.settings.inference_node_add_to_batch,
             tooltip='Add Inference Node to Batch Setup',
             )
 
@@ -2651,27 +3168,27 @@ Thanks for contributing!
             connect=self.done,
             )
 
-        #-------------------------------------
+        # ==============================================================================
         # [Inference Nodes Tab Layout]
-        #-------------------------------------
+        # ==============================================================================
 
-        self.tab4.grid_layout.addWidget(self.inference_nodes_label, 0, 0, 1, 7)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_nodes_label, 0, 0, 1, 7)
 
-        self.tab4.grid_layout.addWidget(self.inference_node_tree, 1, 0, 7, 7)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_tree, 1, 0, 7, 7)
 
-        self.tab4.grid_layout.addWidget(self.inference_node_submit_button, 8, 0)
-        self.tab4.grid_layout.addWidget(self.inference_node_add_to_batch_pushbutton, 8, 5)
-        self.tab4.grid_layout.addWidget(self.inference_node_download_button, 8, 6)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_submit_button, 8, 0)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_add_to_batch_pushbutton, 8, 5)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_download_button, 8, 6)
 
-        self.tab4.grid_layout.addWidget(self.inference_node_search_label, 9, 4)
-        self.tab4.grid_layout.addWidget(self.inference_node_search_entry, 9, 5, 1, 2)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_search_label, 9, 4)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_search_entry, 9, 5, 1, 2)
 
-        self.tab4.grid_layout.addWidget(self.inference_node_description_label, 10, 0, 1, 7)
-        self.tab4.grid_layout.addWidget(self.inference_node_description_text_edit, 11, 0, 7, 7)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_description_label, 10, 0, 1, 7)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_description_text_edit, 11, 0, 7, 7)
 
-        self.tab4.grid_layout.addWidget(self.inference_node_done_button, 18, 6)
+        self.tabs.tab_pages['Inference Nodes'].grid_layout.addWidget(self.inference_node_done_button, 19, 6)
 
-    #-------------------------------------
+    # ==============================================================================
 
     def get_updates(self) -> None:
         """
@@ -2684,7 +3201,7 @@ Thanks for contributing!
         def apply_update(label, text_window):
 
             # Set the script description label to Logik Portal Updates
-            label.setText('Logik Portal Updates')
+            label.text = 'Logik Portal Updates'
 
             # Add updates to description text edit
             text_window.setPlainText(self.updates)
@@ -2706,105 +3223,9 @@ Thanks for contributing!
         elif self.settings.last_tab == 3:
             apply_update(self.inference_node_description_label, self.inference_node_description_text_edit)
 
-    def get_script_info(self):
-        """
-        Get Script Info
-        ===============
-
-        Get script info from the script and fill in the submit fields.
-
-        Script info is extracted from the first docstring in the script.
-
-        Script info should be in the following format:
-
-        '''
-        Script Version: 1.0.0
-        Flame Version: 2021.2
-        Written by: John Smith
-        Creation Date: 01.01.2021
-        Update Date: 01.01.2021
-
-        Description:
-            This is a test script.
-        '''
-        """
-
-
-        def extract_first_docstring(filename):
-            """
-            Extracts the first docstring from a python file and returns it as a string.
-            Checks for both types of triple quote docstring formats.
-            """
-
-            with open(filename, 'r') as f:
-                content = f.read()
-
-            # Regular expression to match docstrings
-            pattern = re.compile(r'(\'\'\'(.*?)\'\'\'|\"\"\"(.*?)\"\"\")', re.DOTALL)
-            match = pattern.search(content)
-
-            if match:
-                return match.group(2) if match.group(2) else match.group(3)
-
-            return ''
-
-        # Get script description from script
-        script_path = self.submit_script_path_entry.text()
-        file_description = extract_first_docstring(script_path)
-        file_description = file_description.strip()
-        # print('file_description:', file_description)
-
-        # Fill in script name field
-        script_name = self.submit_script_path_entry.text().rsplit('/', 1)[1][:-3]
-        script_name = script_name.replace('_', ' ')
-        self.submit_script_name_field.setText(script_name)
-        # print('script_name:', script_name)
-
-        # Fill submit fields if data in present in script
-        file_description_lines = file_description.splitlines()
-        for line in file_description_lines:
-            if 'Script Version: ' in line:
-                script_version = line.split('Script Version: ', 1)[1]
-                self.submit_script_version_entry.setText(script_version)
-                # print('script_version:', script_version)
-            elif 'Flame Version: ' in line:
-                flame_version = line.split('Flame Version: ', 1)[1]
-                self.submit_script_flame_version_entry.setText(flame_version)
-                # print('flame_version:', flame_version)
-            elif 'Written by: ' in line:
-                script_dev = line.split('Written by: ', 1)[1]
-                self.submit_script_dev_name_entry.setText(script_dev)
-                # print('script_dev:', script_dev)
-            elif 'Creation Date: ' in line:
-                script_date = line.split('Creation Date: ', 1)[1]
-            elif 'Update Date: ' in line:
-                script_date = line.split('Update Date: ', 1)[1]
-                self.submit_script_date_entry.setText(script_date)
-                # print('script_date:', script_date, '\n')
-
-        self.submit_script_description_text_edit.setText(file_description)
-
-    def update_script_info(self):
-        """
-        Update Script Info
-        ==================
-
-        Fill in Script info fields once valid script path is entered. Must end with .py
-        """
-
-        if self.submit_script_path_entry.text().endswith('.py'):
-            self.get_script_info()
-        else:
-            self.submit_script_name_field.setText('')
-            self.submit_script_version_label_02.setText('')
-            self.submit_script_flame_version_label_02.setText('')
-            self.submit_script_date_label_02.setText('')
-            self.submit_script_dev_name_label_02.setText('')
-            self.submit_script_description_text_edit.setPlainText('')
-
-    #-------------------------------------
+    # ==============================================================================
     # [Python Scripts]
-    #-------------------------------------
+    # ==============================================================================
 
     def check_script_flame_version(self, tree) -> None:
         """
@@ -2814,8 +3235,8 @@ Thanks for contributing!
         Check if script is compatible with current version of Flame.
         If script won't work with current version of Flame, disable the install button.
 
-        Args:
-        -----
+        Args
+        ----
             tree:
                 PyFlameTreeWidget
         """
@@ -2830,6 +3251,11 @@ Thanks for contributing!
             print(f'--> {script_name}: Requires newer version of Flame.\n')
             self.install_script_button.setEnabled(False)
         if script_flame_max_version != 'Latest':
+            # If script_flame_max_version has two '.'s, remove the last one. So '2025.9.9' becomes '2025.9'.
+            parts = script_flame_max_version.split('.')
+            if len(parts) > 2:
+                script_flame_max_version = '.'.join(parts[:2])
+
             if float(script_flame_max_version) < float(self.flame_version):
                 print(f'--> {script_name}: Does not work with this version of Flame.\n')
                 self.install_script_button.setEnabled(False)
@@ -2837,309 +3263,19 @@ Thanks for contributing!
             print(f'--> {script_name}: Flame version compatible.\n')
             self.install_script_button.setEnabled(True)
 
-    def get_script_description(self) -> None:
-        """
-        Get Script Description
-        ======================
-
-        Get the description of the selected script from the python scripts tree.
-        """
-
-        pyflame.print('Getting Python Script Description...')
-
-        # Switch text edit label to 'Script Description'. This is named 'Logik Portal Updates' when the script first loads.
-        self.script_description_label.setText('Python Script Description')
-
-        # Get selected script info
-        selected_item = self.portal_scripts_tree.selectedItems()
-        script = selected_item[0]
-        script_name = script.text(0)
-        author = script.text(4)
-
-        # Get script description from ftp
-        xml_tree = ET.parse(self.python_scripts_xml_path)
-        root = xml_tree.getroot()
-
-        for script in root.findall('script'):
-            if script.get('name') == script_name:
-                self.script_description_text_edit.setPlainText(script[-1].text[1:-1])
-                #self.script_description_text_edit.setMarkdown(script[-1].text[1:-1])
-
-    def update_logik_portal_scripts_tree(self, search: str=None):
-        """
-        Update Logik Portal Scripts Tree
-        ================================
-
-        Add Logik Portal python scripts to Portal Python Scripts tree.
-
-        Get script info from xml file and add to tree list. If a newer version of the script exists on the ftp, highlight the script entry.
-        If the script requires a newer version of flame, grey out the script entry.
-
-        Args:
-        -----
-            search (str, optional):
-                The search string to filter the scripts in the tree. If no search string is provided, all scripts are displayed.
-                (Default: None)
-        """
-
-        def add_script():
-
-            script_version = python_script.find('script_version').text.strip("'")
-            flame_min_version = python_script.find('flame_version').text.strip("'")
-            try:
-                flame_max_version = python_script.find('flame_max_version').text.strip("'")
-            except:
-                flame_max_version = 'Latest'
-            date = python_script.find('date').text.strip("'")
-            developer_name = python_script.find('developer').text.strip("'")
-
-            # Add script info to tree list
-            new_script = QtWidgets.QTreeWidgetItem(self.portal_scripts_tree, [script_name, script_version, flame_min_version, flame_max_version, date, developer_name])
-
-            # If newer version of script exists on ftp, highlight script entry
-            if script_name in self.installed_script_dict:
-                installed_script_version = self.installed_script_dict.get(script_name)
-                try:
-                    if float(script_version) > float(installed_script_version):
-                        new_script.setForeground(0, QtGui.QColor('#ffffff'))
-                        new_script.setForeground(1, QtGui.QColor('#ffffff'))
-                        new_script.setForeground(2, QtGui.QColor('#ffffff'))
-                        new_script.setForeground(3, QtGui.QColor('#ffffff'))
-                        new_script.setForeground(4, QtGui.QColor('#ffffff'))
-                        new_script.setForeground(5, QtGui.QColor('#ffffff'))
-                except:
-                    pass
-
-            # if script requires newer version of flame grey out script entry
-            if float(self.flame_version) < float(flame_min_version):
-                new_script.setForeground(0, QtGui.QColor('#555555'))
-                new_script.setForeground(1, QtGui.QColor('#555555'))
-                new_script.setForeground(2, QtGui.QColor('#555555'))
-                new_script.setForeground(3, QtGui.QColor('#555555'))
-                new_script.setForeground(4, QtGui.QColor('#555555'))
-                new_script.setForeground(5, QtGui.QColor('#555555'))
-
-            # If scripts max_flame_version if not equal to the current flame version or 'Latest', grey out the script entry.
-            if flame_max_version != 'Latest':
-                if float(flame_max_version) < float(self.flame_version):
-                    new_script.setForeground(0, QtGui.QColor('#555555'))
-                    new_script.setForeground(1, QtGui.QColor('#555555'))
-                    new_script.setForeground(2, QtGui.QColor('#555555'))
-                    new_script.setForeground(3, QtGui.QColor('#555555'))
-                    new_script.setForeground(4, QtGui.QColor('#555555'))
-                    new_script.setForeground(5, QtGui.QColor('#555555'))
-
-            self.ftp_script_list.append(script_name)
-
-        pyflame.print('Updating Python Scripts List...')
-
-        # Clear Portal Scripts tree
-        self.portal_scripts_tree.clear()
-
-        # Read in Logik Portal Python Scripts xml file
-        xml_tree = ET.parse(self.python_scripts_xml_path)
-        root = xml_tree.getroot()
-
-        # Add items from xml to Portal Scripts tree. If search string is present, only add items that match the search string.
-        for python_script in root.findall('./script'):
-            script_name = python_script.get('name')
-            if search:
-                if search.lower() in script_name.lower():
-                    add_script()
-            else:
-                add_script()
-
-        # Select top item in Portal Scripts tree
-        self.portal_scripts_tree.setCurrentItem(self.portal_scripts_tree.topLevelItem(0))
-
-        # Get selected python script description if python script is selected.
-        try:
-            self.get_script_description()
-        except:
-            print('Unable to get Python Script description. No Python Script selected\n')
-
-        # Set width of Portal Scripts tree headers
-        self.portal_scripts_tree.resizeColumnToContents(0)
-        self.portal_scripts_tree.resizeColumnToContents(4)
-        self.portal_scripts_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
-        self.portal_scripts_tree.header().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
-        self.portal_scripts_tree.header().setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
-        self.portal_scripts_tree.header().setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
-        self.portal_scripts_tree.header().setSectionResizeMode(4, QtWidgets.QHeaderView.Fixed)
-        self.portal_scripts_tree.header().setSectionResizeMode(5, QtWidgets.QHeaderView.Fixed)
-
-        pyflame.print('Python Scripts List Updated', text_color=TextColor.GREEN)
-
-    def update_installed_scripts_tree(self, search: str=None):
-        """
-        Update Installed Scripts Tree
-        =============================
-
-        Update the installed scripts tree with the scripts found in the shared script path.
-
-        Args:
-        -----
-            search (str, optional):
-                The search string to filter the scripts in the tree. If no search string is provided, all scripts are displayed.
-                (Default: None)
-        """
-
-        def add_script():
-
-            def date_flip(date):
-                """
-                Date Flip
-                =========
-
-                Swap date from mm.dd.yy to yy.mm.dd for python scripts list sorting.
-
-                Args:
-                -----
-                    date:
-                        str: Date in mm.dd.yy format.
-                """
-
-                date = date.split('.')
-                date = date[2] + '.' + date[0] + '.' + date[1]
-
-                return date
-
-            script_path = os.path.join(root, script)
-            # print('script_path:', script_path)
-
-            # Read in script to separate out comments
-            script_code = open(script_path, 'r')
-            script_lines = script_code.read().splitlines()[1:]
-            script_code.close()
-
-            # Split out script info to comment list
-            comment_lines = []
-
-            for line in script_lines:
-                if line != '':
-                    comment_lines.append(line)
-                else:
-                    break
-
-            # Get script info from comment list
-            try:
-                script_version = [line.split('Script Version: ', 1)[1] for line in comment_lines if 'Script Version: ' in line]
-                if script_version:
-                    script_version = script_version[0]
-                else:
-                    script_version = [line.split("'", 2)[1] for line in script_lines if 'SCRIPT_VERSION = ' in line] # For old scripts
-                    if script_version:
-                        script_version = script_version[0]
-                        if 'v' in script_version:
-                            script_version = script_version[1:]
-                    else:
-                        script_version = ''
-            except:
-                script_version = ''
-
-            try:
-                script_date = [line.split('Update Date: ', 1)[1] for line in comment_lines if 'Update Date: ' in line]
-                if script_date:
-                    script_date = script_date[0]
-                else:
-                    script_date = [line.split(' ', 1)[1] for line in comment_lines if 'Updated:' in line] # For old scripts
-                    if script_date:
-                        script_date = script_date[0]
-                    else:
-                        script_date = ''
-            except:
-                script_date = ''
-
-            if script_date != '':
-                script_date = date_flip(script_date)
-
-            # print('script_date:', script_date)
-
-            try:
-                script_dev = [line.split('Written by: ', 1)[1] for line in comment_lines if 'Written by' in line]
-                if script_dev:
-                    script_dev = script_dev[0]
-                else:
-                    script_dev = [line.split('Created by ', 1)[1] for line in comment_lines if 'Created by' in line] # For old scripts
-                    if script_dev:
-                        script_dev = script_dev[0]
-                    else:
-                        script_dev = ''
-            except:
-                script_dev = ''
-            # print('script_dev:', script_dev)
-
-            try:
-                script_flame_version = [line.split('Flame Version: ', 1)[1] for line in comment_lines if 'Flame Version: ' in line]
-                if script_flame_version:
-                    script_flame_version = script_flame_version[0].split(' ', 1)[0]
-                else:
-                    script_flame_version = [line.split(' ', 1)[1] for line in comment_lines if 'Flame 20' in line] # For old scripts
-                    if script_flame_version:
-                        script_flame_version = script_flame_version[0].split(' ', 1)[0]
-                    else:
-                        script_flame_version = ''
-            except:
-                script_version = ''
-            # print('script_min_flame_version:', script_flame_version)
-
-            # Add script to tree
-            QtWidgets.QTreeWidgetItem(self.installed_scripts_tree, [script_name, script_version, script_flame_version, script_date, script_dev, script_path])
-
-            self.installed_script_dict.update({script_name : script_version})
-
-        pyflame.print('Updating Installed Scripts List...')
-
-        # Clear installed scripts tree
-        self.installed_scripts_tree.clear()
-
-        for root, dirs, files in os.walk(self.settings.script_install_path, followlinks=True):
-            if root[len(self.settings.script_install_path):].count(os.sep) < 2:
-                for script in files:
-                    if script.endswith('.py'):
-                        if not script.startswith(('.', 'flame_widgets', 'pyflame_lib')):
-
-                            # Get script name from .py file name
-                            script_name = script[:-3]
-                            script_name = script_name.replace('_', ' ')
-                            #print('script_name:', script_name)
-
-                            # If search string is provided, filter scripts. Otherwise, add all scripts.
-                            if search:
-                                if search.lower() in script_name.lower():
-                                    add_script()
-                            else:
-                                add_script()
-
-        # Set width of tree headers
-        self.installed_scripts_tree.resizeColumnToContents(0)
-        self.installed_scripts_tree.resizeColumnToContents(4)
-        self.installed_scripts_tree.resizeColumnToContents(5)
-        self.installed_scripts_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
-        self.installed_scripts_tree.header().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
-        self.installed_scripts_tree.header().setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
-        self.installed_scripts_tree.header().setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
-        self.installed_scripts_tree.header().setSectionResizeMode(4, QtWidgets.QHeaderView.Fixed)
-        self.installed_scripts_tree.header().setSectionResizeMode(5, QtWidgets.QHeaderView.Fixed)
-
-        # Select first item in tree
-        self.installed_scripts_tree.setCurrentItem(self.installed_scripts_tree.topLevelItem(0))
-
-        pyflame.print('Installed Scripts List Updated', text_color=TextColor.GREEN)
-
-    #-------------------------------------
+    # ==============================================================================
     # [Common]
-    #-------------------------------------
+    # ==============================================================================
 
-    def get_description(self, label, label_text, tree, xml_path, findall, text_edit, index):
+    def get_description(self, label, label_text, tree, xml_path, findall, text_edit, index, download_button):
         """
         Get Description
         ===============
 
         Get item description from xml file and show in text edit.
 
-        Args:
-        -----
+        Args
+        ----
             label (PyFlameLabel):
                 Label to switch text to 'Script Description'.
 
@@ -3160,12 +3296,19 @@ Thanks for contributing!
 
             index (int):
                 Index of item in xml file.
+
+            download_button (PyFlameButton):
+                Download button widget.
         """
 
         selected_item = tree.selectedItems()
         item = selected_item[0]
         item_name = item.text(0)
         item_name = item_name.replace(' ', '_')
+        item_version = item.text(1)
+
+        # If item version is less than or equal to flame version, enable download button. Otherwise, disable it.
+        download_button.enabled = float(item_version) <= float(self.flame_version)
 
         # Add items from xml to matchbox list
         xml_tree = ET.parse(xml_path)
@@ -3176,46 +3319,132 @@ Thanks for contributing!
                 text_edit.setPlainText(item[index].text[1:-1])
 
         # Switch text edit label to 'Script Description'. This is named 'Logik Portal Updates' when the script first loads.
-        label.setText(label_text)
+        label.text = label_text
+
+    def get_json_description(self, label, label_text, tree, json_path, text_edit):
+        """
+        Get Description
+        ===============
+
+        Get item description from xml file and show in text edit.
+
+        Args
+        ----
+            label (PyFlameLabel):
+                Label to switch text to 'Script Description'.
+
+            label_text (str):
+                Text to switch label to.
+
+            tree (PyFlameTreeWidget):
+                Tree widget.
+
+
+
+            text_edit (PyFlameTextEdit):
+                Text edit widget.
+        """
+
+        selected_item = tree.selectedItems()
+        item = selected_item[0]
+        item_name = item.text(0)
+        item_name = item_name.replace(' ', '_')
+
+        with open(json_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            for item in data:
+                if item['name'] == item_name:
+                    raw_description = item.get('description', '')
+
+                    # Convert escaped \n and \t into actual characters
+                    description = bytes(raw_description, "utf-8").decode("unicode_escape")
+
+                    # Escape HTML characters
+                    description = html.escape(description)
+
+                    # Convert URLs to clickable links
+                    description = re.sub(
+                        r'(https?://[^\s<>"]+)',
+                        r'<a href="\1">\1</a>',
+                        description
+                        )
+
+                    # Convert emails to mailto: links
+                    description = re.sub(
+                        r'([\w\.-]+@[\w\.-]+\.\w+)',
+                        r'<a href="mailto:\1">\1</a>',
+                        description
+                        )
+
+                    # Replace newlines and tabs with HTML
+                    description = description.replace('\n', '<br>')
+                    description = description.replace('\t', '&emsp;')
+
+                    # Wrap in paragraph tags
+                    html_text = f'<p>{description}</p>'
+
+                    # Show in QTextEdit
+                    text_edit.setReadOnly(True)
+                    text_edit.setHtml(html_text)
+
+        # Switch text edit label to 'Script Description'. This is named 'Logik Portal Updates' when the script first loads.
+        label.text = label_text
 
     def download_xmls(self) -> None:
         """
         Download XMLS
         =============
 
-        Download file list xmls from ftp to temp folder.
+        Download Batch and Inference Node file list XMLs from ftp to temp folder.
         """
 
-        pyflame.print('Downloading XML Files...')
+        pyflame.print('Downloading Batch Setup and Inference Node XML Files...', underline=True, new_line=False)
 
-        # Download xmls to temp folder
-        self.python_scripts_xml_path = os.path.join(self.temp_folder, 'python_scripts.xml')
-        self.ftp.retrbinary('RETR ' + '/Scripts/python_scripts.xml', open(self.python_scripts_xml_path, 'wb').write)
-        pyflame.print('Python Scripts XML Downloaded')
-
-        self.matchbox_xml_path = os.path.join(self.temp_folder, 'matchbox_collection.xml')
-        self.ftp.retrbinary('RETR ' + '/Logik_Matchbox/matchbox_collection.xml', open(self.matchbox_xml_path, 'wb').write)
-        pyflame.print('Matchbox XML Downloaded')
-
+        # Download batch setups xml
         self.batch_setups_xml_path = os.path.join(self.temp_folder, 'batch_setups.xml')
         self.ftp.retrbinary('RETR ' + '/Batch_Setups/batch_setups.xml', open(self.batch_setups_xml_path, 'wb').write)
-        pyflame.print('Batch Setups XML Downloaded')
+        pyflame.print('Batch Setups XML Downloaded', text_color=TextColor.GREEN, new_line=False)
 
+        # Download inference nodes xml
         self.inferences_xml_path = os.path.join(self.temp_folder, 'inference_nodes_.xml')
         self.ftp.retrbinary('RETR ' + '/Inference_Nodes/inference_nodes_.xml', open(self.inferences_xml_path, 'wb').write)
-        pyflame.print('Inference Nodes XML Downloaded')
+        pyflame.print('Inference Nodes XML Downloaded', text_color=TextColor.GREEN)
 
-        pyflame.print('XML Files Downloaded', text_color=TextColor.GREEN)
+    def download_github_jsons(self) -> None:
+        """
+        Download Github JSONS
+        =====================
 
-    def download_file(self, download_type: str, file_name: str, ftp_file_path: str, tgz_path: str) -> None:
+        Download json files from github to temp folder.
+        """
+
+        pyflame.print('Downloading Github JSON Files...', underline=True)
+
+        # Github json urls
+        matchbox_json_url = "https://raw.githubusercontent.com/logik-portal/matchbox/main/matchbox_collection.json"
+        python_scripts_json_url = "https://raw.githubusercontent.com/logik-portal/python/main/python_scripts.json"
+
+        def download_json(url, path):
+            try:
+                urllib.request.urlretrieve(url, path)
+                pyflame.print(f'Downloaded: {url}', text_color=TextColor.GREEN, new_line=False)
+            except Exception as e:
+                pyflame.print(f"Download failed: {url}", text_color=TextColor.RED, new_line=False)
+
+        download_json(matchbox_json_url, self.matchbox_json_path)
+        download_json(python_scripts_json_url, self.python_scripts_json_path)
+
+        print('\n', end='')
+
+    def download_ftp_file(self, download_type: str, file_name: str, ftp_file_path: str, tgz_path: str) -> None:
         """
         Download File
         =============
 
-        Download selected file from ftp with progress window
+        Download selected file from Portal with progress window
 
-        Args:
-        -----
+        Args
+        ----
             download_type (str):
                 Type of file being downloaded (Python Script, Matchbox, Batch Setup, Inference Node).
 
@@ -3223,15 +3452,15 @@ Thanks for contributing!
                 Name of file being downloaded.
 
             ftp_file_path (str):
-                Path to file on ftp.
+                Path to file on Portal.
 
             tgz_path (str):
-                Path to download file to.
+                Temp folder path to download file to.
         """
 
-        pyflame.print(f'Downloading {download_type}: {file_name}')
+        pyflame.print(f'Downloading {download_type}: {file_name}', underline=True)
 
-        # Connect to ftp
+        # Connect to Portal
         self.ftp_download_connect()
 
         # Get file size
@@ -3244,9 +3473,10 @@ Thanks for contributing!
 
         # Create progress window
         self.progress_window = PyFlameProgressWindow(
-            num_to_do=num_to_do,
+            total_tasks=num_to_do,
             title=f'{SCRIPT_NAME}: Downloading',
-            text=f'{download_type}: {file_name}\n\n0 KB of {file_size}',
+            task_progress_message=f'{download_type}: {file_name}\n\n0 KB of {file_size}',
+            parent=self.window,
             )
 
         # Variables to store progress
@@ -3263,15 +3493,17 @@ Thanks for contributing!
             downloaded_bytes = downloaded / 1000
             downloaded_progress = int(round(downloaded_bytes, 1))
             downloaded_bytes = str(downloaded_progress) + ' KB'
-            self.progress_window.set_progress_value(downloaded_progress)
-            self.progress_window.set_text(f'{download_type}: {file_name}\n\n{downloaded_bytes} of {file_size}')
+            self.progress_window.processing_task = downloaded_progress
+            self.progress_window.task_progress_message = f'{download_type}: {file_name}\n\n{downloaded_bytes} of {file_size}'
 
         # Retrieve file in binary mode with a callback
         self.ftp.retrbinary(f'RETR {ftp_file_path}', write_and_update)
 
         # Set final progress window values
-        self.progress_window.set_text(f'{download_type}: {file_name}\n\n{file_size} of {file_size}\n\nDownload Complete.')
-        self.progress_window.set_progress_value(num_to_do)
+        self.progress_window.task_progress_message = f'{download_type}: {file_name}\n\n{file_size} of {file_size}\n\nDownload Complete.'
+        self.progress_window.processing_task = num_to_do
+        self.progress_window.tasks_complete = True
+        self.progress_window.title = 'Download Complete'
 
         # Disconnect from ftp
         self.ftp.quit()
@@ -3283,10 +3515,10 @@ Thanks for contributing!
 
         Upload files to ftp with progress window
 
-        Args:
-        -----
+        Args
+        ----
             upload_type (str):
-                Type of file being uploaded (Python Script, Matchbox, Batch Setup, Inference Node).
+                Type of file being uploaded (Batch Setup, Inference Node).
 
             file_name (str):
                 Name of file being uploaded.
@@ -3314,17 +3546,15 @@ Thanks for contributing!
             uploaded_bytes = str(upload_progress) + ' KB'
             #print('uploaded_bytes:', uploaded_bytes)
 
-            self.progress_window.set_progress_value(upload_progress)
-            self.progress_window.set_text(f'{upload_type}: {file_name}\n\n{uploaded_bytes} of {file_size}')
+            self.progress_window.processing_task = upload_progress
+            self.progress_window.task_progress_message = f'{upload_type}: {file_name}\n\n{uploaded_bytes} of {file_size}'
             return data
 
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        pyflame.cursor_busy()
 
         pyflame.print(f'Uploading: {file_name}')
 
-        if upload_type == 'Python Script':
-            upload_folder = '/Submit_Scripts'
-        elif upload_type == 'Batch Setup':
+        if upload_type == 'Batch Setup':
             upload_folder = '/Submit_Batch_Setups'
         elif upload_type == 'Inference Node':
             upload_folder = '/Submit_Inference_Node'
@@ -3336,8 +3566,7 @@ Thanks for contributing!
         ftp_xml_path = os.path.join(upload_folder, file_name) + '.xml'
 
         # Connect to ftp if not uploading python script - python script uses a different ftp connection
-        if not upload_type == 'Python Script':
-            self.ftp_upload_connect()
+        self.ftp_upload_connect()
 
         # Get file size
         file_size = os.path.getsize(tgz_path)
@@ -3351,44 +3580,48 @@ Thanks for contributing!
 
         # Create progress window
         self.progress_window = PyFlameProgressWindow(
-            num_to_do=num_to_do,
+            total_tasks=num_to_do,
             title=f'{SCRIPT_NAME}: Uploading',
-            text=f'{upload_type}: {file_name}\n\n0 KB of {file_size}',
+            task_progress_message=f'{upload_type}: {file_name}\n\n0 KB of {file_size}',
+            parent=self.window,
             )
 
         # Upload xml file to ftp
         with open(xml_path, 'rb') as f:
             self.ftp.storbinary(f'STOR {ftp_xml_path}', f)
-        print(f'--> {file_name}.xml uploaded to ftp.\n')
+        print(f'--> {file_name}.xml uploaded to Portal.\n')
 
-        # Upload tgz file to ftp
+        # Upload tgz file to Portal
         uploaded = 0 # Variables to store progress
 
         # Open the file and upload in binary mode with a callback
         with open(tgz_path, 'rb') as f:
             self.ftp.storbinary(f'STOR {ftp_tgz_path}', f, callback=read_and_update)
 
-        QtWidgets.QApplication.restoreOverrideCursor()
+        pyflame.cursor_restore()
 
         # Set final progress window message
-        self.progress_window.set_text(f'{upload_type}: {file_name}\n\n{file_size} of {file_size}\n\nUpload Complete.')
-        self.progress_window.set_progress_value(num_to_do)
+        self.progress_window.task_progress_message = f'{upload_type}: {file_name}\n\n{file_size} of {file_size}\n\nUpload Complete.'
+        self.progress_window.processing_task = num_to_do
 
         # Check that both files were uploaded to site, if not display error message
         if f'{os.path.join(upload_folder, file_name)}.tgz' and f'{os.path.join(upload_folder, file_name)}.xml' not in self.ftp.nlst(upload_folder):
-            QtWidgets.QApplication.restoreOverrideCursor()
             self.ftp.quit()
             PyFlameMessageWindow(
                 message='Upload failed. Try again.',
-                type=MessageType.ERROR
-            )
+                message_type=MessageType.ERROR,
+                parent=self.window,
+                )
             return
+
+        self.progress_window.tasks_complete = True
+        self.progress_window.title = 'Upload Complete'
 
         # Clean up temp folder
         os.remove(xml_path)
         os.remove(tgz_path)
 
-        # Disconnect from ftp
+        # Disconnect from Portal
         self.ftp.quit()
 
     def done(self):
@@ -3399,11 +3632,15 @@ Thanks for contributing!
         Close the Logik Portal window.
         """
 
+        # Get current tab name
+        current_tab_name = self.tabs.get_current_tab_name()
+        #print('current_tab_name: ', current_tab_name)
+
         # Save current tab to config
         self.settings.save_config(
             config_values={
-                'last_tab': self.window.get_current_tab(),
-                'script_install_path': self.script_install_path_browse.text()
+                'last_tab': current_tab_name,
+                'script_install_path': self.script_install_path_browse.path
                 }
             )
 
@@ -3432,82 +3669,9 @@ Thanks for contributing!
 
         print('Done.\n')
 
-    #-------------------------------------
-    # [Matchbox]
-    #-------------------------------------
-
-    def get_matchbox_description(self):
-        """
-        Get Matchbox Description
-        ========================
-
-        Get selected matchbox description from xml file and display in text edit.
-        """
-
-        pyflame.print('Getting Matchbox Description...')
-
-        self.get_description(
-            label=self.matchbox_desciption_label,
-            label_text='Matchbox Description',
-            tree=self.matchbox_tree,
-            xml_path=self.matchbox_xml_path,
-            findall='matchbox',
-            text_edit=self.matchbox_text_edit,
-            index=5,
-            )
-
-    def update_matchbox_tree(self, search: str=None) -> None:
-        """
-        Update Matchbox Tree
-        =====================
-
-        Update matchbox tree with matchboxes from xml file.
-
-        Args:
-        -----
-            search (str):
-                String to search for in matchbox name. If search string is present, only add items that match the search string.
-                (Default: None)
-        """
-
-        pyflame.print('Updating Matchbox List...')
-
-        def add_matchbox(matchbox):
-            shader_type = str(matchbox[0].text[1:-1])
-            author_name = str(matchbox[4].text[1:-1])
-            matchbox = QtWidgets.QTreeWidgetItem(self.matchbox_tree, [matchbox_name, shader_type, author_name])
-
-        self.matchbox_tree.clear()
-
-        # Read in matchboxes from xml
-        xml_tree = ET.parse(self.matchbox_xml_path)
-        root = xml_tree.getroot()
-
-        # Add items from xml to matchbox tree. If search string is present, only add items that match the search string.
-        if search:
-            for matchbox in root.findall('matchbox'):
-                matchbox_name = str(matchbox.get('name'))
-                if search.lower() in matchbox_name.lower():
-                    add_matchbox(matchbox)
-        else:
-            for matchbox in root.findall('matchbox'):
-                matchbox_name = str(matchbox.get('name'))
-                add_matchbox(matchbox)
-
-        # Select top item in matchbox list
-        self.matchbox_tree.setCurrentItem(self.matchbox_tree.topLevelItem(0))
-
-        # Get selected Matchbox description if Matchbox is selected.
-        try:
-            self.get_matchbox_description()
-        except:
-            print('Unable to get Matchbox description. No Matchbox selected\n')
-
-        pyflame.print('Matchbox List Updated', text_color=TextColor.GREEN)
-
-    #-------------------------------------
+    # ==============================================================================
     # [Batch Setups]
-    #-------------------------------------
+    # ==============================================================================
 
     def check_batch_flame_version(self) -> None:
         """
@@ -3527,9 +3691,6 @@ Thanks for contributing!
         batch_name = batch_item.text(0)
         batch_flame_version = batch_item.text(1)
 
-        # print('current_flame_version:', self.flame_version)
-        # print('batch_flame_version:', batch_flame_version, '\n')
-
         if float(batch_flame_version) > float(self.flame_version):
             pyflame.print(f'{batch_name} Requires Newer Version of Flame.')
             self.batch_setups_download_button.setEnabled(False)
@@ -3544,8 +3705,6 @@ Thanks for contributing!
         Get selected batch setup description from xml file and display in text edit.
         """
 
-        pyflame.print('Getting Batch Setup Description...')
-
         self.get_description(
             label=self.batch_setups_desciption_label,
             label_text='Batch Setup Description',
@@ -3554,6 +3713,7 @@ Thanks for contributing!
             findall='batch',
             text_edit=self.batch_setups_text_edit,
             index=2,
+            download_button=self.batch_setups_download_button,
             )
 
     def update_batch_setups_tree(self, search: str=None) -> None:
@@ -3563,8 +3723,8 @@ Thanks for contributing!
 
         Add batch setups to batch setups tree from xml file. If search string is present, only add items that match the search string.
 
-        Args:
-        -----
+        Args
+        ----
             search (str):
                 String to search for in batch setup name. If search string is present, only add items that match the search string.
                 (Default: None)
@@ -3574,15 +3734,13 @@ Thanks for contributing!
             flame_version = str(batch[1].text[1:-1])
             artist_name = str(batch[0].text[1:-1])
 
-            batch_setup = QtWidgets.QTreeWidgetItem(self.batch_setups_tree, [batch_name, flame_version, artist_name])
+            batch_setup = self.batch_setups_tree.add_item_with_columns([batch_name, flame_version, artist_name])
 
             # if batch setup requires newer version of flame grey out script entry
             if float(self.flame_version) < float(flame_version):
-                batch_setup.setForeground(0, QtGui.QColor('#555555'))
-                batch_setup.setForeground(1, QtGui.QColor('#555555'))
-                batch_setup.setForeground(2, QtGui.QColor('#555555'))
+                self.batch_setups_tree.color_item(batch_setup, color='#555555')
 
-        pyflame.print('Updating Batch Setups List...')
+        pyflame.print('Updating Batch Setups List...', underline=True, new_line=False)
 
         # Clear batch setup tree
         self.batch_setups_tree.clear()
@@ -3616,9 +3774,9 @@ Thanks for contributing!
 
         pyflame.print('Batch Setups List Updated', text_color=TextColor.GREEN)
 
-    #-------------------------------------
+    # ==============================================================================
     # [Inference Nodes]
-    #-------------------------------------
+    # ==============================================================================
 
     def get_inference_node_description(self):
         """
@@ -3628,8 +3786,6 @@ Thanks for contributing!
         Get selected inference node description from xml file and display in text edit.
         """
 
-        pyflame.print('Getting Inference Node Description...')
-
         self.get_description(
             label=self.inference_node_description_label,
             label_text='Inference Node Description',
@@ -3638,6 +3794,7 @@ Thanks for contributing!
             findall='inference_node',
             text_edit=self.inference_node_description_text_edit,
             index=2,
+            download_button=self.inference_node_download_button,
             )
 
     def update_inference_node_tree(self, search: str=None) -> None:
@@ -3647,8 +3804,8 @@ Thanks for contributing!
 
         Update inference node tree from xml file. If search string is present, only add items that match the search string.
 
-        Args:
-        -----
+        Args
+        ----
             search (str):
                 String to search for in inference node name. If search string is present, only add items that match the search string.
                 (Default: None)
@@ -3658,15 +3815,13 @@ Thanks for contributing!
             flame_version = str(node[0].text[1:-1])
             inference_node_size = str(node[1].text[1:-1])
 
-            inference_node = QtWidgets.QTreeWidgetItem(self.inference_node_tree, [inference_node_name, flame_version, inference_node_size])
+            inference_node = self.inference_node_tree.add_item_with_columns([inference_node_name, flame_version, inference_node_size])
 
             # if node requires newer version of flame grey out script entry
             if float(self.flame_version) < float(flame_version):
-                inference_node.setForeground(0, QtGui.QColor('#555555'))
-                inference_node.setForeground(1, QtGui.QColor('#555555'))
-                inference_node.setForeground(2, QtGui.QColor('#555555'))
+                self.inference_node_tree.color_item(inference_node, color='#555555')
 
-        pyflame.print('Updating Inference Node List...')
+        pyflame.print('Updating Inference Node List...', underline=True, new_line=False)
 
         # Clear inference node tree.
         self.inference_node_tree.clear()
@@ -3697,11 +3852,11 @@ Thanks for contributing!
 
         pyflame.print('Inference Node List Updated', text_color=TextColor.GREEN)
 
-    #-------------------------------------
+    # ==============================================================================
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 

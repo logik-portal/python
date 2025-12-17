@@ -1,10 +1,10 @@
 # Logik Portal
 
-**Script Version:** 6.5.1  
-**Flame Version:** 2023.2  
+**Script Version:** 7.0.0  
+**Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 10.20.25  
+**Update Date:** 12.16.25  
 
 **Script Type:** Flame Main Menu
 
@@ -22,9 +22,17 @@ https://github.com/logik-portal/python/logik_portal
 
 ## Installation
 
-Copy script folder into /opt/Autodesk/shared/python
+Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.0.0 [12.16.25]
+- Updated to PyFlameLib v5.0.0.
+- Removed PySide2 support.
+- Matchboxes are now pulled from GitHub repository instead of FTP server.
+- Python scripts are now pulled from GitHub repository instead of FTP server.
+- Fixed issue with python scripts not showing up in locally installed scripts list if they did not have a properly formatted header docstring.
+<br>
 
 ### v6.5.1 [10.20.25]
 - Fixed issues with inference copyright window.
