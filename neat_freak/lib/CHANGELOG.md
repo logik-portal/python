@@ -1,9 +1,36 @@
-# Changelog
+# PyFlame Library Changelog
 
 All notable changes to this project will be documented in this file.
 
-For the latest updates and source code, visit:
 https://github.com/logik-portal/pyflame
+
+## v5.1.1 [12.16.25]
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameProgressWindow`
+        - **Misc Fixes**
+
+## v5.1.0 [12.05.25]
+
+### Added
+
+- **PyFlameFunctions**
+    - `pyflame.python_package_local_install`
+        - New function to install python packages locally bundled with a script.
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameTreeWidget`
+        - **New Methods**
+            - `add_item_with_columns`
+                - Add a new item to a tree with tree column entries.
+            - `color_item`
+                - Color item in tree.
+            - `set_fixed_column_headers`
+                - Set all tree column headers to a fixed length
 
 ## v5.0.0 [09.03.25]
 

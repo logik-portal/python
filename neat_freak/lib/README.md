@@ -5,9 +5,9 @@ https://github.com/logik-portal/pyflame
 Python library for Autodesk Flame providing PyQt widgets styled to
 match Flame’s UI and utility functions that streamline script development.
 
-**Version:** 5.0.0<br>
+**Version:** 5.1.0<br>
 **Creation Date:** 10.31.20<br>
-**Update Date:** 09.03.25<br>
+**Update Date:** 12.05.25<br>
 **Written By:** Michael Vaglienty<br>
 **License:** License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details<br>
 
@@ -127,6 +127,7 @@ To utilize widgets, instantiate them directly by their class names:
 - `pyflame.iterate_name` - Iterate through a list of names and return a unique name based on the list.
 - `pyflame.move_to_shot_folder` - Move a clip to a shot folder in the Media Panel.
 - `pyflame.open_in_finder` - Open path in System Finder.
+- `pyflame.python_package_local_install` - Install python packages bundled with script.
 - `pyflame.print` - Print a message to the terminal and Flame message area.
 - `pyflame.print_dict` - Cleanly print nested dictionaries with indentation to the terminal.
 - `pyflame.print_json` - Cleanly print JSON data to terminal with proper indentation for easy readability.
@@ -145,93 +146,33 @@ To utilize widgets, instantiate them directly by their class names:
 
 ## Updates
 
-## v5.0.0 [09.03.25]
-
-**Major Rewrite of PyFlame Library**
-
-This update will break most scripts using this library.
-
-Window order problems in Linux should hopefully be fixed(New windows openning behind already open windows or Flame)
-
-### New Features
-
-- All widgets now have properties to simplify things and provide more consistency and commonality between all widgets.
-  Previous widget arguments and methods may not longer work as expected.
-  All new properties/methods are documented in the docstring of each widget.
-
-### Added
-
-- **Widgets**
-    - `PyFlameProgressBarWidget` -
-        - Progress bar widget to show progress of tasks
-
-    - `PyFlameTextBrowser`
-        - Text widget for displaying text with hyperlinks.
-        - Has ability to display html, markdown, and plain text.
-
-- **PyFlameFunctions**
-    - pyflame.get_media_panel_shot_folder
-
-    - pyflame.move_to_shot_folder
-
-    - pyflame.copy_to_shot_folder
+## v5.1.1 [12.16.25]
 
 ### Updates/Fixes
 
 - **Widgets**
-    - `PyFlamePushButton`
+    - `PyFlameProgressWindow`
+        - **Misc Fixes**
+
+## v5.1.0 [12.05.25]
+
+### Added
+
+- **PyFlameFunctions**
+    - pyflame.python_package_local_install
+        - New function to install python packages locally bundled with a script.
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameTreeWidget`
         - **New Methods**
-            - `connect`
-                - Connect a function to button press.
-        - Argument changed: `button_checked` -> `checked`
-        - instead of button.isChecked() to get checked state, use button.checked
-        - instead of button.isEnabled() use button.enabled to get enabled state
-
-    - `PyFlameTextEdit`
-        - Added ability to display text as html, markdown, and plain text.
-
-    - `PyFlameListWidget`
-        - **New methods**
-            - `replace_items` - Replaces all items in list with new list of items.
-
-    - `PyFlameSlider`
-        -Removed `use_float` argument. Whether the Slider is float or int is taken from min/max values.
-        -Calculator window now closes when user clicks outside calculator window.
-
-    - Renamed Widgets
-        - `PyFlamePushButtonMenu` -> `PyFlameMenu`
-        - `PyFlamePushButtonColorMenu` -> `PyFlameColorMenu`
-        - `PyFlameTokenPushButton` -> `PyFlameTokenMenu`
-
-- **Windows**
-    - `PyFlameDialogWindow`
-        - Class has been removed. Use `PyFlameWindow` instead.
-
-    - `PyFlameWindow`
-        - Now uses QDialog instead of QWidget.
-        - **New Arguments**
-            - `enter_pressed`
-                -  Function to call when enter/return key is pressed on keyboard.
-            - `escape_pressed`
-                - Function to call when escape button is pressed on keyboard.
-
-    - `PyFlameInputDialog`
-        - **New Property**
-            - `text`
-                - Get or set input entry text.
-        - **Returns**
-            Ok - Input text string
-            Cancel - None
-
-### Misc
-
-- Removed Support for PySide2.
-
-- Removed: `max_width` and `max_height` arguments from all widgets.
-
-- `PyFlameToolTip`
-    - New class for adding tooltips to pyflame widgets. Not intended to be used directly.
-    - Added delay and duration arguments. These can be used to set the delay and duration of the tooltip.
+            - `add_item_with_columns`
+                - Add a new item to a tree with tree column entries.
+            - `color_item`
+                - Color item in tree.
+            - `set_fixed_column_headers`
+                - Set all tree column headers to a fixed length
 
 ---
 

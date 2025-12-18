@@ -19,10 +19,10 @@
 
 """
 PyFlame Library
-Version: 5.0.0
+Version: 5.1.1
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 09.03.25
+Update Date: 12.16.25
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -63,7 +63,7 @@ Notes:
 Import Example:
     from lib.pyflame_lib_<main_script_name> import *
 
-See README.md for more details.
+See README.md and CHANGLELOG.md for more details.
 """
 
 #---------------------------------------------
@@ -79,12 +79,13 @@ import re
 import shutil
 import subprocess
 import traceback
+import importlib.util
 from shiboken6 import isValid
 import xml.etree.ElementTree as ET
 from enum import Enum
 from functools import partial
 from subprocess import PIPE, Popen
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Sequence
 
 import flame
 
@@ -224,7 +225,7 @@ class TextColor(Enum):
     YELLOW = '\033[93m'
     RED = '\033[91m'
     WHITE = '\033[97m'
-    BLUE = '\033[38;2;0;120;215m'
+    BLUE = '\033[38;5;33m'
     RESET = '\033[0m'
 
     def format(self, text: str) -> str:
@@ -443,23 +444,195 @@ class _PyFlame:
     """
 
     @staticmethod
+    def python_package_local_install(package: str | list[str], python_version: str | None=None):
+        """
+        Python Package Local Install
+        ============================
+
+        Install local copy of python packages to Flame Python Packages directory.
+
+        System Password is required to install python packages.
+
+        Args
+        ----
+            package (str|list[str]):
+                The name of the python package to install.
+
+            python_version (str|None):
+                Version of python Flame is using. (3.11, 3.22, etc)
+
+        Notes
+        -----
+            - If a list of packages is provided, all packages will be installed.
+            - If a single package is provided, it will be installed.
+            - The package will be installed to the Flame Python Packages directory.
+            - The package will be installed from the script assets directory.
+            - The package will be installed with the system password.
+            - Python packages should be compressed with tgz and located in the script assets directory.
+              Example: /opt/Autodesk/shared/python/script_name/assets/PIL_Python3.11.tgz
+            - The python package should be named <package_name>_python<python_version>.tgz and located in the script assets directory.
+              Example: PIL_python3.11.tgz
+            - The python package will be installed to the Flame Python Packages directory.
+              Example: /opt/Autodesk/python/FLAME_VERSION/lib/PYTHON_VERSION/site-packages/<package_name>
+            - Package name and python version are taken from the file name of the compressed package.
+              Example: PIL_python3.11.tgz -> package = PIL, python_version = 3.11
+        """
+
+        def package_check(package: str) -> bool:
+            """
+            Package Check
+            =============
+
+            Check if required python package is installed.
+
+            Args
+            ----
+                package (str):
+                    The name of the required python package to check.
+            """
+
+            if importlib.util.find_spec(package) is None:
+                return False
+            else:
+                return True
+
+        def install_package(package: str, python_version: str) -> bool:
+            """
+            Install Package
+            ===============
+
+            Install python package to Flame Python Packages directory.
+
+            System Password is required to install python packages.
+
+            Args
+            ----
+                package (str):
+                    The name of the python package to install.
+
+            Returns
+            -------
+                bool:
+                    True if package is installed, False otherwise.
+            """
+
+            # Open password window to get system password. If password is not entered, return.
+            password_window = PyFlamePasswordWindow(
+                text=f'This script requires python packages to be installed. System password is required to install them.\n\nPackage(s) to be instaled: {package}',
+                title='Enter Password',
+                parent=None,
+                )
+            system_password = password_window.password # Get system password from password window.
+            if not system_password:
+                return False
+
+            # Get Flame Python Packages directory.
+            python_install_dir = pyflame.get_flame_python_packages_path()
+            print('Flame Python Packages Directory:', python_install_dir)
+
+            # Get package tar file. If python_version if provided, check for it.
+            package_tar = None
+            for tgz in os.listdir(os.path.join(SCRIPT_PATH, 'assets')):
+                if python_version:
+                    if tgz.endswith('.tgz') and tgz.startswith(package) and python_version in tgz:
+                        package_tar = os.path.join(os.path.join(SCRIPT_PATH, 'assets', tgz))
+                        break
+                else:
+                    if tgz.endswith('.tgz') and tgz.startswith(package):
+                        package_tar = os.path.join(os.path.join(SCRIPT_PATH, 'assets', tgz))
+                        break
+
+            # If package tar file is not found, print error and return.
+            if not package_tar:
+                PyFlameMessageWindow(
+                    message=f'Python package {package} not found.',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+                return False
+
+            # Untar package.
+            pyflame.untar(
+                tar_file_path=package_tar,
+                untar_path=python_install_dir,
+                sudo_password=system_password,
+                )
+
+            # Clear system password to prevent reuse
+            system_password = ''
+
+            # Refresh Python Hooks
+            flame.execute_shortcut('Rescan Python Hooks')
+
+            # Check if package is installed. If not, print error and return.
+            installed = package_check(package)
+            if not installed:
+                PyFlameMessageWindow(
+                    message=f'Python package {package} not installed.',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+                return False
+
+            PyFlameMessageWindow(
+                message='Python packages successfully installed.',
+                parent=None,
+                )
+            return True
+
+        # Validate Arguments
+        if not isinstance(package, str|list[str]):
+            pyflame.raise_type_error('python_package_local_install', 'package', 'str|list[str]', package)
+        if python_version is not None and not isinstance(python_version, str):
+            pyflame.raise_type_error('python_package_local_install', 'python_version', 'str', python_version)
+
+        pyflame.print(f'Checking if required python package(s) are installed: {package}', underline=True)
+        pyflame.print(f'Required package: {package}, Python Version: {python_version}')
+
+        # if package is a string, convert to list
+        if isinstance(package, str):
+            package = [package]
+
+        # Check if each package is installed. If not, install it.
+        for pkg in package:
+            if not package_check(pkg):
+                pyflame.print(f'{pkg} not found. Installing...', print_type=PrintType.ERROR)
+                installed = install_package(pkg, python_version) # Install package.
+                if not installed: # If installation failed, print error and return.
+                    pyflame.print(f'{pkg} installation failed.', print_type=PrintType.ERROR)
+                    return False # Return False if any package installation failed.
+            else: # If package is installed, print message.
+                pyflame.print(f'{pkg} found.')
+        return True # Return True if all packages are installed.
+
+    @staticmethod
+    def cursor_busy() -> None:
+
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+
+    @staticmethod
+    def cursor_restore() -> None:
+
+        QtWidgets.QApplication.restoreOverrideCursor()
+
+    @staticmethod
     def print_title(text: str) -> None:
         """
         Print Title
         ===========
 
-        Print a stylized title banner with the script name and version centered
-        to the terminal.
+        Print a stylized title banner with the script name and version centered to the terminal.
 
         Args
-        ---
+        ----
             text (str):
                 The full banner line, e.g., 'Cool Script v1.0.0'
 
         Example
-        ------
-            ---=====[ Cool Script ]=====---
-              ~~~~~~===[ v1.0.0 ]===~~~~~~
+        -------
+                              ---=====[ Cool Script ]=====---
+                                ~~~~~~===[ v1.0.0 ]===~~~~~~
+        --------------------------------------------------------------------------------
         """
 
         # Validate Argument
@@ -474,21 +647,32 @@ class _PyFlame:
 
         name, version = parts
 
+        # Helper function to strip ANSI color codes for width calculation
+        def strip_ansi(text):
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            return ansi_escape.sub('', text)
+
         # First line with frame
         top_line = f'{TextColor.BLUE.value}---====={TextColor.WHITE.value}[ {name} ]{TextColor.BLUE.value}=====---'
 
         # Second line to be centered under top_line
         version_line = f'{TextColor.BLUE.value}~~~~~~==={TextColor.WHITE.value}[ {version} ]{TextColor.BLUE.value}===~~~~~~'
 
-        # Calculate exact left padding to center second line under top line
-        total_width = len(top_line)
-        padding = max(0, (total_width - len(version_line)) // 2)
-        centered_version_line = " " * padding + version_line
+        # Calculate padding to center both lines in 80 columns (accounting for ANSI codes)
+        top_line_width = len(strip_ansi(top_line))
+        version_line_width = len(strip_ansi(version_line))
+
+        top_padding = (80 - top_line_width) // 2
+        version_padding = (80 - version_line_width) // 2
+
+        centered_top_line = " " * top_padding + top_line
+        centered_version_line = " " * version_padding + version_line
 
         # Output
         print('\n')
-        print(top_line)
+        print(centered_top_line)
         print(centered_version_line)
+        print('-' * 80)
         print(f'{TextColor.RESET.value}\n', end='')
 
     @staticmethod
@@ -632,7 +816,7 @@ class _PyFlame:
             pyflame.raise_type_error('verify_script_install.additional_files', 'list', f'{type(additional_files).__name__}', additional_files)
 
         pyflame.print('Verifying Script Install', new_line=False)
-        print('------------------------\n')
+        print('--------------------------------------------------------------------------------\n')
 
         # Get script path info
         script_path = os.path.abspath(os.path.dirname(__file__))
@@ -692,7 +876,7 @@ class _PyFlame:
                     pyflame.print(f'{file} -> Found', text_color=TextColor.GREEN, new_line=False)
             print('\n', end='')
 
-        print('------------------------\n')
+        print('--------------------------------------------------------------------------------\n')
 
         pyflame.print('Script Install Verified', text_color=TextColor.GREEN)
         return True
@@ -1355,9 +1539,9 @@ class _PyFlame:
         print(text) # Print message text to terminal with specified color
 
         if underline:
-            print(f'{color}{"-" * text_length}{TextColor.RESET.value}') # Print underline
+            print(f'{color}{"-" * 80}{TextColor.RESET.value}') # Print underline
         if double_underline:
-            print(f'{color}{"=" * text_length}{TextColor.RESET.value}') # Print double underline
+            print(f'{color}{"=" * 80}{TextColor.RESET.value}') # Print double underline
         if new_line:
             print('\n', end='')
 
@@ -3871,7 +4055,7 @@ class PyFlameConfig:
     Values can be provided as their original data types. Values no longer need to be converted to strings.
 
     Args
-    ---
+    ----
         `config_values` (Dict[str, Any]):
             A dictionary to store configuration key-value pairs.
 
@@ -3883,7 +4067,7 @@ class PyFlameConfig:
             (Default: `SCRIPT_NAME`)
 
     Methods
-    ------
+    -------
         `load_config(config_values: Dict[str, Any])`:
             Loads configuration values from a JSON file and updates instance attributes.
 
@@ -3894,7 +4078,7 @@ class PyFlameConfig:
             Returns the current configuration values.
 
     Raises
-    -----
+    ------
         TypeError:
             If `config_values` is not a dictionary.
             If `config_path` is not a string.
@@ -3902,7 +4086,7 @@ class PyFlameConfig:
             If `config_values` is empty.
 
     Examples
-    -------
+    --------
         To Load/Create settings:
         ```
         settings = PyFlameConfig(
@@ -3994,7 +4178,7 @@ class PyFlameConfig:
             indent=2,
             )
 
-        print('-' * 28, '\n')
+        print('-' * 80, '\n')
 
         pyflame.print('Script Configuration Loaded', arrow=True)
 
@@ -4082,7 +4266,7 @@ class PyFlameConfig:
             indent=2,
             )
 
-        print('-' * 27, '\n')
+        print('-' * 80, '\n')
 
         pyflame.print('Script Configuration Saved', arrow=True)
 
@@ -5104,7 +5288,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     def placeholder_text(self) -> str | None:
         """
         Placeholder Text
-        =================
+        ================
 
         Get or set the placeholder text for the entry.
 
@@ -5140,7 +5324,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     def placeholder_text(self, value: str | None) -> None:
         """
         Placeholder Text
-        =================
+        ================
 
         Set the placeholder text for the entry.
         """
@@ -5158,7 +5342,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     def read_only(self) -> bool:
         """
         Read Only
-        ========
+        =========
 
         Get or set the read-only state of the entry.
 
@@ -5194,7 +5378,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     def read_only(self, value: bool) -> None:
         """
         Read Only
-        ========
+        =========
 
         Set the read-only state of the entry.
         """
@@ -10996,6 +11180,7 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
             token_push_button.enabled = False
             ```
         """
+
         return self.isEnabled()
 
     @enabled.setter
@@ -11107,6 +11292,7 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
             token_push_button.height = 40
             ```
         """
+
         return self._height
 
     @height.setter
@@ -11843,6 +12029,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             slider.enabled = False
             ```
         """
+
         return self.isEnabled()
 
     @enabled.setter
@@ -11954,6 +12141,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             slider.height = 40
             ```
         """
+
         return self._height
 
     @height.setter
@@ -12357,7 +12545,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             )
         calc_entry.returnPressed.connect(enter)
 
-        regex = QRegularExpression('[0-9_,=,/,*,+,\-,.]+')
+        regex = QRegularExpression('[0-9_,=,/,*,+,\\-,.]+')
         validator = QValidator(regex)
         calc_entry.setValidator(validator)
 
@@ -12923,6 +13111,7 @@ class PyFlameTable(QtWidgets.QTableView):
             table.enabled = False
             ```
         """
+
         return self.isEnabled()
 
     @enabled.setter
@@ -14921,8 +15110,6 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         # Set Text Interaction Flags
         if self._text_style == TextStyle.UNSELECTABLE or self._text_style == TextStyle.READ_ONLY:
             self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-        else:
-            self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
 
         self._set_stylesheet()
 
@@ -14958,6 +15145,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             text_edit.enabled = False
             ```
         """
+
         return self.isEnabled()
 
     @enabled.setter
@@ -15801,6 +15989,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             text_browser.enabled = False
             ```
         """
+
         return self.isEnabled()
 
     @enabled.setter
@@ -16325,6 +16514,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `add_item(item_name: str)`:
             Add a new item as a child of the currently selected item in the tree, or as a child of the top-level item if no item is selected.
 
+        `add_item_with_columns(item_name: str, column_entries: List[str])`:
+            Add a new item to a tree with tree column entries.
+
         `delete_item()`:
             Delete the selected item in the PyFlameTreeWidget.
             Does not delete if the item is the top-level item or if the total number of items under the top-level item would drop below
@@ -16332,6 +16524,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         `sort_items()`:
             Sort all items in the tree while maintaining the structure and keeping the tree expanded.
+
+        `color_item(item: QTreeWidgetItem, color: QColor)`:
+            Color item in tree with supplied QColor value.
 
         `clear()`:
             Clear all items from the PyFlameTreeWidget.
@@ -17887,7 +18082,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 If `item_name` is not a string.
 
         Example
-        --------
+        -------
             Add a new item to the PyFlameTreeWidget:
             ```
             tree_widget.add_item(item_name='New Item')
@@ -17956,6 +18151,49 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         pyflame.print(f'Added item: {item_name}', text_color=TextColor.GREEN)
 
+    def add_item_with_columns(self, item: list[str]) -> QtWidgets.QTreeWidgetItem:
+        """
+        Add Item With Columns
+        =====================
+
+        Add a new item to the PyFlameTreeWidget with column data.
+
+        Args
+        ----
+            `item` (list):
+                New item to add to tree. The first item in the list is the name of the item.
+                The following items in the list is the data to be added under the item columns.
+
+        Returns
+        -------
+            Qt.Widgets.QTreeWidgetItem:
+                Newly added item in tree
+
+        Raises
+        ------
+            TypeError:
+                If `item_name` is not a string.
+
+        Example
+        -------
+            Add a new item to the PyFlameTreeWidget:
+            ```
+            tree_widget.add_item(item_name='New Item')
+            ```
+        """
+
+        # Validate the argument type
+        if not isinstance(item, list):
+            pyflame.raise_type_error('PyFlameTreeWidget.add_item_with_columns', 'item', 'list', item)
+
+        # Add item with columns to tree
+        tree_item = QtWidgets.QTreeWidgetItem(self, item)
+
+        # Trigger the callback function if it is set
+        self._trigger_callback()
+
+        return tree_item
+
     def delete_item(self) -> None:
         """
         Delete Item
@@ -17965,7 +18203,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Will not delete if the item is the top-level item or if the total number of items under the top-level item would drop below the minimum required.
 
         Example
-        --------
+        -------
             Delete the selected item in the PyFlameTreeWidget:
             ```
             tree_widget.delete_item()
@@ -18080,6 +18318,70 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self._trigger_callback()
 
         pyflame.print('Tree items sorted.', text_color=TextColor.GREEN)
+
+    def color_item(self, item, color) -> None:
+        """
+        Color Item
+        ==========
+
+        Color item in tree with supplied QColor value.
+
+        Args
+        ----
+            `item` (QTreeWidgetItem):
+                QTreeWidgetItem to have color added.
+
+            'color' (QColor):
+                QColor value to be applied to item
+
+        Raises
+        ------
+            TypeError:
+                If `item` is not a QTreeWidgetItem(PyFlameTreeWidgetItem).
+
+            ValueError:
+                If 'color' is not a QColor value.
+
+        Example
+        -------
+            Add color to item in tree
+            ```
+            tree_widget.color_item(item, color='#555555')
+            ```
+        """
+
+        # Validate arguments
+        if not isinstance(item, QtWidgets.QTreeWidgetItem):
+            pyflame.raise_type_error('PyFlameTreeWidget.color_item', 'item', 'PyFlameTreeWidgetItem', item)
+
+        if not QtGui.QColor.isValidColor(color):
+            pyflame.raise_value_error('PyFlameTreeWidget.color_item', 'color', 'QColor', color)
+
+        #Add color to item and all columns
+        columns = self.columnCount()
+
+        for column in range(columns):
+            item.setForeground(column, QtGui.QColor(color))
+
+    def set_fixed_column_headers(self) -> None:
+        """
+        Set Fixed Column Headers
+        ========================
+
+        Set all the column headers of a tree to a fixed length
+
+        Example
+        -------
+            Set tree column headers to a fixed length
+            ```
+            tree_widget.color_item(item, color='#555555')
+            ```
+        """
+
+        columns = self.columnCount()
+
+        for column in range(columns):
+            self.header().setSectionResizeMode(column, QtWidgets.QHeaderView.Fixed)
 
     def clear(self) -> None:
         """
@@ -18267,7 +18569,7 @@ class PyFlameProgressBarWidget(QtWidgets.QProgressBar):
     Custom QT Flame Progress Bar Widget Subclass
 
     Args
-    ---
+    ----
         `total_tasks` (int):
             Total number of tasks to be processed.
             (Default: 666)
@@ -18770,6 +19072,7 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
         print(line.color)
         ```
     """
+
     def __init__(self: 'PyFlameHorizontalLine',
                  color: Color=Color.GRAY,
                  width: int | None=None,
@@ -19577,9 +19880,7 @@ class PyFlameGridLayout(QtWidgets.QGridLayout):
                 # Set the default height of each row
                 grid_layout.row_height = 28
                 ```
-
             """
-
 
             return self._row_height
 
@@ -20424,7 +20725,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def line_color(self) -> Color:
         """
         Line Color
-        ===========
+        ==========
 
         Get or set the color of the line in the window.
 
@@ -21132,13 +21433,13 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         Examples
         --------
-        ```
-        # Get grid layout row height
-        print(window.grid_layout_row_height)
+            ```
+            # Get grid layout row height
+            print(window.grid_layout_row_height)
 
-        # Set grid layout row height
-        window.grid_layout_row_height = 200
-        ```
+            # Set grid layout row height
+            window.grid_layout_row_height = 200
+            ```
         """
 
         return self._grid_layout_row_height
@@ -21183,13 +21484,13 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         Examples
         --------
-        ```
-        # Get grid layout adjust column widths
-        print(window.grid_layout_adjust_column_widths)
+            ```
+            # Get grid layout adjust column widths
+            print(window.grid_layout_adjust_column_widths)
 
-        # Set grid layout adjust column widths
-        window.grid_layout_adjust_column_widths = {0: 200, 1: 200}
-        ```
+            # Set grid layout adjust column widths
+            window.grid_layout_adjust_column_widths = {0: 200, 1: 200}
+            ```
         """
 
         return self._grid_layout_adjust_column_widths
@@ -21234,13 +21535,13 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         Examples
         --------
-        ```
-        # Get grid layout adjust row heights
-        print(window.grid_layout_adjust_row_heights)
+            ```
+            # Get grid layout adjust row heights
+            print(window.grid_layout_adjust_row_heights)
 
-        # Set grid layout adjust row heights
-        window.grid_layout_adjust_row_heights = {0: 200, 1: 200}
-        ```
+            # Set grid layout adjust row heights
+            window.grid_layout_adjust_row_heights = {0: 200, 1: 200}
+            ```
         """
 
         return self._grid_layout_adjust_row_heights
@@ -22701,31 +23002,31 @@ class PyFlameProgressWindow:
         To create progress bar window:
         ```
         progress_window = PyFlameProgressWindow(
-            num_to_do=10,
-            title='Rendering...',
-            text='Rendering: Batch 1 of 5',
-            enable_done_button=True,
+            task='Doing Something',
+            total_tasks=10,
+            title='Downloading Files...',
+            parent=self.window,
             )
         ```
 
         To update progress bar progress value:
         ```
-        progress_window.set_progress_value(5)
+        progress_window.processing_task = 2
         ```
 
         To update text in window:
         ```
-        progress_window.set_text('Rendering: Batch 2 of 5')
+        progress_window.task_progress_message = 'Rendering: Batch 2 of 5')
         ```
 
-        To enable or disable done button - True or False:
+        To enable or disable done button:
         ```
-        progress_window.enable_done_button(True)
+        progress_window.tasks_complete = True
         ```
 
         To set the title text:
         ```
-        progress_window.set_title_text('Render Completed')
+        progress_window.title = 'Render Completed'
         ```
     """
 
@@ -22799,62 +23100,15 @@ class PyFlameProgressWindow:
         self.line_color = line_color
         self.tasks_complete = False
 
+        QtWidgets.QApplication.processEvents()
+
+        # Wait for UI to fully display
+        import time
+        time.sleep(0.1)
+
     #-------------------------------------
     # [Properties]
     #-------------------------------------
-
-    @property
-    def text(self) -> str:
-        """
-        Text
-        ====
-
-        Get or set the text of the progress window.
-
-        Returns
-        -------
-            str:
-                Text of the progress window.
-
-        Set
-        ---
-            str:
-                Text of the progress window.
-
-        Raises
-        ------
-            TypeError:
-                If the provided `value` is not a string.
-
-        Examples
-        --------
-            ```
-            # Get text
-            print(progress_window.text)
-
-            # Set text
-            progress_window.text = 'Hello, world!'
-            ```
-        """
-
-        return self.text_edit.text
-
-    @text.setter
-    def text(self, value: str) -> None:
-        """
-        Text
-        ====
-
-        Set the text of the progress window.
-        """
-
-        # Validate Argument
-        if not isinstance(value, str):
-            self._show_type_error()
-            pyflame.raise_type_error('PyFlameProgressWindow', 'text', 'string', value)
-
-        # Set Progress Window Text
-        self.text_edit.text = value
 
     @property
     def task(self) -> str:
@@ -22896,15 +23150,55 @@ class PyFlameProgressWindow:
 
     @property
     def task_progress_message(self) -> str:
+        """
+        Task Progress Message
+        =====================
+
+        Get or set the text of the progress window.
+
+        Returns
+        -------
+            str:
+                Text of the progress window.
+
+        Set
+        ---
+            str:
+                Text of the progress window.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a string.
+
+        Examples
+        --------
+            ```
+            # Get progress message text
+            print(progress_window.task_progress_message)
+
+            # Set progress message text
+            progress_window.task_progress_message = 'Rendering [2/10]'
+            ```
+        """
+
         return self._completed_tasks_message
 
     @task_progress_message.setter
     def task_progress_message(self, value: str) -> None:
+        """
+        Task Progress Message
+        =====================
+
+        Set the text of the progress window.
+        """
 
         # Validate Argument
         if not isinstance(value, str):
             self._show_type_error()
             pyflame.raise_type_error('PyFlameProgressWindow', 'task_progress_message', 'string', value)
+
+        self.text_edit.text = value
 
         self._completed_tasks_message = value
 
@@ -23529,13 +23823,13 @@ class PyFlamePasswordWindow:
             `value` (str):
                 Password window title.
 
-        Raises:
-        -------
+        Raises
+        ------
             TypeError:
                 If the provided `value` is not a str.
 
-        Examples:
-        ---------
+        Examples
+        --------
             ```
             # Get title text
             print(password_window.title)

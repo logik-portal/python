@@ -1,23 +1,23 @@
 # Neat Freak
 
-**Script Version:** 1.10.0  
+**Script Version:** 2.0.0  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.22.21  
-**Update Date:** 07.10.25  
+**Update Date:** 12.18.25  
 
-**Script Type:** Batch
+**Script Type:** Batch/Media Panel
 
 ## Description
 
 Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new
 batch group with Neat/Render/Write nodes for all selected clips.
 <br><br>
+NEAT OFX is required!
+<br><br>
 Works with Neat OFX v5.x and Neat OFX v6.x.
 <br><br>
 Render/Write node outputs are set to match each clip(name, duration, timecode, fps).
-<br><br>
-Write node options can be set in Script Setup.
 
 ## URL
 
@@ -28,15 +28,22 @@ https://github.com/logik-portal/python/neat_freak
 ### Script Setup
 - Flame Main Menu → Logik → Logik Portal Script Setup → Neat Freak Setup
 ### Batch
-- Right-click on any clip in batch → Neat Denoise Selected Clips
+- Right-click on any clips(s) in batch → Neat Denoise Selected Clips
 ### Media Panel
-- Right-click on any clip in media panel → Neat Denoise Selected Clips
+- Right-click on any clips(s) in media panel → Neat Denoise Selected Clips
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.0.0 [12.18.25]
+- Removed Write node options from setup. Write nodes now use default settings set in Flame Preferences(2026.2+).
+- Added render destination reel options to setup.
+- Added option to enable/disable render node in setup.
+- Only new nodes are framed after creation.
+<br>
 
 ### v1.10.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
