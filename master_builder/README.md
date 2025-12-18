@@ -1,10 +1,10 @@
 # Master Builder
 
-**Script Version:** 1.5.0  
-**Flame Version:** 2023.2  
+**Script Version:** 1.6.0  
+**Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.09.22  
-**Update Date:** 04.13.25  
+**Update Date:** 05.28.25  
 
 **Script Type:** Reel Group
 
@@ -39,19 +39,19 @@ should not be mixed within the same reel.
 <br><br>
 Sequences can contain multiple tracks but not multiple versions.
 
-## URL
-
-https://github.com/logik-portal/python/master_builder
-
 ## Menus
 
 - Right-click on Reel Group → Master Builder
 
 ## Installation
 
-Copy script folder into /opt/Autodesk/shared/python
+Copy script into /opt/Autodesk/shared/python/master_builder
 
 ## Updates
+
+### v1.6.0 [05.28.25]
+- Updated to PyFlameLib v5.0.0.
+<br>
 
 ### v1.5.0 [04.13.25]
 - Updated to PyFlameLib v4.3.0.

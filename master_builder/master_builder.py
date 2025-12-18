@@ -19,11 +19,11 @@
 
 """
 Script Name: Master Builder
-Script Version: 1.5.0
-Flame Version: 2023.2
+Script Version: 1.6.0
+Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 02.09.22
-Update Date: 04.13.25
+Update Date: 05.28.25
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -60,18 +60,18 @@ Description:
 
         Sequences can contain multiple tracks but not multiple versions.
 
-URL:
-    https://github.com/logik-portal/python/master_builder
-
 Menu:
 
     Right-click on Reel Group -> Master Builder
 
 To install:
 
-    Copy script folder into /opt/Autodesk/shared/python
+    Copy script into /opt/Autodesk/shared/python/master_builder
 
 Updates:
+
+    v1.6.0 05.28.25
+        - Updated to PyFlameLib v5.0.0.
 
     v1.5.0 04.13.25
         - Updated to PyFlameLib v4.3.0.
@@ -95,28 +95,28 @@ Updates:
         - Messages print to Flame message window - Flame 2023.1 and later
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 
 import flame
 from lib.pyflame_lib_master_builder import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Master Builder'
-SCRIPT_VERSION = 'v1.5.0'
+SCRIPT_VERSION = 'v1.6.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
-class MasterBuilder():
+class MasterBuilder:
 
     def __init__(self, selection):
 
@@ -133,7 +133,7 @@ class MasterBuilder():
         if mixed_reels:
             PyFlameMessageWindow(
                 message='Reels must contain either all clips or all sequences.',
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
                 )
             return
 
@@ -142,7 +142,7 @@ class MasterBuilder():
         if not good_clip_count:
             PyFlameMessageWindow(
                 message='If a reel contains more than one clip it must contain the same number of clips as other reels with more than one clip.',
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
                 )
             return
 
@@ -151,7 +151,7 @@ class MasterBuilder():
         if multiple_versions:
             PyFlameMessageWindow(
                 message='Sequences may only have one version.<br>Remove extra versions and try again.',
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
                 )
             return
 
@@ -213,7 +213,7 @@ class MasterBuilder():
                     return True
         return False
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def main_window(self):
 
@@ -224,10 +224,15 @@ class MasterBuilder():
             else:
                 self.desktop_reel_options = [str(reel.name)[1:-1] for reel in self.reel_group.reels] + ['None']
 
+        def close_window():
+
+            self.window.close()
+
         # Main Window
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=self.create_masters_list,
+            escape_pressed=close_window,
             grid_layout_columns=2,
             grid_layout_rows=3,
             )
@@ -237,9 +242,9 @@ class MasterBuilder():
             text='Master Names From',
             )
 
-        # Push Button Menu
+        # Menu
         get_reel_list()
-        self.desktop_reels_push_button = PyFlamePushButtonMenu(
+        self.desktop_reels_push_button = PyFlameMenu(
             text=self.desktop_reel_options[0],
             menu_options=self.desktop_reel_options,
             )
@@ -255,9 +260,9 @@ class MasterBuilder():
             connect=self.window.close,
             )
 
-        #-------------------------------------
+        # ------------------------------------------------------------------------------
         # [Widget Layout]
-        #-------------------------------------
+        # ------------------------------------------------------------------------------
 
         self.window.grid_layout.addWidget(self.names_from_label, 0, 0)
         self.window.grid_layout.addWidget(self.desktop_reels_push_button, 0, 1)
@@ -273,7 +278,6 @@ class MasterBuilder():
         # If Multiple masters are being created these clips will be added to each master.
 
         clip_in_all_list = []
-
         for k, v in self.clip_count_dict.items():
             if v == 1:
                 if k.clips:
@@ -281,12 +285,8 @@ class MasterBuilder():
                 if k.sequences:
                     clip_in_all_list.append(k.sequences[0])
 
-        # ----------------- #
-
         # Create new reels for masters
         self.create_reels()
-
-        # ----------------- #
 
         # Build list of reels with more than one clip
         multi_clip_reel = []
@@ -383,7 +383,7 @@ class MasterBuilder():
         # Set primary track to first tracks
         master_sequence.primary_track = master_sequence.versions[0].tracks[0]
 
-        # ----------------- #
+        # ------------------------------------------------------------------------------
 
         # Add clips into master. Clips must have timecode set
         for clip in clip_list:
@@ -405,9 +405,9 @@ class MasterBuilder():
 
         print (f'    Master Built: {master_name}')
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def scope_reel_group(selection):
 
@@ -416,9 +416,9 @@ def scope_reel_group(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
@@ -432,7 +432,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_reel_group,
                     'execute': MasterBuilder,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                }
            ]
         }
