@@ -120,6 +120,16 @@
     "Description": "Script Name: Batch Rendertimer\nScript Version: 1.0.0\nFlame Version: 2023\nWritten by: Bob Maple\nCreation Date: 08.04.23\nUpdate Date: 08.04.23\n\nScript Type: Batch Rendering\n\nDescription:\n\nPrints render start and end times to the console and to the Flame message area.\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python"
   },
   {
+    "Script Name": "bb tvc timecode checker",
+    "Script Version": "2.0",
+    "Flame Version": "2026.1",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "12.02.25",
+    "Update Date": "12.02.25",
+    "Description": "Script Name: TVC Timecode Checker\nScript Version: 2.0\nFlame Version: 2026.1\nWritten by: Bryan Bayley\nCreation Date: 12.02.25\n\nDescription:\n\nSelect Clips or Sequences in the Media Panel to check:\n1. Does the Record Timecode start at 01:00:00:00?\n2. Is the duration a standard TVC length (6s, 15s, 30s, 60s, 90s)?\n\nMenu:\n\nRight-click on clips or sequences in the Media Panel -> TVC Checks... -> Check Start Timecode and Duration"
+  },
+  {
     "Script Name": "build resolution list",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
