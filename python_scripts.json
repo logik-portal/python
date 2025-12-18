@@ -360,6 +360,16 @@
     "Description": "Script Name: Encompass Selected Nodes\nScript Version: 2.8.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 04.22.20\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch/Action\n\nDescription:\n\nCreates compass around selected nodes in batch or action.\n\nURL:\nhttps://github.com/logik-portal/python/encompass_selected_nodes\n\nMenus:\n\nSelect nodes to encompass -> Encompass Selected Nodes\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.8.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Escape key closes main window.\n\nv2.7.0 03.20.25\n- Updated to PyFlameLib v4.3.0.\n- Added menu to set compass color.\n\nv2.6.0 12.28.24\n- Fixed: Script had errors when creating compass with name that already exists.\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv2.5.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.4.0 01.21.24\n- Updates to PySide.\n\nv2.3.0 07.27.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semantic versioning.\n\nv2.2 06.09.23\n- Compass is created when pressing enter in compass name field.\n\nv2.1 10.27.22\n- Window prompts for compass name when creating compass.\n- Updated right-click menu for 2023.2+.\n\nv2.0 05.23.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n\nv1.1 05.10.20\n- Added ability to encompass selected action nodes."
   },
   {
+    "Script Name": "fill gaps",
+    "Script Version": "1.4.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "02.18.24",
+    "Update Date": "12.18.25",
+    "Description": "Script Name: Fill Gaps\nScript Version: 1.4.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 02.18.24\nUpdate Date: 12.18.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Timeline\n\nDescription:\n\nInserts black into selected gaps in the timeline.\n\nSelection of segments in timeline should start with a gap, otherwise gaps will\nnot be included in selection of timeline segments and the menu will not be visible.\n\nMenus:\n\nRight-click on selection of gaps in timeline -> Fill Gap\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/fill_gaps\n\nUpdates:\n\nv1.4.0 12.18.25\n- Updated to PyFlameLib v5.1.1.\n\nv1.3.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.2.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n\nv1.1.0 08.24.24\n- Updated to PyFlameLib v3.0.0."
+  },
+  {
     "Script Name": "filter selection",
     "Script Version": "2.1.1",
     "Flame Version": "2025",
