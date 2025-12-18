@@ -1,0 +1,48 @@
+# GitHub Actions workflow to build python_scripts.json file
+
+name: Build Python Scripts JSON
+
+on:
+  push:
+    branches:
+      - main  # Change to your default branch name if different
+
+# Repository configuration - easily changeable constants
+env:
+  REPO_OWNER: "logik-portal"
+  REPO_NAME: "python"
+  REPO_BRANCH: "main"
+
+jobs:
+  build-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout python repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Run build script
+        run: python .github/workflows/build_python_scripts_json.py
+        env:
+          REPO_OWNER: ${{ env.REPO_OWNER }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+          REPO_BRANCH: ${{ env.REPO_BRANCH }}
+
+      - name: Commit and push changes
+        if: success()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git remote set-url origin https://x-access-token:${{ secrets.JSON_PAT }}@github.com/${{ github.repository }}
+          git add python_scripts.json
+          git diff --staged --quiet || (git commit -m "Auto-update python_scripts.json [skip ci]" && git push)

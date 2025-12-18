@@ -1,6 +1,6 @@
-'''
-Script Name: bb_archiver_ui
-Script Version: 1.8
+"""
+Script Name: BB Archiver UI
+Script Version: 1.8.0
 Flame Version: 2023.2
 Written by: John Geehreng
 Creation Date: 11.17.22
@@ -26,7 +26,7 @@ Updates:
 11.28.22 - v0.9 - Added Size Estimate button. Fixed Archive Parameters. Minor printing cleanup.
 11.23.22 - v0.8 - Fixed Archive Parameters.
 11.21.22 - v0.7 - Added more segment size options. Saves all setting in the config.xml.
-'''
+"""
 
 from pyflame_lib_bb_archiver_ui import *
 try:
@@ -41,9 +41,9 @@ import re
 import subprocess
 import platform
 
-SCRIPT_NAME = 'BB Archiving UI'
+SCRIPT_NAME = 'BB Archiver UI'
 SCRIPT_PATH = '/opt/Autodesk/shared/python/bb_archiver_ui'
-SCRIPT_VERSION = 'v1.8'
+SCRIPT_VERSION = '1.8.0'
 
 #-------------------------------------#
 # Main Script
@@ -124,7 +124,7 @@ class bb_archiver_ui(object):
         <renders>False</renders>
         <unused>False</unused>
         <otoc>False</otoc>
-        
+
     </bb_archiver_ui_settings>
 </settings>'''
 
@@ -142,9 +142,9 @@ class bb_archiver_ui(object):
     def main_window(self):
 
         def setup_window():
-            
+
             self.window.hide()
-          
+
             def save_config():
 
                 # Save settings to config file
@@ -160,7 +160,7 @@ class bb_archiver_ui(object):
 
                 archive_path = root.find('.//archive_path')
                 archive_path.text = self.archive_path_line_edit.text()
-                
+
                 xml_tree.write(self.config_xml)
 
                 pyflame.message_print(SCRIPT_NAME, 'Config saved.')
@@ -168,10 +168,10 @@ class bb_archiver_ui(object):
                 self.config()
                 self.prefs_window.close()
                 self.main_window()
- 
+
 
             def cancel_setup():
-               
+
                 self.prefs_window.close()
                 self.main_window()
 
@@ -190,7 +190,7 @@ class bb_archiver_ui(object):
                     select_directory = True,
                     default_path = "/")
                 browse_job_folder_path = str(flame.browser.selection)[2:-2]
-                print('browse_job_folder_path: ', browse_job_folder_path)            
+                print('browse_job_folder_path: ', browse_job_folder_path)
                 self.job_folder_line_edit.setText(browse_job_folder_path)
                 self.prefs_window.show()
 
@@ -201,7 +201,7 @@ class bb_archiver_ui(object):
                     select_directory = True,
                     default_path = "/")
                 browse_archive_path = str(flame.browser.selection)[2:-2]
-                print('browse_archive_path: ', browse_archive_path)            
+                print('browse_archive_path: ', browse_archive_path)
                 self.archive_path_line_edit.setText(browse_archive_path)
                 self.prefs_window.show()
 
@@ -269,7 +269,7 @@ class bb_archiver_ui(object):
         print ('Backburner Manager: ',self.bbm)
         print ('Job Folders: ',self.job_folder_path)
         print ('Archive Path: ',self.archive_path)
-        
+
         def get_local_flame_projects():
             """Get all flame projets from /opt/Autodesk/io/bin/flame_archive -l
 
@@ -300,7 +300,7 @@ class bb_archiver_ui(object):
                 project_list.append(proj)
 
             return project_list
-        
+
         project_list = get_local_flame_projects()
 
         try:
@@ -319,7 +319,7 @@ class bb_archiver_ui(object):
             machine_name = platform.node().split('.')[0]
             resolved_path = self.archive_path.replace('<project_name>',project_name)
             resolved_path = resolved_path.replace('<machine_name>',machine_name)
-            
+
             # Remove the last character if it's a '/'
             if resolved_path[-1] == '/':
                 resolved_path = resolved_path[:-1]
@@ -374,7 +374,7 @@ class bb_archiver_ui(object):
             flame.messages.show_in_console('Getting Size Estimate for ' + project_name + '...', 'info',20)
 
             size_estimate_command = "/opt/Autodesk/io/" + str(flame_version) + "/bin/flame_archive -a -e --omit sources,renders,maps,unused -k -P " + project_name
-            
+
             # Change the commands depending on what buttons were pressed:
             if self.source_media_cache_pb.isChecked() and self.maps_and_ml_cache_pb.isChecked() and self.timeline_fx_renders_pb.isChecked() and self.unused_versions_pb.isChecked() and self.cache_uncached_media_pb.isChecked():
                 size_estimate_command = size_estimate_command.replace(" --omit sources,renders,maps,unused -k -P"," -P")
@@ -478,7 +478,7 @@ class bb_archiver_ui(object):
                     otoc.text = 'True'
                 else:
                     otoc.text = 'False'
-                
+
                 xml_tree.write(self.config_xml)
 
                 pyflame.message_print(SCRIPT_NAME, 'Config saved.')
@@ -495,14 +495,14 @@ class bb_archiver_ui(object):
 
             # Get Flame Version and other variables
             flame_version = flame.get_version()
-            
+
             project_name = self.project_menu_push_button.text()
             machine_name = platform.node().split('.')[0]
             current_project_name = flame.project.current_project.name
             current_project_nickname = flame.project.current_project.nickname
             resolved_path = self.archive_path.replace('<project_name>',project_name)
             resolved_path = resolved_path.replace('<machine_name>',machine_name)
-            
+
             # Remove the last character if it's a '/'
             if resolved_path[-1] == '/':
                 resolved_path = resolved_path[:-1]
@@ -572,7 +572,7 @@ class bb_archiver_ui(object):
             + ' -timeout: 500 '
             # + '  -emailFrom: bbm@uppercutedit.com -emailTo: ' + email_to + ' -emailServer: ' + email_server + ' -emailCompletion '
             + archive_command)
-        
+
             print ("*" * 40)
             print("archive command: " + archive_bbm_cmd)
             print("archive readout:")
@@ -603,7 +603,7 @@ class bb_archiver_ui(object):
         def cache_toggle():
                 # Disables UI elements when button is pressed
                 if self.source_media_cache_pb.isChecked():
-                    self.cache_uncached_media_pb.setEnabled(True) 
+                    self.cache_uncached_media_pb.setEnabled(True)
                 else:
                     self.cache_uncached_media_pb.setEnabled(False)
                     self.cache_uncached_media_pb.setChecked(False)
@@ -623,10 +623,10 @@ class bb_archiver_ui(object):
             print ("previous_project: ", previous_project)
         self.project_menu_push_button = PyFlamePushButtonMenu(text=previous_project, menu_options=project_list, width=400, max_width=500)
         self.project = self.project_menu_push_button.text()
-        
+
         segment_size_list = ['4.7GB','25GB','50GB','100GB','300GB','400GB','460GB','600GB','800GB','930GB','1500GB','1GB']
         for i in [i for i, x in enumerate(segment_size_list) if x == self.segment_size_setting]:
-            last_segment_size = segment_size_list[int(i)]    
+            last_segment_size = segment_size_list[int(i)]
             print ("previous segment size: ", last_segment_size)
         self.segment_size_menu_push_button = PyFlamePushButtonMenu(text=last_segment_size, menu_options=segment_size_list, width=150, max_width=150)
         segment_size = self.segment_size_menu_push_button.text()
@@ -637,7 +637,7 @@ class bb_archiver_ui(object):
         self.archive_options_label = PyFlameLabel(text='Archive Options', style=Style.UNDERLINE)
 
         BUTTON_WIDTH = 205
-        
+
         # Buttons
         self.format_archive_btn = PyFlameButton(text='Format Archive',connect=format_flame_archive, color=Color.BLUE)
         self.bg_archive_btn = PyFlameButton(text='BB Archive', connect=send_archive_job_to_bbm, color=Color.BLUE, width=BUTTON_WIDTH)
@@ -645,13 +645,13 @@ class bb_archiver_ui(object):
         self.setup_btn = PyFlameButton(text='Setup', connect=setup_window)
         self.size_estimate_btn = PyFlameButton(text='Size Estimate', connect=get_size_estimate, width=BUTTON_WIDTH)
 
-        # Push Buttons       
+        # Push Buttons
         self.source_media_cache_pb = PyFlamePushButton(text='Include Source Media Cache', button_checked=False, connect=cache_toggle, width=BUTTON_WIDTH)
         self.maps_and_ml_cache_pb = PyFlamePushButton(text='Include Maps and ML Cache', button_checked=False, width=BUTTON_WIDTH)
         self.timeline_fx_renders_pb = PyFlamePushButton(text='Include Timeline Renders', button_checked=False, width=BUTTON_WIDTH)
         self.unused_versions_pb = PyFlamePushButton(text='Include Unused Versions', button_checked=False, width=BUTTON_WIDTH)
         self.cache_uncached_media_pb = PyFlamePushButton(text='Cache Uncached Media', button_checked=False, width=BUTTON_WIDTH)
-        self.cache_uncached_media_pb.setEnabled(False) 
+        self.cache_uncached_media_pb.setEnabled(False)
         self.otoc_pb = PyFlamePushButton(text='Generate TOC', button_checked=False, width=BUTTON_WIDTH)
 
         if self.source_media == 'True':
@@ -668,10 +668,10 @@ class bb_archiver_ui(object):
             self.otoc_pb.setChecked(True)
 
         cache_toggle()
-    
+
         #------------------------------------#
         # Window Layout
- 
+
         grid_layout = QtWidgets.QGridLayout()
         grid_layout.setVerticalSpacing(pyflame.gui_resize(5))
         grid_layout.setHorizontalSpacing(pyflame.gui_resize(5))
@@ -686,13 +686,13 @@ class bb_archiver_ui(object):
 
         grid_layout.addWidget(self.segment_size_label, 1, 0)
         grid_layout.addWidget(self.segment_size_menu_push_button, 2, 0)
-        
+
         grid_layout.addWidget(self.archive_options_label, 1, 1)
         grid_layout.addWidget(self.source_media_cache_pb, 2, 1)
         grid_layout.addWidget(self.cache_uncached_media_pb, 2, 2)
         grid_layout.addWidget(self.maps_and_ml_cache_pb, 3, 1)
         grid_layout.addWidget(self.timeline_fx_renders_pb, 4, 1)
-        
+
         grid_layout.addWidget(self.unused_versions_pb, 5, 1)
         grid_layout.addWidget(self.otoc_pb, 4, 2)
 
@@ -700,7 +700,7 @@ class bb_archiver_ui(object):
         grid_layout.addWidget(self.setup_btn, 6, 0)
         grid_layout.addWidget(self.bg_archive_btn, 6, 1)
         grid_layout.addWidget(self.cancel_btn, 6, 2)
-        
+
         # Add layout to window
         self.window.add_layout(grid_layout)
 

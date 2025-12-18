@@ -140,6 +140,16 @@
     "Description": "Script Name: Clip to Batch Group\nScript Version: 2.7.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 06.16.19\nUpdate Date: 04.09.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: MediaPanel / Media Hub\n\nDescription:\n\nImport selected clips from the mediahub into newly created batch groups set to clip length with a render node\n\nOption to switch to batch tab when batch groups are done being created can be\nturned off and on. Edit the following line in the __init__ section to either be True or False:\n\nself.go_to_batch = False\n\nAdditional naming can be added to the end of batch group names. Edit the following line\nin the __init__ section. Naming must be in quotes.\n\nself.additional_naming = '_comp'\n\nNames of the batch group reels that are created by default can be\nchanged by editing these two lists in the __init__ section:\n\nschematic_reel_list = [\n'Elements',\n'Plates',\n'PreRenders',\n'Ref',\n]\n\nshelf_reel_list = [\n'Renders',\n]\n\nURL:\nhttps://github.com/logik-portal/python/clip_to_batch_group\n\nMenus:\n\nTo import clips into batch group with shot name extracted from clip name:\nRight-click on clip in MediaHub -> Import... -> Create New Batch Group - Shot Name\nRight-click on clip in MediaHub -> Import... -> Create New Batch Group - Shot Name - All Clips One Batch\n\nTo import clips into batch group with clip name:\nRight-click on clip in MediaHub -> Import... -> Create New Batch Group - Clip Name\nRight-click on clip in MediaHub -> Import... -> Create New Batch Group - Clip Name - All Clips One Batch\n\nTo create batch group from clips in media panel with shot name extracted from clip name:\nRight-click on clip in Media Panel -> Create New Batch Group... -> Shot Name\n\nTo create batch group from clips in media panel with clip name:\nRight-click on clip in Media Panel -> Create New Batch Group... -> Clip Name\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/clip_to_batch_group\n\nUpdates:\n\nv2.7.0 04.09.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.6.0 01.15.25\n- Updated to PyFlameLib v4.1.0.\n- Script now only works with Flame 2025+.\n\nv2.5.0 08.22.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.4.0 04.27.24\n- Render node now sets in and out marks based on clip in and out marks.\n\nv2.3.0 01.21.24\n- Sequences can now be imported into batch groups. This caused an error before.\n- Updates to PySide.\n\nv2.2.0 09.12.23\n- When creating a batch group from a clip in the media panel, the script will check for a shot name assigned to the clip.\n- If a shot name is assigned, that will be used for the batch group name. If no shot name is assigned, the script will\nattempt to extract the shot name from the clip name.\n- Updated with PyFlameLib v2.\n\nv2.1 05.19.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n\nv1.8 05.15.21\n- Properly names batch group with shot name when clip name starts with number - 123_030_bty_plate -> 123_030_comp\n\nv1.7 02.19.21\n- Option added to switch to batch tab or not when batch groups are create can be toggled\nby editing self.go_to_batch value in __init__. Must be True or False.\n- Mediahub menu options added to import all selected clips into one batch group. Clip selected first is\nplate used for shot length and timecode.\n\nv1.6 11.18.20\n- Added Mux nodes with context 1 and 2 preset.\n\nv1.5 09.10.20\n- Batch groups can now be imported and named after either the clip name or shot name.\n- Script will now switch to the Batch tab when creating a batch group from the media panel - caused an error before.\n\nv1.4 04.20.20\n- Added ability to create batchgroup from clip in Media Panel.\n- Right-click on clip in Media Panel -> Clips... -> Create New Batchgroup\n\nv1.3 11.01.19\n- Changed menu name to Import...\n- Render node takes frame rate from imported clip\n\nv1.1 08.13.19\n- Code cleanup."
   },
   {
+    "Script Name": "cmyk to rgb",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "12.06.25",
+    "Update Date": "12.06.25",
+    "Description": "Script Name: CMYK to RGB\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 12.06.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nConvert CMYK images to RGB.\n\nSupported image formats: TIF, JPG, and PSD.\n\nPSD files will be saved as TIFF files.\n\nMenus:\n\nRight-click on a CMYK clip in the Media Panel -> CMYK to RGB\nRight-click on a CMYK file in the Media Hub File Browser -> CMYK to RGB\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/cmyk_to_rgb\n\nUpdates:\n\nv1.0.0 12.06.25\n- Initial release."
+  },
+  {
     "Script Name": "color segment fx",
     "Script Version": "1.4.0",
     "Flame Version": "2025",
@@ -154,9 +164,9 @@
     "Script Version": "0.5",
     "Flame Version": "2021",
     "Maximum Flame Version": "Latest",
-    "Author": "Kyle Obley (info@kyleobley.com)",
+    "Author": "unknown",
     "Creation Date": "07.05.23",
-    "Update Date": "02.26.24",
+    "Update Date": "07.05.23",
     "Description": "Script Name: Connect Cryptomatte\nScript Version: 0.5\nFlame Version: 2021\n\nCreation date: 07.05.23\nModified date: 02.26.24\n\nAuthor: Kyle Obley (info@kyleobley.com)\n\nDescription:\n\nCreates and connects a Cryptomatte node to a read file node if it's a cryptomatte.\n\nChange Log:\n\nv0.5: Completely changed logic to use node.output_sockets which removes the need to try channels, etc.\nThis hopefully makes the script bulletproof.\n\nv0.4: Added support for channels coming out without the filename within the channel itself.\n\nv0.3: Added support for Houdini's Object ID naming\n\nv0.2: Added logic for different channel names and support for CryptoMesh\n\nv0.1: Initial Release"
   },
   {
@@ -557,7 +567,7 @@
     "Author": "John Geehreng",
     "Creation Date": "08.03.25",
     "Update Date": "08.07.25",
-    "Description": "Return a unique node name by appending a number if necessary."
+    "Description": "Script Name: Invert Timewarps\nScript Version: 1.1.1\nFlame Version: 2026.1\nWritten by: John Geehreng\nCreation Date: 08.03.25\nUpdate Date: 08.07.25\n\nScript Type: Batch\n\nUsage: Right click and look for Timewarp Tools -> Invert Timewarps\n\nDescription: Invert Timewarps assuming they're in Timing Mode.\n\nTo install: Copy script to whereever you keep your scripts.\n\nUpdates:\n08.07.25 - v1.1.1 - Added the unique names bit\n08.03.25 - v1.1.0 - Work for Speed based timewarps now too\n08.03.25 - v1.0.0 - Initial Release"
   },
   {
     "Script Name": "logik portal",
@@ -816,7 +826,7 @@
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "01.22.21",
-    "Update Date": "01.22.21",
+    "Update Date": "Description:",
     "Description": "Script Name: Set 10 Frame Handles\nScript Version: 1.1\nFlame Version: 2019\nWritten by: John Geehreng\nCreation Date: 01.22.21\nUpdate Date:\n\nDescription:\n\nSet 10 frame handles"
   },
   {
@@ -863,7 +873,7 @@
     "Script Name": "slate maker",
     "Script Version": "4.11.0",
     "Flame Version": "2023.2",
-    "Maximum Flame Version": "2025.9.9",
+    "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "12.29.18",
     "Update Date": "12.28.24",
@@ -884,9 +894,9 @@
     "Script Version": "0.3.1",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
-    "Author": "Kyle Obley (info@kyleobley.com)",
+    "Author": "unknown",
     "Creation Date": "02.05.25",
-    "Update Date": "02.26.25",
+    "Update Date": "02.05.25",
     "Description": "Script Name: Social Versions\nScript Version: 0.3.1\nFlame Version: 2023\nAuthor: Kyle Obley (info@kyleobley.com)\nCreation Date: 02.05.25\nModified Date: 02.26.25\n\nDescription:\n\nCreates social timelines based on other, selected timelines.\n\nChange Log:\nv0.3.1  Added 'colour = sequence.colour' so new sequences match the color of the original.\nv0.2.1  Add Flush Renders. Reversed width and height.\nv0.1:   Initial release."
   },
   {
@@ -961,13 +971,13 @@
   },
   {
     "Script Name": "uc bb archiver ui",
-    "Script Version": "1.8",
+    "Script Version": "1.8.0",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "11.17.22",
     "Update Date": "02.05.24",
-    "Description": "Get all flame projets from /opt/Autodesk/io/bin/flame_archive -l\n\nReturns:\nlist: This is a list of the flame projects that exist on the workstation"
+    "Description": "Script Name: BB Archiver UI\nScript Version: 1.8.0\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 11.17.22\nUpdate Date: 02.05.24\n\nScript Type: Main Menu\n\nDescription:\n\nThis is a simple UI for Background Archiving using Backburner Manager. The script only works with the local flame, it does not support remote project archiving.\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/bb_archiver_ui\n\nUpdates:\n02.05.24 - v1.8 - Prep for Distribution\n10.14.23 - v1.7 - Turned off emailing\n05.22.23 - v1.4 - Fixed typo\n04.18.23 - v1.2 - Fixed issue for 2024 and flame_version = 2024, not 2024.0\n12.02.22 - v1.0 - Allow Current Project to show up in list and add Warnings.\n11.30.22 - v0.91- Added pop-ups dialogues for First Time Warning, Path Errors, and Size Estimates. Removed 'Format Archive' Button in favor of having the BB Archive button do it automatically.\n11.28.22 - v0.9 - Added Size Estimate button. Fixed Archive Parameters. Minor printing cleanup.\n11.23.22 - v0.8 - Fixed Archive Parameters.\n11.21.22 - v0.7 - Added more segment size options. Saves all setting in the config.xml."
   },
   {
     "Script Name": "ultragrid",
