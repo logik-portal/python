@@ -1,3 +1,22 @@
+# Add Dated and Timed Folders
+# Copyright (c) 2025 Michael Vaglienty
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# License:       GNU General Public License v3.0 (GPL-3.0)
+#                https://www.gnu.org/licenses/gpl-3.0.en.html
+
 """
 Script Name: Add Dated and Timed Folders
 Script Version: 2.4.0
@@ -5,6 +24,8 @@ Flame Version: 2025
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
 Update Date: 08.27.25
+
+License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
 Script Type: MediaPanel/MediaHub Files
 
@@ -62,9 +83,9 @@ Updates:
         - Updated to work with strftime
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -73,17 +94,17 @@ import datetime
 
 from lib.pyflame_lib_add_dated_and_timed_folders import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
 SCRIPT_VERSION = 'v2.4.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class AddDatedAndTimedFolders:
 
@@ -126,7 +147,7 @@ class AddDatedAndTimedFolders:
 
         return settings
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def setup(self) -> None:
 
@@ -230,9 +251,9 @@ class AddDatedAndTimedFolders:
             connect=close_window,
             )
 
-        #-------------------------------------
+        # ------------------------------------------------------------------------------
         # [UI Layout]
-        #-------------------------------------
+        # ------------------------------------------------------------------------------
 
         self.setup_window.grid_layout.addWidget(self.date_label, 0, 0)
         self.setup_window.grid_layout.addWidget(self.date_entry, 0, 1)
@@ -243,11 +264,11 @@ class AddDatedAndTimedFolders:
         self.setup_window.grid_layout.addWidget(self.cancel_button, 2, 3)
         self.setup_window.grid_layout.addWidget(self.save_button, 2, 4)
 
-        #-------------------------------------
+        # ------------------------------------------------------------------------------
 
         self.date_entry.set_focus()
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def get_current_date(self, date_format) -> str:
         """
@@ -366,9 +387,9 @@ class AddDatedAndTimedFolders:
         else:
             raise ValueError("Invalid time format. Choose '24hr', '12hr', or '12hr-am/pm'.")
 
-    #-------------------------------------
-    # Media Panel Operations
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
+    # [Media Panel Operations]
+    # ------------------------------------------------------------------------------
 
     def date_time_folders(self):
         """
@@ -406,9 +427,9 @@ class AddDatedAndTimedFolders:
             item.create_folder(self.current_time)
             pyflame.print(f'Created timestamped folder: {self.current_time}', text_color=TextColor.GREEN)
 
-    #-------------------------------------
-    # Media Hub Operations
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
+    # [Media Hub Operations]
+    # ------------------------------------------------------------------------------
 
     def files_date_time_folders(self):
         """
@@ -487,7 +508,7 @@ class AddDatedAndTimedFolders:
 
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
 
-#-------------------------------------
+# ------------------------------------------------------------------------------
 
 def setup(selection):
 
@@ -524,9 +545,9 @@ def files_timed_folders(selection):
     script = AddDatedAndTimedFolders(selection)
     script.files_timed_folders()
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_library_or_folder(selection):
 
@@ -542,9 +563,9 @@ def scope_folder(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
