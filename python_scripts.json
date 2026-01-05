@@ -690,6 +690,16 @@
     "Description": "Script Name: Path Translator\nWritten By: Kieran Hanrahan\n\nScript Version: 2.1.0\nFlame Version: 2025\n\nURL: http://www.github.com/khanrahan/path-translator\n\nCreation Date: 02.10.24\nUpdate Date: 09.05.25\n\nDescription:\n\nTake a path, either Windows or POSIX, and extract part of the path using tokens.\nUseful for converting windows paths to POSIX for Flame, or even paths from other\nmachines that just have different mount points.\n\nExample paths this was tested on below.\n\nwindows path no trailing slash\nJ:\\dir\\dir\\dir\\dir\\_dir\\000000\n\nfrankenstein path with posix slashes and windows mount\nJ:/dir/dir/dir/dir/dir/dir/dir-dir/file_file_file_file-file_v000.mov\n\nMenus:\n\nRight-click selected folders in the Media Hub --> Navigate... --> Path Translator\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python"
   },
   {
+    "Script Name": "pdf to jpg",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "01.04.26",
+    "Update Date": "01.04.26",
+    "Description": "Script Name: PDF to JPG\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 01.04.26\nUpdate Date: 01.04.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Media Panel\n\nDescription:\n\nConvert a PDF file to a series of JPG images.\n\nImage Layout Options:\n- Single: 1 page per image\n- 2-up Horizontal: 2 pages per image, side-by-side\n- 2-up Vertical: 2 pages per image, top/bottom\n- Grid 2x2: 4 pages per image in a 2x2 grid\n\nImages can be imported into a Flame library and revealed in MediaHub or Finder.\n\nImage path is copied to clipboard and can be pasted into other applications.\n\nMenus:\n\nRight-click in Media Panel -> PDF to JPG\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/pdf_to_jpg\n\nUpdates:\n\nv1.0.0 01.04.26\n- Initial release."
+  },
+  {
     "Script Name": "premiere xml mediahub",
     "Script Version": "1.91",
     "Flame Version": "2023",
