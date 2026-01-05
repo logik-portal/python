@@ -1,10 +1,10 @@
 # Logik Portal
 
-**Script Version:** 7.0.0  
+**Script Version:** 7.0.1  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 12.16.25  
+**Update Date:** 01.04.26  
 
 **Script Type:** Flame Main Menu
 
@@ -25,6 +25,10 @@ https://github.com/logik-portal/python/logik_portal
 Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.0.1 [01.04.26]
+- Fixed window sizing issue.
+<br>
 
 ### v7.0.0 [12.16.25]
 - Updated to PyFlameLib v5.0.0.

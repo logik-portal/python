@@ -20,11 +20,11 @@
 
 """
 Script Name: Logik Portal
-Script Version: 7.0.0
+Script Version: 7.0.1
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 12.16.25
+Update Date: 01.04.26
 
 Script Type: Flame Main Menu
 
@@ -44,6 +44,9 @@ To install:
     Copy script into /opt/Autodesk/shared/python/logik_portal
 
 Updates:
+
+    v7.0.1 01.04.26
+        - Fixed window sizing issue.
 
     v7.0.0 12.16.25
         - Updated to PyFlameLib v5.0.0.
@@ -227,6 +230,7 @@ Updates:
 # ==============================================================================
 # [Imports]
 # ==============================================================================
+
 import os
 import re
 import html
@@ -237,6 +241,8 @@ import tarfile
 import zipfile
 import urllib.error
 import urllib.request
+import ssl
+import http.client
 import xml.etree.ElementTree as ET
 from ftplib import FTP
 from pathlib import Path
@@ -253,7 +259,7 @@ from lib.pyflame_lib_logik_portal import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Logik Portal'
-SCRIPT_VERSION = 'v7.0.0'
+SCRIPT_VERSION = 'v7.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 LOGIK_FTP = '45.79.19.175'
@@ -604,7 +610,7 @@ class LogikPortal:
 
             for i, file_item in enumerate(files_to_download, 1):
 
-                progress_window.processing_task = i
+                progress_window.current_task = i
 
                 file_path = file_item['path']
                 # Remove the folder prefix from the path for local structure
@@ -627,9 +633,6 @@ class LogikPortal:
                     f.write(content)
 
                 print(f"  [{i}/{len(files_to_download)}] {relative_path}")
-
-            progress_window.tasks_complete = True
-            progress_window.title = 'Download Completed'
 
         if destination is None:
             destination = self.temp_folder
@@ -669,20 +672,25 @@ class LogikPortal:
             # Clean up script name for progress window
             script_to_download = folder_name.replace('_', ' ')
 
+            total_files = len(files_to_download)
+
             # Open progress window
             progress_window = PyFlameProgressWindow(
-                task='Downloading Files',
-                total_tasks=len(files_to_download),
-                task_progress_message='Downloading Script:\n\n{script_to_download}\n\n{{task}}: [{{processing_task}} of {{total_tasks}}]'.format(script_to_download=script_to_download),
-                title='Downloading Files...',
+                task=f'Downloading: {script_to_download}',
+                total_tasks=total_files,
+                task_progress_message=f'{{task}}:\n\nFiles:[{{processing_task}} of {{total_tasks}}] ({{progress:.1f}}%)',
+                title='Logik Portal: Downloading Files',
                 parent=self.window,
                 )
 
             # Download files from GitHub repository and update progress window
             download_files()
 
-            print(f'\nSuccessfully downloaded: {folder_name} to: {destination_folder}')
-            print(f'Total files: {len(files_to_download)}\n')
+            # Set progress window to completed state
+            progress_window.tasks_completed(
+                title='Logik Portal: Download Complete',
+                text_append='Download Complete'
+                )
 
             return destination_folder
 
@@ -712,8 +720,8 @@ class LogikPortal:
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=self.done,
             escape_pressed=close_window,
-            grid_layout_columns=1,
-            grid_layout_rows=1,
+            grid_layout_columns=7,
+            grid_layout_rows=20,
             parent=None,
             )
 
@@ -739,9 +747,7 @@ class LogikPortal:
         self.inference_nodes_tab()
 
         # Add Tab Widget to Main Window
-        self.window.grid_layout.addWidget(self.tabs, 0, 0)
-
-        self.window.center_window()
+        self.window.grid_layout.addWidget(self.tabs, 0, 0, 20, 7)
 
     def python_scripts_tab(self):
 
@@ -1558,6 +1564,9 @@ class LogikPortal:
 
                 def remove_folder(path: str) -> bool:
                     """
+                    Remove Folder
+                    =============
+
                     Remove a folder, using sudo if permission is denied.
 
                     Args
@@ -1610,6 +1619,9 @@ class LogikPortal:
 
                 def move_repo(source: str, destination: str) -> bool:
                     """
+                    Move Folder
+                    ===========
+
                     Move a folder to destination, using sudo if permission is denied.
 
                     Args
@@ -1617,6 +1629,7 @@ class LogikPortal:
                         source: Source path to move from
                         destination: Destination path to move to
                     """
+
                     try:
                         # Try normal move first
                         shutil.move(str(source), str(destination))
@@ -1651,6 +1664,9 @@ class LogikPortal:
 
                 def flatten_directory(root_path: str) -> bool:
                     """
+                    Flatten Directory
+                    =================
+
                     Move all files and folders from top-level directories to the root path,
                     then delete the empty directories. Also deletes any README.md files encountered.
 
@@ -1776,10 +1792,8 @@ class LogikPortal:
 
                 # Open download progress window to download matchbox collection
                 progress_window = PyFlameProgressWindow(
-                    task='Downloading Files',
-                    total_tasks=1,
-                    task_progress_message='Downloading Matchbox Collection [1/1]\n\nPlease wait...',
-                    title='Downloading Files...',
+                    task_progress_message='Downloading Matchbox Collection\n\nPlease wait...',
+                    title='Logik Portal: Downloading...',
                     parent=self.window,
                     )
 
@@ -1872,10 +1886,6 @@ class LogikPortal:
                         # Flatten the Logik folder to remove any README.md files
                         flatten_directory(logik_folder_dest)
 
-                    progress_window.title = 'Download Completed'
-                    progress_window.task_progress_message = f'Download Complete\n\nMatchbox Collection installed to:\n\n{logik_folder_dest}'
-                    progress_window.tasks_complete = True
-
                 except urllib.error.URLError as e:
                     print(f'Error downloading file: {e}')
                     if os.path.exists(zip_filepath_str):
@@ -1893,6 +1903,12 @@ class LogikPortal:
                     if os.path.exists(zip_filepath_str):
                         os.remove(zip_filepath_str)
                     raise
+
+                # Update progress window to completed state
+                progress_window.tasks_completed(
+                    task_progress_message=f'Downloading Matchbox Collection\n\nComplete\n\n{logik_folder_dest}',
+                    title='Logik Portal: Download Complete'
+                    )
 
             # Open file browser to select matchbox install location
             path = pyflame.file_browser(
@@ -3472,10 +3488,11 @@ class LogikPortal:
         file_size = str(file_size) + ' KB'
 
         # Create progress window
-        self.progress_window = PyFlameProgressWindow(
+        progress_window = PyFlameProgressWindow(
+            task=f'Downloading {download_type}: {file_name}',
             total_tasks=num_to_do,
+            task_progress_message=f'{{task}}\n\n[{{processing_task}}kb of {{total_tasks}}kb] ({{progress:.1f}}%)',
             title=f'{SCRIPT_NAME}: Downloading',
-            task_progress_message=f'{download_type}: {file_name}\n\n0 KB of {file_size}',
             parent=self.window,
             )
 
@@ -3492,18 +3509,16 @@ class LogikPortal:
             downloaded += len(data)
             downloaded_bytes = downloaded / 1000
             downloaded_progress = int(round(downloaded_bytes, 1))
-            downloaded_bytes = str(downloaded_progress) + ' KB'
-            self.progress_window.processing_task = downloaded_progress
-            self.progress_window.task_progress_message = f'{download_type}: {file_name}\n\n{downloaded_bytes} of {file_size}'
+            progress_window.current_task = downloaded_progress
 
         # Retrieve file in binary mode with a callback
         self.ftp.retrbinary(f'RETR {ftp_file_path}', write_and_update)
 
         # Set final progress window values
-        self.progress_window.task_progress_message = f'{download_type}: {file_name}\n\n{file_size} of {file_size}\n\nDownload Complete.'
-        self.progress_window.processing_task = num_to_do
-        self.progress_window.tasks_complete = True
-        self.progress_window.title = 'Download Complete'
+        progress_window.tasks_completed(
+            title='Logik Portal: Download Complete',
+            text_append='Download Complete'
+            )
 
         # Disconnect from ftp
         self.ftp.quit()
@@ -3546,8 +3561,8 @@ class LogikPortal:
             uploaded_bytes = str(upload_progress) + ' KB'
             #print('uploaded_bytes:', uploaded_bytes)
 
-            self.progress_window.processing_task = upload_progress
-            self.progress_window.task_progress_message = f'{upload_type}: {file_name}\n\n{uploaded_bytes} of {file_size}'
+            progress_window.current_task = upload_progress
+
             return data
 
         pyflame.cursor_busy()
@@ -3579,10 +3594,11 @@ class LogikPortal:
             file_size = str(num_to_do) + ' KB'
 
         # Create progress window
-        self.progress_window = PyFlameProgressWindow(
+        progress_window = PyFlameProgressWindow(
+            task=f'Uploading {upload_type}: {file_name}',
             total_tasks=num_to_do,
+            task_progress_message=f'{{task}}\n\n[{{processing_task}}kb of {{total_tasks}}kb] ({{progress:.1f}}%)',
             title=f'{SCRIPT_NAME}: Uploading',
-            task_progress_message=f'{upload_type}: {file_name}\n\n0 KB of {file_size}',
             parent=self.window,
             )
 
@@ -3594,15 +3610,11 @@ class LogikPortal:
         # Upload tgz file to Portal
         uploaded = 0 # Variables to store progress
 
-        # Open the file and upload in binary mode with a callback
+        # Open the file and upload in binary mode with a callback. Also update progress window with callback.
         with open(tgz_path, 'rb') as f:
             self.ftp.storbinary(f'STOR {ftp_tgz_path}', f, callback=read_and_update)
 
         pyflame.cursor_restore()
-
-        # Set final progress window message
-        self.progress_window.task_progress_message = f'{upload_type}: {file_name}\n\n{file_size} of {file_size}\n\nUpload Complete.'
-        self.progress_window.processing_task = num_to_do
 
         # Check that both files were uploaded to site, if not display error message
         if f'{os.path.join(upload_folder, file_name)}.tgz' and f'{os.path.join(upload_folder, file_name)}.xml' not in self.ftp.nlst(upload_folder):
@@ -3614,8 +3626,11 @@ class LogikPortal:
                 )
             return
 
-        self.progress_window.tasks_complete = True
-        self.progress_window.title = 'Upload Complete'
+        # Set progress window completed
+        progress_window.tasks_completed(
+            title='Logik Portal: Upload Complete',
+            text_append='Upload Complete'
+            )
 
         # Clean up temp folder
         os.remove(xml_path)
@@ -3634,7 +3649,6 @@ class LogikPortal:
 
         # Get current tab name
         current_tab_name = self.tabs.get_current_tab_name()
-        #print('current_tab_name: ', current_tab_name)
 
         # Save current tab to config
         self.settings.save_config(
