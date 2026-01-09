@@ -16,10 +16,10 @@
 #
 # License:       GNU General Public License v3.0 (GPL-3.0)
 #                https://www.gnu.org/licenses/gpl-3.0.en.html
-
+  
 """
 Script Name: Rename Shots
-Script Version: 1.11.0
+Script Version: 1.12.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 04.05.22
@@ -51,6 +51,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.12.0 01.03.26
+        - Progress messages print to script window
 
     v1.11.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -114,7 +117,7 @@ from lib.pyflame_lib_rename_shots import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Rename Shots'
-SCRIPT_VERSION = 'v1.11.0'
+SCRIPT_VERSION = 'v1.12.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -137,7 +140,7 @@ class RenameShots:
         # Make sure no cuts or transitions are selected
         self.selection = [s for s in selection if s.type == 'Video Segment' or isinstance(s, flame.PySequence)]
 
-        self.rename_shots_main_window()
+        self.main_window()
 
     def load_config(self) -> PyFlameConfig:
         """
@@ -165,7 +168,23 @@ class RenameShots:
 
         return settings
 
-    def rename_shots_main_window(self):
+    def main_window(self):
+
+        def save_config():
+            """
+            Save Config
+            ===========
+
+            Save config values to config file.
+            """
+
+            # Save config file
+            self.settings.save_config(
+                config_values={
+                    'clip_name': self.clip_name_entry.text,
+                    'shot_name': self.shot_name_entry.text,
+                    }
+                )
 
         def apply():
             """
@@ -174,22 +193,6 @@ class RenameShots:
 
             Apply clip, shot names to segments and tagging if selected.
             """
-
-            def save_config():
-                """
-                Save Config
-                ===========
-
-                Save config values to config file.
-                """
-
-                # Save config file
-                self.settings.save_config(
-                    config_values={
-                        'clip_name': self.clip_name_entry.text,
-                        'shot_name': self.shot_name_entry.text,
-                        }
-                    )
 
             # Make sure at least one shot name field is filled in
             if not self.clip_name_entry.text and not self.shot_name_entry.text:
@@ -200,13 +203,19 @@ class RenameShots:
                     )
                 return
 
+            # Save config
             save_config()
-
-            # Close window
-            self.window.close()
 
             # Apply names to segments
             self.process_segments()
+
+            PyFlameMessageWindow(
+                message='Names applied to segments.',
+                parent=None,
+                )
+
+            # Close window
+            self.window.close()
 
         def close_window():
             """
@@ -352,18 +361,10 @@ class RenameShots:
 
             if self.settings.shot_name:
                 segment.tokenized_shot_name = self.settings.shot_name
-                pyflame.print(
-                    text=f'Shot Name: {str(segment.shot_name)[1:-1]}',
-                    indent=True,
-                    new_line=False,
-                    )
+                self.window.print(f'Shot Name: {str(segment.shot_name)[1:-1]}')
             if self.settings.clip_name:
                 segment.tokenized_name = self.settings.clip_name
-                pyflame.print(
-                    text=f'Clip Name: {str(segment.name)[1:-1]}',
-                    indent=True,
-                    new_line=False,
-                    )
+                self.window.print(f'Clip Name: {str(segment.name)[1:-1]}')
 
         pyflame.print('Renaming Shots:')
 

@@ -1,6 +1,6 @@
 # Rename Shots
 
-**Script Version:** 1.11.0  
+**Script Version:** 1.12.0  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 04.05.22  
@@ -30,6 +30,10 @@ https://github.com/logik-portal/python/rename_shots
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.12.0 [01.03.26]
+- Progress messages print to script window
+<br>
 
 ### v1.11.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
