@@ -19,14 +19,14 @@
 
 """
 Script Name: CMYK to RGB
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025
 Written by: Michael Vaglienty
-Creation Date: 12.06.25
+Creation Date: 12.24.25
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
-Script Type: Batch
+Script Type: Media Panel / Media Hub File Browser
 
 Description:
 
@@ -47,6 +47,10 @@ To install:
 
 Updates:
 
+    v1.0.1 12.24.25
+        - Moved PIL python packages to assets/python_packages directory.
+        - Updated python package installation.
+
     v1.0.0 12.06.25
         - Initial release.
 """
@@ -64,7 +68,7 @@ from lib.pyflame_lib_cmyk_to_rgb import *
 # ==============================================================================
 
 SCRIPT_NAME = 'CMYK to RGB'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -103,7 +107,6 @@ class CMYKToRGB:
 
         # Install required python packages if not already installed.
         flame_version = pyflame.get_flame_version()
-        print(f'Flame version: {flame_version}')
 
         # Determine which Python version is required.
         if flame_version <= 2026.9:
@@ -119,9 +122,11 @@ class CMYKToRGB:
                 )
             return False
 
-        pyflame.python_package_local_install(package='PIL', python_version=python_version)
+        pyflame.python_package_local_install(package=f'PIL_python{python_version}')
 
         return True
+
+    #-----------------------------------------------------------------------------
 
     def process_images(self, selection: list) -> None:
         """
@@ -139,13 +144,12 @@ class CMYKToRGB:
         # Dictionary to store the image paths and destinations for each image.
         image_destinations = {}
 
-        pyflame.print('Getting clip info...', underline=True)
+        pyflame.print('Getting clip info...', underline=True, new_line=False)
 
         # Process each image in the selection.
         for image in selection:
-            pyflame.print(f'Image: {image}', new_line=False)
+            pyflame.print(f'Image: {str(image.name)[1:-1]}', new_line=False)
             pyflame.print(f'Image type: {type(image)}', new_line=False)
-            pyflame.print(f'Image parent: {image.parent}', new_line=False)
 
             if isinstance(image, flame.PyClip): # Get image path and destination for PyClip.
                 pyflame.print('Image is a clip')
@@ -206,7 +210,7 @@ class CMYKToRGB:
                 The path to the clip/image.
         """
 
-        pyflame.print('Getting clip image path...', underline=True)
+        pyflame.print('Getting clip image path...', underline=True, new_line=False)
 
         # Get path to the image as a string
         image_path = str(image.versions[0].tracks[0].segments[0].file_path)
@@ -232,7 +236,7 @@ class CMYKToRGB:
                 True if the image extension is supported, False otherwise.
         """
 
-        pyflame.print('Checking image extension...', underline=True)
+        pyflame.print('Checking image extension...', underline=True, new_line=False)
 
         # List of allowed image extensions
         allowed_extensions = ('.tif', '.tiff', '.jpg', '.jpeg', '.psd')
@@ -303,7 +307,7 @@ class CMYKToRGB:
                 pyflame.print('Alpha channel not present', new_line=False)
                 return False
 
-        pyflame.print('Converting image...', underline=True)
+        pyflame.print('Converting image...', underline=True, new_line=False)
 
         # Open image
         img = Image.open(src_path)
@@ -437,7 +441,7 @@ class CMYKToRGB:
             - If the image is a clip in the media hub, a new library will be created in the media panel and the image will be imported to that library.
         """
 
-        pyflame.print('Importing converted images...', underline=True)
+        pyflame.print('Importing converted images...', underline=True, new_line=False)
 
         import_library_created = False
 

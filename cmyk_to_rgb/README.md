@@ -1,11 +1,11 @@
 # Cmyk To Rgb
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.0.1  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
-**Creation Date:** 12.06.25  
+**Creation Date:** 12.24.25  
 
-**Script Type:** Batch
+**Script Type:** Media Panel / Media Hub File Browser
 
 ## Description
 
@@ -25,6 +25,11 @@ PSD files will be saved as TIFF files.
 Copy script into /opt/Autodesk/shared/python/cmyk_to_rgb
 
 ## Updates
+
+### v1.0.1 [12.24.25]
+- Moved PIL python packages to assets/python_packages directory.
+- Updated python package installation.
+<br>
 
 ### v1.0.0 [12.06.25]
 - Initial release.
