@@ -5,9 +5,9 @@ https://github.com/logik-portal/pyflame
 Python library for Autodesk Flame providing PyQt widgets styled to
 match Flame’s UI and utility functions that streamline script development.
 
-**Version:** 5.1.0<br>
+**Version:** 5.2.0<br>
 **Creation Date:** 10.31.20<br>
-**Update Date:** 12.05.25<br>
+**Update Date:** 01.04.26<br>
 **Written By:** Michael Vaglienty<br>
 **License:** License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details<br>
 
@@ -146,37 +146,7 @@ To utilize widgets, instantiate them directly by their class names:
 
 ## Updates
 
-## v5.1.1 [12.16.25]
-
-### Updates/Fixes
-
-- **Widgets**
-    - `PyFlameProgressWindow`
-        - **Misc Fixes**
-
-## v5.1.0 [12.05.25]
-
-### Added
-
-- **PyFlameFunctions**
-    - pyflame.python_package_local_install
-        - New function to install python packages locally bundled with a script.
-
-### Updates/Fixes
-
-- **Widgets**
-    - `PyFlameTreeWidget`
-        - **New Methods**
-            - `add_item_with_columns`
-                - Add a new item to a tree with tree column entries.
-            - `color_item`
-                - Color item in tree.
-            - `set_fixed_column_headers`
-                - Set all tree column headers to a fixed length
-
----
-
-See full history in [CHANGELOG.md](CHANGELOG.md).
+See CHANGELOG for full listing of updates [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

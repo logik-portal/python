@@ -4,6 +4,84 @@ All notable changes to this project will be documented in this file.
 
 https://github.com/logik-portal/pyflame
 
+## v5.2.1 [01.08.26]
+
+- Misc spelling/type-o fixes
+
+## v5.2.0 [01.04.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameLabel`
+        - **Fixed**
+            - `Enabled` argument wasn't working.
+    - `PyFlameTabWidget`
+        - **Fixed**
+            - Widget wasn't properly spanning in gridlayout. This caused windows to not be sized properly.
+            - Changed `enable` argument to `enabled` to be consistent with other widgets
+
+- **Windows**
+    - `PyFlameWindow`
+        - **Fixed**
+            - Window centering
+        - **New Argument**
+            - `message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: True)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameInputWindow`
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameMessageWindow`
+        - Added properties to docstring.
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlamePasswordWindow`
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameProgressWindow`
+        - Simplified arguments/properties.
+        - **Fixed**
+            - Added missing docstrings to properties.
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+        - **New Methods**
+            -`text_append`
+                - Appends text to the currently displayed message
+            -`pause`
+                - Adds a delay in seconds to allow the UI time to refresh before moving on the the next operation.
+            -`tasks_completed`
+                - Sets completed state of progress window after tasks are done.
+            -`enable_done_button`
+                - Enabled the Done button.
+
 ## v5.1.1 [12.16.25]
 
 ### Updates/Fixes

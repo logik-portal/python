@@ -34,7 +34,7 @@ Description:
     Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new
     batch group with Neat/Render/Write nodes for all selected clips.
 
-    NEAT OFX is required!
+    NEAT OFX is required
 
     Works with Neat OFX v5.x and Neat OFX v6.x.
 
