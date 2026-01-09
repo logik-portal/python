@@ -151,13 +151,13 @@
   },
   {
     "Script Name": "cmyk to rgb",
-    "Script Version": "1.0.0",
+    "Script Version": "1.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
-    "Creation Date": "12.06.25",
-    "Update Date": "12.06.25",
-    "Description": "Script Name: CMYK to RGB\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 12.06.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nConvert CMYK images to RGB.\n\nSupported image formats: TIF, JPG, and PSD.\n\nPSD files will be saved as TIFF files.\n\nMenus:\n\nRight-click on a CMYK clip in the Media Panel -> CMYK to RGB\nRight-click on a CMYK file in the Media Hub File Browser -> CMYK to RGB\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/cmyk_to_rgb\n\nUpdates:\n\nv1.0.0 12.06.25\n- Initial release."
+    "Creation Date": "12.24.25",
+    "Update Date": "12.24.25",
+    "Description": "Script Name: CMYK to RGB\nScript Version: 1.0.1\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 12.24.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Media Panel / Media Hub File Browser\n\nDescription:\n\nConvert CMYK images to RGB.\n\nSupported image formats: TIF, JPG, and PSD.\n\nPSD files will be saved as TIFF files.\n\nMenus:\n\nRight-click on a CMYK clip in the Media Panel -> CMYK to RGB\nRight-click on a CMYK file in the Media Hub File Browser -> CMYK to RGB\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/cmyk_to_rgb\n\nUpdates:\n\nv1.0.1 12.24.25\n- Moved PIL python packages to assets/python_packages directory.\n- Updated python package installation.\n\nv1.0.0 12.06.25\n- Initial release."
   },
   {
     "Script Name": "color segment fx",
