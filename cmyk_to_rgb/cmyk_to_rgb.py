@@ -22,7 +22,8 @@ Script Name: CMYK to RGB
 Script Version: 1.0.1
 Flame Version: 2025
 Written by: Michael Vaglienty
-Creation Date: 12.24.25
+Creation Date: 12.06.25
+Update Date: 12.24.25
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
