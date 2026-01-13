@@ -1,5 +1,5 @@
 """
-Script Name: remove_XML_crap
+Script Name: remove xml crap
 Script Version: 0.3.0
 Flame Version: 2025
 Written by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script
