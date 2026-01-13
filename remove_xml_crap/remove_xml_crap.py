@@ -4,6 +4,7 @@ Script Version: 0.3.0
 Flame Version: 2025
 Written by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script
 Creation Date: 01.07.26
+Update Date: 01.07.26
 
 Custom Action Type: MediaPanel
 
