@@ -755,9 +755,9 @@
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Ted Stanley, based on John Geehreng's fix_corrupt_actions script",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "Script Name: remove xml crap\nScript Version: 0.3.0\nFlame Version: 2025\nWritten by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script\n\nCustom Action Type: MediaPanel\n\nDescription:\nRemoves Global Axis, Light and Shadow nodes from Action setups imported from XMLs\n\nMenus:\nMedia Panel -> Remove XML Crap"
+    "Creation Date": "01.07.26",
+    "Update Date": "01.07.26",
+    "Description": "Script Name: remove xml crap\nScript Version: 0.3.0\nFlame Version: 2025\nWritten by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script\nCreation Date: 01.07.26\n\nCustom Action Type: MediaPanel\n\nDescription:\nRemoves Global Axis, Light and Shadow nodes from Action setups imported from XMLs\n\nMenus:\nMedia Panel -> Remove XML Crap"
   },
   {
     "Script Name": "rename aaf clip",
