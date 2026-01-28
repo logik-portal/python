@@ -1,4 +1,4 @@
-'''
+"""
 Script Name: batch renamer
 Script Version: 2.0.1
 Flame Version: 2024.2
@@ -26,7 +26,7 @@ Updates:
     09.08.22 - v1.3   - 2023.2 ordering (commented out for Logik Portal)
     04.15.22 - v1.2   - UI adjustments for 2023
 
-'''
+"""
 import flame
 import xml.etree.ElementTree as ET
 import os
