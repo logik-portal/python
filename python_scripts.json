@@ -110,6 +110,16 @@
     "Description": "Script Name: Batch Nodes\nScript Version: 3.11.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 04.18.20\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch / Flame Main Menu\n\nDescription:\n\n*** Does not work with Flame 2024.0 due to bug in Flame ***\n\nAdd menus to batch right-click for your favorite nodes.\n\nWorks with standard batch nodes/matchboxes/ofx.\n\nOFX can only be added by right clicking on an existing node in batch.\n\nNodes added by right-clicking on them in batch will be saved with current settings.\n\nAll created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus\n\nMenus:\n\nTo create/rename/delete menus from node lists:\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> Batch Nodes Setup\n\nTo create menus for nodes with settings applied in batch:\nRight-click on node in batch -> Batch Nodes... -> Create Menu For Selected Node\n\nTo create menus for ofx nodes:\nRight-click on node in batch -> Batch Nodes... -> Create Menu For Selected Node\n\nTo add node from menu to batch:\nRight-click in batch -> Batch Nodes... -> Select Node to be added\n\nURL:\nhttps://github.com/logik-portal/python/batch_nodes\n\nTo add node from menu to batch connected to selected node:\nRight-click on node in batch -> Batch Nodes... -> Select Node to be added\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv3.11.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Bug fixes to batch nodes menu.\n- Window layer order in linux is now fixed.\n\nv3.10.0 03.11.25\n- Updated to PyFlameLib v4.3.0.\n- Fixed misc bugs.\n\nv3.9.0 01.04.25\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv3.8.0 08.14.24\n- Updated to PyFlameLib v3.0.0.\n\nv3.7.0 01.21.24\n- Updates to UI/PySide.\n\nv3.6.0 08.13.23\n- Updated to PyFlameLib v2.0.0.\n\nv3.5.1 06.28.23\n- Updated version naming to semantic versioning.\n- Main window tabs no longer have outline around names when selected in linux.\n\nv3.5 02.04.23\n- Updated menus for Flame 2023.2+\n- Updated config file loading/saving.\n- Added check to make sure script is installed in the correct location.\n\nv3.4 05.31.22\n- Messages print to Flame message window - Flame 2023.1+\n- Flame file browser used to select folders - Flame 2023.1+\n- Misc bug fixes.\n\nv3.3 03.31.22\n- UI widgets moved to external file\n- Misc bug fixes\n\nv3.2 03.07.22\n- Updated UI for Flame 2023\n\nv3.1 10.26.21\n- Updated config to xml\n\nv3.0 05.20.21\n- Updated to be compatible with Flame 2022/Python 3.7\n\nv2.5 01.27.21\n- Updated UI\n- Menus/Nodes can be renamed after they've been added\n\nv2.1 05.17.20:\n- Misc code updates"
   },
   {
+    "Script Name": "batch renamer",
+    "Script Version": "unknown",
+    "Flame Version": "unknown",
+    "Maximum Flame Version": "Latest",
+    "Author": "unknown",
+    "Creation Date": "unknown",
+    "Update Date": "unknown",
+    "Description": "<settings>\n<batch_renamer_settings>\n<naming_convention>Some Value Here</naming_convention>\n</batch_renamer_settings>\n</settings>"
+  },
+  {
     "Script Name": "batch rendertimer",
     "Script Version": "1.0.0",
     "Flame Version": "2023",
@@ -401,13 +411,13 @@
   },
   {
     "Script Name": "find and replace",
-    "Script Version": "1.7",
-    "Flame Version": "2023.2",
+    "Script Version": "1.0.0",
+    "Flame Version": "2026",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
-    "Creation Date": "10.01.21",
-    "Update Date": "02.27.24",
-    "Description": "Script Name: find and replace\nScript Version: 1.7\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 10.01.21\nUpdate Date: 02.27.24\n\nScript Type: MediaPanel\n\nUsage:\n\nRight click a selection of clips or sequences and look for UC Renamers -> Find and Replace\n\nDescription:\n\nFind and Replaces characters in a bunch of clips or sequences.\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/find_and_replace\n\nUpdates:\n02.27.24 - v1.7 Updated Config Settings. Fixed error when empty fields are entered\n02.12.24 - v1.6 Added Preview Window\n12.12.23 - v1.5 Updated for pyflame lib v2\n01.25.23 - v1.4 Stopped window from automatically closing upon renaming. Renamed \"Cancel\" to \"Close.\"\n08.25.22 - v1.3 2023.2 ordering\n04.19.22 - v1.2 2023 UI Updates"
+    "Creation Date": "06.07.22",
+    "Update Date": "10.06.25",
+    "Description": "Script Name: find and replace mediahub\nScript Version: 1.0.0\nFlame Version: 2026\nWritten by: John Geehreng\nCreation Date: 06.07.22\nUpdate Date: 10.06.25\n\nCustom Action Type: Media Panel\n\nUsage: Right click a selection of files and look for UC Renamers -> Find and Replace\n\nDescription: Find and Replaces characters in a bunch of clips or sequences.\n\nTo install: Copy script into /opt/Autodesk/shared/python/find_and_replace_mediahub or wherever you wish.\n\nUpdates:\n10.06.25 - v1.0.0  Updated for Flame 2026 and pyflame lib v4.\n12.13.23 - v0.3  Updated for pyflame lib v2. Start updates for Flame 2025."
   },
   {
     "Script Name": "find folder",
@@ -781,13 +791,13 @@
   },
   {
     "Script Name": "rename prep",
-    "Script Version": "1.0",
-    "Flame Version": "2020",
+    "Script Version": "1.9.3",
+    "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
-    "Creation Date": "01.01.20",
-    "Update Date": "01.01.20",
-    "Description": "Script Name: Rename Prep\nScript Version: 1.0\nFlame Version: 2020\nWritten by: John Geehreng\nCreation Date: 01.01.20\nUpdate Date: 01.01.20\n\nDescription:\n\nRename AAF Prep"
+    "Creation Date": "10.01.20",
+    "Update Date": "01.28.26",
+    "Description": "Script Name: rename_prep\nScript Version: 1.9.3\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 10.01.20\nUpdate Date: 01.28.26\n\nCustom Action Type: Media Panel (Clips or Sequences)\n\nUsage: Right click a selection of sequences and look for UC Renamers -> Rename Prep\n\nDescription: Sanatize and rename conform prep.\n\nTo install: Copy script into /opt/Autodesk/shared/python/rename_prep\n\nUpdates:\n01.28.26 - v1.9.3 turned off ordering\n10.15.24 - v1.9.2 Fixed resolution for 2x3. put imports at the top.\n05.01.24 - v1.9.1 Remove :'s and ;'s\n04.12.24 - v1.9   Fixed some odd things\n11.28.23 - v1.8   Added some Regex because of the updates to the xml script\n05.19.23 - v1.7   Changed \"CONFORM\" to \"WIP\"\n08.25.22 - v1.6   2023.2 Ordering"
   },
   {
     "Script Name": "rename shots",
@@ -801,13 +811,13 @@
   },
   {
     "Script Name": "renamer ui",
-    "Script Version": "2.7.2",
+    "Script Version": "2.7.3",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "12.11.20",
     "Update Date": "01.27.26",
-    "Description": "Script Name: renamer_ui\nScript Version: 2.7.2\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 12.11.20\nUpdate Date: 01.27.26\nDescription: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add \"_Generic\" or \"_v01\" to the end of a name.\n\nUpdates:\n01.27.26 - v2.7.2 - UI Update for pyflame lib v5.1.1\n01.27.26 - v2.7.1 - Fixed issue with grid layout column widths\n01.27.26 - v2.7.0 - UI Update for pyflame lib v4.3.1\n09.19.24 - v2.6   -  Added Batch option. Minor cleanup.\n08.27.24 - v2.5   - Turn off Scope so you can rename anything\n03.04.24 - v2.4   - Use the return pressed option\n12.13.23 - v2.3   - Updated for pyflame lib v2\n08.25.22 - v2.2   - 2023.2 Ordering\n04.18.22 - v2.1   - 2023 UI Updates"
+    "Description": "Script Name: renamer_ui\nScript Version: 2.7.3\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 12.11.20\nUpdate Date: 01.27.26\nDescription: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add \"_Generic\" or \"_v01\" to the end of a name.\n\nUpdates:\n01.28.26 - v2.7.3 - Turned off order\n01.27.26 - v2.7.2 - UI Update for pyflame lib v5.1.1\n01.27.26 - v2.7.1 - Fixed issue with grid layout column widths\n01.27.26 - v2.7.0 - UI Update for pyflame lib v4.3.1\n09.19.24 - v2.6   -  Added Batch option. Minor cleanup.\n08.27.24 - v2.5   - Turn off Scope so you can rename anything\n03.04.24 - v2.4   - Use the return pressed option\n12.13.23 - v2.3   - Updated for pyflame lib v2\n08.25.22 - v2.2   - 2023.2 Ordering\n04.18.22 - v2.1   - 2023 UI Updates"
   },
   {
     "Script Name": "render all layers",
