@@ -1,0 +1,5 @@
+<settings>
+    <batch_renamer_settings>
+        <naming_convention>&lt;current_name&gt;_&lt;count&gt;</naming_convention>
+    </batch_renamer_settings>
+</settings>

@@ -1,6 +1,6 @@
 '''
 Script Name: renamer_ui
-Script Version: 2.7.2
+Script Version: 2.7.3
 Flame Version: 2023.2
 Written by: John Geehreng
 Creation Date: 12.11.20
@@ -8,6 +8,7 @@ Update Date: 01.27.26
 Description: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add "_Generic" or "_v01" to the end of a name.
 
 Updates:
+01.28.26 - v2.7.3 - Turned off order
 01.27.26 - v2.7.2 - UI Update for pyflame lib v5.1.1
 01.27.26 - v2.7.1 - Fixed issue with grid layout column widths
 01.27.26 - v2.7.0 - UI Update for pyflame lib v4.3.1
@@ -24,7 +25,7 @@ from lib.pyflame_lib_renamer_ui import *
 
 FOLDER_NAME = "UC Renamers"
 SCRIPT_NAME = 'Renamer UI'
-SCRIPT_VERSION = 'v2.7.2'
+SCRIPT_VERSION = 'v2.7.3'
 
 def renamer_window(selection):
 
@@ -142,7 +143,7 @@ def get_media_panel_custom_ui_actions():
             'actions': [
                 {
                     'name': SCRIPT_NAME,
-                    'order': 7,
+                    # 'order': 7,
                     # 'isVisible': scope_not_desktop,
                     'execute': renamer_window,
                     'minimumVersion': '2023.2'
@@ -174,7 +175,7 @@ def get_batch_custom_ui_actions():
                 {
                     'name': SCRIPT_NAME,
                     'execute': renamer_window,
-                    'order': 13,
+                    # 'order': 13,
                     'separator': 'below',
                     'isVisible': scope_node,
                     'execute': renamer_window,
