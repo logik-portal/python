@@ -111,13 +111,13 @@
   },
   {
     "Script Name": "batch renamer",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Version": "2.0.1",
+    "Flame Version": "2024.2",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "<settings>\n<batch_renamer_settings>\n<naming_convention>Some Value Here</naming_convention>\n</batch_renamer_settings>\n</settings>"
+    "Author": "John Geehreng",
+    "Creation Date": "10.01.21",
+    "Update Date": "01.28.26",
+    "Description": "Script Name: batch renamer\nScript Version: 2.0.1\nFlame Version: 2024.2\nWritten by: John Geehreng\nCreation Date: 10.01.21\nUpdate Date: 01.28.26\n\nCustom Action Type: Media Panel\n\nUsage: Right click a selection of clips or sequences and look for UC Renamers -> Batch Renamer\n\nDescription: Renames a bunch of clips or sequences based on text input and tokens.\n\nTo install: Copy script into /opt/Autodesk/shared/python/batch_renamer\n\nUpdates:\n01.28.26 - v2.0.1 - Changed SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))\n01.28.26 - v2.0.0 - Updated for Flame 2024.2 and above. Updated UI for pyflame lib v5.1.1\n02.28.25 - v1.9   - Added YYMMDD token\n09.18.24 - v1.8   - Added Reel Group Name and Desktop Name options.\n05.15.24 - V1.7   - Added Date Option\n12.13.23 - v1.6   - Updated for pyflame lib v2. Start updates for Flame 2025.\n06.05.23 - v1.5   - added \"Count\"\n05.09.23 - v1.4   - added ability to keep current name\n09.08.22 - v1.3   - 2023.2 ordering (commented out for Logik Portal)\n04.15.22 - v1.2   - UI adjustments for 2023"
   },
   {
     "Script Name": "batch rendertimer",
