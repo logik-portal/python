@@ -1,7 +1,7 @@
 '''
 Script Name: batch renamer
 Script Version: 2.0.1
-Flame Version: 2024.2 and above
+Flame Version: 2024.2
 Written by: John Geehreng
 Creation Date: 10.01.21
 Update Date: 01.28.26
@@ -44,7 +44,7 @@ SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 class batch_rename(object):
 
     def __init__(self, selection):
-        
+
 
         print ('>' * 20, 'batch renamer %s' % SCRIPT_VERSION, '<' * 20, '\n')
 
@@ -142,7 +142,7 @@ class batch_rename(object):
             self.window.close()
             rename()
             print ('>' * 20, 'batch renamer %s' % SCRIPT_VERSION, '<' * 20, '\n')
-            
+
 
         def rename():
 
@@ -192,7 +192,7 @@ class batch_rename(object):
                 if resolution == '2560 x 1440':
                     aspect_ratio = "16x9"
                     seq_format = "1440P"
-                
+
                 # print ("Aspect Ratio is: " + str(aspect_ratio) )
 
                 #Get duration in seconds
@@ -227,7 +227,7 @@ class batch_rename(object):
                 print ("Naming Convention Name: " + str(naming_convention))
                 item.name = naming_convention
                 print ("*" * 50,"\n"*1)
-        
+
         def update_preview():
             self.naming_convention_entry = self.naming_convention_lineedit.text
             count = 0
@@ -314,7 +314,7 @@ class batch_rename(object):
 
         # LineEdits
         self.naming_convention_lineedit = PyFlameEntry(text=self.naming_convention, text_changed=update_preview)
-                
+
         # Token Button
         self.token_dict = {'Current Name': '<current_name>',
                              'Reel Name': '<reel_name>',
@@ -331,7 +331,7 @@ class batch_rename(object):
                              'Generic': '_Generic',
                              'Count': '<count>'}
         self.setup_token_push_button = PyFlameTokenMenu(text='Add Token', token_dict=self.token_dict, token_dest=self.naming_convention_lineedit)
-        
+
         # Buttons
         self.rename_btn = PyFlameButton(text='Rename',  connect=save_config,color=Color.BLUE)
         self.cancel_btn = PyFlameButton(text='Cancel',  connect=self.window.close)
@@ -355,7 +355,7 @@ class batch_rename(object):
         self.window.grid_layout.addWidget(self.rename_btn, 3, 2)
 
         self.window.show()
-       
+
 
 ##########################################
 #Scopes
