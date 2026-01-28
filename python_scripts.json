@@ -801,13 +801,13 @@
   },
   {
     "Script Name": "renamer ui",
-    "Script Version": "2.3",
+    "Script Version": "2.7.2",
     "Flame Version": "2023.2",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "12.11.20",
-    "Update Date": "12.13.23",
-    "Description": "Script Name: renamer_ui\nScript Version: 2.3\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 12.11.20\nUpdate Date: 12.13.23\n\nDescription: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add \"_Generic\" or \"_v01\" to the end of a name.\n\nUpdates:\n12.13.23 - v2.3 Updated for pyflame lib v2\n08.25.22 - v2.2 2023.2 Ordering\n04.18.22 - v2.1 2023 UI Updates"
+    "Update Date": "01.27.26",
+    "Description": "Script Name: renamer_ui\nScript Version: 2.7.2\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 12.11.20\nUpdate Date: 01.27.26\nDescription: Use this to add and/or remove a prefix and or suffix. It's a very quick way to add \"_Generic\" or \"_v01\" to the end of a name.\n\nUpdates:\n01.27.26 - v2.7.2 - UI Update for pyflame lib v5.1.1\n01.27.26 - v2.7.1 - Fixed issue with grid layout column widths\n01.27.26 - v2.7.0 - UI Update for pyflame lib v4.3.1\n09.19.24 - v2.6   -  Added Batch option. Minor cleanup.\n08.27.24 - v2.5   - Turn off Scope so you can rename anything\n03.04.24 - v2.4   - Use the return pressed option\n12.13.23 - v2.3   - Updated for pyflame lib v2\n08.25.22 - v2.2   - 2023.2 Ordering\n04.18.22 - v2.1   - 2023 UI Updates"
   },
   {
     "Script Name": "render all layers",
