@@ -200,6 +200,16 @@
     "Description": "Script Name: Continue Folder\nWritten By: Kieran Hanrahan\n\nScript Version: 3.0.0\nFlame Version:  2025\n\nURL: http://www.github.com/khanrahan/continue-folder\n\nCreation Date: 04.10.23\nUpdate Date: 03.06.25\n\nDescription:\n\nCreate a new reel on the Desktop and/or folder in the MediaHub Files tab using\ntokens, including a token to continue a number sequence in a sequence of existing\nfolders.\n\nMenus:\n\nRight-click selected folders in the Media Hub --> Create... --> Continue Folder\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
+    "Script Name": "copy actions",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "John Geehreng",
+    "Creation Date": "01.16.24",
+    "Update Date": "01.28.26",
+    "Description": "Script Name: copy actions to\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 01.16.24\nUpdate Date: 01.28.26\n\nCustom Action Type: Timeline\n\nDescription:\n\nMass Copy Actions To other Tracks\n\nMenus:\n\nFlame 2025+:\n\nTimeline -> Copy Actions -> Copy To\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/copy_actions or appropriate shared python folder\n\nUpdates:\n\nv1.0.0 01.28.26\n\nFixed issue with incorrect project tmp path in Flame 2026+ again. Pyflame lib update. Turned off print statements.\n\nv0.6.2 10.31.25\n\nFixed issue with incorrect project tmp path in Flame 2026+ Turned off script path check\n\nv0.6.1 10.28.25\n\nRemoved .action extension from action_path\n\nv0.6.0 07.10.25\n\nInverted default slider value\n\nv0.5 12.11.24\n\nDelete TL Action, create a new one, and then load the saved action - seems to fix the action xml bug.\n\nv0.4 10.15.24\n\nAdjusted action_path for 2025.1.2\n\nv0.3 01.19.24\n\nAdded limits to the sliders based on the number of tracks\n\nv0.2 01.18.24\n\nAdded a check for valid 'action_path'\n\nv0.1 01.16.24\n\nInception"
+  },
+  {
     "Script Name": "copy dir listing to clipboard",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
