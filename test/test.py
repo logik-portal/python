@@ -11,7 +11,7 @@
 
 """
 Script Name: Test
-Script Version: 3.7.0
+Script Version: 3.7.1
 Flame Version: 2023.2
 Written by: Michael Vaglienty
 Creation Date: 05.01.20
