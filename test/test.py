@@ -11,7 +11,7 @@
 
 """
 Script Name: Test
-Script Version: 3.7.2
+Script Version: 3.7.3
 Flame Version: 2023.2
 Written by: Michael Vaglienty
 Creation Date: 05.01.20
@@ -38,7 +38,7 @@ To install:
 
 Updates:
 
-    v3.7.2 02.26.26
+    v3.7.3 02.26.26
         - Fixed bug that caused script to not work when right-clicking on clips with ratio of 1.0.
 
     v3.7.0 04.13.25
