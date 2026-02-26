@@ -11,7 +11,7 @@
 
 """
 Script Name: Test
-Script Version: 3.7.10
+Script Version: 3.7.11
 Flame Version: 2023.2
 Written by: Michael Vaglienty
 Creation Date: 05.01.20
@@ -38,7 +38,7 @@ To install:
 
 Updates:
 
-    v3.7.10 02.26.26
+    v3.7.11 02.26.26
         - Updated to PyFlameLib v7.7.62.
 
     v3.7.5 02.26.26
