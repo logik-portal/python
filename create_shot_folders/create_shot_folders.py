@@ -1,5 +1,5 @@
 # Create Shot Folders
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Shot Folders
-Script Version: 5.4.0
+Script Version: 5.5.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.09.18
-Update Date: 08.27.25
+Update Date: 02.18.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -45,12 +45,28 @@ Menus:
 
     Media Panel:
         Right-click in Media Panel -> Create Shot Folders
+        Right-click on selected clips in Media Panel -> Create Shot Folders (From Clips)
+
+    MediaHub:
+        Right-click on selected folder in MediaHub -> Create Shot Folders
+
+    Timeline:
+        Right-click on selected timeline segments in Media Panel -> Create Shot Folders (From Segments)
 
 To install:
 
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v5.5.0 02.18.26
+        - Create shot folders for selected clips in Media Panel.
+        - Create shot folders for selected timeline segments.
+        - Set folder location for selected clips or segments for shot folders. (Setup Window)
+        - Create shot folders in MediaHub at selected folder location.
+        - Export clips to file system folders.
+        - Set location of plate export folders in file system folders. (Setup Window)
+        - Set render type. Foreground or Background.
 
     v5.4.0 08.27.25
         - Updated to PyFlameLib v5.0.0.
@@ -76,9 +92,9 @@ Updates:
         - Updated to PyFlameLib v3.0.0.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -87,17 +103,17 @@ from functools import partial
 import flame
 from lib.pyflame_lib_create_shot_folders import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Create Shot Folders'
-SCRIPT_VERSION = 'v5.4.0'
+SCRIPT_VERSION = 'v5.5.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def load_config() -> PyFlameConfig:
     """
@@ -140,6 +156,13 @@ def load_config() -> PyFlameConfig:
                     }
                 },
             'file_system_folders_path': '/Volumes/Projects/<ProjectName>/Shots/<SeqName>',
+            'plate_folder': 'Shot_Folder/Plates',
+            'plate_export_folder': 'Shot_Folder/Plates',
+            'export_preset_type': 'User',
+            'export_preset': '',
+            'clips_to_folders': False,
+            'export_clips': False,
+            'foreground_export': False,
             }
         )
 
@@ -147,7 +170,7 @@ def load_config() -> PyFlameConfig:
 
 class CreateShotFolders():
 
-    def __init__(self, selection) -> None:
+    def __init__(self, selection, mode) -> None:
 
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
 
@@ -158,13 +181,322 @@ class CreateShotFolders():
         # Create/Load config file settings.
         self.settings = load_config()
 
-        # Get selection
-        self.selection = selection[0]
+        # Initialize variables
+        self.shot_list = []
+        self.mode = mode
+        #print('Mode:', self.mode)
+
+        # Get selected item(s) and validate selection. If selection is not valid, exit script.
+        selection_valid = self.get_selection(selection)
+        if not selection_valid:
+            return
 
         # Open main window
         self.main_window()
 
+    def get_selection(self, selection) -> bool:
+        """
+        Get Selection
+        =============
+
+        Get selection from Media Panel or MediaHub.
+
+        Returns
+        -------
+            bool:
+                True if selection is valid, False if not.
+        """
+
+        print('Selection: ', selection)
+        print('Flame Tab:', flame.get_current_tab())
+
+        if selection == None:
+            return True
+
+        # If mode is segments, build selection of video segments only, check for shot names, then build shot list.
+        if self.mode == 'segments':
+            for item in selection:
+                print(item.type)
+            self.selection = [item for item in selection if isinstance(item, flame.PySegment) and item.type == 'Video Segment']
+            print('--------------------------------')
+            for item in self.selection:
+                print(item.type)
+            print('--------------------------------')
+
+            if self.selection == []:
+                PyFlameMessageWindow(
+                    message='Must have a Segment selected to create shot folders',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+                return False
+
+            for item in self.selection:
+                print('Name:', item.name)
+                print('Shot Name:', item.shot_name)
+                if item.shot_name == '':
+                    PyFlameMessageWindow(
+                        message='All selected segments must have a Shot Name assigned.',
+                        message_type=MessageType.ERROR,
+                        parent=None,
+                        )
+                    return False
+
+            for item in self.selection:
+                if str(item.shot_name)[1:-1] not in self.shot_list:
+                    self.shot_list.append(str(item.shot_name)[1:-1])
+
+            self.shot_list.sort()
+
+            print('Shot List:', self.shot_list)
+
+            return True
+
+        # If no folder in MediaHub is selected, give error
+        if flame.get_current_tab() == 'MediaHub' and selection == ():
+            PyFlameMessageWindow(
+                message='Must have a folder selected in MediaHub to create shot folders',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return False
+
+        # If a folder or library is in selection, set selection to it and create shot folders in the folder or library.
+        for item in selection:
+            if isinstance(item, (flame.PyFolder, flame.PyLibrary)):
+                self.selection = item
+                return True
+
+        # If all items in a selection are clips
+        if all(isinstance(item, flame.PyClip) for item in selection):
+            self.selection = selection
+            # Make sure all clips have a shot name assigned. If not, give error.
+            for item in self.selection:
+                if item.shot_name == '':
+                    PyFlameMessageWindow(
+                        message='All selected clips must have a Shot Name assigned.',
+                        message_type=MessageType.ERROR,
+                        parent=None,
+                        )
+                    return False
+
+            for item in self.selection:
+                if str(item.shot_name)[1:-1] not in self.shot_list:
+                    self.shot_list.append(str(item.shot_name)[1:-1])
+
+            self.shot_list.sort()
+
+            return True
+
+        # If Media Hub Folder is selected, set file system path to Media Hub Folder path.
+        if isinstance(selection[0], (flame.PyMediaHubFilesFolder)):
+            self.selection = selection[0]
+            self.settings.file_system_folders_path = self.selection.path
+            self.settings.create_system_folders = True
+            print('Media Hub Folder found!')
+            return True
+
+        return False
+
     def main_window(self) -> None:
+
+        def create_folders_toggle():
+            """
+            Create Folders Toggle
+            =====================
+
+            If Create Folders button is checked, enable Clips to Folders button.
+            """
+
+            if self.create_folders_push_button.checked and self.mode == 'empty':
+                self.clips_to_folders_push_button.enabled = False
+            elif self.create_folders_push_button.checked and self.mode == 'clips' or self.mode == 'segments':
+                self.clips_to_folders_push_button.enabled = True
+            elif not self.create_folders_push_button.checked:
+                self.clips_to_folders_push_button.enabled = False
+
+        def clips_to_folders_toggle():
+            """
+            Clips to Folders Toggle
+            =======================
+
+            If clips in the media panel are selected and Folders button is checked, enable Clips to Folders button.
+            """
+
+            if (self.mode == 'clips' or self.mode == 'segments') and self.create_folders_push_button.checked:
+                self.clips_to_folders_push_button.enabled = True
+            else:
+                self.clips_to_folders_push_button.enabled = False
+
+        #-------------------------------------
+
+        def file_system_toggle() -> None:
+            """
+            File System Toggle
+            =================
+
+            If File System Folders button is checked, enable Export Clips and Reveal in Finder buttons.
+            """
+
+            if self.create_file_system_folders_push_button.checked:
+                self.export_clips_push_button.enabled = True
+                self.reveal_in_finder_push_button.enabled = True
+                self.file_system_folder_path_label.enabled = True
+                self.file_system_path_entry.enabled = True
+            else:
+                self.export_clips_push_button.enabled = False
+                self.reveal_in_finder_push_button.enabled = False
+                self.file_system_folder_path_label.enabled = False
+                self.file_system_path_entry.enabled = False
+
+            if self.mode == 'empty':
+                self.export_clips_push_button.enabled = False
+                self.foreground_export_push_button.enabled = False
+
+        def export_clips_toggle():
+            """
+            Export Clips Toggle
+            ===================
+
+            If Export Clips button is checked, enable Export Preset Type and Export Preset menus.
+            """
+
+            if self.mode == 'empty':
+                self.export_preset_type_label.enabled = False
+                self.export_preset_type_menu.enabled = False
+                self.export_preset_menu.enabled = False
+                self.foreground_export_push_button.enabled = False
+                self.file_system_plate_export_folder_label.enabled = False
+                self.file_system_plate_export_folder_entry.enabled = False
+            else:
+                if self.export_clips_push_button.checked:
+                    self.export_preset_type_label.enabled = True
+                    self.export_preset_type_menu.enabled = True
+                    self.export_preset_menu.enabled = True
+                    self.foreground_export_push_button.enabled = True
+                    self.file_system_plate_export_folder_label.enabled = True
+                    self.file_system_plate_export_folder_entry.enabled = True
+                else:
+                    self.export_preset_type_label.enabled = False
+                    self.export_preset_type_menu.enabled = False
+                    self.export_preset_menu.enabled = False
+                    self.foreground_export_push_button.enabled = False
+                    self.file_system_plate_export_folder_label.enabled = False
+                    self.file_system_plate_export_folder_entry.enabled = False
+
+        def clip_selection_toggle():
+            """
+            Clip Selection Toggle
+            ====================
+
+            If clips in the media panel are selected, update shot name entry to show shot list and disable shot name entry and token menu.
+            """
+
+            if self.mode == 'clips' or self.mode == 'segments':
+                self.shot_name_entry.text = ', '.join(self.shot_list)
+                self.shot_name_entry.enabled = False
+                self.shot_name_token_menu.enabled = False
+
+        #-------------------------------------
+
+        def get_export_preset_list():
+            """
+            Get Export Preset List
+            ======================
+
+            Get list of export presets from Flame and update export preset menu.
+            """
+
+            # Get preset directories
+            if self.export_preset_type_menu.text == 'User':
+                movie_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.User, flame.PyExporter.PresetType.Movie)
+                file_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.User, flame.PyExporter.PresetType.Image_Sequence)
+            elif self.export_preset_type_menu.text == 'Shared':
+                movie_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Shared, flame.PyExporter.PresetType.Movie)
+                file_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Shared, flame.PyExporter.PresetType.Image_Sequence)
+            elif self.export_preset_type_menu.text == 'Project':
+                movie_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Movie)
+                file_preset_dir = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Image_Sequence)
+
+            # Get movie preset list adding 'Movie: ' to beginning of preset name
+            if os.path.isdir(movie_preset_dir):
+                movie_preset_list = ['Movie: ' + preset[:-4] for preset in os.listdir(movie_preset_dir) if preset.endswith('.xml')]
+            else:
+                movie_preset_list = []
+
+            # Get file preset list adding 'Image Sequence: ' to beginning of preset name
+            if os.path.isdir(file_preset_dir):
+                file_preset_list = ['Image Sequence: ' + preset[:-4] for preset in os.listdir(file_preset_dir) if preset.endswith('.xml')]
+            else:
+                file_preset_list = []
+
+            # Combine movie and file preset lists
+            preset_list = movie_preset_list + file_preset_list
+            print('Preset List:', preset_list)
+
+            if not preset_list:
+                self.export_preset_menu.menu_options = []
+            else:
+                self.export_preset_menu.menu_options = preset_list
+
+            self.export_preset_menu.refresh_menu()
+
+            self.preset_list = preset_list
+
+        def update_export_preset_menu():
+            """
+            Update Export Preset Menu
+            =========================
+
+            Get list of export presets and update export preset menu.
+            """
+
+            get_export_preset_list()
+
+            if self.preset_list:
+                self.export_preset_menu.update_menu(
+                    text=self.preset_list[0],
+                    menu_options=self.preset_list,
+                    )
+            else:
+                self.export_preset_menu.update_menu(
+                    text='',
+                    menu_options=[],
+                    )
+
+        def validate_export_preset():
+            """
+            Validate Export Preset
+            ======================
+
+            Ensure the saved export preset exists on the file system. If not,
+            default to the first preset in the export_preset_type location, or
+            leave blank if none exist.
+            """
+
+            if self.settings.export_preset and self.settings.export_preset not in self.preset_list:
+                if self.preset_list:
+                    self.export_preset_menu.update_menu(
+                        text=self.preset_list[0],
+                        menu_options=self.preset_list,
+                    )
+                    preset_msg = f'Saved export preset not found:\n\n{self.settings.export_preset}\n\n' if self.settings.export_preset else 'No export preset was set. '
+                    PyFlameMessageWindow(
+                        message=f'{preset_msg}Using first available preset.',
+                        message_type=MessageType.WARNING,
+                        parent=self.window,
+                    )
+                else:
+                    self.export_preset_menu.update_menu(
+                        text='',
+                        menu_options=[],
+                    )
+                    preset_msg = f'Saved export preset not found:\n\n{self.settings.export_preset}\n\n' if self.settings.export_preset else ''
+                    PyFlameMessageWindow(
+                        message=f'{preset_msg}No presets available in {self.export_preset_type_menu.text} location.\n\nSelect a different Preset Type or save a preset in Flame.',
+                        message_type=MessageType.WARNING,
+                        parent=self.window,
+                    )
 
         def update_shot_name_entry():
             """
@@ -181,7 +513,7 @@ class CreateShotFolders():
                 self.start_shot_num_label.enabled = True
                 self.shot_increment_label.enabled = True
                 self.shot_increment_slider.enabled = True
-            elif '[' in self.shot_name_entry.text and ']' in self.shot_name_entry.text and re.search('\d-\d', self.shot_name_entry.text):
+            elif '[' in self.shot_name_entry.text and ']' in self.shot_name_entry.text and re.search(r'\d-\d', self.shot_name_entry.text):
                 self.num_of_shots_slider.enabled = False
                 self.num_shots_label.enabled = False
                 self.start_shot_num_slider.enabled = False
@@ -198,13 +530,6 @@ class CreateShotFolders():
 
             self.file_system_path_entry.setText(self.translate_file_system_path(self.settings.file_system_folders_path))
 
-        def reveal_in_finder_toggle():
-
-            if self.create_file_system_folders_push_button.checked:
-                self.reveal_in_finder_push_button.enabled = True
-            else:
-                self.reveal_in_finder_push_button.enabled = False
-
         def close_window():
             """
             Close Window
@@ -215,12 +540,24 @@ class CreateShotFolders():
 
             self.window.close()
 
+        def create():
+            """
+            Create Shot Folders
+            ==================
+
+            Create shot folders.
+            """
+
+            self.window.close()
+
+            self.create_shot_folders()
+
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
-            return_pressed=self.create_shot_folders,
+            return_pressed=create,
             escape_pressed=close_window,
             grid_layout_columns=7,
-            grid_layout_rows=9,
+            grid_layout_rows=11,
             parent=None,
             )
 
@@ -245,9 +582,14 @@ class CreateShotFolders():
         self.shot_increment_label = PyFlameLabel(
             text='Shot Increments',
             )
-
         self.file_system_folder_path_label = PyFlameLabel(
             text='File System Path',
+            )
+        self.file_system_plate_export_folder_label = PyFlameLabel(
+            text='Export Folder',
+            )
+        self.export_preset_type_label = PyFlameLabel(
+            text='Export Preset',
             )
 
         # Entries
@@ -255,7 +597,10 @@ class CreateShotFolders():
             text=self.settings.shot_name,
             text_changed=update_shot_name_entry,
             )
-
+        self.file_system_plate_export_folder_entry = PyFlameEntry(
+            text=self.settings.plate_export_folder,
+            read_only=True,
+            )
         self.file_system_path_entry = PyFlameEntry(
             text=self.settings.file_system_folders_path,
             read_only=True,
@@ -289,25 +634,54 @@ class CreateShotFolders():
             token_dest=self.shot_name_entry,
             )
 
-        # Pushbuttons
+        # Menus
+        self.export_preset_type_menu = PyFlameMenu(
+            text=self.settings.export_preset_type,
+            menu_options=[
+                'User',
+                'Project',
+                'Shared',
+                ],
+            connect=update_export_preset_menu,
+            )
+        self.export_preset_menu = PyFlameMenu(
+            text=self.settings.export_preset,
+            menu_options=[],
+            )
+
+        # Push Buttons
         self.create_folders_push_button = PyFlamePushButton(
             text='Folders',
             checked=self.settings.create_folders,
+            connect=create_folders_toggle,
+            )
+        self.clips_to_folders_push_button = PyFlamePushButton(
+            text='Clips to Folders',
+            checked=self.settings.clips_to_folders,
             )
         self.create_file_system_folders_push_button = PyFlamePushButton(
             text='File System Folders',
             checked=self.settings.create_system_folders,
-            connect=reveal_in_finder_toggle,
+            connect=file_system_toggle,
             )
         self.reveal_in_finder_push_button = PyFlamePushButton(
             text='Reveal in Finder',
             checked=self.settings.reveal_in_finder,
             )
+        self.export_clips_push_button = PyFlamePushButton(
+            text='Export Clips',
+            checked=self.settings.export_clips,
+            connect=export_clips_toggle,
+            )
+        self.foreground_export_push_button = PyFlamePushButton(
+            text='Foreground Export',
+            checked=self.settings.foreground_export,
+            )
 
         # Buttons
         create_button = PyFlameButton(
             text='Create',
-            connect=self.create_shot_folders,
+            connect=create,
             color=Color.BLUE,
             )
         cancel_button = PyFlameButton(
@@ -336,21 +710,38 @@ class CreateShotFolders():
 
         self.window.grid_layout.addWidget(self.create_label, 0, 6)
         self.window.grid_layout.addWidget(self.create_folders_push_button, 1, 6)
-        self.window.grid_layout.addWidget(self.create_file_system_folders_push_button, 2, 6)
-        self.window.grid_layout.addWidget(self.reveal_in_finder_push_button, 3, 6)
+        self.window.grid_layout.addWidget(self.clips_to_folders_push_button, 2, 6)
+
+        self.window.grid_layout.addWidget(self.create_file_system_folders_push_button, 4, 6)
+        self.window.grid_layout.addWidget(self.reveal_in_finder_push_button, 5, 6)
+        self.window.grid_layout.addWidget(self.export_clips_push_button, 6, 6)
+        self.window.grid_layout.addWidget(self.foreground_export_push_button, 7, 6)
 
         self.window.grid_layout.addWidget(self.file_system_folder_path_label, 6, 0)
         self.window.grid_layout.addWidget(self.file_system_path_entry, 6, 1, 1, 4)
 
-        self.window.grid_layout.addWidget(cancel_button, 8, 5)
-        self.window.grid_layout.addWidget(create_button, 8, 6)
+        self.window.grid_layout.addWidget(self.file_system_plate_export_folder_label, 7, 0)
+        self.window.grid_layout.addWidget(self.file_system_plate_export_folder_entry, 7, 1)
+
+        self.window.grid_layout.addWidget(self.export_preset_type_label, 8, 0)
+        self.window.grid_layout.addWidget(self.export_preset_type_menu, 8, 1)
+        self.window.grid_layout.addWidget(self.export_preset_menu, 8, 2, 1, 3)
+
+        self.window.grid_layout.addWidget(cancel_button, 10, 5)
+        self.window.grid_layout.addWidget(create_button, 10, 6)
 
         #-------------------------------------
         # [Update UI]
         #-------------------------------------
 
-        update_shot_name_entry()
-        reveal_in_finder_toggle()
+        update_shot_name_entry() # Update shot name entry and enable/disable sliders based on entry. Also update file system path field.
+        export_clips_toggle() # Export Clips push button enabled/disabled based on Export Clips push button
+        clips_to_folders_toggle() # Clips to Folders push button enabled/disabled based on Folders push button
+        file_system_toggle() # Reveal in Finder push button enabled/disabled based on File System Folders push button
+        clip_selection_toggle() # If clips in the media panel are selected, update shot name entry to show shot list and disable shot name entry and token menu
+        get_export_preset_list() # Update export preset menu with list of export presets.
+        validate_export_preset() # Ensure saved preset exists on file system; default to first or blank.
+
         self.shot_name_entry.setFocus()
         self.translate_file_system_path(path=self.settings.file_system_folders_path)
 
@@ -370,9 +761,9 @@ class CreateShotFolders():
         # Check that at least on shot creation type is selection
         if not any ([self.create_folders_push_button.checked, self.create_file_system_folders_push_button.checked]):
             PyFlameMessageWindow(
-                message='Select shot type to create.',
+                message='Select at least one shot type to create.\n\nFolders or File System Folders.',
                 message_type=MessageType.ERROR,
-                parent=self.window,
+                parent=None,
                 )
             return False
 
@@ -387,21 +778,40 @@ class CreateShotFolders():
                     '    PYT_<ShotNum[0010, 0020, 0050-0090]>\n'
                     ),
                 message_type=MessageType.ERROR,
-                parent=self.window,
+                parent=None,
                 )
             return False
 
-        self.settings.save_config(
+        # Save settings
+        if self.mode == 'clips' or self.mode == 'segments':
+            self.settings.save_config(
                 {
-                    'shot_name': self.shot_name_entry.text,
-                    'number_of_shots': self.num_of_shots_slider.value,
-                    'starting_shot': self.start_shot_num_slider.value,
-                    'shot_increments': self.shot_increment_slider.value,
                     'create_folders': self.create_folders_push_button.checked,
                     'create_system_folders': self.create_file_system_folders_push_button.checked,
                     'reveal_in_finder': self.reveal_in_finder_push_button.checked,
+                    'export_preset_type': self.export_preset_type_menu.text,
+                    'export_preset': self.export_preset_menu.text,
+                    'clips_to_folders': self.clips_to_folders_push_button.checked,
+                    'export_clips': self.export_clips_push_button.checked,
+                    'export_preset_type': self.export_preset_type_menu.text,
+                    'export_preset': self.export_preset_menu.text,
+                    'foreground_export': self.foreground_export_push_button.checked,
                 }
             )
+        else:
+            self.settings.save_config(
+                    {
+                        'shot_name': self.shot_name_entry.text,
+                        'number_of_shots': self.num_of_shots_slider.value,
+                        'starting_shot': self.start_shot_num_slider.value,
+                        'shot_increments': self.shot_increment_slider.value,
+                        'create_folders': self.create_folders_push_button.checked,
+                        'create_system_folders': self.create_file_system_folders_push_button.checked,
+                        'reveal_in_finder': self.reveal_in_finder_push_button.checked,
+                        'export_preset_type': self.export_preset_type_menu.text,
+                        'export_preset': self.export_preset_menu.text,
+                    }
+                )
 
         return True
 
@@ -447,83 +857,6 @@ class CreateShotFolders():
         self.file_system_path_entry.setText(path)
 
         return path
-
-    def create_shot_folders(self):
-        """
-        Create Shot Folders
-        ===================
-
-        Create shot folders in the Media Panel and/or file system based on folder structure templates.
-        """
-
-        # Save settings and check if saved.
-        settings_saved = self.save_settings()
-        if not settings_saved:
-            return
-
-        # Create list of shots to create.
-        shot_list = self.create_shot_list()
-
-        # Create Media Panel folders.
-        if self.settings.create_folders:
-
-            # Create new shot library
-            media_panel_dest = flame.projects.current_project.current_workspace.create_library('Shot Folders')
-
-            # Create Media Panel shot folders
-            pyflame.create_media_panel_folders(
-                folder_list=shot_list,
-                folder_structure=self.settings.folders,
-                dest=media_panel_dest,
-                )
-
-            pyflame.print('Media Panel Shot Folders Created', arrow=True)
-
-        # Create file system folders
-        if self.settings.create_system_folders:
-            pyflame.print('Creating File System Shot Folders...')
-            folder_dest = self.translate_file_system_path(self.settings.file_system_folders_path)
-            # print(f'folder_dest: {folder_dest}\n')
-
-            # If folder_dest doesn't exist, create it
-            if not os.path.isdir(folder_dest):
-                try:
-                    os.makedirs(folder_dest)
-                except:
-                    PyFlameMessageWindow(
-                        message=f'Unable to create folder:\n\n{folder_dest}\n\nCheck folder path and permissions then try again.',
-                        message_type=MessageType.ERROR,
-                        parent=self.window,
-                        )
-                    return
-
-            # Check for folder and that it is writable
-            if not os.access(folder_dest, os.W_OK):
-                PyFlameMessageWindow(
-                    message=f'File system folder destination not writable.\n\n{folder_dest}',
-                    message_type=MessageType.ERROR,
-                    parent=self.window,
-                    )
-                return
-
-            # Create file system shot folders
-            pyflame.create_file_system_folders(
-                folder_list=shot_list,
-                folder_structure=self.settings.file_system_folders,
-                dest_path=folder_dest,
-                )
-
-            # Reveal in Finder if enabled
-            if self.settings.reveal_in_finder:
-                pyflame.open_in_finder(folder_dest)
-
-            print('\n', end='')
-
-            pyflame.print('File System Shot Folders Created', arrow=True)
-
-        self.window.close()
-
-        print('\n', end='')
 
     def create_shot_list(self):
         """
@@ -580,6 +913,9 @@ class CreateShotFolders():
         """
 
         pyflame.print('Creating shot list...')
+
+        if self.mode == 'clips' or self.mode == 'segments':
+            return self.shot_list
 
         # Initialize shot name list
         shot_list = []
@@ -652,6 +988,257 @@ class CreateShotFolders():
 
         return shot_list
 
+    def create_shot_folders(self):
+        """
+        Create Shot Folders
+        ===================
+
+        Create shot folders in the Media Panel and/or file system based on folder structure templates.
+        """
+
+        def match_segments_to_temp_library() -> None:
+            """
+            Match Segments to Temp Library
+            ==============================
+
+            Create a temp library and match out timeline segments to it.
+            """
+
+            # Create Clips Library
+            pyflame.print('Creating Temp Clips Library', underline=True)
+            self.temp_library = flame.projects.current_project.current_workspace.create_library('Temp Clips Library')
+
+            # Match out segments to temp library
+            pyflame.print('Matching out segments to temp library...')
+            for item in self.selection:
+                item.match(self.temp_library)
+
+            # Replace selection of segements with clips from temp library
+            self.selection = self.temp_library.clips
+
+        def create_shot_folders_in_media_panel() -> None:
+            """
+            Create Shot Folders in Media Panel
+            ==================================
+
+            Create shot folders in the Media Panel.
+            """
+
+            pyflame.print('Creating Media Panel Shot Folders', underline=True)
+
+            # Create new shot library
+            self.media_panel_dest = flame.projects.current_project.current_workspace.create_library('Shot Folders')
+
+            # Create Media Panel shot folders
+            pyflame.create_media_panel_folders(
+                folder_list=shot_list,
+                folder_structure=self.settings.folders,
+                dest=self.media_panel_dest,
+                )
+
+            pyflame.print('Media Panel Shot Folders Created', arrow=True)
+
+            # If clips in the media panel are selected, copy them to the shot folders
+            if self.mode == 'clips' or self.mode == 'segments':
+                self.copy_clips()
+
+        def create_file_system_shot_folders() -> None:
+            """
+            Create File System Shot Folders
+            ===============================
+
+            Create file system shot folders.
+            """
+
+            pyflame.print('Creating File System Shot Folders', underline=True)
+
+            folder_dest = self.translate_file_system_path(self.file_system_path_entry.text)
+            # print(f'folder_dest: {folder_dest}\n')
+
+            # If folder_dest doesn't exist, create it
+            if not os.path.isdir(folder_dest):
+                try:
+                    os.makedirs(folder_dest)
+                except:
+                    PyFlameMessageWindow(
+                        message=f'Unable to create folder:\n\n{folder_dest}\n\nCheck folder path and permissions then try again.',
+                        message_type=MessageType.ERROR,
+                        parent=None,
+                        )
+                    return
+
+            # Check for folder and that it is writable
+            if not os.access(folder_dest, os.W_OK):
+                PyFlameMessageWindow(
+                    message=f'File system folder destination not writable.\n\n{folder_dest}',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+                return
+
+            # Create file system shot folders
+            pyflame.create_file_system_folders(
+                folder_list=shot_list,
+                folder_structure=self.settings.file_system_folders,
+                dest_path=folder_dest,
+                )
+
+            # Reveal in Finder if enabled
+            if self.settings.reveal_in_finder:
+                pyflame.open_in_finder(folder_dest)
+
+            print('\n', end='')
+
+            # If clips in the media panel are selected, export them to the shot folders
+            if self.mode in ('clips', 'segments') and self.settings.export_clips:
+                self.export_clips()
+
+            pyflame.print('File System Shot Folders Created', arrow=True)
+
+        pyflame.print('Creating Shot Folders...')
+
+        # Save settings
+        settings_saved = self.save_settings()
+        if not settings_saved:
+            return
+
+        # Create list of shots to create.
+        shot_list = self.create_shot_list()
+
+        # Match out timeline segments to temp library if mode is segments
+        if self.mode == 'segments':
+            match_segments_to_temp_library()
+
+        # Create Media Panel folders.
+        if self.settings.create_folders:
+            create_shot_folders_in_media_panel()
+
+        # Create file system folders
+        if self.settings.create_system_folders:
+            create_file_system_shot_folders()
+
+        # Delete temp library if mode is segments
+        if self.mode == 'segments':
+            flame.delete(self.temp_library)
+            pyflame.print('Temp Library Deleted', arrow=True)
+
+        print('\n', end='')
+
+    def copy_clips(self) -> None:
+        """
+        Copy Clips
+        ==========
+
+        Copy clips to shot folders.
+        """
+
+        print('Mode:', self.mode)
+        print('Shot List:', self.shot_list)
+        print('Selection:', self.selection)
+        print('Plate Copy Path:', self.settings.plate_folder)
+        print('Media Panel Dest:', self.media_panel_dest)
+
+        print('Current Tab:', flame.get_current_tab())
+
+        # Check current Flame tab. Clips cannot be copied while in the MediaHub tab.
+        if flame.get_current_tab() == 'MediaHub':
+            switch_tab = True
+            flame.set_current_tab('Tools')
+            pyflame.print('Switching to Tools tab to copy clips in MediaPanel.')
+        else:
+            switch_tab = False
+
+
+        for clip in self.selection:
+            # shot_name = pyflame.shot_name_from_clip(clip)
+            print('Shot Name:', str(clip.shot_name)[1:-1])
+            print('Clip:', clip)
+            pyflame.copy_to_shot_folder(
+                shot_name=str(clip.shot_name)[1:-1],
+                pyobject=clip,
+                search_location=self.media_panel_dest,
+                dest_folder_path=self.settings.plate_folder,
+                )
+
+        # If original tab was MediaHub, switch back to it.
+        if switch_tab:
+            flame.set_current_tab('MediaHub')
+            pyflame.print('Switching back to MediaHub tab.')
+
+    def export_clips(self) -> None:
+        """
+        Export Clips
+        ============
+
+        Export clips to shot folders.
+        """
+
+        pyflame.print('Exporting Clips', underline=True)
+
+        def get_export_paths() -> str:
+            """
+            Get Export Paths
+            ===============
+
+            Get export paths for preset.
+
+            Returns
+            -------
+                str:
+                    Path of selected export preset.
+            """
+
+            preset_type = self.settings.export_preset_type
+            preset_format = self.settings.export_preset.split(':')[0]
+            preset_name = self.settings.export_preset.split(': ')[1]
+
+            print('Preset Type:', preset_type)
+            print('Preset Format:', preset_format)
+            print('Preset Name:', preset_name)
+
+            # Get preset directories
+            visibility_map = {
+                'User': flame.PyExporter.PresetVisibility.User,
+                'Shared': flame.PyExporter.PresetVisibility.Shared,
+                'Project': flame.PyExporter.PresetVisibility.Project,
+                }
+            preset_type_map = {
+                'Movie': flame.PyExporter.PresetType.Movie,
+                'Image Sequence': flame.PyExporter.PresetType.Image_Sequence,
+                }
+            preset_dir = flame.PyExporter.get_presets_dir(
+                visibility_map[self.export_preset_type_menu.text],
+                preset_type_map[preset_format],
+                )
+
+            print('Preset Directory:', preset_dir)
+
+            preset_path = os.path.join(preset_dir, f'{preset_name}.xml')
+            print('Preset Path:', preset_path, '\n')
+
+            return preset_path
+
+        # Get export preset path
+        preset_path = get_export_paths()
+
+        # Initialize Flame Exporter
+        exporter = flame.PyExporter()
+        exporter.foreground = self.settings.foreground_export
+
+        file_system_folder_path = self.translate_file_system_path(self.file_system_path_entry.text)
+
+        # Export clips in selection to shot folders.
+        for clip in self.selection:
+            shot_name = str(clip.shot_name)[1:-1]
+            shot_export_path = os.path.join(file_system_folder_path, shot_name, self.settings.plate_export_folder.split('/', 1)[1])
+            print('Shot Name:', shot_name)
+            print('Shot Export Path:', shot_export_path, '\n')
+
+            # Run Flame Export
+            exporter.export(clip, preset_path, shot_export_path)
+
+        pyflame.print('Clips Export Complete')
+
 class CreateShotFoldersSetup():
 
     def __init__(self, selection):
@@ -695,11 +1282,35 @@ class CreateShotFoldersSetup():
             Save setup settings to config file and close setup window.
             """
 
+            # Convert tree dict to paths
+            media_panel_paths = [path for path in self.media_panel_folder_tree.all_item_paths]
+            file_system_paths = [path for path in self.file_system_folder_tree.all_item_paths]
+
+            if self.media_panel_plate_folder_entry.text not in media_panel_paths:
+                PyFlameMessageWindow(
+                    message='Plate Folder must be a valid folder in the Media Panel folder structure.\n\nExample: Shot_Folder/Plates',
+                    message_type=MessageType.ERROR,
+                    parent=self.setup_window,
+                    )
+                return
+
+            if self.file_system_plate_export_folder_entry.text not in file_system_paths:
+                PyFlameMessageWindow(
+                    message='Plate Export Folder must be a valid folder in the File System folder structure.\n\nExample: Shot_Folder/Plates',
+                    message_type=MessageType.ERROR,
+                    parent=self.setup_window,
+                    )
+                return
+
+            # Save settings to config file
             self.settings.save_config(
                 config_values={
                     'folders': self.media_panel_folder_tree.tree_dict,
                     'file_system_folders': self.file_system_folder_tree.tree_dict,
                     'file_system_folders_path': self.file_system_folder_path_entry.text,
+                    'plate_folder': self.media_panel_plate_folder_entry.text,
+                    'plate_export_folder': self.file_system_plate_export_folder_entry.text,
+                    'plate_export_preset': None,
                     }
                 )
 
@@ -720,7 +1331,7 @@ class CreateShotFoldersSetup():
             return_pressed=save_setup_settings,
             escape_pressed=close_window,
             grid_layout_columns=6,
-            grid_layout_rows=12,
+            grid_layout_rows=13,
             parent=None,
             )
 
@@ -729,6 +1340,9 @@ class CreateShotFoldersSetup():
             text='Media Panel Folder Setup',
             style=Style.UNDERLINE,
             )
+        self.media_panel_plate_folder_label = PyFlameLabel(
+            text='Plate Folder',
+            )
         self.file_system_folder_setup_label = PyFlameLabel(
             text='File System Folder Setup',
             style=Style.UNDERLINE,
@@ -736,10 +1350,20 @@ class CreateShotFoldersSetup():
         self.file_system_folder_path_label = PyFlameLabel(
             text='File System Folder Path',
             )
+        self.file_system_plate_export_folder_label = PyFlameLabel(
+            text='Plate Export Folder',
+            align=Align.RIGHT,
+            )
 
         # Entries
+        self.media_panel_plate_folder_entry = PyFlameEntry(
+            text=self.settings.plate_folder,
+            )
         self.file_system_folder_path_entry = PyFlameEntry(
             text=self.settings.file_system_folders_path,
+            )
+        self.file_system_plate_export_folder_entry = PyFlameEntry(
+            text=self.settings.plate_export_folder,
             )
 
         # Tree Widgets
@@ -832,17 +1456,34 @@ class CreateShotFoldersSetup():
         self.setup_window.grid_layout.addWidget(self.file_system_delete_folder_button, 2, 5)
         self.setup_window.grid_layout.addWidget(self.file_system_sort_button, 3, 5)
 
-        self.setup_window.grid_layout.addWidget(self.file_system_folder_path_label, 9, 0)
-        self.setup_window.grid_layout.addWidget(self.file_system_folder_path_entry, 9, 1, 1, 3)
-        self.setup_window.grid_layout.addWidget(self.file_system_path_browser_button, 9, 4)
-        self.setup_window.grid_layout.addWidget(self.file_system_path_token_menu, 9, 5)
+        self.setup_window.grid_layout.addWidget(self.media_panel_plate_folder_label, 8, 0)
+        self.setup_window.grid_layout.addWidget(self.media_panel_plate_folder_entry, 8, 1, 1, 2)
+        self.setup_window.grid_layout.addWidget(self.file_system_plate_export_folder_entry, 8, 3, 1, 2)
+        self.setup_window.grid_layout.addWidget(self.file_system_plate_export_folder_label, 8, 5)
 
-        self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 11, 4)
-        self.setup_window.grid_layout.addWidget(self.setup_save_button, 11, 5)
+        self.setup_window.grid_layout.addWidget(self.file_system_folder_path_label, 10, 0)
+        self.setup_window.grid_layout.addWidget(self.file_system_folder_path_entry, 10, 1, 1, 3)
+        self.setup_window.grid_layout.addWidget(self.file_system_path_browser_button, 10, 4)
+        self.setup_window.grid_layout.addWidget(self.file_system_path_token_menu, 10, 5)
 
-#-------------------------------------
+        self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 12, 4)
+        self.setup_window.grid_layout.addWidget(self.setup_save_button, 12, 5)
+
+def create_shot_folders(selection):
+
+    CreateShotFolders(selection=None, mode='empty')
+
+def create_shot_folders_from_clips(selection):
+
+    CreateShotFolders(selection, mode='clips')
+
+def create_shot_folders_from_segments(selection):
+
+    CreateShotFolders(selection, mode='segments')
+
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_library(selection):
 
@@ -851,9 +1492,23 @@ def scope_library(selection):
             return True
     return False
 
-#-------------------------------------
+def scope_clip(selection):
+
+    for item in selection:
+        if isinstance(item, flame.PyClip):
+            return True
+    return False
+
+def scope_segment(selection):
+
+    for item in selection:
+        if isinstance(item, flame.PySegment):
+            return True
+    return False
+
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -881,6 +1536,27 @@ def get_media_panel_custom_ui_actions():
 
     return [
         {
+            'name': 'Create...',
+            'actions': [
+                {
+                    'name': 'Shot Folders',
+                    'execute': create_shot_folders,
+                    'minimumVersion': '2025.1',
+                },
+                {
+                    'name': 'Shot Folders (From Clips)',
+                    'isVisible': scope_clip,
+                    'execute': create_shot_folders_from_clips,
+                    'minimumVersion': '2025.1',
+                }
+            ]
+        }
+    ]
+
+def get_mediahub_files_custom_ui_actions():
+
+    return [
+        {
            'hierarchy': [],
            'actions': [
                {
@@ -891,5 +1567,21 @@ def get_media_panel_custom_ui_actions():
                     'minimumVersion': '2025.1'
                }
            ]
+        }
+    ]
+
+def get_timeline_custom_ui_actions():
+
+    return [
+        {
+            'name': 'Create...',
+            'actions': [
+                {
+                    'name': 'Shot Folders (From Segments)',
+                    'isVisible': scope_segment,
+                    'execute': create_shot_folders_from_segments,
+                    'minimumVersion': '2025.1'
+                }
+            ]
         }
     ]

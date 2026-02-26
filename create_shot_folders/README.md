@@ -1,10 +1,10 @@
 # Create Shot Folders
 
-**Script Version:** 5.4.0  
+**Script Version:** 5.5.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.09.18  
-**Update Date:** 08.27.25  
+**Update Date:** 02.18.26  
 
 **Script Type:** MediaPanel
 
@@ -24,12 +24,27 @@ https://github.com/logik-portal/python/create_shot_folders
 - Flame Main Menu → Logik → Logik Portal Script Setup → Create Shot Folders Setup
 ### Media Panel
 - Right-click in Media Panel → Create Shot Folders
+- Right-click on selected clips in Media Panel → Create Shot Folders (From Clips)
+### MediaHub
+- Right-click on selected folder in MediaHub → Create Shot Folders
+### Timeline
+- Right-click on selected timeline segments in Media Panel → Create Shot Folders (From Segments)
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v5.5.0 [02.18.26]
+- Create shot folders for selected clips in Media Panel.
+- Create shot folders for selected timeline segments.
+- Set folder location for selected clips or segments for shot folders. (Setup Window)
+- Create shot folders in MediaHub at selected folder location.
+- Export clips to file system folders.
+- Set location of plate export folders in file system folders. (Setup Window)
+- Set render type. Foreground or Background.
+<br>
 
 ### v5.4.0 [08.27.25]
 - Updated to PyFlameLib v5.0.0.
