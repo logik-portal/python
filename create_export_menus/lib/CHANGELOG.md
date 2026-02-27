@@ -1,9 +1,147 @@
-# Changelog
+# PyFlame Library Changelog
 
 All notable changes to this project will be documented in this file.
 
-For the latest updates and source code, visit:
 https://github.com/logik-portal/pyflame
+
+## v5.2.3 [02.24.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameSlider`
+        - **Fixed**
+            - Disaapearing calculator in linux.
+
+### Added
+
+- **PyFlame Library Stub File**
+    - Stub file for better auto-completion in code editors.
+      Be sure to rename this file as you would the pyflame_lib.py file.
+      Example: <script_name>/lib/pyflame_lib_<script_name>.pyi
+      Code editors should automatically import this file when the pyflame_lib.py file is imported.
+
+## v5.2.2 [02.18.26]
+
+- Fixed: Unable to find project errors in terminal when Flame starts up.
+
+- **Widgets**
+    - `PyFlameSlider`
+        - **Calculator**
+            - Pressing number keys now updates the value in the calculator entry field.
+            - Pressing backspace key now deletes the last character in the calculator entry field.
+
+- **PyFlameFunctions**
+    - `pyflame.move_to_shot_folder`
+        - Added `expand_dest_folder` argument to expand the destination folder after move is complete.
+    - `pyflame.copy_to_shot_folder`
+        - Added `expand_dest_folder` argument to expand the destination folder after copy is complete.
+
+## v5.2.1 [01.08.26]
+
+- Misc spelling/type-o fixes
+
+## v5.2.0 [01.04.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameLabel`
+        - **Fixed**
+            - `Enabled` argument wasn't working.
+    - `PyFlameTabWidget`
+        - **Fixed**
+            - Widget wasn't properly spanning in gridlayout. This caused windows to not be sized properly.
+            - Changed `enable` argument to `enabled` to be consistent with other widgets
+
+- **Windows**
+    - `PyFlameWindow`
+        - **Fixed**
+            - Window centering
+        - **New Argument**
+            - `message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: True)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameInputWindow`
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameMessageWindow`
+        - Added properties to docstring.
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlamePasswordWindow`
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+
+    - `PyFlameProgressWindow`
+        - Simplified arguments/properties.
+        - **Fixed**
+            - Added missing docstrings to properties.
+        - **New Argument**
+            -`message_bar`
+                - Add message bar area to bottom of windows. Used to display short messages.
+                  (Default: False)
+        - **New Property**
+            - `message_bar_text`
+                - Use to set or get message bar text.
+        - **New Methods**
+            -`text_append`
+                - Appends text to the currently displayed message
+            -`pause`
+                - Adds a delay in seconds to allow the UI time to refresh before moving on the the next operation.
+            -`tasks_completed`
+                - Sets completed state of progress window after tasks are done.
+            -`enable_done_button`
+                - Enabled the Done button.
+
+## v5.1.1 [12.16.25]
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameProgressWindow`
+        - **Misc Fixes**
+
+## v5.1.0 [12.05.25]
+
+### Added
+
+- **PyFlameFunctions**
+    - `pyflame.python_package_local_install`
+        - New function to install python packages locally bundled with a script.
+
+### Updates/Fixes
+
+- **Widgets**
+    - `PyFlameTreeWidget`
+        - **New Methods**
+            - `add_item_with_columns`
+                - Add a new item to a tree with tree column entries.
+            - `color_item`
+                - Color item in tree.
+            - `set_fixed_column_headers`
+                - Set all tree column headers to a fixed length
 
 ## v5.0.0 [09.03.25]
 
@@ -28,11 +166,11 @@ This update will break most scripts using this library.
         - Has ability to display html, markdown, and plain text.
 
 - **PyFlameFunctions**
-    - pyflame.get_media_panel_shot_folder
+    - `pyflame.get_media_panel_shot_folder`
 
-    - pyflame.move_to_shot_folder
+    - `pyflame.move_to_shot_folder`
 
-    - pyflame.copy_to_shot_folder
+    - `pyflame.copy_to_shot_folder`
 
 ### Updates/Fixes
 

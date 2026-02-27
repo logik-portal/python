@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus - Export Menu: <PresetName>
-Script Version: 5.3.1
+Script Version: 5.4.1
 Flame Version: <FlameMinMaxVersion>
 Written by: Michael Vaglienty
 Creation Date: 04.27.20
-Update Date: 04.08.25
+Update Date: 02.27.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -44,6 +44,7 @@ Menu:
 
 import flame
 
+import os
 import re
 import datetime
 from pyflame_lib_create_export_menus import *

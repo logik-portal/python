@@ -1,10 +1,10 @@
 # Create Export Menus
 
-**Script Version:** 5.4.0  
-**Flame Version:** 2025  
+**Script Version:** 5.4.1  
+**Flame Version:** 2026  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.20  
-**Update Date:** 07.14.25  
+**Update Date:** 02.27.26  
 
 **Script Type:** MediaPanel
 
@@ -29,6 +29,10 @@ https://github.com/logik-portal/python/create_export_menus
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v5.4.1 [02.27.26]
+- Fixed issue when trying to save more than one export to a menu.
+<br>
 
 ### v5.4.0 [07.14.25]
 - Updated to PyFlameLib v5.0.0.

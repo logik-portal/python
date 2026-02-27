@@ -1,5 +1,5 @@
 # Create Export Menus
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus
-Script Version: 5.4.0
-Flame Version: 2025
+Script Version: 5.4.1
+Flame Version: 2026
 Written by: Michael Vaglienty
 Creation Date: 03.29.20
-Update Date: 07.14.25
+Update Date: 02.27.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -50,6 +50,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v5.4.1 02.27.26
+        - Fixed issue when trying to save more than one export to a menu.
 
     v5.4.0 07.14.25
         - Updated to PyFlameLib v5.0.0.
@@ -547,7 +550,7 @@ class ExportMenuSetup:
                 Enable/Disable UI elements based on the state of the enable preset pushbutton.
                 """
 
-                if enable_preset_pushbutton.text:
+                if enable_preset_pushbutton.checked:
                     switch = True
                 else:
                     switch = False
@@ -584,7 +587,7 @@ class ExportMenuSetup:
                     subtitles_tracks_menu.enabled = False
                     pyflame.print('Subtitle options disabled. Not compatible with current version of Flame.')
 
-                if include_subtitles_pushbutton.text:
+                if include_subtitles_pushbutton.checked:
                     subtitles_export_mode_menu.enabled = True
                     subtitles_tracks_menu.enabled = True
                 else:
@@ -1614,7 +1617,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.subtitles_tracks_menu_01.text,
                         },
                     'create_tab_two': {
-                        'Enabled' : self.enable_preset_pushbutton_02.text,
+                        'Enabled' : self.enable_preset_pushbutton_02.checked,
                         'Preset Type Menu' : self.preset_type_menu_02.text,
                         'Preset Menu' : self.presets_menu_02.text,
                         'Export Path' : self.export_path_entry_02.text,
@@ -1626,7 +1629,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.subtitles_tracks_menu_02.text,
                         },
                     'create_tab_three': {
-                        'Enabled' : self.enable_preset_pushbutton_03.text,
+                        'Enabled' : self.enable_preset_pushbutton_03.checked,
                         'Preset Type Menu' : self.preset_type_menu_03.text,
                         'Preset Menu' : self.presets_menu_03.text,
                         'Export Path' : self.export_path_entry_03.text,
@@ -1638,7 +1641,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.subtitles_tracks_menu_03.text,
                         },
                     'create_tab_four': {
-                        'Enabled' : self.enable_preset_pushbutton_04.text,
+                        'Enabled' : self.enable_preset_pushbutton_04.checked,
                         'Preset Type Menu' : self.preset_type_menu_04.text,
                         'Preset Menu' : self.presets_menu_04.text,
                         'Export Path' : self.export_path_entry_04.text,
@@ -1650,7 +1653,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.subtitles_tracks_menu_04.text,
                         },
                     'create_tab_five': {
-                        'Enabled' : self.enable_preset_pushbutton_05.text,
+                        'Enabled' : self.enable_preset_pushbutton_05.checked,
                         'Preset Type Menu' : self.preset_type_menu_05.text,
                         'Preset Menu' : self.presets_menu_05.text,
                         'Export Path' : self.export_path_entry_05.text,
@@ -1683,7 +1686,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.edit_subtitles_tracks_menu_01.text,
                         },
                     'edit_tab_two': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_02.text,
+                        'Enabled' : self.edit_enable_preset_pushbutton_02.checked,
                         'Preset Type Menu' : self.edit_preset_type_menu_02.text,
                         'Preset Menu' : self.edit_presets_menu_02.text,
                         'Export Path' : self.edit_export_path_entry_02.text,
@@ -1695,7 +1698,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.edit_subtitles_tracks_menu_02.text,
                         },
                     'edit_tab_three': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_03.text,
+                        'Enabled' : self.edit_enable_preset_pushbutton_03.checked,
                         'Preset Type Menu' : self.edit_preset_type_menu_03.text,
                         'Preset Menu' : self.edit_presets_menu_03.text,
                         'Export Path' : self.edit_export_path_entry_03.text,
@@ -1707,7 +1710,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.edit_subtitles_tracks_menu_03.text,
                         },
                     'edit_tab_four': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_04.text,
+                        'Enabled' : self.edit_enable_preset_pushbutton_04.checked,
                         'Preset Type Menu' : self.edit_preset_type_menu_04.text,
                         'Preset Menu' : self.edit_presets_menu_04.text,
                         'Export Path' : self.edit_export_path_entry_04.text,
@@ -1719,7 +1722,7 @@ class ExportMenuSetup:
                         'Subtitles Tracks': self.edit_subtitles_tracks_menu_04.text,
                         },
                     'edit_tab_five': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_05.text,
+                        'Enabled' : self.edit_enable_preset_pushbutton_05.checked,
                         'Preset Type Menu' : self.edit_preset_type_menu_05.text,
                         'Preset Menu' : self.edit_presets_menu_05.text,
                         'Export Path' : self.edit_export_path_entry_05.text,
