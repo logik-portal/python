@@ -1,16 +1,18 @@
 """
 Script Name: Social Versions
-Script Version: 0.3.1
+Script Version: 0.3.3
 Flame Version: 2023
 Author: Kyle Obley (info@kyleobley.com)
 Creation Date: 02.05.25
-Modified Date: 02.26.25
+Modified Date: 02.28.25
 
 Description:
 
 Creates social timelines based on other, selected timelines.
 
 Change Log:
+v0.3.3  added in_point and out_point to new sequence. fixed a color thing.
+v0.3.2  check for original sequence colour before setting new sequence colour.
 v0.3.1  Added 'colour = sequence.colour' so new sequences match the color of the original.
 v0.2.1  Add Flush Renders. Reversed width and height.
 v0.1:   Initial release.
@@ -53,7 +55,7 @@ def create_timeline(selection, width, height, aspect_ratio_name):
 
     # Reel doesn't exist, create one
     if not new_reel_name_exists:
-        target_reel = reel_group_parent.create_reel(new_reel_name)
+        target_reel = reel_group_parent.create_reel(new_reel_name, sequence=True)
 
     # Iterate through each sequence and create the actual timelines
     for sequence in selection:
@@ -71,6 +73,24 @@ def create_timeline(selection, width, height, aspect_ratio_name):
         start_time = sequence.start_time
 
         start_tc = flame.PyTime(str(sequence.start_time), sequence.frame_rate)
+        
+        # Get in and out points
+        if "<NULL>" in str(sequence.in_mark):
+            tc_in = None
+        else:
+            tc_in = flame.PyTime(str(sequence.in_mark), frame_rate)
+        
+        if "<NULL>" in str(sequence.out_mark):
+            tc_out = None
+        else:
+            tc_out = flame.PyTime(str(sequence.out_mark), frame_rate)
+        
+        print(f'In: {tc_in} Out: {tc_out}')
+        print('this was updated...')
+        
+        # clear in and out points
+        sequence.in_mark = None
+        sequence.out_mark = None
 
         num_video_trks = len(sequence.versions[0].tracks)
         num_audio_trks = 1
@@ -88,14 +108,23 @@ def create_timeline(selection, width, height, aspect_ratio_name):
             start_at = start_tc,
             )
 
-        # Set colour to match original
-        new_sequence.colour = sequence.colour
+        # Set colour to match original if it has been set
+        if not sequence.colour == '(0.0, 0.0, 0.0)' and sequence.colour_label == None:
+            new_sequence.colour = sequence.colour
 
         # Overwrite with previous sequence
         new_sequence.overwrite(sequence, flame.PyTime(1))
 
         # Flush Renders
         new_sequence.flush_renders()
+
+        # Set in and out points to match the original sequence
+        if tc_in:
+            new_sequence.in_mark = tc_in
+            sequence.in_mark = tc_in
+        if tc_out:
+            new_sequence.out_mark = tc_out
+            sequence.out_mark = tc_out
 
         # Bring positioner to first frame and top version/layer
         new_sequence.current_time = flame.PyTime(1)

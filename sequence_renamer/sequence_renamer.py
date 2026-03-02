@@ -1,26 +1,21 @@
 """
 Script Name: sequence renamer
-Script Version: 2.0.0
+Script Version: 2.1.0
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 06.08.22
-Update Date: 10.06.25
+Update Date: 02.28.26
 
-Script Type: MediaHub
+Custom Action Type: MediaHub
 
-Description:
+Usage: Right click a selection of images or files and look for UC Renamers -> Sequence Renamer
 
-    Renames files based on user input for start frame and padding.
+Description: Renames files based on user input for start frame and padding.
 
-Menu:
-
-    Right click a selection of images or files and look for UC Renamers -> Sequence Renamer
-
-To install:
-
-    Copy script folder into /opt/Autodesk/shared/python
+To install: Copy script into /opt/Autodesk/shared/python/sequence_renamer or wherever you wish.
 
 Updates:
+02.28.26 - v2.1.0 - Updated for PyFlameLib v5.2.3. Added sequence mode to mediahub after renaming.
 10.06.25 - v2.0.0  Updated for Flame 2025 and PyFlameLib v4.3.0.
 12.13.23 - v0.2  Updated for pyflame lib v2. Start updates for Flame 2025.
 """
@@ -39,7 +34,7 @@ from lib.pyflame_lib_sequence_renamer import *
 
 FOLDER_NAME = 'UC Renamers'
 SCRIPT_NAME = 'Sequence Renamer'
-SCRIPT_VERSION = 'v2.0.0'
+SCRIPT_VERSION = 'v2.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -55,7 +50,7 @@ class ScriptTemplate():
         # Check script path, if path is incorrect, stop script.
         if not pyflame.verify_script_install():
             return
-
+        
         # define selection to be used later
         self.selection = selection
 
@@ -100,9 +95,9 @@ class ScriptTemplate():
 
             self.settings.save_config(
                 config_values={
-                    'base_name': self.base_name_entry.text(),
-                    'start_frame': self.start_frame_slider.get_value(),
-                    'padding': self.padding_slider.get_value(),
+                    'base_name': self.base_name_entry.text,
+                    'start_frame': self.start_frame_slider.value,
+                    'padding': self.padding_slider.value,
                     }
                 )
 
@@ -111,23 +106,23 @@ class ScriptTemplate():
             # PyFlameMessageWindow(
             #     message='A really cool message goes here.',
             #     )
-
+            
         def rename():
 
             print ('>' * 20, 'Sequence Renamer Start', '<' * 20)
             print ("\n"*1)
 
             print ("*" * 40)
-            base_name = self.base_name_entry.text()
+            base_name = self.base_name_entry.text
             print ("base_name_entry: " + base_name)
 
-            start_frame_entered = self.start_frame_slider.text()
-            print ("start_frame_entered: " + start_frame_entered)
+            start_frame_entered = self.start_frame_slider.value
+            print (f"start_frame_entered: {start_frame_entered}")
 
-            padding_entered = self.padding_slider.text()
+            padding_entered = self.padding_slider.value
             padding = str("'%0" + str(padding_entered) + "d'")
-            print ("padding: " + padding)
-            count = int(start_frame_entered) - 1
+            print (f"padding: {padding}")
+            count = start_frame_entered - 1
 
             print ("*" * 40)
             print ("\n"*1)
@@ -157,6 +152,7 @@ class ScriptTemplate():
             # Save settings to config file
             save_config()
 
+            flame.mediahub.files.options.sequence_mode = True
             flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
             print ("*" * 40)
             print ('\n','>' * 20, 'Sequence Renamer End', '<' * 20, '\n')
@@ -164,14 +160,18 @@ class ScriptTemplate():
         #-------------------------------------
         # [Window Elements]
         #-------------------------------------
+        def cancel_window():
+            self.window.close()
 
         # Window
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=rename,
-            grid_layout_columns=2,
+            escape_pressed=cancel_window,
+            grid_layout_columns=3,
             grid_layout_rows=4,
-            grid_layout_adjust_column_widths={2: 80}
+            # grid_layout_adjust_column_widths={2: 80},
+            parent=None
             )
 
         # Labels
@@ -184,18 +184,13 @@ class ScriptTemplate():
         self.padding_label = PyFlameLabel(
             text='Padding',
             )
-
+        
         # Entries
-        self.base_name_entry = PyFlameEntry(
-            text=self.settings.base_name,
-            width=250,
-            )
-        # self.entry2 = PyFlameEntry(
-        #     text='',
-        #     )
+        self.base_name_entry = PyFlameEntry(text=self.settings.base_name)
+
         # Sliders
-        self.start_frame_slider = PyFlameSlider(self.settings.start_frame, 1, 1000000, False)
-        self.padding_slider = PyFlameSlider(self.settings.padding, 1, 10, False)
+        self.start_frame_slider = PyFlameSlider(start_value=self.settings.start_frame, min_value=1, max_value=1000000)
+        self.padding_slider = PyFlameSlider(start_value=self.settings.padding, min_value=1, max_value=10)
 
         # Buttons
         self.rename_button = PyFlameButton(
@@ -213,16 +208,16 @@ class ScriptTemplate():
         #-------------------------------------
 
         self.window.grid_layout.addWidget(self.base_name_label, 0, 0)
-        self.window.grid_layout.addWidget(self.base_name_entry, 0, 1)
+        self.window.grid_layout.addWidget(self.base_name_entry, 0, 1, 1, 2)
 
         self.window.grid_layout.addWidget(self.sf_label, 1, 0)
-        self.window.grid_layout.addWidget(self.start_frame_slider, 1, 1)
+        self.window.grid_layout.addWidget(self.start_frame_slider, 1, 1, 1, 2)
 
         self.window.grid_layout.addWidget(self.padding_label, 2, 0)
-        self.window.grid_layout.addWidget(self.padding_slider, 2, 1)
+        self.window.grid_layout.addWidget(self.padding_slider, 2, 1, 1, 2)
 
         self.window.grid_layout.addWidget(self.cancel_button, 3, 0)
-        self.window.grid_layout.addWidget(self.rename_button, 3, 1)
+        self.window.grid_layout.addWidget(self.rename_button, 3, 2)
 
 #-------------------------------------
 # [Scopes]

@@ -1,0 +1,14 @@
+{
+    "script_name": "Scale Compensator",
+    "proxy_x_res": 1920,
+    "proxy_y_res": 1080,
+    "full_x_res": 3840,
+    "full_y_res": 2160,
+    "offline_x_res": 1920,
+    "offline_y_res": 1080,
+    "online_x_res": 1080,
+    "online_y_res": 1920,
+    "anamorphic_footage": false,
+    "pixel_ratio_value": 2.0,
+    "combo_scale": 100
+}

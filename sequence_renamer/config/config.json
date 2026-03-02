@@ -1,0 +1,6 @@
+{
+    "script_name": "Sequence Renamer",
+    "base_name": "sequence_mode",
+    "start_frame": 1001,
+    "padding": 4
+}

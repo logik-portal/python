@@ -1,35 +1,42 @@
 """
-Script Name: Build Resolution List
-Script Version: 1.0.0
+Script Name: build_resolution_list
+Script Version: 2.0.0
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 12.20.24
-Update Date: 10.22.25
+Update Date: 03.01.26
 
-Script Type: MediaPanel
+Custom Action Type: MediaPanel
 
 Description:
 
     The goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file.
 
-Menu:
+Menus:
 
     Media Panel -> UC Timelines -> Build Resolution List
 
 To install:
 
-    Copy script folder into /opt/Autodesk/shared/python
+    Copy script into your python folder, typically /opt/Autodesk/shared/python/build_resolution_list or put it wherever you keep your scripts
 
 Updates:
 
+    v2.0.0   03.01.26
+
+        Fix v1 and how it wasn't really using flame.projects.current_project.project_folder to determine where to save json's
+
     v1.0.0   10.22.25
-        - Use flame.projects.current_project.project_folder to determine where to save json's
+
+        use flame.projects.current_project.project_folder to determine where to save json's
 
     v0.2   12.27.24
-        - Added aspect ratio to json file
+
+        added aspect ratio to json file
 
     v0.1   12.20.24
-        - Initial release.
+
+        Inception
 """
 
 #-------------------------------------#
@@ -47,7 +54,7 @@ from pathlib import Path
 
 FOLDER_NAME = 'UC Timelines'
 SCRIPT_NAME = 'Build Resolution List'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v2.0.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class BuildResolutionList():
@@ -59,8 +66,9 @@ class BuildResolutionList():
 
         self.project_name = flame.projects.current_project.name
         self.simple_flame_version = flame.get_version().split('.')[0]
+        # print (f"Flame Version: {flame.get_version()} - Simple Flame Version: {self.simple_flame_version}")
 
-        if self.simple_flame_version <= '2026':
+        if int(self.simple_flame_version) >= 2026:
             full_project_path = flame.projects.current_project.project_folder
             self.project_tmp_path = re.sub(r"^/hosts/[^/]+", "", full_project_path) + '/tmp'
             self.action_path = f"{self.project_tmp_path}/auto_xml_temp.action"
@@ -70,26 +78,27 @@ class BuildResolutionList():
             self.action_path = f"/opt/Autodesk/project/{self.project_name}/tmp/auto_xml_temp.action"
             self.res_file_location = Path(f"/opt/Autodesk/project/{self.project_name}/tmp/auto_scale_resolution_list.json")
             self.scale_compensator_res_file_location = Path(f"/opt/Autodesk/project/{self.project_name}/tmp/scale_compensator_res_list.json")
-        # print (f"Action Path: {self.action_path}")
-        # print (f"Resolution List Path: {self.res_file_location}")
 
+        print (f"Action Path: {self.action_path}")
+        print (f"Resolution List Path: {self.res_file_location}")
+        
         # Define selection
         self.selection = selection
         self.resolution_list()
 
-    def catch_exception(method):
-        def wrapper(self,*args,**kwargs):
-            try:
-                return method(self,*args,**kwargs)
-            except:
-                traceback.print_exc()
-        return wrapper
-
+    def catch_exception(method):                                                                                                                                              
+        def wrapper(self,*args,**kwargs):                                                                                                                                     
+            try:                                                                                                                                                              
+                return method(self,*args,**kwargs)                                                                                                                            
+            except:                                                                                                                                                           
+                traceback.print_exc()                                                                                                                                         
+        return wrapper                                                                                                                                                        
+    
     @catch_exception
     def resolution_list(self):
 
         project_name = flame.projects.current_project.name
-
+        
         self.resolution_list = []
 
         # Build the dictionary
@@ -101,7 +110,7 @@ class BuildResolutionList():
                 for version in item.versions:
                     for track in version.tracks:
                         for segment in track.segments:
-                            resolution = f"{segment.source_width}x{segment.source_height}"
+                            resolution = f"{segment.source_width}x{segment.source_height}"              
                             if resolution not in self.resolution_list:
                                 count += 1
                                 id = f"resolution_{count:03}"
@@ -111,7 +120,7 @@ class BuildResolutionList():
                                     "resolution": resolution,
                                     "aspect_ratio": round(float(segment.source_ratio), 3)
                                 })
-
+            
             elif isinstance(item, flame.PyClip):
                 resolution = f"{item.width}x{item.height}"
                 if resolution not in self.resolution_list:
@@ -123,7 +132,7 @@ class BuildResolutionList():
                                     "resolution": resolution,
                                     "aspect_ratio": round(float(item.ratio), 3)
                                 })
-
+        
         # # Specify json file path
         # res_file_location = Path(f"/opt/Autodesk/project/{project_name}/tmp/auto_scale_resolution_list.json")
         # scale_compensator_res_file_location = Path(f"/opt/Autodesk/project/{project_name}/tmp/scale_compensator_res_list.json")
@@ -138,7 +147,7 @@ class BuildResolutionList():
         with self.scale_compensator_res_file_location.open("w") as json_file:
             json.dump(data, json_file, indent=4)
 
-        # Show Success Dialog with path
+        # Show Success Dialog with path        
         flame.messages.show_in_dialog(
             title="Success",
             message=f"Resolution lists exported to: {self.res_file_location.parent}",
@@ -166,7 +175,7 @@ def scope_sequence_or_clip(selection):
 def get_media_panel_custom_ui_actions():
 
     return [
-
+        
         {
             'name': FOLDER_NAME,
             # 'hierarchy': [],

@@ -1,0 +1,13 @@
+{
+    "script_name": "Fix Premiere Xmls",
+    "proxy_x_res": 1920,
+    "proxy_y_res": 1080,
+    "full_x_res": 3840,
+    "full_y_res": 2160,
+    "online_x_res": 1920,
+    "online_y_res": 1080,
+    "scale_calc": true,
+    "xml_res": true,
+    "sanatize_names": true,
+    "fix_durations": true
+}

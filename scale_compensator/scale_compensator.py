@@ -1,12 +1,12 @@
-"""
+'''
 Script Name: scale compensator
-Script Version: 1.1.1
-Flame Version: 2023.2
+Script Version: 2.0.0
+Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 11.18.23
-Update Date: 10.22.25
+Update Date: 03.01.26
 
-Script Type: Action and Timeline
+Custom Action Type: Action and Timeline
 
 Description:
 
@@ -14,49 +14,20 @@ Description:
 
 To install:
 
-    Copy script folder into /opt/Autodesk/shared/python
+    Copy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator
 
 Updates:
+    03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3
+    10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's
+    01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.
+    12.27.24 - v1.0 - changed script path, started using json file with aspect ratios and resolutions
+    01.02.24 - v0.6 - Fixed some miscalcuations and errors
+    12.13.23 - v0.5 - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.
+    12.05.23 - v0.4 - Updated for pyflame lib v2.
+    11.28.23 - v0.3 - UI Adjustments and Minor Code Cleanup
+    11.22.23 - v0.2 - Added Offline Res and Online Res Compensation + Combo Button
 
-    v1.1.1 10.22.25
-        - Started using flame.projects.current_project.project_folder to determine where to save/load json's
-
-    v1.1 01.10.25
-        - Fixed odd issue when adusting the offline vs online sliders.
-
-    v1.0 12.27.24
-        - Changed script path, started using json file with aspect ratios and resolutions
-
-    v0.6 01.02.24
-        - Fixed some miscalcuations and errors
-
-    v0.5 12.13.23
-        - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.
-
-    v0.4 12.05.23
-        - Updated for pyflame lib v2.
-
-    v0.3 11.28.23
-        - UI Adjustments and Minor Code Cleanup
-
-    v0.2 11.22.23
-        - Added Offline Res and Online Res Compensation + Combo Button
-
-    v0.6 01.02.24
-        - Fixed some miscalcuations and errors
-
-    v0.5 12.13.23
-        - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.
-
-    v0.4 12.05.23
-        - Updated for pyflame lib v2.
-
-    v0.3 11.28.23
-        - UI Adjustments and Minor Code Cleanup
-
-    v0.2 11.22.23
-        - Added Offline Res and Online Res Compensation + Combo Button
-"""
+'''
 
 import flame
 import re
@@ -65,11 +36,11 @@ import json
 import traceback
 from pathlib import Path
 import xml.etree.ElementTree as ET
-from pyflame_lib_scale_compensator import *
+from lib.pyflame_lib_scale_compensator import *
 
 SCRIPT_NAME = 'Scale Compensator'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
-SCRIPT_VERSION = 'v1.1.1'
+SCRIPT_VERSION = 'v2.0.0'
 
 #-------------------------------------#
 # Main Script
@@ -83,20 +54,18 @@ class ScaleCompensator(object):
 
         # Load config file
         self.settings = PyFlameConfig(
-            script_name=SCRIPT_NAME,
-            script_path=SCRIPT_PATH,
             config_values={
-                'proxy_x_res': '1920',
-                'proxy_y_res': '1080',
-                'full_x_res': '1920',
-                'full_y_res': '1080',
-                'offline_x_res': '1920',
-                'offline_y_res': '1080',
-                'online_x_res': '1920',
-                'online_y_res': '1080',
-                'anamorphic_footage': 'False',
-                'pixel_ratio_value': '2',
-                'combo_scale': '100'
+                'proxy_x_res': 1920,
+                'proxy_y_res': 1080,
+                'full_x_res': 3840,
+                'full_y_res': 2160,
+                'offline_x_res': 1920,
+                'offline_y_res': 1080,
+                'online_x_res': 1080,
+                'online_y_res': 1920,
+                'anamorphic_footage': False,
+                'pixel_ratio_value': 2.0,
+                'combo_scale': 100
                 }
             )
         # # Paths
@@ -107,19 +76,19 @@ class ScaleCompensator(object):
 
         # Open main window
         self.main_window()
-
-    def catch_exception(method):
-        def wrapper(self,*args,**kwargs):
-            try:
-                return method(self,*args,**kwargs)
-            except:
-                traceback.print_exc()
-        return wrapper
-
+    
+    def catch_exception(method):                                                                                                                                              
+        def wrapper(self,*args,**kwargs):                                                                                                                                     
+            try:                                                                                                                                                              
+                return method(self,*args,**kwargs)                                                                                                                            
+            except:                                                                                                                                                           
+                traceback.print_exc()                                                                                                                                         
+        return wrapper                                                                                                                                                        
+    
     @catch_exception
     def create_axis(self):
             scaled_axis = self.host_node.create_node('Axis')
-            axis_name = f"scl_for_{self.full_x_res_slider.text()}x{self.full_y_res_slider.text()}".replace(".", "_")
+            axis_name = f"scl_for_{self.full_x_res_slider.value}x{self.full_y_res_slider.value}".replace(".", "_")
             if self.anamorphic_btn.isChecked():
                  axis_name = f'{axis_name}_ana'
             else:
@@ -128,27 +97,28 @@ class ScaleCompensator(object):
                 scaled_axis.name = axis_name
             except:
                 flame.delete(scaled_axis)
-                error_mesage = f'An axis with a scale of {self.scale_calculation_bg_label.text()} already exists. Please enter new values.'
-                pyflame.message_print(SCRIPT_NAME, error_mesage)
+                error_message = f'An axis with a scale of {self.scale_calculation_bg_label.text} already exists. Please enter new values.'
+                pyflame.print(error_message)
                 PyFlameMessageWindow(
-                    message=error_mesage,
-                    script_name=SCRIPT_NAME,
-                    type=MessageType.ERROR
+                    title=SCRIPT_NAME,
+                    message=error_message,
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return
             scaled_axis.pos_y = 190
-
+            
             # print("Axis Attributes: ", scaled_axis.attributes)
-
+            
             if self.anamorphic_btn.isChecked():
-                scaled_axis.scale = ((self.proxy_res_x / self.full_x_res)*100,((self.proxy_res_x / self.full_x_res)*100)/self.pixel_ratio_slider.get_value(), 0)
-
+                scaled_axis.scale = ((self.proxy_res_x / self.full_x_res)*100,((self.proxy_res_x / self.full_x_res)*100)/self.pixel_ratio_slider.value, 0)
+                
             else:
                 scaled_axis.scale = (self.scale_factor_calculation, self.scale_factor_calculation, 0)
 
     @catch_exception
     def use_resolution_list(self):
-
+            
             # check for resolution list
             project_name = flame.projects.current_project.name
 
@@ -157,14 +127,14 @@ class ScaleCompensator(object):
             # res_file_location = (f"/opt/Autodesk/project/{project_name}/tmp")
 
             simple_flame_version = flame.get_version().split('.')[0]
-
-            if simple_flame_version <= '2026':
+            
+            if int(simple_flame_version) >= 2026:
                 full_project_path = flame.projects.current_project.project_folder
                 project_tmp_path = re.sub(r"^/hosts/[^/]+", "", full_project_path) + '/tmp'
                 json_path = Path(f"{project_tmp_path}/scale_compensator_res_list.json")
             else:
                 json_path = Path(f"/opt/Autodesk/project/{project_name}/tmp/scale_compensator_res_list.json")
-
+            
             if not os.path.isfile(json_path):
                 self.window.close()
                 flame.messages.show_in_dialog(
@@ -174,7 +144,7 @@ class ScaleCompensator(object):
                             buttons = ["Ok"],
                             cancel_button = "Cancel")
                 return
-
+            
             # Read the JSON file
             with json_path.open("r") as json_file:
                 loaded_data = json.load(json_file)
@@ -209,15 +179,16 @@ class ScaleCompensator(object):
                     scaled_axis.name = axis_name
                 except:
                     flame.delete(scaled_axis)
-                    error_mesage = f'An axis name "scl_for_{resolution}" already exists.'
-                    pyflame.message_print(SCRIPT_NAME, error_mesage)
+                    error_message = f'An axis name "scl_for_{resolution}" already exists.'
+                    pyflame.print(error_message)
                     PyFlameMessageWindow(
-                        message=error_mesage,
-                        script_name=SCRIPT_NAME,
-                        type=MessageType.ERROR
+                        title=SCRIPT_NAME,
+                        message=error_message,
+                        message_type=MessageType.ERROR,
+                        parent=None,
                         )
                     continue
-
+                
                 scaled_axis.pos_y = vertical_position
                 scaled_axis.pos_x = horizontal_position
 
@@ -233,12 +204,12 @@ class ScaleCompensator(object):
 
                 if anamorphic_check == False:
                     scaled_axis.scale = (scale_factor_calculation, scale_factor_calculation, 0)
-
+    
     @catch_exception
     def create_off_vs_on_axis(self):
             # print("Creating Offline vs Online Compensation Axis")
             off_to_on_axis = self.host_node.create_node('Axis')
-            axis_name = f"scl_for_{self.offline_x_res_slider.text()}x{self.offline_y_res_slider.text()}_to_{self.online_x_res_slider.text()}x{self.online_y_res_slider.text()}".replace(".", "_")
+            axis_name = f"scl_for_{self.offline_x_res_slider.value}x{self.offline_y_res_slider.value}_to_{self.online_x_res_slider.value}x{self.online_y_res_slider.value}".replace(".", "_")
             if self.anamorphic_btn.isChecked():
                  axis_name = f'{axis_name}_ana'
             else:
@@ -247,22 +218,23 @@ class ScaleCompensator(object):
                 off_to_on_axis.name = axis_name
             except:
                 flame.delete(off_to_on_axis)
-                error_mesage = f'An axis with a scale of {self.off_vs_online_calculation_bg_label.text()} already exists. Please enter new values.'
-                pyflame.message_print(SCRIPT_NAME, error_mesage)
+                error_message = f'An axis with a scale of {self.off_vs_online_calculation_bg_label.text} already exists. Please enter new values.'
+                pyflame.print(error_message)
                 PyFlameMessageWindow(
-                    message=error_mesage,
-                    script_name=SCRIPT_NAME,
-                    type=MessageType.ERROR
+                    title=SCRIPT_NAME,
+                    message=error_message,
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return
             off_to_on_axis.pos_y = 190
-            off_to_on_axis.scale = (float(self.off_vs_online_calculation_bg_label.text()),float(self.off_vs_online_calculation_bg_label.text()),0)
+            off_to_on_axis.scale = (float(self.off_vs_online_calculation_bg_label.text),float(self.off_vs_online_calculation_bg_label.text),0)
 
     @catch_exception
     def create_combo_axis(self):
                 # print("Creating Combo Axis")
                 combo_axis = self.host_node.create_node('Axis')
-                axis_name = f"scl_{self.full_x_res_slider.text()}x{self.full_y_res_slider.text()}_in_{self.online_x_res_slider.text()}x{self.online_y_res_slider.text()}".replace(".", "_").replace("1080x1350", "4x5").replace("1080x1920", "9x16").replace("1280x1920", "2x3").replace("1920x1080", "16x9").replace("1080x1080", "1x1")
+                axis_name = f"scl_{self.full_x_res_slider.value}x{self.full_y_res_slider.value}_in_{self.online_x_res_slider.value}x{self.online_y_res_slider.value}".replace(".", "_").replace("1080x1350", "4x5").replace("1080x1920", "9x16").replace("1280x1920", "2x3").replace("1920x1080", "16x9").replace("1080x1080", "1x1")
                 if self.anamorphic_btn.isChecked():
                  axis_name = f'{axis_name}_ana'
                 else:
@@ -271,44 +243,45 @@ class ScaleCompensator(object):
                     combo_axis.name = axis_name
                 except:
                     flame.delete(combo_axis)
-                    error_mesage = 'That axis already exits.  Please enter new values.'
-                    pyflame.message_print(SCRIPT_NAME, error_mesage)
+                    error_message = 'That axis already exits.  Please enter new values.'
+                    pyflame.print(error_message)
                     PyFlameMessageWindow(
-                        message=error_mesage,
-                        script_name=SCRIPT_NAME,
-                        type=MessageType.ERROR
+                        title=SCRIPT_NAME,
+                        message=error_message,
+                        message_type=MessageType.ERROR,
+                        parent=None,
                         )
                     return
                 combo_axis.pos_y = 190
                 if self.anamorphic_btn.isChecked() == True:
                     combo_axis.scale = (self.combo_x_scale, self.combo_y_scale,0)
                 else:
-                    combo_scale = (float(self.off_vs_online_calculation_bg_label.text()) * float(self.scale_factor_calculation)) / 100
+                    combo_scale = (float(self.off_vs_online_calculation_bg_label.text) * float(self.scale_factor_calculation)) / 100
                     combo_axis.scale = (combo_scale,combo_scale,0)
 
-
+    
 
     def update_auto_scale_multiplier(self):
-
+        
         # Disable UI Elements
         if self.anamorphic_btn.isChecked():
             self.pixel_ratio_slider.show()
-            self.pixel_ratio_label.setText('Pixel Ratio')
+            self.pixel_ratio_label.setText('Pixel Ratio')    
         else:
             self.pixel_ratio_label.setText('')
             self.pixel_ratio_slider.hide()
 
 		# Calculate Scale Multiplier
-        self.proxy_res_x = int(self.proxy_x_res_slider.text())
-        self.proxy_res_y = int(self.proxy_y_res_slider.text())
-        self.full_x_res = int(self.full_x_res_slider.text())
-        self.full_y_res = int(self.full_y_res_slider.text())
+        self.proxy_res_x = self.proxy_x_res_slider.value
+        self.proxy_res_y = self.proxy_y_res_slider.value
+        self.full_x_res = self.full_x_res_slider.value
+        self.full_y_res = self.full_y_res_slider.value
         proxy_aspect_ratio = self.proxy_res_x / self.proxy_res_y
         full_res_aspect_ratio = self.full_x_res / self.full_y_res
-
+       
         if self.anamorphic_btn.isChecked() == True:
             self.scale_factor_calculation = (self.proxy_res_x / self.full_x_res)*100
-            self.scale_y_factor_calculation = self.scale_factor_calculation*(1/self.pixel_ratio_slider.get_value())
+            self.scale_y_factor_calculation = self.scale_factor_calculation*(1/self.pixel_ratio_slider.value)
             self.anamorphic_scale_factor_calculation = f'({str(round(self.scale_factor_calculation,2))}, {str(round(self.scale_y_factor_calculation,2))})'
             self.scale_calculation_bg_label.setText(self.anamorphic_scale_factor_calculation)
         elif full_res_aspect_ratio >= proxy_aspect_ratio:
@@ -317,20 +290,20 @@ class ScaleCompensator(object):
         else:
             self.scale_factor_calculation = (self.proxy_res_y / self.full_y_res)*100
             self.scale_calculation_bg_label.setText(str(round(self.scale_factor_calculation,2)))
-
+        
         self.update_combo_label()
-
+    
     @catch_exception
     def update_on_vs_offline_scale(self, *args):
         print(f"Args: {args}")
         # Calculate Offline vs Online Scale Multiplier
-        offline_x_res = int(self.offline_x_res_slider.text())
+        offline_x_res = self.offline_x_res_slider.value
         # print("Offline X Res: ", offline_x_res)
-        offline_y_res = int(self.offline_y_res_slider.text())
+        offline_y_res = self.offline_y_res_slider.value
         # print("Offline Y Res: ", offline_y_res)
-        online_x_res = int(self.online_x_res_slider.text())
+        online_x_res = self.online_x_res_slider.value
         # print("Online X Res: ", online_x_res)
-        online_y_res = int(self.online_y_res_slider.text())
+        online_y_res = self.online_y_res_slider.value
         # print("Online Y Res: ", online_y_res)
         offline_aspect_ratio = offline_x_res / offline_y_res
         # print("Offline Aspect Ratio: ", offline_aspect_ratio)
@@ -343,55 +316,60 @@ class ScaleCompensator(object):
         else:
             # print("Offline Aspect Ratio is Greater")
             off_to_on_scale_factor_calculation = str(round((online_y_res / offline_y_res)*100,2))
-
+        
         # print("Offline vs Online Scale: ", off_to_on_scale_factor_calculation)
         self.off_vs_online_calculation_bg_label.setText(off_to_on_scale_factor_calculation)
         self.update_combo_label()
-
+        
 
     @catch_exception
     def update_combo_label(self):
         if self.anamorphic_btn.isChecked() == True:
-            self.combo_x_scale = (float(self.off_vs_online_calculation_bg_label.text()) * float(self.scale_factor_calculation)) / 100
-            self.combo_y_scale = (float(self.off_vs_online_calculation_bg_label.text()) * float(self.scale_y_factor_calculation)) / 100
+            self.combo_x_scale = (float(self.off_vs_online_calculation_bg_label.text) * float(self.scale_factor_calculation)) / 100
+            self.combo_y_scale = (float(self.off_vs_online_calculation_bg_label.text) * float(self.scale_y_factor_calculation)) / 100
             self.combo_calculation_bg_label.setText(f'({str(round(self.combo_x_scale,2))}, {str(round(self.combo_y_scale,2))})')
         else:
-            combo_scale = (float(self.off_vs_online_calculation_bg_label.text()) * float(self.scale_factor_calculation)) / 100
+            combo_scale = (float(self.off_vs_online_calculation_bg_label.text) * float(self.scale_factor_calculation)) / 100
             combo_scale_rounded = str(round(combo_scale, 2))
             self.combo_calculation_bg_label.setText(combo_scale_rounded)
-
+    
     @catch_exception
     def main_window(self):
-
+    
         def save_config():
 
             # Save settings to config file
             self.settings.save_config(
-                script_name=SCRIPT_NAME,
-                script_path=SCRIPT_PATH,
+                # script_name=SCRIPT_NAME,
+                # script_path=SCRIPT_PATH,
                 config_values={
-                    'proxy_x_res': self.proxy_x_res_slider.text(),
-                    'proxy_y_res': self.proxy_y_res_slider.text(),
-                    'full_x_res': self.full_x_res_slider.text(),
-                    'full_y_res': self.full_y_res_slider.text(),
-                    'offline_x_res': self.offline_x_res_slider.text(),
-                    'offline_y_res': self.offline_y_res_slider.text(),
-                    'online_x_res': self.online_x_res_slider.text(),
-                    'online_y_res': self.online_y_res_slider.text(),
-                    'anamorphic_footage': str(self.anamorphic_btn.isChecked()),
-                    'pixel_ratio_value': self.pixel_ratio_slider.text(),
-                    'combo_scale': self.combo_calculation_bg_label.text(),
+                    'proxy_x_res': self.proxy_x_res_slider.value,
+                    'proxy_y_res': self.proxy_y_res_slider.value,
+                    'full_x_res': self.full_x_res_slider.value,
+                    'full_y_res': self.full_y_res_slider.value,
+                    'offline_x_res': self.offline_x_res_slider.value,
+                    'offline_y_res': self.offline_y_res_slider.value,
+                    'online_x_res': self.online_x_res_slider.value,
+                    'online_y_res': self.online_y_res_slider.value,
+                    'anamorphic_footage': self.anamorphic_btn.checked,
+                    'pixel_ratio_value': self.pixel_ratio_slider.value,
+                    'combo_scale': self.combo_calculation_bg_label.value,
                     }
                 )
-
+            
+            self.window.close()
+        
+        def cancel_button():
             self.window.close()
 
         # Window
         self.window = PyFlameWindow(
-            width=650,
-            height=450,
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=save_config,
+            escape_pressed=cancel_button,
+            grid_layout_rows=12,
+            grid_layout_columns=4,
+            parent=None
             )
 
         # Labels
@@ -401,34 +379,34 @@ class ScaleCompensator(object):
         self.full_x_res_label = PyFlameLabel(text='Footage X Res', style=Style.UNDERLINE)
         self.full_y_res_label = PyFlameLabel(text='Footage Y Res', style=Style.UNDERLINE)
         self.scale_calculation_label = PyFlameLabel(text='Full Res to Proxy', style=Style.UNDERLINE)
-        self.scale_calculation_bg_label = PyFlameLabel(text='100.00', style=Style.BACKGROUND, width=110)
+        self.scale_calculation_bg_label = PyFlameLabel(text='100.00', style=Style.BACKGROUND)
         self.scale_calculation_bg_label.setAlignment(QtCore.Qt.AlignCenter)
         self.offline_x_res_label = PyFlameLabel(text='Offline X Res', style=Style.UNDERLINE)
         self.offline_y_res_label = PyFlameLabel(text='Offline Y Res', style=Style.UNDERLINE)
         self.online_x_res_label = PyFlameLabel(text='Online X Res', style=Style.UNDERLINE)
         self.online_y_res_label = PyFlameLabel(text='Online Y Res', style=Style.UNDERLINE)
         self.off_vs_online_calculation_label = PyFlameLabel(text='Offline to Online', style=Style.UNDERLINE)
-        self.off_vs_online_calculation_bg_label = PyFlameLabel(text='100.00', style=Style.BACKGROUND, width=110,align=Align.CENTER)
-        self.blank_label = PyFlameLabel(text='', style=Style.NORMAL,width=560)
+        self.off_vs_online_calculation_bg_label = PyFlameLabel(text='100.00', style=Style.BACKGROUND, align=Align.CENTER)
+        self.blank_label = PyFlameLabel(text='', style=Style.NORMAL)
         self.blank_label2 = PyFlameLabel(text='', style=Style.NORMAL)
         self.blank_label3 = PyFlameLabel(text='', style=Style.NORMAL)
         self.combo_label = PyFlameLabel(text='Compensate for Both', style=Style.UNDERLINE)
-        self.combo_calculation_bg_label = PyFlameLabel(text=str(self.settings.combo_scale), style=Style.BACKGROUND, width=110,align=Align.CENTER)
+        self.combo_calculation_bg_label = PyFlameLabel(text=str(self.settings.combo_scale), style=Style.BACKGROUND, align=Align.CENTER)
         self.pixel_ratio_label = PyFlameLabel(text='Pixel Ratio', style=Style.UNDERLINE)
-
+        
         # Sliders
 
-        self.proxy_x_res_slider = PyFlameSlider(float(self.settings.proxy_x_res), 0, 15000, False)
-        self.proxy_y_res_slider = PyFlameSlider(float(self.settings.proxy_y_res), 0, 15000, False)
-        self.full_x_res_slider = PyFlameSlider(float(self.settings.full_x_res), 0, 15000, False)
-        self.full_y_res_slider = PyFlameSlider(float(self.settings.full_y_res), 0, 15000, False)
+        self.proxy_x_res_slider = PyFlameSlider(start_value=self.settings.proxy_x_res, min_value=0, max_value=15000, rate=1)
+        self.proxy_y_res_slider = PyFlameSlider(start_value=self.settings.proxy_y_res, min_value=0, max_value=15000, rate=1)
+        self.full_x_res_slider = PyFlameSlider(start_value=self.settings.full_x_res, min_value=0, max_value=15000, rate=1)
+        self.full_y_res_slider = PyFlameSlider(start_value=self.settings.full_y_res, min_value=0, max_value=15000, rate=1)
 
-        self.pixel_ratio_slider = PyFlameSlider(float(self.settings.pixel_ratio_value), .9, 3, True)
-
-        self.offline_x_res_slider = PyFlameSlider(float(self.settings.offline_x_res), 0, 15000, False)
-        self.offline_y_res_slider = PyFlameSlider(float(self.settings.offline_y_res), 0, 15000, False)
-        self.online_x_res_slider = PyFlameSlider(float(self.settings.online_x_res), 0, 15000, False)
-        self.online_y_res_slider = PyFlameSlider(float(self.settings.online_y_res), 0, 15000, False)
+        self.pixel_ratio_slider = PyFlameSlider(start_value=self.settings.pixel_ratio_value, min_value=.9, max_value=3.0)
+       
+        self.offline_x_res_slider = PyFlameSlider(start_value=self.settings.offline_x_res, min_value=0, max_value=15000, rate=1)
+        self.offline_y_res_slider = PyFlameSlider(start_value=self.settings.offline_y_res, min_value=0, max_value=15000, rate=1)
+        self.online_x_res_slider = PyFlameSlider(start_value=self.settings.online_x_res, min_value=0, max_value=15000, rate=1)
+        self.online_y_res_slider = PyFlameSlider(start_value=self.settings.online_y_res, min_value=0, max_value=15000, rate=1)
 
         # Slider updates
         self.full_x_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
@@ -442,22 +420,19 @@ class ScaleCompensator(object):
         self.offline_y_res_slider.textChanged.connect(self.update_on_vs_offline_scale)
         self.online_x_res_slider.textChanged.connect(self.update_on_vs_offline_scale)
         self.online_y_res_slider.textChanged.connect(self.update_on_vs_offline_scale)
-
+        
         # Buttons
         self.create_axis_btn = PyFlameButton(text='Create Axis', connect=self.create_axis)
-        self.save_btn = PyFlameButton(text='Save and Close',  connect=save_config,color=Color.BLUE, width=110)
-        self.cancel_btn = PyFlameButton(text='Close',  connect=self.window.close, width=110)
-        self.create_off_vs_on_btn = PyFlameButton(text='Off to Online Axis',  connect=self.create_off_vs_on_axis, width=110)
-        self.create_combo_axis_btn = PyFlameButton(text='Combo Axis',  connect=self.create_combo_axis, width=110)
-        self.use_res_list_btn = PyFlameButton(text='Use Res List', connect=self.use_resolution_list, color=Color.BLUE, width=110)
+        self.save_btn = PyFlameButton(text='Save and Close',  connect=save_config,color=Color.BLUE)
+        self.cancel_btn = PyFlameButton(text='Close',  connect=self.window.close)
+        self.create_off_vs_on_btn = PyFlameButton(text='Off to Online Axis',  connect=self.create_off_vs_on_axis)
+        self.create_combo_axis_btn = PyFlameButton(text='Combo Axis',  connect=self.create_combo_axis)
+        self.use_res_list_btn = PyFlameButton(text='Use Res List', connect=self.use_resolution_list, color=Color.BLUE)
 
         # PushButtons
-        self.anamorphic_btn = PyFlamePushButton('  Anamorphic Footage',
-            button_checked=self.settings.anamorphic_footage,
-            connect=self.update_auto_scale_multiplier
-            )
+        self.anamorphic_btn = PyFlamePushButton('  Anamorphic Footage', checked=self.settings.anamorphic_footage, connect=self.update_auto_scale_multiplier)
         self.anamorphic_btn.setToolTip('Enable for Anamorphic Footage.')
-
+       
        # Update Calculations
         self.update_auto_scale_multiplier()
         self.update_on_vs_offline_scale()
@@ -467,69 +442,74 @@ class ScaleCompensator(object):
 
         # Window Layout
 
-        grid_layout = QtWidgets.QGridLayout()
-        grid_layout.setVerticalSpacing(pyflame.gui_resize(5))
-        grid_layout.setHorizontalSpacing(pyflame.gui_resize(5))
-        try:
-            grid_layout.setMargin(pyflame.gui_resize(10))
-        except:
-            grid_layout_margin = pyflame.gui_resize(10)
-            grid_layout.setContentsMargins(grid_layout_margin, grid_layout_margin, grid_layout_margin, grid_layout_margin)
+        self.window.grid_layout.addWidget(self.proxy_x_res_label, 0, 0)
+        self.window.grid_layout.addWidget(self.proxy_x_res_slider, 0, 1)
+        self.window.grid_layout.addWidget(self.proxy_y_res_label, 0, 2)
+        self.window.grid_layout.addWidget(self.proxy_y_res_slider, 0, 3)
 
-        grid_layout.addWidget(self.proxy_x_res_label, 1, 0)
-        grid_layout.addWidget(self.proxy_x_res_slider, 1, 1)
-        grid_layout.addWidget(self.proxy_y_res_label, 1, 2)
-        grid_layout.addWidget(self.proxy_y_res_slider, 1, 3)
+        self.window.grid_layout.addWidget(self.full_x_res_label, 1, 0)
+        self.window.grid_layout.addWidget(self.full_x_res_slider, 1, 1)
+        self.window.grid_layout.addWidget(self.full_y_res_label, 1, 2)
+        self.window.grid_layout.addWidget(self.full_y_res_slider, 1, 3)
 
-        grid_layout.addWidget(self.full_x_res_label, 2, 0)
-        grid_layout.addWidget(self.full_x_res_slider, 2, 1)
-        grid_layout.addWidget(self.full_y_res_label, 2, 2)
-        grid_layout.addWidget(self.full_y_res_slider, 2, 3)
+        self.window.grid_layout.addWidget(self.anamorphic_btn, 2, 0)
+        self.window.grid_layout.addWidget(self.pixel_ratio_label, 2, 1)
+        self.window.grid_layout.addWidget(self.pixel_ratio_slider, 2, 2)
 
-        grid_layout.addWidget(self.anamorphic_btn, 3, 0)
-        grid_layout.addWidget(self.pixel_ratio_label, 3, 1)
-        grid_layout.addWidget(self.pixel_ratio_slider, 3, 2)
+        self.window.grid_layout.addWidget(self.scale_calculation_label, 3, 0)
+        self.window.grid_layout.addWidget(self.scale_calculation_bg_label, 3, 1)
+        self.window.grid_layout.addWidget(self.create_axis_btn, 3, 2)
 
-        grid_layout.addWidget(self.scale_calculation_label, 4, 0)
-        grid_layout.addWidget(self.scale_calculation_bg_label, 4, 1)
-        grid_layout.addWidget(self.create_axis_btn, 4, 2)
+        self.window.grid_layout.addWidget(self.blank_label, 4, 0)
 
-        grid_layout.addWidget(self.blank_label, 5, 0)
+        self.window.grid_layout.addWidget(self.offline_x_res_label, 5, 0)
+        self.window.grid_layout.addWidget(self.offline_x_res_slider, 5, 1)
+        self.window.grid_layout.addWidget(self.offline_y_res_label, 5, 2)
+        self.window.grid_layout.addWidget(self.offline_y_res_slider, 5, 3)
 
-        grid_layout.addWidget(self.offline_x_res_label, 6, 0)
-        grid_layout.addWidget(self.offline_x_res_slider, 6, 1)
-        grid_layout.addWidget(self.offline_y_res_label, 6, 2)
-        grid_layout.addWidget(self.offline_y_res_slider, 6, 3)
+        self.window.grid_layout.addWidget(self.online_x_res_label, 6, 0)
+        self.window.grid_layout.addWidget(self.online_x_res_slider, 6, 1)
+        self.window.grid_layout.addWidget(self.online_y_res_label, 6, 2)
+        self.window.grid_layout.addWidget(self.online_y_res_slider, 6, 3)
 
-        grid_layout.addWidget(self.online_x_res_label, 7, 0)
-        grid_layout.addWidget(self.online_x_res_slider, 7, 1)
-        grid_layout.addWidget(self.online_y_res_label, 7, 2)
-        grid_layout.addWidget(self.online_y_res_slider, 7, 3)
+        self.window.grid_layout.addWidget(self.off_vs_online_calculation_label, 7, 0)
+        self.window.grid_layout.addWidget(self.off_vs_online_calculation_bg_label, 7, 1)
+        self.window.grid_layout.addWidget(self.create_off_vs_on_btn, 7, 2)
 
-        grid_layout.addWidget(self.off_vs_online_calculation_label, 8, 0)
-        grid_layout.addWidget(self.off_vs_online_calculation_bg_label, 8, 1)
-        grid_layout.addWidget(self.create_off_vs_on_btn, 8, 2)
+        # self.window.grid_layout.addWidget(self.blank_label2, 8, 0)
 
-        grid_layout.addWidget(self.blank_label2, 9, 0)
+        self.window.grid_layout.addWidget(self.combo_label, 9, 0)
+        self.window.grid_layout.addWidget(self.combo_calculation_bg_label, 9, 1)
+        self.window.grid_layout.addWidget(self.create_combo_axis_btn, 9, 2)
 
-        grid_layout.addWidget(self.combo_label, 10, 0)
-        grid_layout.addWidget(self.combo_calculation_bg_label, 10, 1)
-        grid_layout.addWidget(self.create_combo_axis_btn, 10, 2)
+        # self.window.grid_layout.addWidget(self.blank_label3, 10, 0)
 
-        grid_layout.addWidget(self.blank_label3, 11, 0)
-
-        grid_layout.addWidget(self.cancel_btn, 12, 0)
-        grid_layout.addWidget(self.use_res_list_btn, 12, 2)
-        grid_layout.addWidget(self.save_btn, 12, 3)
-
-        # Add layout to window
-        self.window.add_layout(grid_layout)
-
+        self.window.grid_layout.addWidget(self.cancel_btn, 11, 0)
+        self.window.grid_layout.addWidget(self.use_res_list_btn, 11, 2)
+        self.window.grid_layout.addWidget(self.save_btn, 11, 3)
+        
         self.window.show()
 
-        return self.window
-
 def color_code_action_nodes(selection):
+    # # Not working yet as we can't load and append an action file
+    # print('\n')
+    # print('>' * 10, f'Load {SCRIPT_NAME} Nodes {SCRIPT_VERSION}', '<' * 10, '\n')
+    # action_path = pyflame.file_browser('Select Action', ['action'], "/Volumes/vfx/UC_Jobs/Uppercut/SHOTS/Common/Setups")
+    
+    # if action_path:
+    #     print ("Here's the Action: ",action_path)
+
+    #     for segment in selection:
+    #         if isinstance(segment, flame.PySegment):
+    #             for tlfx in segment.effects:
+    #                 if tlfx.type == 'Action':
+    #                     # Set color of clips on timeline
+    #                     segment.colour = (50,0,0)
+    #                     # Load Action Setup
+    #                     tlfx.load_setup(action_path)
+    
+    # print('>' * 10, f'{SCRIPT_NAME} {SCRIPT_VERSION} End', '<' * 10, '\n')
+    # print('\n')
     for segment in selection:
             if isinstance(segment, flame.PySegment):
                 for tlfx in segment.effects:
@@ -538,7 +518,6 @@ def color_code_action_nodes(selection):
                         segment.colour = (50,0,0)
             else:
                 continue
-
 #-------------------------------------#
 # Scopes
 

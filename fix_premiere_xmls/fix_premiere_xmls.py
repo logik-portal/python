@@ -1,12 +1,12 @@
 """
 Script Name: fix premiere xmls
-Script Version: 2.1.2
-Flame Version: 2023.2
+Script Version: 3.0.0
+Flame Version: 2025
 Written by: Ted Stanley, John Geehreng, and Michael Vaglienty
 Creation Date: 03.03.21
-Update Date: 02.13.25
+Update Date: 03.01.26
 
-Script Type: MediaHub
+Custom Action Type: MediaHub
 
 Description:
 
@@ -18,9 +18,10 @@ Menus:
 
 To install:
 
-    Copy script into /opt/Autodesk/shared/python/fix_premiere_xmls
+    Copy script into /opt/Autodesk/shared/python/fix_premiere_xmls or put it wherever you keep your scripts
 
 Updates:
+    03.01.26 - v3.0.0 - Updated for pyflame lib v5.2.3
     02.13.25 - v2.1.2  Update to latest pyflame lib and SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
     05.06.24 - v2.1.1  Changed Scoping to show up only if xml's are selected
     04.03.24 - v2.1    Fixed renaming issue
@@ -47,13 +48,13 @@ Updates:
 
 import os
 import flame
-from pyflame_lib_fix_premiere_xmls import *
+from lib.pyflame_lib_fix_premiere_xmls import *
 
 #-------------------------------------#
 # Main Script
 
 SCRIPT_NAME = "Fix Premiere XMLs"
-SCRIPT_VERSION = 'v2.1.2'
+SCRIPT_VERSION = 'v3.0.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class fix_premiere_xmls():
@@ -229,10 +230,10 @@ class fix_premiere_xmls():
 
     def update_auto_scale_multiplier(self):
         # Calculate Scale Multiplier
-        proxy_x_res = int(self.proxy_x_res_slider.text())
-        proxy_y_res = int(self.proxy_y_res_slider.text())
-        full_x_res = int(self.full_x_res_slider.text())
-        full_y_res = int(self.full_y_res_slider.text())
+        proxy_x_res = self.proxy_x_res_slider.value
+        proxy_y_res = self.proxy_y_res_slider.value
+        full_x_res = self.full_x_res_slider.value
+        full_y_res = self.full_y_res_slider.value
         proxy_aspect_ratio = proxy_x_res / proxy_y_res
         full_res_aspect_ratio = full_x_res / full_y_res
 
@@ -240,13 +241,13 @@ class fix_premiere_xmls():
             scale_factor_calculation = str(round((proxy_x_res / full_x_res)*100,2))
         else:
             scale_factor_calculation = str(round((proxy_y_res / full_y_res)*100,2))
-        self.scale_calculation_bg_label.setText(scale_factor_calculation)
+        self.scale_calculation_bg_label.text = scale_factor_calculation
 
     def scale_calc_toggle(self):
 
 		# Disables UI elements when button is pressed
 
-        if self.scale_calc_btn.isChecked():
+        if self.scale_calc_btn.checked:
             self.proxy_x_res_label.setEnabled(True)
             self.proxy_y_res_label.setEnabled(True)
             self.proxy_x_res_slider.setEnabled(True)
@@ -277,7 +278,7 @@ class fix_premiere_xmls():
 
 		# Disables UI elements when button is pressed
 
-        if self.xml_res_btn.isChecked():
+        if self.xml_res_btn.checked:
                 self.online_x_res_label.setEnabled(False)
                 self.online_x_res_slider.setEnabled(False)
                 self.online_y_res_label.setEnabled(False)
@@ -305,29 +306,29 @@ class fix_premiere_xmls():
             self.input_sequence_width = int(self.root.find('.//width').text)
             self.input_sequence_height = int(self.root.find('.//height').text)
             print("Offline Res: ",f'{self.input_sequence_width}x{self.input_sequence_height}')
-            if self.scale_calc_btn.isChecked():
-                 self.scale_factor = float(self.scale_calculation_bg_label.text())
+            if self.scale_calc_btn.checked:
+                 self.scale_factor = float(self.scale_calculation_bg_label.text)
             else:
-                self.scale_factor = self.scale_factor_slider.get_value()
+                self.scale_factor = self.scale_factor_slider.value
             
             # Calculate Offline vs Online
-            if self.xml_res_btn.isChecked():
+            if self.xml_res_btn.checked:
                 self.online_x_factor = 1
                 self.online_y_factor = 1
                 output_width = self.input_sequence_width
                 output_height = self.input_sequence_height
                 print("Online Res:  ",f'{output_width}x{output_height}')
             else:
-                self.online_x_res = int(self.online_x_res_slider.text())
-                self.online_y_res = int(self.online_y_res_slider.text())
+                self.online_x_res = int(self.online_x_res_slider.value)
+                self.online_y_res = int(self.online_y_res_slider.value)
                 offline_aspect_ratio = self.input_sequence_width / self.input_sequence_height
                 online_aspect_ratio = self.online_x_res / self.online_y_res
                 reverse_online_aspect_ratio = self.online_y_res / self.online_x_res
                 # Resize the XML Output
                 output_width = (self.root.find('.//width'))
                 output_height = (self.root.find('.//height'))
-                output_width.text = self.online_x_res_slider.text()
-                output_height.text = self.online_y_res_slider.text()
+                output_width.text = self.online_x_res_slider.value
+                output_height.text = self.online_y_res_slider.value
                 print("Online Res:  ",f'{output_width.text}x{output_height.text}')
 
                 if online_aspect_ratio >= offline_aspect_ratio:
@@ -336,7 +337,7 @@ class fix_premiere_xmls():
                     self.online_y_factor = 1
                 else:
                     self.conform_scale_factor_calculation = str(round((self.online_y_res / self.input_sequence_height)*100,2))
-                    self.online_x_factor = round(max(1,(self.input_sequence_width / self.online_x_res_slider.get_value())) * reverse_online_aspect_ratio ,5)
+                    self.online_x_factor = round(max(1,(self.input_sequence_width / self.online_x_res_slider.value)) * reverse_online_aspect_ratio ,5)
                     self.online_y_factor = 1
                 self.scale_factor = self.scale_factor * float(self.conform_scale_factor_calculation)/100
 
@@ -356,16 +357,20 @@ class fix_premiere_xmls():
             self.fixroot = self.fixrepo()
 
             # Build Output Name
-            outname = str(item.path)[:-4]
-            if self.scale_calc_btn.isChecked():
-                outname = f'{outname}_scl_for_{self.full_x_res_slider.text()}x{self.full_y_res_slider.text()}'
+            xml_dir = os.path.dirname(xml_path)
+            prepped_dir = os.path.join(xml_dir, "prepped")
+            os.makedirs(prepped_dir, exist_ok=True)
+            base_name = os.path.basename(xml_path)[:-4]
+            outname = os.path.join(prepped_dir, base_name)
+            if self.scale_calc_btn.checked:
+                outname = f'{outname}_scl_for_{self.full_x_res_slider.value}x{self.full_y_res_slider.value}'
             else:
                 outname = f'{outname}_scl_of_{self.scale_percent}'
             
-            if self.xml_res_btn.isChecked():
+            if self.xml_res_btn.checked:
                 outname = f'{outname}'
             else:
-                outname = f'{outname}_in_{self.online_x_res_slider.text()}x{self.online_y_res_slider.text()}'
+                outname = f'{outname}_in_{self.online_x_res_slider.value}x{self.online_y_res_slider.value}'
                 outname = outname.replace(".", "_").replace("1080x1350", "4x5").replace("1080x1920", "9x16").replace("1280x1920", "2x3").replace("1920x1080", "16x9").replace("1080x1080", "1x1")
 
             # Remove 2 or more underscores
@@ -374,7 +379,7 @@ class fix_premiere_xmls():
             outname = re.sub(regex, subst, outname)
 
             #Fix Sanitize Names
-            if self.sanatize_names_btn.isChecked():
+            if self.sanatize_names_btn.checked:
 
                 # Change Sequence Name to match Outname and remove dumb characterss
                 print("Sanatizing Names...")
@@ -398,7 +403,7 @@ class fix_premiere_xmls():
                         pass
 
             #Fix Stills Duration
-            if self.fix_durations_btn.isChecked():
+            if self.fix_durations_btn.checked:
                 #This function fixes any difference between the clip 'start to end' duration vs. the clip 'in to out' duration
                 self.fixduration()
                 #This function increases the clip duration if it's shorter that clip 'in to out'
@@ -437,7 +442,11 @@ class fix_premiere_xmls():
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
         print('\n')
 
+
     def main_window(self):
+
+        def cancel_button():
+            window.close()
 
         #------------------------------------#
         # Window Elements
@@ -446,135 +455,61 @@ class fix_premiere_xmls():
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=self.fix_xml,
+            escape_pressed=cancel_button,
             grid_layout_columns=5,
             grid_layout_rows=10,
-            # grid_layout_adjust_column_widths={0: 20}
+            parent=None
             )
         
         # Labels
-        self.proxy_diffs_label = PyFlameLabel(
-            text='Scale Footage Options:',
-            # style=Style.UNDERLINE,
-            # width=770
-            )
-        
-        self.scale_factor_label = PyFlameLabel(
-            text='Scale Multiplier',
-            style=Style.UNDERLINE,
-            )
-
-        self.proxy_x_res_label = PyFlameLabel(
-            text='Proxy X Res',
-            style=Style.UNDERLINE,
-            )
-        self.proxy_y_res_label = PyFlameLabel(
-            text='Proxy Y Res',
-            style=Style.UNDERLINE,
-            )
-        self.full_x_res_label = PyFlameLabel(
-            text='Footage X Res',
-            style=Style.UNDERLINE,
-            )
-        self.full_y_res_label = PyFlameLabel(
-            text='Footage Y Res',
-            style=Style.UNDERLINE,
-            )
-        self.scale_calculation_label = PyFlameLabel(
-            text='Scale Multiplier',
-            style=Style.UNDERLINE,
-            )
-        self.scale_calculation_bg_label = PyFlameLabel(
-            text='100.00',
-            # style=Style.BACKGROUND,
-            align=Align.CENTER
-            )
-        self.offline_diffs_label = PyFlameLabel(
-            text='Resize Sequence Options:',
-            # style=Style.UNDERLINE,
-            # width=770
-            )
-        self.online_x_res_label = PyFlameLabel(
-            text='Output X Res',
-            style=Style.UNDERLINE,
-            )
-        self.online_y_res_label = PyFlameLabel(
-            text='Output Y Res',
-            style=Style.UNDERLINE,
-            )
-        self.other_options_label = PyFlameLabel(
-            text='Other Options:',
-            style=Style.UNDERLINE
-            )
-        self.blank_label_1 = PyFlameLabel(
-            text='',
-            style=Style.NORMAL
-            )
-        self.blank_label_2 = PyFlameLabel(
-            text='',
-            style=Style.NORMAL
-            )
-        self.blank_label_3 = PyFlameLabel(
-            text='',
-            style=Style.NORMAL
-            )
+        self.proxy_diffs_label = PyFlameLabel(text='Scale Footage Options:')    
+        self.scale_factor_label = PyFlameLabel(text='Scale Multiplier', style=Style.UNDERLINE)
+        self.proxy_x_res_label = PyFlameLabel(text='Proxy X Res', style=Style.UNDERLINE)
+        self.proxy_y_res_label = PyFlameLabel(text='Proxy Y Res', style=Style.UNDERLINE)
+        self.full_x_res_label = PyFlameLabel(text='Footage X Res', style=Style.UNDERLINE)
+        self.full_y_res_label = PyFlameLabel(text='Footage Y Res', style=Style.UNDERLINE)
+        self.scale_calculation_label = PyFlameLabel(text='Scale Multiplier', style=Style.UNDERLINE, align=Align.CENTER)
+        self.scale_calculation_bg_label = PyFlameLabel(text='100.00', align=Align.CENTER)
+        self.offline_diffs_label = PyFlameLabel(text='Resize Sequence Options:')
+        self.online_x_res_label = PyFlameLabel(text='Output X Res', style=Style.UNDERLINE)
+        self.online_y_res_label = PyFlameLabel(text='Output Y Res', style=Style.UNDERLINE)
+        self.other_options_label = PyFlameLabel(text='Other Options:', style=Style.UNDERLINE)
         
         # Sliders
+        self.proxy_x_res_slider = PyFlameSlider(start_value=self.settings.proxy_x_res, min_value=720, max_value=15000)
+        self.proxy_y_res_slider = PyFlameSlider(start_value=self.settings.proxy_y_res, min_value=480, max_value=15000)
+        self.full_x_res_slider = PyFlameSlider(start_value=self.settings.full_x_res, min_value=720, max_value=15000)
+        self.full_y_res_slider = PyFlameSlider(start_value=self.settings.full_y_res, min_value=480, max_value=15000)
+        self.online_x_res_slider = PyFlameSlider(start_value=self.settings.online_x_res, min_value=720, max_value=15000)
+        self.online_y_res_slider = PyFlameSlider(start_value=self.settings.online_y_res, min_value=480, max_value=15000)
 
-        self.proxy_x_res_slider = PyFlameSlider(float(self.settings.proxy_x_res), 720, 15000, False)
-        self.proxy_y_res_slider = PyFlameSlider(float(self.settings.proxy_y_res), 480, 15000, False)
-        self.full_x_res_slider = PyFlameSlider(float(self.settings.full_x_res), 720, 15000, False)
-        self.full_y_res_slider = PyFlameSlider(float(self.settings.full_y_res), 480, 15000, False)
-
-        self.online_x_res_slider = PyFlameSlider(float(self.settings.online_x_res), 720, 15000, False)
-        self.online_y_res_slider = PyFlameSlider(float(self.settings.online_y_res), 480, 15000, False)
-
-        self.sequence_x_slider = PyFlameSlider(1920, 0, 15000, False)
-        self.sequence_y_slider = PyFlameSlider(1080, 0, 15000, False)
-        self.scale_factor_slider = PyFlameSlider(100, 0, 300, True)
+        self.sequence_x_slider = PyFlameSlider(start_value=1920, min_value=0, max_value=15000)
+        self.sequence_y_slider = PyFlameSlider(start_value=1080, min_value=0, max_value=15000)
+        self.scale_factor_slider = PyFlameSlider(start_value=100, min_value=0, max_value=300)
 
         # Slider Updates
         self.full_x_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
         self.full_y_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
         self.proxy_x_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
         self.proxy_y_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
-
+        
         # Buttons
-        self.ok_btn = PyFlameButton(
-            text='Run',
-            connect=self.fix_xml,
-            color=Color.BLUE,
-            )
-        self.close_btn = PyFlameButton(
-            text='Close',
-            connect=self.window.close,
-            )
+        self.ok_btn = PyFlameButton(text='Run', connect=self.fix_xml, color=Color.BLUE)
+        self.close_btn = PyFlameButton(text='Close', connect=self.window.close)
 
         # Pushbuttons
         
         # Proxy vs Full Res Calculate Pushbutton
-        self.scale_calc_btn = PyFlamePushButton('  Auto Calculate',
-            button_checked=self.settings.scale_calc,
-            connect=self.scale_calc_toggle
-            )
+        self.scale_calc_btn = PyFlamePushButton('Auto Calculate', checked=self.settings.scale_calc, connect=self.scale_calc_toggle)
         
         # Use XML Res PushButton
-        self.xml_res_btn = PyFlamePushButton('  Use XML Res',
-            button_checked=self.settings.xml_res,
-            connect=self.xml_res_toggle
-            )
-        self.xml_res_btn.setToolTip('Enable to automatically detect the resolution of your xml.')
+        self.xml_res_btn = PyFlamePushButton('Use XML Res', checked=self.settings.xml_res,connect=self.xml_res_toggle, tooltip='Enable to automatically detect the resolution of your xml.')
 
         # Fix Stills Pushbutton
-        self.fix_durations_btn = PyFlamePushButton('  Fix Durations',
-            button_checked=self.settings.fix_durations
-            )
-        self.fix_durations_btn.setToolTip('Enable to fix the duration of still frames. Typically graphic elements.')
+        self.fix_durations_btn = PyFlamePushButton('  Fix Durations', checked=self.settings.fix_durations, tooltip='Enable to fix the duration of still frames. Typically graphic elements.')
 
         # Clean Names Pushbutton
-        self.sanatize_names_btn = PyFlamePushButton('  Sanatize Names',
-            button_checked=self.settings.sanatize_names
-            )
-        self.sanatize_names_btn.setToolTip('Enable to try to sanatize the names that will be imported into Flame.')
+        self.sanatize_names_btn = PyFlamePushButton('  Sanatize Names', checked=self.settings.sanatize_names, tooltip='Enable to try to sanatize the names that will be imported into Flame.')
 
         #------------------------------------#
         # Window Layout
@@ -597,8 +532,6 @@ class fix_premiere_xmls():
         self.window.grid_layout.addWidget(self.full_y_res_label, 3, 2)
         self.window.grid_layout.addWidget(self.full_y_res_slider, 3, 3)
 
-        self.window.grid_layout.addWidget(self.blank_label_1, 4, 0)
-
         self.window.grid_layout.addWidget(self.offline_diffs_label, 5, 2)
 
         self.window.grid_layout.addWidget(self.online_x_res_label, 6, 0)
@@ -607,13 +540,9 @@ class fix_premiere_xmls():
         self.window.grid_layout.addWidget(self.online_y_res_slider, 6, 3)
         self.window.grid_layout.addWidget(self.xml_res_btn, 6, 4)
 
-        self.window.grid_layout.addWidget(self.blank_label_2, 7, 0)
-
         self.window.grid_layout.addWidget(self.other_options_label, 8, 0)
         self.window.grid_layout.addWidget(self.sanatize_names_btn, 8, 1)
         self.window.grid_layout.addWidget(self.fix_durations_btn, 8, 2)
-
-        self.window.grid_layout.addWidget(self.blank_label_3, 9, 0)
 
         self.window.grid_layout.addWidget(self.close_btn, 10, 0)
         self.window.grid_layout.addWidget(self.ok_btn, 10, 4)
@@ -631,16 +560,16 @@ class fix_premiere_xmls():
 
         self.settings.save_config(
             config_values={
-                'proxy_x_res': self.proxy_x_res_slider.value(),
-                'proxy_y_res': self.proxy_y_res_slider.value(),
-                'full_x_res': self.full_x_res_slider.value(),
-                'full_y_res': self.full_y_res_slider.value(),
-                'online_x_res': self.online_x_res_slider.value(),
-                'online_y_res': self.online_y_res_slider.value(),
-                'scale_calc': self.scale_calc_btn.isChecked(),
-                'xml_res': self.xml_res_btn.isChecked(),
-                'sanatize_names': self.sanatize_names_btn.isChecked(),
-                'fix_durations': self.fix_durations_btn.isChecked(),
+                'proxy_x_res': self.proxy_x_res_slider.value,
+                'proxy_y_res': self.proxy_y_res_slider.value,
+                'full_x_res': self.full_x_res_slider.value,
+                'full_y_res': self.full_y_res_slider.value,
+                'online_x_res': self.online_x_res_slider.value,
+                'online_y_res': self.online_y_res_slider.value,
+                'scale_calc': self.scale_calc_btn.checked,
+                'xml_res': self.xml_res_btn.checked,
+                'sanatize_names': self.sanatize_names_btn.checked,
+                'fix_durations': self.fix_durations_btn.checked,
                 }
             )
 
