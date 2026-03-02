@@ -141,13 +141,13 @@
   },
   {
     "Script Name": "build resolution list",
-    "Script Version": "1.0.0",
+    "Script Version": "2.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "12.20.24",
-    "Update Date": "10.22.25",
-    "Description": "Script Name: Build Resolution List\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 12.20.24\nUpdate Date: 10.22.25\n\nScript Type: MediaPanel\n\nDescription:\n\nThe goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file.\n\nMenu:\n\nMedia Panel -> UC Timelines -> Build Resolution List\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0.0   10.22.25\n- Use flame.projects.current_project.project_folder to determine where to save json's\n\nv0.2   12.27.24\n- Added aspect ratio to json file\n\nv0.1   12.20.24\n- Initial release."
+    "Update Date": "03.01.26",
+    "Description": "Script Name: build_resolution_list\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 12.20.24\nUpdate Date: 03.01.26\n\nCustom Action Type: MediaPanel\n\nDescription:\n\nThe goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file.\n\nMenus:\n\nMedia Panel -> UC Timelines -> Build Resolution List\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/build_resolution_list or put it wherever you keep your scripts\n\nUpdates:\n\nv2.0.0   03.01.26\n\nFix v1 and how it wasn't really using flame.projects.current_project.project_folder to determine where to save json's\n\nv1.0.0   10.22.25\n\nuse flame.projects.current_project.project_folder to determine where to save json's\n\nv0.2   12.27.24\n\nadded aspect ratio to json file\n\nv0.1   12.20.24\n\nInception"
   },
   {
     "Script Name": "clip to batch group",
@@ -491,13 +491,13 @@
   },
   {
     "Script Name": "fix premiere xmls",
-    "Script Version": "2.1.2",
-    "Flame Version": "2023.2",
+    "Script Version": "3.0.0",
+    "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Ted Stanley, John Geehreng, and Michael Vaglienty",
     "Creation Date": "03.03.21",
-    "Update Date": "02.13.25",
-    "Description": "Script Name: fix premiere xmls\nScript Version: 2.1.2\nFlame Version: 2023.2\nWritten by: Ted Stanley, John Geehreng, and Michael Vaglienty\nCreation Date: 03.03.21\nUpdate Date: 02.13.25\n\nScript Type: MediaHub\n\nDescription:\n\nFix and/or Resize Adobe Premiere XML's.\n\nMenus:\n\nMediaHub -> XML Prep -> Fix Premiere XML's\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/fix_premiere_xmls\n\nUpdates:\n02.13.25 - v2.1.2  Update to latest pyflame lib and SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))\n05.06.24 - v2.1.1  Changed Scoping to show up only if xml's are selected\n04.03.24 - v2.1    Fixed renaming issue\n12.05.23 - v2.0.2  Fixed the missing fixduration() problem. Made _x_res names consistent.\n11.28.23 - v2.0.1  Updated for pyflame lib v2. Added ability to resize xmls. Changed the output names based on options\n11.12.23 - v1.94   Fixed the Scale Factor Calculator to use the correct width or height. Added try/except when using the \"Clean Names\" option.\n09.08.22 - v1.93   2023.2 Ordering and Scale Factor Calculator\n05.24.22 - v1.92   Update from Ted - This one fixes almost everything. Except dissolves, those still suck.\n04.19.22 - v1.91   2023 UI\n02.19.22 - v1.90   Created option for automatically using the xml's resolution\n12.27.21 - Turned off \"v\" to \"V\" when sanatizing names\n11.15.21 - Added the ability to scale values over 100\n09.03.21 - Made sanatizing the names optional\n08.27.21 - Turned off the \"That Totally Worked\" message as you can see the update in the MediaHub\n08.13.21 - Change XML Bit Depth to Project Settings\n06.04.21 - Change Default Scale Value to 100 for graphics. Renamed \"Cancel\" button to say \"Close\"\n05.17.21 - Added the ability to select multiple .xml's and added Ted's nested layer fix\n03.19.21 - Python3 Updates"
+    "Update Date": "03.01.26",
+    "Description": "Script Name: fix premiere xmls\nScript Version: 3.0.0\nFlame Version: 2025\nWritten by: Ted Stanley, John Geehreng, and Michael Vaglienty\nCreation Date: 03.03.21\nUpdate Date: 03.01.26\n\nCustom Action Type: MediaHub\n\nDescription:\n\nFix and/or Resize Adobe Premiere XML's.\n\nMenus:\n\nMediaHub -> XML Prep -> Fix Premiere XML's\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/fix_premiere_xmls or put it wherever you keep your scripts\n\nUpdates:\n03.01.26 - v3.0.0 - Updated for pyflame lib v5.2.3\n02.13.25 - v2.1.2  Update to latest pyflame lib and SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))\n05.06.24 - v2.1.1  Changed Scoping to show up only if xml's are selected\n04.03.24 - v2.1    Fixed renaming issue\n12.05.23 - v2.0.2  Fixed the missing fixduration() problem. Made _x_res names consistent.\n11.28.23 - v2.0.1  Updated for pyflame lib v2. Added ability to resize xmls. Changed the output names based on options\n11.12.23 - v1.94   Fixed the Scale Factor Calculator to use the correct width or height. Added try/except when using the \"Clean Names\" option.\n09.08.22 - v1.93   2023.2 Ordering and Scale Factor Calculator\n05.24.22 - v1.92   Update from Ted - This one fixes almost everything. Except dissolves, those still suck.\n04.19.22 - v1.91   2023 UI\n02.19.22 - v1.90   Created option for automatically using the xml's resolution\n12.27.21 - Turned off \"v\" to \"V\" when sanatizing names\n11.15.21 - Added the ability to scale values over 100\n09.03.21 - Made sanatizing the names optional\n08.27.21 - Turned off the \"That Totally Worked\" message as you can see the update in the MediaHub\n08.13.21 - Change XML Bit Depth to Project Settings\n06.04.21 - Change Default Scale Value to 100 for graphics. Renamed \"Cancel\" button to say \"Close\"\n05.17.21 - Added the ability to select multiple .xml's and added Ted's nested layer fix\n03.19.21 - Python3 Updates"
   },
   {
     "Script Name": "flatten segments",
@@ -891,23 +891,23 @@
   },
   {
     "Script Name": "scale compensator",
-    "Script Version": "1.1.1",
-    "Flame Version": "2023.2",
-    "Maximum Flame Version": "Latest",
-    "Author": "John Geehreng",
-    "Creation Date": "11.18.23",
-    "Update Date": "10.22.25",
-    "Description": "Script Name: scale compensator\nScript Version: 1.1.1\nFlame Version: 2023.2\nWritten by: John Geehreng\nCreation Date: 11.18.23\nUpdate Date: 10.22.25\n\nScript Type: Action and Timeline\n\nDescription:\n\nCompensate for different resolutions. In Action, you can generate Axes. In Timeline, you can color code a selection.\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.1.1 10.22.25\n- Started using flame.projects.current_project.project_folder to determine where to save/load json's\n\nv1.1 01.10.25\n- Fixed odd issue when adusting the offline vs online sliders.\n\nv1.0 12.27.24\n- Changed script path, started using json file with aspect ratios and resolutions\n\nv0.6 01.02.24\n- Fixed some miscalcuations and errors\n\nv0.5 12.13.23\n- Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n\nv0.4 12.05.23\n- Updated for pyflame lib v2.\n\nv0.3 11.28.23\n- UI Adjustments and Minor Code Cleanup\n\nv0.2 11.22.23\n- Added Offline Res and Online Res Compensation + Combo Button\n\nv0.6 01.02.24\n- Fixed some miscalcuations and errors\n\nv0.5 12.13.23\n- Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n\nv0.4 12.05.23\n- Updated for pyflame lib v2.\n\nv0.3 11.28.23\n- UI Adjustments and Minor Code Cleanup\n\nv0.2 11.22.23\n- Added Offline Res and Online Res Compensation + Combo Button"
-  },
-  {
-    "Script Name": "sequence renamer",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
+    "Creation Date": "11.18.23",
+    "Update Date": "03.01.26",
+    "Description": "Script Name: scale compensator\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 11.18.23\nUpdate Date: 03.01.26\n\nCustom Action Type: Action and Timeline\n\nDescription:\n\nCompensate for different resolutions. In Action, you can generate Axes. In Timeline, you can color code a selection.\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator\n\nUpdates:\n03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3\n10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's\n01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.\n12.27.24 - v1.0 - changed script path, started using json file with aspect ratios and resolutions\n01.02.24 - v0.6 - Fixed some miscalcuations and errors\n12.13.23 - v0.5 - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n12.05.23 - v0.4 - Updated for pyflame lib v2.\n11.28.23 - v0.3 - UI Adjustments and Minor Code Cleanup\n11.22.23 - v0.2 - Added Offline Res and Online Res Compensation + Combo Button"
+  },
+  {
+    "Script Name": "sequence renamer",
+    "Script Version": "2.1.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "John Geehreng",
     "Creation Date": "06.08.22",
-    "Update Date": "10.06.25",
-    "Description": "Script Name: sequence renamer\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 06.08.22\nUpdate Date: 10.06.25\n\nScript Type: MediaHub\n\nDescription:\n\nRenames files based on user input for start frame and padding.\n\nMenu:\n\nRight click a selection of images or files and look for UC Renamers -> Sequence Renamer\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n10.06.25 - v2.0.0  Updated for Flame 2025 and PyFlameLib v4.3.0.\n12.13.23 - v0.2  Updated for pyflame lib v2. Start updates for Flame 2025."
+    "Update Date": "02.28.26",
+    "Description": "Script Name: sequence renamer\nScript Version: 2.1.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 06.08.22\nUpdate Date: 02.28.26\n\nCustom Action Type: MediaHub\n\nUsage: Right click a selection of images or files and look for UC Renamers -> Sequence Renamer\n\nDescription: Renames files based on user input for start frame and padding.\n\nTo install: Copy script into /opt/Autodesk/shared/python/sequence_renamer or wherever you wish.\n\nUpdates:\n02.28.26 - v2.1.0 - Updated for PyFlameLib v5.2.3. Added sequence mode to mediahub after renaming.\n10.06.25 - v2.0.0  Updated for Flame 2025 and PyFlameLib v4.3.0.\n12.13.23 - v0.2  Updated for pyflame lib v2. Start updates for Flame 2025."
   },
   {
     "Script Name": "set 10 frame handles",
@@ -981,13 +981,13 @@
   },
   {
     "Script Name": "social versions",
-    "Script Version": "0.3.1",
+    "Script Version": "0.3.3",
     "Flame Version": "2023",
     "Maximum Flame Version": "Latest",
     "Author": "unknown",
     "Creation Date": "02.05.25",
     "Update Date": "02.05.25",
-    "Description": "Script Name: Social Versions\nScript Version: 0.3.1\nFlame Version: 2023\nAuthor: Kyle Obley (info@kyleobley.com)\nCreation Date: 02.05.25\nModified Date: 02.26.25\n\nDescription:\n\nCreates social timelines based on other, selected timelines.\n\nChange Log:\nv0.3.1  Added 'colour = sequence.colour' so new sequences match the color of the original.\nv0.2.1  Add Flush Renders. Reversed width and height.\nv0.1:   Initial release."
+    "Description": "Script Name: Social Versions\nScript Version: 0.3.3\nFlame Version: 2023\nAuthor: Kyle Obley (info@kyleobley.com)\nCreation Date: 02.05.25\nModified Date: 02.28.25\n\nDescription:\n\nCreates social timelines based on other, selected timelines.\n\nChange Log:\nv0.3.3  added in_point and out_point to new sequence. fixed a color thing.\nv0.3.2  check for original sequence colour before setting new sequence colour.\nv0.3.1  Added 'colour = sequence.colour' so new sequences match the color of the original.\nv0.2.1  Add Flush Renders. Reversed width and height.\nv0.1:   Initial release."
   },
   {
     "Script Name": "srt to xml",
