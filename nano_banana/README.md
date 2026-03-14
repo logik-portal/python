@@ -18,6 +18,9 @@ Nano Banana integration for Flame.
 <br><br>
 Nano Banana/Gemini API key is required to use this script.
 <br><br>
+
+## Workflow
+
 Run the script with a clip selected in the media panel to export the first frame of the clip
 to the script's images folder and add it to the prompt.
 <br><br>
