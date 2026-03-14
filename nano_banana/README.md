@@ -1,8 +1,8 @@
 # Nano Banana
 
-**Script Version:** v1.0.0
-**Flame Version:** 2026.2
-**Written by:** Michael Vaglienty
+**Script Version:** v1.0.0<br>
+**Flame Version:** 2026.2<br>
+**Written by:** Michael Vaglienty<br>
 
 **Script Type:** Media Panel
 
