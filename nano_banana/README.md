@@ -3,8 +3,6 @@
 **Script Version:** v1.0.0
 **Flame Version:** 2026.2
 **Written by:** Michael Vaglienty
-**Creation Date:** 03.13.26
-**Update Date:** 03.13.26
 
 **Script Type:** Media Panel
 
