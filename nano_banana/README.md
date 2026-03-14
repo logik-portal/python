@@ -1,15 +1,25 @@
 # Nano Banana
 
-**Script Version:** v1.0.0  
-**Flame Version:** 2026.2  
-**Written by:** Michael Vaglienty  
-**Creation Date:** 03.13.26  
-**Update Date:** 03.13.26  
+**Script Version:** v1.0.0
+**Flame Version:** 2026.2
+**Written by:** Michael Vaglienty
+**Creation Date:** 03.13.26
+**Update Date:** 03.13.26
 
 **Script Type:** Media Panel
 
+![alt text](banana_ui.png)
+
+## License
+
+GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+
 ## Description
 
+Nano Banana integration for Flame.
+<br><br>
+Nano Banana/Gemini API key is required to use this script.
+<br><br>
 Run the script with a clip selected in the media panel to export the first frame of the clip
 to the script's images folder and add it to the prompt.
 <br><br>
