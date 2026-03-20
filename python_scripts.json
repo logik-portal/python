@@ -1088,25 +1088,5 @@
     "Creation Date": "03.29.22",
     "Update Date": "07.10.25",
     "Description": "Script Name: User Batch Setups\nScript Version: 1.8.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 03.29.22\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nCreate menus for batch setups saved to a specified folder.\n\nMenu's for setups will only be visible in versions of Flame that setups are compatible with.\n\nAfter saving or deleting batch setups to the chosen folder, use the Refresh Menus menu option to regenerate setup menus.\n\nSetup menus are automatically regenerated each time Flame starts up.\n\nURL:\nhttps://github.com/logik-portal/python/user_batch_setups\n\nMenus:\n\nSetup:\nFlame Main Menu -> pyFlame -> User Batch Setups - Setup\n\nTo refresh/update menus:\nFlame Main Menu -> pyFlame -> User Batch Setups - Refresh Menus\n\nTo access batch setup menus:\nRight-click in batch -> User Batch Setups -> Setup Name\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.8.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n\nv1.7.0 04.11.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.6.0 01.03.25\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv1.5.0 10.01.24\n- Updated to PyFlameLib v3.2.0.\n\nv1.4.0 01.24.24\n- Updates to UI/PySide.\n\nv1.3.0 08.13.23\n- Update to PyFlameLib v2.0.0.\n\nv1.2.1 06.27.23\n- Updated script versioning to semantic versioning.\n- Save button in setup window now blue.\n- Pressing return closes setup window.\n\nv1.2 02.04.23\n- Updated config file loading/saving.\n- Added check to make sure script is installed in the correct location.\n\nv1.1 05.31.22\n- Messages print to Flame message window - Flame 2023.1 and later.\n- Flame file browser used to select folders - Flame 2023.1 and later.`"
-  },
-  {
-    "Script Name": "versions from csv",
-    "Script Version": "v1.0.0",
-    "Flame Version": "2025",
-    "Maximum Flame Version": "Latest",
-    "Author": "Quinn Richardson + Claude",
-    "Creation Date": "09.22.25",
-    "Update Date": "09.22.25",
-    "Description": "Script Name: Versions from CSV\nScript Version: v1.0.0\nFlame Version: 2025\nWritten by: Quinn Richardson + Claude\nCreation Date: 09.22.25\n\nDescription:\n\nPrompts for a CSV file containing names, then duplicates\nthe selected Sequences in the Media Panel and renames\nthe duplicates according to the CSV entries using flame.media_panel.copy().\n\nUsage:\n\nFirst- for each sequence you need to create, make or save a CSV file\nwith one entry per line for each sequence you need to create.\n\n-In Flame-\nRight-click selected sequence on the desktop or desktop reel -->\n\"Choose Duplicate from CSV\" --> Run\nSelect the Browse button to locate your CSV file.\nOnce you click CONFIRM, the script will run, creating your sequences.\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user on Linux, copy this file to:\n~/flame/python\n\nFor a specific user on Mac, copy this file to:\n/User/user_name/Library/Preferences/Autodesk/flame/python"
-  },
-  {
-    "Script Name": "versions from csv advanced-ui",
-    "Script Version": "v1.1.0",
-    "Flame Version": "2025",
-    "Maximum Flame Version": "Latest",
-    "Author": "Quinn Richardson + Claude",
-    "Creation Date": "09.22.25",
-    "Update Date": "09.22.25",
-    "Description": "Script Name: Versions from CSV Advanced UI\nScript Version: v1.1.0\nFlame Version: 2025\nWritten by: Quinn Richardson + Claude\nCreation Date: 09.22.25\n\nDescription:\n\nEnhanced UI version for duplicating sequences from CSV file using\nFlame-style UI components. Creates multiple duplicates of selected\nsequences with names from CSV file. Automatically colors clips\ncontaining \"_post_\" in their name.\n\nUsage:\n\nFirst- for each sequence you need to create, make or save a CSV file\nwith one entry per line each sequence you need to create.\n\n-In Flame-\nRight-click selected sequence on the desktop or desktop reel -->\n\"Choose Duplicate from CSV\" --> Advanced UI\nSelect the Browse button to locate your CSV file.\nThe window above the browse button shows you the sequence to be duplicated\nThe window below the browse button shows you the named sequences to be created\nfrom the source sequence.\nIf everything appears correct, Click Create Duplicates.\n\nThe window will remain in case you need to make duplicates of other sequences.\n\nClips with \"_post_\" in their name will be automatically colored.\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user on Linux, copy this file to:\n~/flame/python\n\nFor a specific user on Mac, copy this file to:\n/User/user_name/Library/Preferences/Autodesk/flame/python"
   }
 ]
