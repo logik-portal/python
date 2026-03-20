@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Script Name: CSV Sequence Duplicator (Flame UI Style) with Color Support
+Script Name: Versions from CSV Advanced UI
 Script Version: v1.1.0
 Flame Version: 2025
 Written by: Quinn Richardson + Claude
