@@ -19,11 +19,11 @@
 
 """
 Script Name:    Nano Banana
-Script Version: v1.0.0
-Flame Version:  2026.2
+Script Version: v1.0.1
+Flame Version:  2025.2
 Written by:     Michael Vaglienty
 Creation Date:  03.13.26
-Update Date:    03.13.26
+Update Date:    03.20.26
 
 License:        GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -95,6 +95,9 @@ To install:
 
 Updates:
 
+    v1.0.1 03.20.26
+        - Updated script to work with Flame 2025.2.
+
     v1.0.0 03.13.26
         - Initial release.
 """
@@ -119,7 +122,7 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.0.1'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -1017,8 +1020,6 @@ class NanoBananaSetup:
         self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 3, 4)
         self.setup_window.grid_layout.addWidget(self.setup_save, 3, 5)
 
-        #self.entry_1.set_focus()
-
 # ==============================================================================
 # [Flame Menus]
 # ==============================================================================
@@ -1039,7 +1040,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Nano Banana Setup',
                     'execute': NanoBananaSetup,
-                    'minimumVersion': '2026.2'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
@@ -1054,7 +1055,7 @@ def get_media_panel_custom_ui_actions():
                 {
                     'name': 'Nano Banana',
                     'execute': NanoBanana,
-                    'minimumVersion': '2026.2'
+                    'minimumVersion': '2025.2'
                 }
             ]
         }
