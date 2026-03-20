@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Script Name: Duplicate Sequences from CSV
+Script Name: Versions from CSV
 Script Version: v1.0.0
 Flame Version: 2025
 Written by: Quinn Richardson + Claude
