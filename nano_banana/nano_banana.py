@@ -18,12 +18,12 @@
 #                https://www.gnu.org/licenses/gpl-3.0.en.html
 
 """
-Script Name:    Nano Banana
-Script Version: v1.0.1
-Flame Version:  2025.2
-Written by:     Michael Vaglienty
-Creation Date:  03.13.26
-Update Date:    03.20.26
+Script Name: Nano Banana
+Script Version:v1.0.1
+Flame Version: 2025.2
+Written by: Michael Vaglienty
+Creation Date: 03.13.26
+Update Date: 03.20.26
 
 License:        GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
