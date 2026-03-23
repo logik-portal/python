@@ -19,11 +19,11 @@
 
 """
 Script Name: Nano Banana
-Script Version:v1.0.1
+Script Version: v1.1.0
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 03.20.26
+Update Date: 03.23.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -37,17 +37,24 @@ Description:
 
     Currently supported models:
 
-        Gemini 2.5 Flash Image
+        Gemini 2.5 Flash Image (Nano Banana)
             - Only supports 1K resolution and aspect ratio 1:1.
 
-        Gemini 3.1 Flash Image Preview
+        Gemini 3.1 Flash Image Preview (Nano Banana 2)
             - Supports 1K, 2K, and 4K resolutions.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
 
-        Gemini 3 Pro Image Preview
+        Gemini 3 Pro Image Preview (Nano Banana Pro)
             - Supports 1K, 2K, and 4K resolutions.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
             - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
+
+    Gemini Chat:
+
+        Send a message to chat with Gemini about creating an image. Great for improving prompts or describing images.
+        Enter a message in the prompt field and click the Gemini Chat button. The response will be displayed in the prompt
+        text window. Copy and paste any respone into the prompt text field and use the Send Prompt button to send the prompt
+        to Nano Banana.
 
     ** WARNING **
     Using this script will incur charges to your Nano Banana/Gemini account.
@@ -95,6 +102,10 @@ To install:
 
 Updates:
 
+    v1.1.0 03.23.26
+        - Added Gemini Chat button to send a message to chat with Gemini about creating an image.
+        - Updated model menus to clarify model names.
+
     v1.0.1 03.20.26
         - Updated script to work with Flame 2025.2.
 
@@ -115,6 +126,7 @@ import urllib.request
 from typing import Any
 
 import flame
+from PySide6 import QtCore, QtGui
 from lib.pyflame_lib_nano_banana import *
 
 # ==============================================================================
@@ -122,12 +134,23 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.0.1'
+SCRIPT_VERSION = 'v1.1.0'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
 # [Main Script]
 # ==============================================================================
+
+def print_pass_fail(message: str, passed: bool, new_line: bool = True) -> None:
+    """
+    Print status as: [PASS] message or [FAIL] message
+    Only PASS/FAIL is colored.
+    """
+    status_word = "PASS" if passed else "FAIL"
+    color = TextColor.GREEN if passed else TextColor.RED
+    # Color only PASS/FAIL; brackets and message remain default color.
+    status_colored = f"[{color.value}{status_word}{TextColor.RESET.value}] {message}"
+    pyflame.print(status_colored, new_line=new_line)
 
 def load_config() -> PyFlameConfig:
     """
@@ -139,11 +162,11 @@ def load_config() -> PyFlameConfig:
 
     return PyFlameConfig(
         config_values={
-            'api_key': str(''),
-            'images_path': str(os.path.join(SCRIPT_PATH, 'images')),
-            'model': str('gemini-2.5-flash-image'),
-            'resolution': str('1K'),
-            'aspect_ratio': str('1:1'),
+            'api_key': '',
+            'images_path': os.path.join(SCRIPT_PATH, 'images'),
+            'model': 'gemini-2.5-flash-image (Nano Banana)',
+            'resolution': '1K',
+            'aspect_ratio': '1:1',
             },
         )
 
@@ -158,6 +181,7 @@ def verify_api_key(api_key: str) -> bool:
     api_key = api_key.strip() if api_key else ''
 
     if not api_key or api_key == 'YOUR_API_KEY_HERE':
+        print_pass_fail('No API key has been set', False)
         PyFlameMessageWindow(
             message='No API key has been set.\n\nPlease add your Google Nano Banana API key and try again.\n\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> Nano Banana Setup',
             parent=None,
@@ -167,16 +191,18 @@ def verify_api_key(api_key: str) -> bool:
     try:
         url = f'https://generativelanguage.googleapis.com/v1/models?key={api_key}'
         urllib.request.urlopen(url, timeout=10)
-        pyflame.print('API key verified')
+        print_pass_fail('API Key Verified', True)
         return True
     except urllib.error.HTTPError as e:
         if e.code in (400, 403):
+            print_pass_fail('Invalid API Key', False)
             PyFlameMessageWindow(
                 message='Invalid API key.\n\nPlease check your Google Nano Banana API key and try again.',
                 message_type=MessageType.ERROR,
                 parent=None,
                 )
         else:
+            print_pass_fail('API Key Verification Failed', False)
             PyFlameMessageWindow(
                 message=f'API key verification failed (HTTP {e.code}).\n\nPlease try again.',
                 message_type=MessageType.ERROR,
@@ -184,8 +210,30 @@ def verify_api_key(api_key: str) -> bool:
                 )
         return False
     except (urllib.error.URLError, OSError):
+        print_pass_fail('Unable to Verify API Key', False)
         PyFlameMessageWindow(
             message='Unable to verify API key.\n\nPlease check your internet connection and try again.',
+            message_type=MessageType.ERROR,
+            parent=None,
+            )
+        return False
+
+def verify_internet_connection() -> bool:
+    """
+    Check Internet Connection
+    =========================
+
+    Check for internet connection.
+    """
+
+    try:
+        urllib.request.urlopen('https://www.google.com', timeout=5)
+        print_pass_fail('Internet Connection Verified', True, new_line=False)
+        return True
+    except (urllib.error.URLError, OSError):
+        print_pass_fail('Internet Connection Verification Failed', False)
+        PyFlameMessageWindow(
+            message='No internet connection.\n\nPlease check your internet connection and try again.',
             message_type=MessageType.ERROR,
             parent=None,
             )
@@ -227,32 +275,12 @@ class NanoBanana:
         Check for internet connection, CURL installed, and API key.
         """
 
-        def check_internet_connection() -> bool:
-            """
-            Check Internet Connection
-            =========================
-
-            Check for internet connection.
-            """
-
-            try:
-                urllib.request.urlopen('https://www.google.com', timeout=5)
-                pyflame.print('Connected to the internet')
-                return True
-            except (urllib.error.URLError, OSError):
-                PyFlameMessageWindow(
-                    message='No internet connection.\n\nPlease check your internet connection and try again.',
-                    message_type=MessageType.ERROR,
-                    parent=None,
-                    )
-                return False
-
         # Check script path, if path is incorrect, stop script.
         if not pyflame.verify_script_install():
             return False
 
         # Check for internet connection
-        if not check_internet_connection():
+        if not verify_internet_connection():
             return False
 
         # Verify API Key
@@ -318,8 +346,6 @@ class NanoBanana:
             Save settings to file.
             """
 
-            pyflame.print('Saving settings...')
-
             self.settings.save_config(
                 config_values={
                     'model': self.select_model_menu.text,
@@ -327,8 +353,6 @@ class NanoBanana:
                     'aspect_ratio': self.aspect_ratio_menu.text,
                     }
                 )
-
-            pyflame.print('Settings saved.')
 
         def send_prompt() -> None:
             """
@@ -354,6 +378,8 @@ class NanoBanana:
                 return
 
             selected_model = self.select_model_menu.text
+            selected_model = selected_model.rsplit(' (', 1)[0].strip()
+            print('Selected Model:', selected_model)
 
             url = (
                 'https://generativelanguage.googleapis.com/v1beta/'
@@ -478,11 +504,184 @@ class NanoBanana:
 
             self.image_gallery.refresh()
 
-            existing = self.prompt_history_text_edit.text_str
-            separator = '\n\n' if existing else ''
-            self.prompt_history_text_edit.text_str = existing + separator + prompt_text
+            history_cursor = self.prompt_history_text_edit.textCursor()
+            history_cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
+
+            # Add separator if there is existing content.
+            if self.prompt_history_text_edit.document().characterCount() > 1:
+                history_cursor.insertBlock()
+                history_cursor.insertText('\n')
+
+            # Append prompt text as right-aligned user input.
+            history_cursor.insertBlock()
+            history_fmt = QtGui.QTextBlockFormat()
+            history_fmt.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+            history_cursor.mergeBlockFormat(history_fmt)
+            history_cursor.insertText(prompt_text)
+            self.prompt_history_text_edit.setTextCursor(history_cursor)
             self.prompt_text_edit.text_str = ''
             self.prompt_image_widget.image = save_path
+
+        def send_message() -> None:
+            """
+            Send Message
+            ============
+
+            Send a text prompt to Gemini and display the text response in the
+            prompt text edit. If prompt_image_widget has an image, it is sent
+            along with the message (e.g. for "describe this image" or "improve
+            this prompt based on the image").
+            """
+
+            def append_gemini_response_to_prompt(text_edit: PyFlameTextEdit, user_text: str, gemini_text: str) -> None:
+                """
+                Append a user message and Gemini response to the history text edit.
+                The user message is right-aligned and the Gemini response is left-aligned.
+                """
+                cursor = text_edit.textCursor()
+                cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
+
+                # Add separator if there is existing content.
+                if text_edit.document().characterCount() > 1:
+                    cursor.insertBlock()
+                    cursor.insertText('\n')
+
+                # Append user message (right-aligned).
+                cursor.insertBlock()
+                fmt = QtGui.QTextBlockFormat()
+                fmt.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+                cursor.mergeBlockFormat(fmt)
+                cursor.insertText(user_text)
+
+                # Add a blank line after the user prompt.
+                cursor.insertBlock()
+
+                # Append Gemini response (left-aligned).
+                cursor.insertBlock()
+                fmt = QtGui.QTextBlockFormat()
+                fmt.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+                cursor.mergeBlockFormat(fmt)
+                cursor.insertText(gemini_text)
+
+                text_edit.setTextCursor(cursor)
+
+            model = 'gemini-2.5-flash'
+
+            # ---- Validate prompt text ----
+            prompt_text = self.prompt_text_edit.text_str.strip()
+            if not prompt_text:
+                PyFlameMessageWindow(
+                    message='Please enter a message before sending.',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                )
+                return
+
+            # ---- Show wait state ----
+            pyflame.print('Sending message... Please wait...')
+            self.banana_message_entry.text = 'Sending message... Please wait...'
+            pyflame.pause()
+
+            # ---- Build API URL for the requested text model ----
+            url = (
+                'https://generativelanguage.googleapis.com/v1beta/'
+                f'models/{model}:generateContent?key={self.settings.api_key}'
+            )
+
+            # ---- Inject scope guard so responses stay prompt-focused ----
+            prompt_scope_instruction = (
+                'You are a prompt-writing assistant for image generation. '
+                'Stay strictly focused on helping the user write, improve, or analyze '
+                'image prompts and image descriptions. '
+                'If asked about unrelated topics, briefly refuse and redirect to prompt help. '
+                'Keep responses concise, actionable, and on-subject.'
+            )
+
+            # ---- Build request parts: fixed instruction, user text, then optional image ----
+            parts: list[dict[str, Any]] = [
+                {'text': prompt_scope_instruction},
+                {'text': f'User request:\n{prompt_text}'},
+            ]
+
+            # Include the prompt image if present (for image-aware responses)
+            if self.prompt_image_widget.has_image and self.prompt_image_widget.image_path:
+                image_path = self.prompt_image_widget.image_path
+                ext = os.path.splitext(image_path)[1].lower()
+                mime_map = {
+                    '.png': 'image/png',
+                    '.jpg': 'image/jpeg',
+                    '.jpeg': 'image/jpeg',
+                    '.gif': 'image/gif',
+                    '.webp': 'image/webp',
+                }
+                mime = mime_map.get(ext, 'image/png')
+                with open(image_path, 'rb') as img_file:
+                    img_b64 = base64.b64encode(img_file.read()).decode()
+                parts.append({
+                    'inlineData': {
+                        'mimeType': mime,
+                        'data': img_b64,
+                    }
+                })
+
+            # ---- Build payload: text-only generation config (no image output) ----
+            # Gemini API expects "role" and "parts" in each content object.
+            payload = json.dumps({
+                'contents': [{'role': 'user', 'parts': parts}],
+                'generationConfig': {
+                    'temperature': 0.7,
+                },
+            }).encode()
+
+            # ---- Send request ----
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={'Content-Type': 'application/json'},
+                method='POST',
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    result = json.loads(response.read().decode())
+            except urllib.error.HTTPError as e:
+                # Read error body for more specific feedback (400 often has useful details)
+                try:
+                    err_body = e.read().decode()
+                    err_json = json.loads(err_body)
+                    err_detail = err_json.get('error', {}).get('message', err_body)
+                except Exception:
+                    err_detail = str(e)
+                PyFlameMessageWindow(
+                    message=f'Nano Banana API request failed (HTTP {e.code}).\n\n{err_detail}',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                )
+                return
+            except (urllib.error.URLError, OSError):
+                PyFlameMessageWindow(
+                    message='Unable to reach the Nano Banana API.\n\nPlease check your internet connection and try again.',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                )
+                return
+
+            # ---- Extract text from response (expect text, not image) ----
+            response_parts = result.get('candidates', [{}])[0].get('content', {}).get('parts', [])
+            response_text = "Gemini: " + ' '.join(p.get('text', '') for p in response_parts if p.get('text')).strip()
+
+            if not response_text:
+                PyFlameMessageWindow(
+                    message='No text response from the Nano Banana API.\n\nTry a different message.',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                )
+                return
+
+            # ---- Append user message (right-aligned) and Gemini response (left-aligned) to history ----
+            append_gemini_response_to_prompt(self.prompt_history_text_edit, prompt_text, response_text)
+            self.prompt_text_edit.text_str = ''
+            self.banana_message_entry.text = 'Message received.'
+            pyflame.print('Message received.')
 
         def clear_prompt_image() -> None:
             """
@@ -643,7 +842,7 @@ class NanoBanana:
             # Close window
             close_window()
 
-            print('Done.')
+            print('Done.\n\n')
 
         def close_window() -> None:
 
@@ -657,7 +856,7 @@ class NanoBanana:
             return_pressed=send_prompt,
             escape_pressed=close_window,
             grid_layout_columns=12,
-            grid_layout_rows=19,
+            grid_layout_rows=22,
             grid_layout_adjust_column_widths={
                 3:50,
                 8:50,
@@ -760,9 +959,9 @@ class NanoBanana:
         self.select_model_menu = PyFlameMenu(
             text=self.settings.model,
             menu_options=[
-                'gemini-2.5-flash-image',
-                'gemini-3.1-flash-image-preview',
-                'gemini-3-pro-image-preview',
+                'gemini-2.5-flash-image (Nano Banana)',
+                'gemini-3.1-flash-image-preview (Nano Banana 2)',
+                'gemini-3-pro-image-preview (Nano Banana Pro)',
                 ],
             connect=update_resolution_menu_for_model,
             )
@@ -782,6 +981,12 @@ class NanoBanana:
             text='Send Prompt',
             connect=send_prompt,
             color=Color.BLUE,
+            tooltip='Send prompt to create an image with Nano Banana',
+            )
+        self.send_message_button = PyFlameButton(
+            text='Gemini Chat',
+            connect=send_message,
+            tooltip='Send message to chat with Gemini about creating an image',
             )
         self.clear_prompt_image_button = PyFlameButton(
             text='Clear Prompt Image',
@@ -813,37 +1018,37 @@ class NanoBanana:
         # ------------------------------------------------------------------------------
 
         self.main_window.grid_layout.addWidget(self.image_gallery_label, 0, 0, 1, 3)
-        self.main_window.grid_layout.addWidget(self.image_gallery, 1, 0, 14, 3)
+        self.main_window.grid_layout.addWidget(self.image_gallery, 1, 0, 17, 3)
 
-        self.main_window.grid_layout.addWidget(self.reveal_in_finder_button, 15, 0)
-        self.main_window.grid_layout.addWidget(self.reveal_in_mediahub_button, 16, 0)
-        self.main_window.grid_layout.addWidget(self.import_to_flame_button, 15, 1)
-        self.main_window.grid_layout.addWidget(self.delete_button, 16, 1)
-        self.main_window.grid_layout.addWidget(self.send_to_prompt_button, 15, 2)
-        self.main_window.grid_layout.addWidget(self.clear_prompt_image_button, 16, 2)
+        self.main_window.grid_layout.addWidget(self.reveal_in_finder_button, 18, 0)
+        self.main_window.grid_layout.addWidget(self.reveal_in_mediahub_button, 19, 0)
+        self.main_window.grid_layout.addWidget(self.import_to_flame_button, 18, 1)
+        self.main_window.grid_layout.addWidget(self.delete_button, 19, 1)
+        self.main_window.grid_layout.addWidget(self.send_to_prompt_button, 18, 2)
+        self.main_window.grid_layout.addWidget(self.clear_prompt_image_button, 19, 2)
 
         self.main_window.grid_layout.addWidget(self.prompt_label, 0, 4, 1, 4)
-        self.main_window.grid_layout.addWidget(self.prompt_history_text_edit, 1, 4, 4, 4)
-        self.main_window.grid_layout.addWidget(self.prompt_text_edit, 5, 4, 2, 4)
+        self.main_window.grid_layout.addWidget(self.prompt_history_text_edit, 1, 4, 5, 4)
+        self.main_window.grid_layout.addWidget(self.prompt_text_edit, 6, 4, 3, 4)
+        self.main_window.grid_layout.addWidget(self.send_message_button, 9, 7)
 
-        self.main_window.grid_layout.addWidget(self.prompt_image_widget_label, 7, 4, 1, 4)
-        self.main_window.grid_layout.addWidget(self.prompt_image_widget, 8, 4, 7, 4)
+        self.main_window.grid_layout.addWidget(self.prompt_image_widget_label, 10, 4, 1, 4)
+        self.main_window.grid_layout.addWidget(self.prompt_image_widget, 11, 4, 7, 4)
 
-        self.main_window.grid_layout.addWidget(self.select_model_label, 15, 4)
-        self.main_window.grid_layout.addWidget(self.select_model_menu, 15, 5, 1, 3)
+        self.main_window.grid_layout.addWidget(self.select_model_label, 18, 4)
+        self.main_window.grid_layout.addWidget(self.select_model_menu, 18, 5, 1, 3)
 
-        self.main_window.grid_layout.addWidget(self.resolution_label, 16, 4)
-        self.main_window.grid_layout.addWidget(self.image_resolution_menu, 16, 5)
-
-        self.main_window.grid_layout.addWidget(self.aspect_ratio_label, 16, 6)
-        self.main_window.grid_layout.addWidget(self.aspect_ratio_menu, 16, 7)
+        self.main_window.grid_layout.addWidget(self.resolution_label, 19, 4)
+        self.main_window.grid_layout.addWidget(self.image_resolution_menu, 19, 5)
+        self.main_window.grid_layout.addWidget(self.aspect_ratio_label, 19, 6)
+        self.main_window.grid_layout.addWidget(self.aspect_ratio_menu, 19, 7)
 
         self.main_window.grid_layout.addWidget(self.banana_image_label, 0, 9, 1, 3)
-        self.main_window.grid_layout.addWidget(self.banana_image_widget, 1, 9, 14, 3)
-        self.main_window.grid_layout.addWidget(self.banana_message_entry, 15, 9, 1, 3)
+        self.main_window.grid_layout.addWidget(self.banana_image_widget, 1, 9, 17, 3)
+        self.main_window.grid_layout.addWidget(self.banana_message_entry, 18, 9, 1, 3)
 
-        self.main_window.grid_layout.addWidget(self.send_prompt_button, 18, 7)
-        self.main_window.grid_layout.addWidget(self.done_button, 18, 11)
+        self.main_window.grid_layout.addWidget(self.send_prompt_button, 21, 7)
+        self.main_window.grid_layout.addWidget(self.done_button, 21, 11)
 
         # ------------------------------------------------------------------------------
 
@@ -873,6 +1078,10 @@ class NanoBananaSetup:
 
         # Create/Load config file settings.
         self.settings = load_config()
+
+        # Verify Internet Connection
+        if not verify_internet_connection():
+            return
 
         # Open setup window
         self.nano_banana_setup()
@@ -910,8 +1119,6 @@ class NanoBananaSetup:
 
             Validate and save settings to config file.
             """
-
-            print('Saving settings...')
 
             # Validate settings
             if not self.api_key_entry.text:
@@ -1019,6 +1226,8 @@ class NanoBananaSetup:
         self.setup_window.grid_layout.addWidget(self.images_path_token_menu, 1, 5)
         self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 3, 4)
         self.setup_window.grid_layout.addWidget(self.setup_save, 3, 5)
+
+        self.api_key_entry.set_focus()
 
 # ==============================================================================
 # [Flame Menus]

@@ -1,25 +1,14 @@
 # Nano Banana
 
-**Script Version:** v1.0.1<br>
-**Flame Version:** 2025.2<br>
-**Written by:** Michael Vaglienty<br>
+**Script Version:** v1.1.0  
+**Flame Version:** 2025.2  
+**Written by:** Michael Vaglienty  
+**Creation Date:** 03.13.26  
+**Update Date:** 03.23.26  
 
 **Script Type:** Media Panel
 
-![alt text](banana_ui.png)
-
-## License
-
-GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
-
 ## Description
-
-Nano Banana integration for Flame.
-<br><br>
-Nano Banana/Gemini API key is required to use this script.
-<br><br>
-
-## Workflow
 
 Run the script with a clip selected in the media panel to export the first frame of the clip
 to the script's images folder and add it to the prompt.
@@ -54,6 +43,15 @@ Clear Prompt Image: Clears the current prompt image from the prompt.
 Copy script into /opt/Autodesk/shared/python/nano_banana
 
 ## Updates
+
+### v1.1.0 [03.23.26]
+- Added Gemini Chat button to send a message to chat with Gemini about creating an image.
+- Updated model menus to clarify model names.
+<br>
+
+### v1.0.1 [03.20.26]
+- Updated script to work with Flame 2025.2.
+<br>
 
 ### v1.0.0 [03.13.26]
 - Initial release.

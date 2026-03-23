@@ -88,7 +88,7 @@ from functools import partial
 from subprocess import PIPE, Popen
 from typing import Any, Callable, Dict, List, Tuple, Optional, Union
 
-import flame
+import flame # type: ignore[import]
 
 # ==============================================================================
 # [PySide6 Imports]
@@ -714,50 +714,32 @@ class _PyFlame:
 
         Example
         -------
-                              ---=====[ Cool Script ]=====---
-                                ~~~~~~===[ v1.0.0 ]===~~~~~~
-        --------------------------------------------------------------------------------
+
+        --------------------------====[ Cool Script v1.0.0 ]====-----------------------
         """
 
         # Validate Argument
         if not isinstance(text, str):
             pyflame.raise_type_error('pyflame.print_title', 'text', 'str', value)
 
-        # Split input into script name and version
-        parts = text.strip().rsplit(' ', 1)
+        text = f'====[ {text} ]===='
+        line = text.center(80, "-")
 
-        if len(parts) != 2 or not parts[1].lower().startswith("v"):
-            raise ValueError("ValueError: pyflame.print_title: Text must end with a version (e.g., 'Script Name v1.2.3')")
+        colored = ""
+        in_text = False
+        for char in line:
+            if char == "[":
+                in_text = True
+                colored += TextColor.WHITE.value + char
+            elif char == "]":
+                in_text = False
+                colored += TextColor.WHITE.value + char
+            elif in_text:
+                colored += TextColor.WHITE.value + char
+            else:
+                colored += TextColor.BLUE.value + char
 
-        name, version = parts
-
-        # Helper function to strip ANSI color codes for width calculation
-        def strip_ansi(text):
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-            return ansi_escape.sub('', text)
-
-        # First line with frame
-        top_line = f'{TextColor.BLUE.value}---====={TextColor.WHITE.value}[ {name} ]{TextColor.BLUE.value}=====---'
-
-        # Second line to be centered under top_line
-        version_line = f'{TextColor.BLUE.value}~~~~~~==={TextColor.WHITE.value}[ {version} ]{TextColor.BLUE.value}===~~~~~~'
-
-        # Calculate padding to center both lines in 80 columns (accounting for ANSI codes)
-        top_line_width = len(strip_ansi(top_line))
-        version_line_width = len(strip_ansi(version_line))
-
-        top_padding = (80 - top_line_width) // 2
-        version_padding = (80 - version_line_width) // 2
-
-        centered_top_line = " " * top_padding + top_line
-        centered_version_line = " " * version_padding + version_line
-
-        # Output
-        print('\n')
-        print(centered_top_line)
-        print(centered_version_line)
-        print('-' * 80)
-        print(f'{TextColor.RESET.value}\n', end='')
+        print('\n' + colored + TextColor.RESET.value + '\n')
 
     @staticmethod
     def create_temp_folder(folder_name: str='temp') -> str:
@@ -899,8 +881,8 @@ class _PyFlame:
         if not isinstance(additional_files, list):
             pyflame.raise_type_error('verify_script_install.additional_files', 'list', f'{type(additional_files).__name__}', additional_files)
 
-        pyflame.print('Verifying Script Install', new_line=False)
-        print('--------------------------------------------------------------------------------\n')
+        label = '--[ VALIDATING: Script Install ]'
+        print(f'{label}{"-" * (80 - len(label))}')
 
         # Get script path info
         script_path = os.path.abspath(os.path.dirname(__file__))
@@ -909,10 +891,11 @@ class _PyFlame:
         script_folder_name = script_path.rsplit('/', 1)[1]
         script_file_name = os.path.basename(__file__)[12:-3]
 
-        print('Script Path:', script_path)
-        print('Root Path:', root_path)
-        print('Script Folder Name:', script_folder_name)
-        print('Script File Name:', script_file_name + '.py\n')
+        print('Script Path        :', script_path)
+        print('Root Path          :', root_path)
+        print('Script Folder Name :', script_folder_name)
+        print('Script File Name   :', script_file_name + '.py')
+        print('--------------------------------------------------------------------------------')
 
         # Check if script folder name matches script file name
         if not script_folder_name == script_file_name:
@@ -927,6 +910,7 @@ class _PyFlame:
                 message_type=MessageType.ERROR,
                 parent=None,
                 )
+            print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
             return False
 
         # Check script folder for write permissions
@@ -939,6 +923,7 @@ class _PyFlame:
                 message_type=MessageType.ERROR,
                 parent=None,
                 )
+            print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
             return False
 
         # Check for additional files needed for script to work
@@ -955,14 +940,12 @@ class _PyFlame:
                         message_type=MessageType.ERROR,
                         parent=None,
                         )
+                    print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
                     return False
                 else:
                     pyflame.print(f'{file} -> Found', text_color=TextColor.GREEN, new_line=False)
-            print('\n', end='')
 
-        print('--------------------------------------------------------------------------------\n')
-
-        pyflame.print('Script Install Verified', text_color=TextColor.GREEN)
+        print(f'[{TextColor.GREEN.value}VERIFIED{TextColor.RESET.value}] Script Install Verified\n')
         return True
 
     @staticmethod
@@ -4188,45 +4171,17 @@ class PyFlameConfig:
             Static helper to load and return config values from a path.
     """
 
-    def __init__(
-        self,
-        config_values: Dict[str, Any],
-        config_path: str = os.path.join(SCRIPT_PATH, 'config/config.json'),
-        script_name: str = SCRIPT_NAME,
-    ) -> None:
-        """
-        Initialize config state and load persisted values.
-        """
+    def __init__(self, config_values: Dict[str, Any], config_path: str = os.path.join(SCRIPT_PATH, 'config/config.json'), script_name: str = SCRIPT_NAME) -> None:
 
         # Validate Argument types
         if not isinstance(config_values, dict):
-            pyflame.raise_type_error(
-                'PyFlameConfig',
-                'config_values',
-                'dict[str, Any]',
-                config_values,
-            )
+            pyflame.raise_type_error('PyFlameConfig', 'config_values', 'dict[str, Any]', config_values)
         if not config_values:
-            pyflame.raise_value_error(
-                'PyFlameConfig',
-                'config_values',
-                'non-empty dictionary',
-                config_values,
-            )
+            pyflame.raise_value_error('PyFlameConfig', 'config_values', 'non-empty dictionary', config_values)
         if not isinstance(config_path, str):
-            pyflame.raise_type_error(
-                'PyFlameConfig',
-                'config_path',
-                'str',
-                config_path,
-            )
+            pyflame.raise_type_error('PyFlameConfig', 'config_path', 'str', config_path)
         if not isinstance(script_name, str):
-            pyflame.raise_type_error(
-                'PyFlameConfig',
-                'script_name',
-                'str',
-                script_name,
-            )
+            pyflame.raise_type_error('PyFlameConfig', 'script_name', 'str', script_name)
 
         # Core attributes are assigned with object.__setattr__ to avoid
         # __setattr__ mirroring before config_values exists.
@@ -4276,6 +4231,19 @@ class PyFlameConfig:
     # Load / Save
     # -------------------------------------------------------------------------
 
+    def print_config(self, action: str) -> None:
+
+        pad = max(len(k) for k in self.config_values) + 1
+
+        label = f'--[ {SCRIPT_NAME}: {action} Config ]'
+        top_rule = label + '-' * max(2, 80 - len(label))
+        bottom_rule = '-' * 80
+
+        print(f'{top_rule}')
+        for key, val in self.config_values.items():
+            print(f'{key:<{pad}}: {val}')
+        print(bottom_rule)
+
     def load_config(self) -> None:
         """
         Load Config
@@ -4292,8 +4260,6 @@ class PyFlameConfig:
             - Save current defaults as new config file
         """
 
-        pyflame.print('Loading Script Configuration', underline=True)
-
         # Load the configuration from the JSON file
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r') as f:
@@ -4301,12 +4267,7 @@ class PyFlameConfig:
 
             # Validate loaded config type
             if not isinstance(loaded_config, dict):
-                pyflame.raise_value_error(
-                    'PyFlameConfig.load_config',
-                    'loaded_config',
-                    'dictionary JSON root object',
-                    loaded_config,
-                )
+                pyflame.raise_value_error('PyFlameConfig.load_config', 'loaded_config', 'dictionary JSON root object', loaded_config)
 
             # Update default values with loaded values
             self.config_values.update(loaded_config)
@@ -4322,20 +4283,11 @@ class PyFlameConfig:
         for key, value in self.config_values.items():
             object.__setattr__(self, key, value)
 
-        # Print values to terminal
-        pyflame.print_json(
-            json_data=self.config_values,
-            indent=2,
-        )
+        # Print config values to terminal
+        self.print_config('Loading')
+        print(f'[\033[92mLOADED\033[0m] Configuration ready\n')
 
-        print('-' * 80, '\n')
-        pyflame.print('Script Configuration Loaded', arrow=True)
-
-    def save_config(
-        self,
-        config_values: Dict[str, Any] | None = None,
-        config_path: str | None = None,
-    ) -> None:
+    def save_config(self, config_values: Dict[str, Any] | None = None, config_path: str | None = None) -> None:
         """
         Save Config
         ===========
@@ -4355,21 +4307,9 @@ class PyFlameConfig:
 
         # Validate Argument types
         if config_values is not None and not isinstance(config_values, dict):
-            pyflame.raise_type_error(
-                'PyFlameConfig.save_config',
-                'config_values',
-                'dict[str, Any] | None',
-                config_values,
-            )
+            pyflame.raise_type_error('PyFlameConfig.save_config', 'config_values', 'dict[str, Any] | None', config_values)
         if config_path is not None and not isinstance(config_path, str):
-            pyflame.raise_type_error(
-                'PyFlameConfig.save_config',
-                'config_path',
-                'str | None',
-                config_path,
-            )
-
-        pyflame.print('Saving Script Configuration', underline=True)
+            pyflame.raise_type_error('PyFlameConfig.save_config', 'config_path', 'str | None', config_path)
 
         target_path = config_path if config_path is not None else self.config_path
 
@@ -4388,20 +4328,17 @@ class PyFlameConfig:
         self.config_values = ordered_config
 
         # Load existing file so unmodified keys are preserved
+        action = 'Saving'
         if os.path.exists(target_path):
             with open(target_path, 'r') as f:
                 existing_config = json.load(f)
 
             if not isinstance(existing_config, dict):
-                pyflame.raise_value_error(
-                    'PyFlameConfig.save_config',
-                    'existing_config',
-                    'dictionary JSON root object',
-                    existing_config,
-                )
+                pyflame.raise_value_error('PyFlameConfig.save_config', 'existing_config', 'dictionary JSON root object', existing_config)
         else:
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
             existing_config = {}
+            action = 'Creating'
 
         # Update only values currently present in instance config
         existing_config.update(self.config_values)
@@ -4413,14 +4350,9 @@ class PyFlameConfig:
         for key, value in self.config_values.items():
             object.__setattr__(self, key, value)
 
-        # Print values to terminal
-        pyflame.print_json(
-            json_data=self.config_values,
-            indent=2,
-        )
-
-        print('-' * 80, '\n')
-        pyflame.print('Script Configuration Saved', arrow=True)
+        # Print config values to terminal
+        self.print_config(action)
+        print(f'[\033[92mSAVED\033[0m] Configuration saved\n')
 
     # -------------------------------------------------------------------------
     # Access helpers (script-agnostic)
@@ -4660,8 +4592,7 @@ class PyFlameButton(QtWidgets.QPushButton):
         self.tooltip_duration = tooltip_duration
 
         # Connect button click
-        if connect:
-            self.connect_callback(connect)
+        self.connect_callback(connect)
 
     #---------------------------
     # [Properties]
@@ -5103,7 +5034,7 @@ class PyFlameButton(QtWidgets.QPushButton):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -5399,9 +5330,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         self.tooltip_delay = tooltip_delay * 1000
         self.tooltip_duration = tooltip_duration * 1000
 
-        # Set textChanged and setFocus signals
-        if text_changed:
-            self.text_changed(text_changed)
+        self.text_changed(text_changed)
 
         # Settings for Alt+Click to show full entry text
         self.setMouseTracking(True)  # Enable mouse tracking
@@ -6001,7 +5930,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
 
         self.setFocus()
 
-    def text_changed(self, connected_function: Callable) -> None:
+    def text_changed(self, connected_function: Callable | None) -> None:
         """
         Text Changed
         ============
@@ -6391,8 +6320,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
             )
 
         # Connect to run after browser is closed
-        if connect:
-            self.connect_callback(connect)
+        self.connect_callback(connect)
 
         # Set stylesheet
         self._set_stylesheet()
@@ -6831,7 +6759,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -10736,8 +10664,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         self.tooltip_duration = tooltip_duration
 
         # Connect Callback
-        if connect:
-            self.connect_callback(connect)
+        self.connect_callback(connect)
 
         # Set Stylesheet
         self._set_stylesheet()
@@ -11180,7 +11107,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -14170,10 +14097,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         self.tooltip = tooltip
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
+        self.connect_callback(connect)
         self.textChanged.connect(self._value_changed)
-
-        if connect:
-            self.connect_callback(connect)
 
         # Set misc variables
         self.steps = 1
@@ -14714,7 +14639,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -17552,8 +17477,16 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
 
         self._text_style = value
 
-        # Set Text Interaction Flags
-        if self._text_style == TextStyle.UNSELECTABLE or self._text_style == TextStyle.READ_ONLY:
+        if self._text_style == TextStyle.EDITABLE:
+            self.setReadOnly(False)
+            self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
+        elif self._text_style in (TextStyle.READ_ONLY, TextStyle.READ_ONLY_SELECTABLE):
+            self.setReadOnly(True)
+            self.setTextInteractionFlags(
+                QtCore.Qt.TextSelectableByMouse | QtCore.Qt.TextSelectableByKeyboard
+            )
+        elif self._text_style == TextStyle.UNSELECTABLE:
+            self.setReadOnly(True)
             self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 
         self._set_stylesheet()
@@ -19120,14 +19053,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
 
-        if connect:
-            self.connect_callback = connect
+        self.connect_callback = connect
+        self.update_connect_callback = update_connect
+        self.top_level_item = top_level_item
 
-        if update_connect:
-            self.update_connect_callback = update_connect
-
-        if top_level_item:
-            self.top_level_item = top_level_item
 
         # Set the first top-level item as the current item
         self.setCurrentItem(self.topLevelItem(0))
@@ -19365,7 +19294,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             self.fill_tree_dict(value)
 
     @property
-    def top_level_item(self) -> str:
+    def top_level_item(self) -> str | None:
         """
         Top Level Item
         ==============
@@ -19401,7 +19330,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._top_level_item
 
     @top_level_item.setter
-    def top_level_item(self, value: str) -> None:
+    def top_level_item(self, value: str | None) -> None:
         """
         Top Level Item
         ==============
@@ -19479,7 +19408,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             pyflame.raise_type_error('PyFlameTreeWidget', 'tree_list', 'list | None', value)
 
         # Convert list to dictionary and fill tree
-        if value != []:
+        if value != [] and self.top_level_item is not None:
             self.tree_dict = {self.top_level_item: {str(item): {} for item in value}}
 
     @property
@@ -19498,7 +19427,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return tree_list[1:]
 
     @property
-    def connect_callback(self) -> Callable[..., None]:
+    def connect_callback(self) -> Callable[..., None] | None:
         """
         Connect Callback
         ================
@@ -19534,7 +19463,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._connect_callback
 
     @connect_callback.setter
-    def connect_callback(self, value: Callable[..., None]) -> None:
+    def connect_callback(self, value: Callable[..., None] | None) -> None:
         """
         Connect Callback
         ================
@@ -19553,7 +19482,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self._connect_callback = value
 
     @property
-    def update_connect_callback(self) -> Callable[..., None]:
+    def update_connect_callback(self) -> Callable[..., None] | None:
         """
         Update Connect Callback
         =======================
@@ -19589,7 +19518,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._update_connect_callback
 
     @update_connect_callback.setter
-    def update_connect_callback(self, value: Callable[..., None]) -> None:
+    def update_connect_callback(self, value: Callable[..., None] | None) -> None:
         """
         Update Connect Callback
         =======================
