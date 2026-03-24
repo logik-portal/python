@@ -1,10 +1,10 @@
 # Nano Banana
 
-**Script Version:** v1.1.0
-**Flame Version:** 2025.2
-**Written by:** Michael Vaglienty
-**Creation Date:** 03.13.26
-**Update Date:** 03.23.26
+**Script Version:** v1.1.1  
+**Flame Version:** 2025.2  
+**Written by:** Michael Vaglienty  
+**Creation Date:** 03.13.26  
+**Update Date:** 03.24.26  
 
 **Script Type:** Media Panel
 
@@ -29,8 +29,6 @@ Send to Prompt: Adds the selected image in the Image Gallery to the prompt.
 <br><br>
 Clear Prompt Image: Clears the current prompt image from the prompt.
 
-![alt text](assets/images/banana_ui.png)
-
 ## Menus
 
 ### Script Setup
@@ -45,6 +43,10 @@ Clear Prompt Image: Clears the current prompt image from the prompt.
 Copy script into /opt/Autodesk/shared/python/nano_banana
 
 ## Updates
+
+### v1.1.1 [03.24.26]
+- Fixed export preset path. This was causing the script not to work when running the script with an image selected.
+<br>
 
 ### v1.1.0 [03.23.26]
 - Added Gemini Chat button to send a message to chat with Gemini about creating an image.

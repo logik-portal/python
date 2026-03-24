@@ -19,11 +19,11 @@
 
 """
 Script Name: Nano Banana
-Script Version: v1.1.0
+Script Version: v1.1.1
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 03.23.26
+Update Date: 03.24.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -102,6 +102,9 @@ To install:
 
 Updates:
 
+    v1.1.1 03.24.26
+        - Fixed export preset path. This was causing the script not to work when running the script with an image selected.
+
     v1.1.0 03.23.26
         - Added Gemini Chat button to send a message to chat with Gemini about creating an image.
         - Updated model menus to clarify model names.
@@ -134,7 +137,7 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.1.0'
+SCRIPT_VERSION = 'v1.1.1'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -299,7 +302,7 @@ class NanoBanana:
 
         pyflame.print('Exporting to Nano Banana...')
 
-        export_preset_path = '/Volumes/NAS/Python/_Shared_Scripts/nano_banana/assets/export_preset/PNG (8-bit) Nano Banana.xml'
+        export_preset_path = f'{SCRIPT_PATH}/assets/export_preset/PNG (8-bit) Nano Banana.xml'
         print('Export Preset Path:', export_preset_path, '\n')
 
         # Set version of export preset to match current version of Flame to avoid error windows.
