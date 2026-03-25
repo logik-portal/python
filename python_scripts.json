@@ -171,13 +171,13 @@
   },
   {
     "Script Name": "color segment fx",
-    "Script Version": "1.4.0",
-    "Flame Version": "2025",
+    "Script Version": "1.5.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "03.02.24",
-    "Update Date": "07.10.25",
-    "Description": "Script Name: Color Segment FX\nScript Version: 1.4.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 03.02.24\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Timeline\n\nDescription:\n\nColors segments on selected sequence with selected FX type.\n\nURL:\nhttps://github.com/logik-portal/python/color_segment_fx\n\nMenus:\n\nRight-Click on Sequence in Media Panel -> Color Timeline FX\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.4.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Escape key closes main window.\n- Window layer order in linux is now fixed.\n\nv1.3.0 03.16.25\n- Updated to PyFlameLib v4.3.0.\n- Added 'No Color' option to color menu and removed 'Remove Color' button.\n\nv1.2.0 12.27.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv1.1.0 08.05.24\n- Updated to PyFlameLib v3.0.0."
+    "Update Date": "03.24.26",
+    "Description": "Script Name: Color Segment FX\nScript Version: 1.5.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 03.02.24\nUpdate Date: 03.24.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Timeline\n\nDescription:\n\nColors segments on selected sequence with selected FX type.\n\nURL:\nhttps://github.com/logik-portal/python/color_segment_fx\n\nMenus:\n\nRight-Click on Sequence in Media Panel -> Color Timeline FX\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.5.0 03.24.26\n- Update to PyFlameLib v5.3.0.\n\nv1.4.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Escape key closes main window.\n- Window layer order in linux is now fixed.\n\nv1.3.0 03.16.25\n- Updated to PyFlameLib v4.3.0.\n- Added 'No Color' option to color menu and removed 'Remove Color' button.\n\nv1.2.0 12.27.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv1.1.0 08.05.24\n- Updated to PyFlameLib v3.0.0."
   },
   {
     "Script Name": "connect crypto",
