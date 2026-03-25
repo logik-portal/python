@@ -20,7 +20,7 @@
 """
 Script Name: Add Dated and Timed Folders
 Script Version: 2.5.0
-Flame Version: 2025
+Flame Version: 2025.1
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
 Update Date: 03.24.26
@@ -612,21 +612,21 @@ def get_mediahub_files_custom_ui_actions():
                     'order': 1,
                     'isVisible': scope_folder,
                     'execute': files_date_time_folders,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add Dated Folder',
                     'order': 2,
                     'isVisible': scope_folder,
                     'execute': files_dated_folders,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add Timestamped Folder',
                     'order': 3,
                     'isVisible': scope_folder,
                     'execute': files_timed_folders,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
@@ -648,7 +648,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Add Dated and Timed Folders Setup',
                     'execute': setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
