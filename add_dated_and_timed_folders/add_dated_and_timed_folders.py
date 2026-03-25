@@ -1,5 +1,5 @@
 # Add Dated and Timed Folders
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Dated and Timed Folders
-Script Version: 2.4.0
+Script Version: 2.5.0
 Flame Version: 2025
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
-Update Date: 08.27.25
+Update Date: 03.24.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -55,6 +55,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.5.0 03.24.26
+        - Update to PyFlameLib v5.3.0.
 
     v2.4.0 08.27.25
         - Updated to PyFlameLib v5.0.0.
@@ -99,7 +102,7 @@ from lib.pyflame_lib_add_dated_and_timed_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
-SCRIPT_VERSION = 'v2.4.0'
+SCRIPT_VERSION = 'v2.5.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================

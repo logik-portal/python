@@ -1,10 +1,10 @@
 # Add Dated And Timed Folders
 
-**Script Version:** 2.4.0  
+**Script Version:** 2.5.0  
 **Flame Version:** 2025  
 **Written by:** John Geehreng and Michael Vaglienty  
 **Creation Date:** 07.04.20  
-**Update Date:** 08.27.25  
+**Update Date:** 03.24.26  
 
 **Script Type:** MediaPanel/MediaHub Files
 
@@ -32,6 +32,10 @@ Examples of date formats include: YY-MM-DD, YYYY-MM-DD, YYMMDD, etc.
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.5.0 [03.24.26]
+- Update to PyFlameLib v5.3.0.
+<br>
 
 ### v2.4.0 [08.27.25]
 - Updated to PyFlameLib v5.0.0.
