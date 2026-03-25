@@ -1,5 +1,5 @@
 # Color Segment Fx
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Color Segment FX
-Script Version: 1.4.0
-Flame Version: 2025
+Script Version: 1.5.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 03.02.24
-Update Date: 07.10.25
+Update Date: 03.24.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -45,6 +45,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.5.0 03.24.26
+        - Update to PyFlameLib v5.3.0.
 
     v1.4.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -77,7 +80,7 @@ from lib.pyflame_lib_color_segment_fx import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Color Segment FX'
-SCRIPT_VERSION = 'v1.4.0'
+SCRIPT_VERSION = 'v1.5.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -330,7 +333,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_seq,
                     'execute': ColorSegmentFX,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
