@@ -24,6 +24,8 @@ Written By: Michael Vaglienty
 Creation Date: 10.31.20
 Update Date: 03.13.26
 
+Minimum Flame 2025.1
+
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
 Description:

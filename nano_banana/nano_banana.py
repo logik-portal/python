@@ -19,11 +19,11 @@
 
 """
 Script Name: Nano Banana
-Script Version: v1.1.1
+Script Version: v1.1.2
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 03.24.26
+Update Date: 03.25.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -102,8 +102,11 @@ To install:
 
 Updates:
 
+    v1.1.2 03.25.26
+        - Fixed: model resolution menu not updating when a different model is selected.
+
     v1.1.1 03.24.26
-        - Fixed export preset path. This was causing the script not to work when running the script with an image selected.
+        - Fixed: export preset path. This was causing the script not to work when running the script with an image selected.
 
     v1.1.0 03.23.26
         - Added Gemini Chat button to send a message to chat with Gemini about creating an image.
@@ -137,7 +140,7 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.1.1'
+SCRIPT_VERSION = 'v1.1.2'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -942,6 +945,8 @@ class NanoBanana:
 
             # Set resolution options based on the selected model.
             model = self.select_model_menu.text.strip()
+            model = model.rsplit(' (', 1)[0]
+
             if model == 'gemini-2.5-flash-image':
                 resolution_options = ['1K']
                 aspect_ratio_options = aspect_ratios_2_5

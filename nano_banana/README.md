@@ -1,10 +1,10 @@
 # Nano Banana
 
-**Script Version:** v1.1.1  
+**Script Version:** v1.1.2  
 **Flame Version:** 2025.2  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.13.26  
-**Update Date:** 03.24.26  
+**Update Date:** 03.25.26  
 
 **Script Type:** Media Panel
 
@@ -44,8 +44,12 @@ Copy script into /opt/Autodesk/shared/python/nano_banana
 
 ## Updates
 
+### v1.1.2 [03.25.26]
+- Fixed: model resolution menu not updating when a different model is selected.
+<br>
+
 ### v1.1.1 [03.24.26]
-- Fixed export preset path. This was causing the script not to work when running the script with an image selected.
+- Fixed: export preset path. This was causing the script not to work when running the script with an image selected.
 <br>
 
 ### v1.1.0 [03.23.26]
