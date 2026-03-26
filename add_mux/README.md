@@ -1,10 +1,10 @@
 # Add Mux
 
-**Script Version:** 2.6.0  
-**Flame Version:** 2025  
+**Script Version:** 2.7.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 07.31.19  
-**Update Date:** 07.10.25  
+**Update Date:** 03.26.26  
 
 **Script Type:** Batch
 
@@ -31,6 +31,10 @@ https://github.com/logik-portal/python/add_mux
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.7.0 [03.26.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v2.6.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

@@ -1,10 +1,10 @@
 # Add Audio
 
-**Script Version:** 1.4.0  
-**Flame Version:** 2023  
+**Script Version:** 1.5.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.04.22  
-**Update Date:** 01.20.24  
+**Update Date:** 03.26.26  
 
 **Script Type:** Batch
 
@@ -39,6 +39,10 @@ https://github.com/logik-portal/python/add_audio
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.5.0 [03.26.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.4.0 [01.20.24]
 - Updates to PySide.

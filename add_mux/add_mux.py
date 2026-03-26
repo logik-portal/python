@@ -1,5 +1,5 @@
 # Add Mux
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Mux
-Script Version: 2.6.0
-Flame Version: 2025
+Script Version: 2.7.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 07.31.19
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -53,6 +53,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.7.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.6.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -84,23 +87,23 @@ Updates:
         - Freeze existing mux at current frame.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 from lib.pyflame_lib_add_mux import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Add Mux'
-SCRIPT_VERSION = 'v2.6.0'
+SCRIPT_VERSION = 'v2.7.0'
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def add_mux(selection):
 
@@ -183,9 +186,9 @@ def freeze_mux_node(selection):
 
     pyflame.print('MUX Node Frozen at Current Frame', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_mux_node(selection):
 
@@ -194,9 +197,9 @@ def scope_mux_node(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -208,20 +211,20 @@ def get_batch_custom_ui_actions():
                     'name': 'Add MUX',
                     'execute': add_mux,
                     'order': 1,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add Freeze Frame MUX',
                     'execute': add_mux_freeze,
                     'order': 2,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Freeze Selected MUX',
                     'isVisible': scope_mux_node,
                     'execute': freeze_mux_node,
                     'order': 3,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
