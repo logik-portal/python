@@ -1,5 +1,5 @@
 # Rename Shots
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,14 +16,14 @@
 #
 # License:       GNU General Public License v3.0 (GPL-3.0)
 #                https://www.gnu.org/licenses/gpl-3.0.en.html
-  
+
 """
 Script Name: Rename Shots
-Script Version: 1.12.0
-Flame Version: 2025
+Script Version: 1.13.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 04.05.22
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -51,6 +51,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.13.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v1.12.0 01.03.26
         - Progress messages print to script window
@@ -103,26 +106,26 @@ Updates:
         - Removed setup window and eliminated sequence entry to simplify UI.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 
 import flame
 from lib.pyflame_lib_rename_shots import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Rename Shots'
-SCRIPT_VERSION = 'v1.12.0'
+SCRIPT_VERSION = 'v1.13.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class RenameShots:
 
@@ -393,9 +396,9 @@ class RenameShots:
                 )
             return
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_sequence(selection):
 
@@ -411,9 +414,9 @@ def scope_segment(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
@@ -427,7 +430,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_sequence,
                     'execute': RenameShots,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -445,7 +448,7 @@ def get_timeline_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_segment,
                     'execute': RenameShots,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

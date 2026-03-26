@@ -1,5 +1,5 @@
 # Delete Iterations
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Delete Iterations
-Script Version: 1.6.0
-Flame Version: 2025
+Script Version: 1.7.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 01.23.23
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -56,6 +56,9 @@ To install:
 
 Updates:
 
+    v1.7.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
+
     v1.6.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
         - Escape key closes main window.
@@ -86,24 +89,24 @@ Updates:
         - Pressing return with the window open will now apply the settings.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 from lib.pyflame_lib_delete_iterations import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Delete Iterations'
-SCRIPT_VERSION = 'v1.6.0'
+SCRIPT_VERSION = 'v1.7.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class DeleteIterations:
 
@@ -308,9 +311,9 @@ class DeleteIterations:
         for top_folder in self.selection:
             self.find_batch_group(top_folder)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope(selection):
 
@@ -319,9 +322,9 @@ def scope(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 

@@ -4,6 +4,73 @@ All notable changes to this project will be documented in this file.
 
 https://github.com/logik-portal/pyflame
 
+## v5.3.0 [03.13.26]
+
+- Lots of type hinting and argument validation improvements.
+
+### Added
+
+- **PyFlameImageWidget**
+    - Image widget to display images.
+
+- **PyFlameImageGallery**
+    - Image gallery widget to display a gallery of images.
+
+### Updates
+
+- **Widgets**
+    -`PyFlameTextEdit`
+        - **New Method**
+            - `set_focus()`
+                - Sets focus of current window to PyFlameTextEdit
+        - **New TextStyle**
+            `READ_ONLY_SELECTABLE`
+                - Text is not editable but is selectable and can be added to the clipboard (Copy/Paste).
+
+    -`PyFlameMenu`
+        - Menus with one or no menu items no longer show a dropdown menu. Text is only shown on menu button.
+
+## v5.2.4 [02.28.26]
+
+### Updates
+
+- **Widgets**
+    -`PyFlameWindow`
+        - Added argument for window margins - defaults to 15.
+
+## v5.2.3 [02.24.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameSlider`
+        - **Fixed**
+            - Disaapearing calculator in linux.
+
+### Added
+
+- **PyFlame Library Stub File**
+    - Stub file for better auto-completion in code editors.
+      Be sure to rename this file as you would the pyflame_lib.py file.
+      Example: <script_name>/lib/pyflame_lib_<script_name>.pyi
+      Code editors should automatically import this file when the pyflame_lib.py file is imported.
+
+## v5.2.2 [02.18.26]
+
+- Fixed: Unable to find project errors in terminal when Flame starts up.
+
+- **Widgets**
+    - `PyFlameSlider`
+        - **Calculator**
+            - Pressing number keys now updates the value in the calculator entry field.
+            - Pressing backspace key now deletes the last character in the calculator entry field.
+
+- **PyFlameFunctions**
+    - `pyflame.move_to_shot_folder`
+        - Added `expand_dest_folder` argument to expand the destination folder after move is complete.
+    - `pyflame.copy_to_shot_folder`
+        - Added `expand_dest_folder` argument to expand the destination folder after copy is complete.
+
 ## v5.2.1 [01.08.26]
 
 - Misc spelling/type-o fixes
@@ -133,11 +200,11 @@ This update will break most scripts using this library.
         - Has ability to display html, markdown, and plain text.
 
 - **PyFlameFunctions**
-    - pyflame.get_media_panel_shot_folder
+    - `pyflame.get_media_panel_shot_folder`
 
-    - pyflame.move_to_shot_folder
+    - `pyflame.move_to_shot_folder`
 
-    - pyflame.copy_to_shot_folder
+    - `pyflame.copy_to_shot_folder`
 
 ### Updates/Fixes
 

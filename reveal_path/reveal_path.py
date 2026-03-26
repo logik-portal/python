@@ -1,5 +1,5 @@
 # Reveal Path
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Reveal Path
-Script Version: 2.8.0
-Flame Version: 2023.2
+Script Version: 2.9.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.16.19
-Update Date: 04.03.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -36,6 +36,7 @@ Description:
     Path is also copied to clipboard.
 
 URL:
+
     https://github.com/logik-portal/python/reveal_path
 
 Menus:
@@ -52,6 +53,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.9.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.8.0 04.03.25
         - Updated to PyFlameLib v4.3.0.
@@ -112,9 +116,9 @@ Updates:
         - Code cleanup
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -122,18 +126,18 @@ import re
 import flame
 from lib.pyflame_lib_reveal_path import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Reveal Path'
-SCRIPT_VERSION = 'v2.8.0'
+SCRIPT_VERSION = 'v2.9.0'
 
 print('\n')
 
-#-------------------------------------
+# ==============================================================================
 # [Reveal in Finder]
-#-------------------------------------
+# ==============================================================================
 
 def reveal_timeline_finder(selection):
 
@@ -189,9 +193,9 @@ def open_finder(path: str):
     # Copy path to clipboard
     pyflame.copy_to_clipboard(path)
 
-#-------------------------------------
+# ==============================================================================
 # [Reveal in MediaHub]
-#-------------------------------------
+# ==============================================================================
 
 def reveal_timeline_mediahub(selection):
 
@@ -247,9 +251,9 @@ def open_media_hub(path):
 
     pyflame.print(f'Path opened in MediaHub: {path}', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_timeline_clip(selection):
 
@@ -292,9 +296,9 @@ def scope_write_file_node(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_timeline_custom_ui_actions():
 
@@ -328,13 +332,13 @@ def get_media_panel_custom_ui_actions():
                     'name': 'Reveal Clip in Finder',
                     'isVisible': scope_clip,
                     'execute': reveal_mediapanel_finder,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Reveal Clip in Media Hub',
                     'isVisible': scope_clip,
                     'execute': reveal_mediapanel_mediahub,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
@@ -350,25 +354,25 @@ def get_batch_custom_ui_actions():
                     'name': 'Reveal Clip in Finder',
                     'isVisible': scope_batch_clip,
                     'execute': reveal_batch_finder,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Reveal Clip in Media Hub',
                     'isVisible': scope_batch_clip,
                     'execute': reveal_batch_mediahub,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Reveal Write File Path in Finder',
                     'isVisible': scope_write_file_node,
                     'execute': reveal_write_file_node_path_finder,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Reveal Write File Path in Media Hub',
                     'isVisible': scope_write_file_node,
                     'execute': reveal_write_file_node_path_mediahub,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
@@ -384,7 +388,7 @@ def get_mediahub_files_custom_ui_actions():
                     'name': 'Reveal Clip in Finder',
                     'isVisible': scope_file,
                     'execute': reveal_mediahub_clip_finder,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
             ]
         }

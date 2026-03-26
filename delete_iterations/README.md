@@ -1,10 +1,10 @@
 # Delete Iterations
 
-**Script Version:** 1.6.0  
-**Flame Version:** 2025  
+**Script Version:** 1.7.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 01.23.23  
-**Update Date:** 07.10.25  
+**Update Date:** 03.26.26  
 
 **Script Type:** Batch Iterations
 
@@ -35,6 +35,10 @@ https://github.com/logik-portal/python/delete_iterations
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.7.0 [03.26.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.6.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
