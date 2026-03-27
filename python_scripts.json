@@ -381,13 +381,13 @@
   },
   {
     "Script Name": "encompass selected nodes",
-    "Script Version": "2.8.0",
-    "Flame Version": "2025",
+    "Script Version": "2.9.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "04.22.20",
-    "Update Date": "07.10.25",
-    "Description": "Script Name: Encompass Selected Nodes\nScript Version: 2.8.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 04.22.20\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch/Action\n\nDescription:\n\nCreates compass around selected nodes in batch or action.\n\nURL:\nhttps://github.com/logik-portal/python/encompass_selected_nodes\n\nMenus:\n\nSelect nodes to encompass -> Encompass Selected Nodes\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.8.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Escape key closes main window.\n\nv2.7.0 03.20.25\n- Updated to PyFlameLib v4.3.0.\n- Added menu to set compass color.\n\nv2.6.0 12.28.24\n- Fixed: Script had errors when creating compass with name that already exists.\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv2.5.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.4.0 01.21.24\n- Updates to PySide.\n\nv2.3.0 07.27.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semantic versioning.\n\nv2.2 06.09.23\n- Compass is created when pressing enter in compass name field.\n\nv2.1 10.27.22\n- Window prompts for compass name when creating compass.\n- Updated right-click menu for 2023.2+.\n\nv2.0 05.23.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n\nv1.1 05.10.20\n- Added ability to encompass selected action nodes."
+    "Update Date": "03.26.26",
+    "Description": "Script Name: Encompass Selected Nodes\nScript Version: 2.9.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 04.22.20\nUpdate Date: 03.26.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch/Action\n\nDescription:\n\nCreates compass around selected nodes in batch or action.\n\nURL:\nhttps://github.com/logik-portal/python/encompass_selected_nodes\n\nMenus:\n\nSelect nodes to encompass -> Encompass Selected Nodes\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.9.0 03.26.26\n- Updated to PyFlameLib v5.3.0.\n\nv2.8.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n- Escape key closes main window.\n\nv2.7.0 03.20.25\n- Updated to PyFlameLib v4.3.0.\n- Added menu to set compass color.\n\nv2.6.0 12.28.24\n- Fixed: Script had errors when creating compass with name that already exists.\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv2.5.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.4.0 01.21.24\n- Updates to PySide.\n\nv2.3.0 07.27.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semantic versioning.\n\nv2.2 06.09.23\n- Compass is created when pressing enter in compass name field.\n\nv2.1 10.27.22\n- Window prompts for compass name when creating compass.\n- Updated right-click menu for 2023.2+.\n\nv2.0 05.23.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n\nv1.1 05.10.20\n- Added ability to encompass selected action nodes."
   },
   {
     "Script Name": "export sammie roto ai",
@@ -571,13 +571,13 @@
   },
   {
     "Script Name": "import browser",
-    "Script Version": "2.6.0",
-    "Flame Version": "2023.2",
+    "Script Version": "2.7.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "06.16.19",
-    "Update Date": "07.10.25",
-    "Description": "Script Name: Import Browser\nScript Version: 2.6.0\nFlame Version: 2023.2\nWritten by: Michael Vaglienty\nCreation Date: 06.16.19\nUpdate Date: 07.10.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nOpens import browser in batch through right click menu.\n\nURL:\nhttps://github.com/logik-portal/python/import_browser\n\nMenu:\n\nRight-click in batch -> Import Browser\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.6.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n\nv2.5.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.4.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n\nv2.3.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.2.1 01.15.24\n- Updated PySide.\n\nv2.2.0 07.29.23\n- Updated to PyFlameLib v2.0.0.\n- Updated to semantic versioning.\n\nv2.1 10.14.22\n- Updated menu for Flame 2023.2+\n\nv2.0 05.22.21\n- Updated to be compatible with Flame 2022/Python 3.7\n\nv1.1 10.24.19\n- Menu renamed to Import..."
+    "Update Date": "03.26.26",
+    "Description": "Script Name: Import Browser\nScript Version: 2.7.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 06.16.19\nUpdate Date: 03.26.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nOpens import browser in batch through right click menu.\n\nURL:\nhttps://github.com/logik-portal/python/import_browser\n\nMenu:\n\nRight-click in batch -> Import Browser\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.7.0 03.26.26\n- Updated to PyFlameLib v5.3.0.\n\nv2.6.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n\nv2.5.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.4.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n\nv2.3.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.2.1 01.15.24\n- Updated PySide.\n\nv2.2.0 07.29.23\n- Updated to PyFlameLib v2.0.0.\n- Updated to semantic versioning.\n\nv2.1 10.14.22\n- Updated menu for Flame 2023.2+\n\nv2.0 05.22.21\n- Updated to be compatible with Flame 2022/Python 3.7\n\nv1.1 10.24.19\n- Menu renamed to Import..."
   },
   {
     "Script Name": "import camera",
@@ -761,13 +761,13 @@
   },
   {
     "Script Name": "refresh python hooks",
-    "Script Version": "1.8.0",
-    "Flame Version": "2023.2",
+    "Script Version": "1.9.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "05.12.22",
-    "Update Date": "04.03.25",
-    "Description": "Script Name: Refresh Python Hooks\nScript Version: 1.8.0\nFlame Version: 2023.2\nWritten by: Michael Vaglienty\nCreation Date: 05.12.22\nUpdate Date: 04.03.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch / Flame Main Menu\n\nDescription:\n\nRefresh python hooks and print message to Flame message window(Flame 2023.1+) and terminal.\n\nMessage to Flame message window only shows up in Flame 2023.1+.\n\nURL:\nhttps://github.com/logik-portal/python/refresh_python_hooks\n\nMenus:\n\nFlame Main Menu -> Refresh Python Hooks\nRight-click in batch -> Refresh Python Hooks\nRight-click in media panel -> Refresh Python Hooks\nRight-click in timeline -> Refresh Python Hooks\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.8.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n- Added menu to refresh python hooks from timeline.\n\nv1.7.0 02.12.25\n- Added menu to refresh python hooks from media panel.\n\nv1.6.0 12.16.24\n- Updated to PyFlameLib v3.3.0.\n- Script now only works with Flame 2023.2+.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv1.5.0 09.18.24\n- Updated to PyFlameLib v3.2.0.\n\nv1.4.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv1.3.0 01.21.24\n- Updates to PySide.\n\nv1.2.0 07.23.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semantic versioning.\n\nv1.1.0 09.05.22\n- Updated menu for Flame 2023.2+."
+    "Update Date": "03.26.26",
+    "Description": "Script Name: Refresh Python Hooks\nScript Version: 1.9.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 05.12.22\nUpdate Date: 03.26.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch / Flame Main Menu\n\nDescription:\n\nRefresh python hooks and print message to Flame message window and terminal.\n\nURL:\n\nhttps://github.com/logik-portal/python/refresh_python_hooks\n\nMenus:\n\nFlame Main Menu -> Refresh Python Hooks\nRight-click in batch -> Refresh Python Hooks\nRight-click in media panel -> Refresh Python Hooks\nRight-click in timeline -> Refresh Python Hooks\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.9.0 03.26.26\n- Updated to PyFlameLib v5.3.0.\n\nv1.8.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n- Added menu to refresh python hooks from timeline.\n\nv1.7.0 02.12.25\n- Added menu to refresh python hooks from media panel.\n\nv1.6.0 12.16.24\n- Updated to PyFlameLib v3.3.0.\n- Script now only works with Flame 2023.2+.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv1.5.0 09.18.24\n- Updated to PyFlameLib v3.2.0.\n\nv1.4.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv1.3.0 01.21.24\n- Updates to PySide.\n\nv1.2.0 07.23.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semantic versioning.\n\nv1.1.0 09.05.22\n- Updated menu for Flame 2023.2+."
   },
   {
     "Script Name": "remove audio gaps",
