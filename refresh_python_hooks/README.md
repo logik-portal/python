@@ -1,18 +1,16 @@
 # Refresh Python Hooks
 
-**Script Version:** 1.8.0  
-**Flame Version:** 2023.2  
+**Script Version:** 1.9.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 05.12.22  
-**Update Date:** 04.03.25  
+**Update Date:** 03.26.26  
 
 **Script Type:** Batch / Flame Main Menu
 
 ## Description
 
-Refresh python hooks and print message to Flame message window(Flame 2023.1+) and terminal.
-<br><br>
-Message to Flame message window only shows up in Flame 2023.1+.
+Refresh python hooks and print message to Flame message window and terminal.
 
 ## URL
 
@@ -30,6 +28,10 @@ https://github.com/logik-portal/python/refresh_python_hooks
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.9.0 [03.26.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.8.0 [04.03.25]
 - Updated to PyFlameLib v4.3.0.

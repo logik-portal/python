@@ -1,5 +1,5 @@
 # Import Browser
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Import Browser
-Script Version: 2.6.0
-Flame Version: 2023.2
+Script Version: 2.7.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.16.19
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -45,6 +45,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.7.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.6.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -75,23 +78,23 @@ Updates:
         - Menu renamed to Import...
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 from lib.pyflame_lib_import_browser import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Import Browser'
-SCRIPT_VERSION = 'v2.6.0'
+SCRIPT_VERSION = 'v2.7.0'
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def open_file_browser(selection):
 
@@ -103,9 +106,9 @@ def open_file_browser(selection):
 
     pyflame.print('Import Browser closed.', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -118,7 +121,7 @@ def get_batch_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': open_file_browser,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
