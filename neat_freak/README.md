@@ -1,10 +1,10 @@
 # Neat Freak
 
-**Script Version:** 2.0.0  
-**Flame Version:** 2025  
+**Script Version:** 2.1.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.22.21  
-**Update Date:** 12.18.25  
+**Update Date:** 03.28.26  
 
 **Script Type:** Batch/Media Panel
 
@@ -37,6 +37,10 @@ https://github.com/logik-portal/python/neat_freak
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.1.0 [03.28.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v2.0.0 [12.18.25]
 - Removed Write node options from setup. Write nodes now use default settings set in Flame Preferences(2026.2+).

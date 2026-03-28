@@ -1,5 +1,5 @@
 # PyFlame Library
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,10 +19,12 @@
 
 """
 PyFlame Library
-Version: 5.2.1
+Version: 5.3.0
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 01.08.26
+Update Date: 03.13.26
+
+Minimum Flame 2025.1
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -44,6 +46,7 @@ Folder Structure:
     ├── main_script.py
     ├── lib/
     │   └── pyflame_lib_<main_script_name>.py
+    │   └── pyflame_lib_<main_script_name>.pyi   # Optional
     ├── assets/
     │   └── fonts/
     │       ├── Montserrat-Regular.ttf
@@ -85,9 +88,9 @@ import xml.etree.ElementTree as ET
 from enum import Enum
 from functools import partial
 from subprocess import PIPE, Popen
-from typing import Any, Callable, Dict, List, Tuple, Sequence
+from typing import Any, Callable, Dict, List, Tuple, Optional, Union
 
-import flame
+import flame # type: ignore[import]
 
 # ==============================================================================
 # [PySide6 Imports]
@@ -108,8 +111,6 @@ SCRIPT_PATH = LIB_PATH.rsplit("/", 1)[0]
 
 SHARED_FILE_SEQUENCE_PATH = '/opt/Autodesk/shared/export/presets/file_sequence'
 SHARED_MOVIE_EXPORT_PATH = '/opt/Autodesk/shared/export/presets/movie_file'
-PROJECT_FILE_SEQUENCE_PATH = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
-PROJECT_MOVIE_EXPORT_PATH = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
 
 # ==============================================================================
 # [PyFlame Enums]
@@ -396,6 +397,7 @@ class TextStyle(Enum):
 
     EDITABLE = 'editable'
     READ_ONLY = 'read_only'
+    READ_ONLY_SELECTABLE = 'read_only_selectable'
     UNSELECTABLE = 'unselectable'
 
 class TextType(Enum):
@@ -714,50 +716,32 @@ class _PyFlame:
 
         Example
         -------
-                              ---=====[ Cool Script ]=====---
-                                ~~~~~~===[ v1.0.0 ]===~~~~~~
-        --------------------------------------------------------------------------------
+
+        --------------------------====[ Cool Script v1.0.0 ]====-----------------------
         """
 
         # Validate Argument
         if not isinstance(text, str):
             pyflame.raise_type_error('pyflame.print_title', 'text', 'str', value)
 
-        # Split input into script name and version
-        parts = text.strip().rsplit(' ', 1)
+        text = f'====[ {text} ]===='
+        line = text.center(80, "-")
 
-        if len(parts) != 2 or not parts[1].lower().startswith("v"):
-            raise ValueError("ValueError: pyflame.print_title: Text must end with a version (e.g., 'Script Name v1.2.3')")
+        colored = ""
+        in_text = False
+        for char in line:
+            if char == "[":
+                in_text = True
+                colored += TextColor.WHITE.value + char
+            elif char == "]":
+                in_text = False
+                colored += TextColor.WHITE.value + char
+            elif in_text:
+                colored += TextColor.WHITE.value + char
+            else:
+                colored += TextColor.BLUE.value + char
 
-        name, version = parts
-
-        # Helper function to strip ANSI color codes for width calculation
-        def strip_ansi(text):
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-            return ansi_escape.sub('', text)
-
-        # First line with frame
-        top_line = f'{TextColor.BLUE.value}---====={TextColor.WHITE.value}[ {name} ]{TextColor.BLUE.value}=====---'
-
-        # Second line to be centered under top_line
-        version_line = f'{TextColor.BLUE.value}~~~~~~==={TextColor.WHITE.value}[ {version} ]{TextColor.BLUE.value}===~~~~~~'
-
-        # Calculate padding to center both lines in 80 columns (accounting for ANSI codes)
-        top_line_width = len(strip_ansi(top_line))
-        version_line_width = len(strip_ansi(version_line))
-
-        top_padding = (80 - top_line_width) // 2
-        version_padding = (80 - version_line_width) // 2
-
-        centered_top_line = " " * top_padding + top_line
-        centered_version_line = " " * version_padding + version_line
-
-        # Output
-        print('\n')
-        print(centered_top_line)
-        print(centered_version_line)
-        print('-' * 80)
-        print(f'{TextColor.RESET.value}\n', end='')
+        print('\n' + colored + TextColor.RESET.value + '\n')
 
     @staticmethod
     def create_temp_folder(folder_name: str='temp') -> str:
@@ -899,8 +883,8 @@ class _PyFlame:
         if not isinstance(additional_files, list):
             pyflame.raise_type_error('verify_script_install.additional_files', 'list', f'{type(additional_files).__name__}', additional_files)
 
-        pyflame.print('Verifying Script Install', new_line=False)
-        print('--------------------------------------------------------------------------------\n')
+        label = '--[ VALIDATING: Script Install ]'
+        print(f'{label}{"-" * (80 - len(label))}')
 
         # Get script path info
         script_path = os.path.abspath(os.path.dirname(__file__))
@@ -909,10 +893,11 @@ class _PyFlame:
         script_folder_name = script_path.rsplit('/', 1)[1]
         script_file_name = os.path.basename(__file__)[12:-3]
 
-        print('Script Path:', script_path)
-        print('Root Path:', root_path)
-        print('Script Folder Name:', script_folder_name)
-        print('Script File Name:', script_file_name + '.py\n')
+        print('Script Path        :', script_path)
+        print('Root Path          :', root_path)
+        print('Script Folder Name :', script_folder_name)
+        print('Script File Name   :', script_file_name + '.py')
+        print('--------------------------------------------------------------------------------')
 
         # Check if script folder name matches script file name
         if not script_folder_name == script_file_name:
@@ -927,6 +912,7 @@ class _PyFlame:
                 message_type=MessageType.ERROR,
                 parent=None,
                 )
+            print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
             return False
 
         # Check script folder for write permissions
@@ -939,6 +925,7 @@ class _PyFlame:
                 message_type=MessageType.ERROR,
                 parent=None,
                 )
+            print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
             return False
 
         # Check for additional files needed for script to work
@@ -955,14 +942,12 @@ class _PyFlame:
                         message_type=MessageType.ERROR,
                         parent=None,
                         )
+                    print(f'[{TextColor.RED.value}FAILED{TextColor.RESET.value}] Script Install Verified\n')
                     return False
                 else:
                     pyflame.print(f'{file} -> Found', text_color=TextColor.GREEN, new_line=False)
-            print('\n', end='')
 
-        print('--------------------------------------------------------------------------------\n')
-
-        pyflame.print('Script Install Verified', text_color=TextColor.GREEN)
+        print(f'[{TextColor.GREEN.value}VERIFIED{TextColor.RESET.value}] Script Install Verified\n')
         return True
 
     @staticmethod
@@ -1607,6 +1592,7 @@ class _PyFlame:
             text = f'{" " * indent}{text}'
 
         # Add text color to text if specified
+        color = ''
         if text_color:
             text = text_color.format(text) # Print message with specified text_color and indentation
             color = text_color.value
@@ -2345,7 +2331,7 @@ class _PyFlame:
         raise TypeError(error_message)
 
     @staticmethod
-    def raise_value_error(source_name: str=None, arg_name: str=None, expected_value: Any=None, actual_value: Any=None, error_message: str=None, time: int=10) -> None:
+    def raise_value_error(source_name: str | None=None, arg_name: str | None=None, expected_value: Any=None, actual_value: Any=None, error_message: str | None=None, time: int=10) -> None:
         """
         Raise Value Error
         =================
@@ -2517,8 +2503,7 @@ class _PyFlame:
         pyflame.print('Resolving Tokens', new_line=False)
         print('----------------')
 
-
-        print('Checking for tokens in string666:', tokenized_string)
+        print('Checking for tokens in string:', tokenized_string)
 
         # Check if string has tokens
         if not re.search(r'<.*?>', tokenized_string):
@@ -2556,8 +2541,9 @@ class _PyFlame:
         resolved_path = re.sub('<ampm>', ampm, resolved_path)
 
         # Get Batch Group Name - Only works when a PyBatch object is passed as the flame_pyobject argument.
-        if '<BatchGroupName>' in tokenized_string and isinstance(flame_pyobject, flame.PyBatch):
-            resolved_path = re.sub('<BatchGroupName>', str(flame_pyobject.name)[1:-1], resolved_path)
+        if flame_pyobject:
+            if '<BatchGroupName>' in tokenized_string and isinstance(flame_pyobject, flame.PyBatch):
+                resolved_path = re.sub('<BatchGroupName>', str(flame_pyobject.name)[1:-1], resolved_path)
 
         # Resolve tokens for flame pyobjects
         if flame_pyobject:
@@ -2681,7 +2667,7 @@ class _PyFlame:
                             Resolved path with tokens.
                     """
 
-                    def get_shot_name_tag(batch) -> str:
+                    def get_shot_name_tag(batch) -> str | None:
                         """
                         Get Shot Name Tag
                         """
@@ -2698,7 +2684,7 @@ class _PyFlame:
                             print('No Batch Shot Name Tags Found')
                             return None
 
-                    def get_shot_name_from_render_nodes(batch) -> str:
+                    def get_shot_name_from_render_nodes(batch) -> str | None:
                         """
                         Get Shot Name from Render Nodes
                         """
@@ -3046,11 +3032,12 @@ class _PyFlame:
             root = export_preset_xml_tree.getroot()
 
             # Get version export preset is currently set to
+            current_export_version = None
             for setting in root.iter('preset'):
                 current_export_version = setting.get('version')
                 print(f'    Current export preset version: {current_export_version}')
 
-            return current_export_version
+            return str(current_export_version) if current_export_version is not None else ''
 
         def get_export_version() -> str:
             """
@@ -3069,12 +3056,13 @@ class _PyFlame:
             root = preset_xml_tree.getroot()
 
             # Get version default export preset is currently set to
+            default_export_version = None
             for setting in root.iter('preset'):
                 default_export_version = setting.get('version')
                 print(f'    Flame default export preset version: {default_export_version}')
                 print('\n', end='')
 
-            return default_export_version
+            return str(default_export_version) if default_export_version is not None else ''
 
         current_export_version = get_current_export_version(preset_path)
         export_version = get_export_version()
@@ -3200,6 +3188,9 @@ class _PyFlame:
 
         print('Getting Export Presets:\n')
 
+        project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
+        project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
+
         # Get Shared File Sequence Export Presets
         if os.path.isdir(SHARED_FILE_SEQUENCE_PATH):
             shared_file_sequence_export_presets = [f'Shared: File Sequence: {p[:-4]}' for p in os.listdir(SHARED_FILE_SEQUENCE_PATH) if p.endswith('.xml')]
@@ -3215,18 +3206,18 @@ class _PyFlame:
             print('Shared Movie Export Presets path does not exist:', SHARED_MOVIE_EXPORT_PATH, '\n')
 
         # Get Project File Sequence Export Presets
-        if os.path.isdir(PROJECT_FILE_SEQUENCE_PATH):
-            project_file_sequence_export_presets = [f'Project: File Sequence: {p[:-4]}' for p in os.listdir(PROJECT_FILE_SEQUENCE_PATH) if p.endswith('.xml')]
+        if os.path.isdir(project_file_sequence_path):
+            project_file_sequence_export_presets = [f'Project: File Sequence: {p[:-4]}' for p in os.listdir(project_file_sequence_path) if p.endswith('.xml')]
         else:
             project_file_sequence_export_presets = []
-            print('Project File Sequence Export Presets path does not exist:', PROJECT_FILE_SEQUENCE_PATH, '\n')
+            print('Project File Sequence Export Presets path does not exist:', project_file_sequence_path, '\n')
 
         # Get Project Movie Export Presets
-        if os.path.isdir(PROJECT_MOVIE_EXPORT_PATH):
-            project_movie_export_presets = [f'Project: Movie: {p[:-4]}' for p in os.listdir(PROJECT_MOVIE_EXPORT_PATH) if p.endswith('.xml')]
+        if os.path.isdir(project_movie_export_path):
+            project_movie_export_presets = [f'Project: Movie: {p[:-4]}' for p in os.listdir(project_movie_export_path) if p.endswith('.xml')]
         else:
             project_movie_export_presets = []
-            print('Project Movie Export Presets path does not exist:', PROJECT_MOVIE_EXPORT_PATH, '\n')
+            print('Project Movie Export Presets path does not exist:', project_movie_export_path, '\n')
 
         # Combine all export presets
         export_presets = shared_file_sequence_export_presets + shared_movie_export_presets + project_file_sequence_export_presets + project_movie_export_presets
@@ -3289,6 +3280,9 @@ class _PyFlame:
         if not isinstance(export_preset_name, str):
             pyflame.raise_type_error('pyflame.convert_export_preset_name_to_path', 'export_preset_name', 'str', export_preset_name)
 
+        project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
+        project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
+
         # Convert export preset name to path
         if export_preset_name == '':
             return ''
@@ -3299,11 +3293,11 @@ class _PyFlame:
             print('Shared: Movie:', os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ")[2]}.xml'))
             return os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ")[2]}.xml')
         elif 'Project: File Sequence:' in export_preset_name:
-            print('Project: File Sequence:', os.path.join(PROJECT_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(PROJECT_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ")[2]}.xml')
+            print('Project: File Sequence:', os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ")[2]}.xml'))
+            return os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ")[2]}.xml')
         elif 'Project: Movie:' in export_preset_name:
-            print('Project: Movie:', os.path.join(PROJECT_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(PROJECT_MOVIE_EXPORT_PATH, f'{export_preset_name.split(":")[2]}.xml')
+            print('Project: Movie:', os.path.join(project_movie_export_path, f'{export_preset_name.split(": ")[2]}.xml'))
+            return os.path.join(project_movie_export_path, f'{export_preset_name.split(":")[2]}.xml')
         else:
             return ''
 
@@ -3421,8 +3415,12 @@ class _PyFlame:
         """
 
         # Validate Arguments
-        if not isinstance(pyobject, (flame.PyLibrary, flame.PyDesktop, flame.PyFolder)):
-            pyflame.raise_type_error('pyflame.find_by_tag', 'pyobject', 'flame.PyLibrary | flame.PyDesktop | flame.PyFolder', pyobject)
+        if isinstance(pyobject, list):
+            # Check if all items in the list are valid PyObject types
+            if not all(isinstance(item, (flame.PyLibrary, flame.PyDesktop, flame.PyFolder)) for item in pyobject):
+                pyflame.raise_type_error('pyflame.find_by_tag', 'pyobject', 'list[flame.PyLibrary | flame.PyDesktop | flame.PyFolder]', pyobject)
+        elif not isinstance(pyobject, (flame.PyLibrary, flame.PyDesktop, flame.PyFolder)):
+            pyflame.raise_type_error('pyflame.find_by_tag', 'pyobject', 'flame.PyLibrary | flame.PyDesktop | flame.PyFolder | list[flame.PyLibrary | flame.PyDesktop | flame.PyFolder]', pyobject)
         if not isinstance(target_tag, str):
             pyflame.raise_type_error('pyflame.find_by_tag', 'target_tag', 'str', target_tag)
         if not isinstance(sorted, bool):
@@ -3444,10 +3442,17 @@ class _PyFlame:
                 mid = (start + end) // 2
                 pyobject_tags = pyobject[mid].tags.get_value()
                 # Loop through folder_tags to fing tag starting with tag_type
+                pyobject_tag = None
                 for tag in pyobject_tags:
                     if tag.startswith(tag_type):
                         pyobject_tag = tag
                         break
+
+                # No matching tag type in this object, treat as "less than" target
+                # and continue searching in the upper half.
+                if pyobject_tag is None:
+                    start = mid + 1
+                    continue
 
                 # Perform a direct comparison
                 if pyobject_tag == target_tag:
@@ -3667,7 +3672,7 @@ class _PyFlame:
         return dest_folder
 
     @staticmethod
-    def move_to_shot_folder(shot_name: str, pyobject: flame.PyClip | flame.PyBatch | flame.PyDesktop, search_location: flame.PyLibrary | flame.PyFolder, dest_folder_path: str) -> None:
+    def move_to_shot_folder(shot_name: str, pyobject: flame.PyClip | flame.PyBatch | flame.PyDesktop, search_location: flame.PyLibrary | flame.PyFolder, dest_folder_path: str, expand_dest_folder: bool=True) -> None:
         """
         Move to Shot Folder
         ===================
@@ -3691,6 +3696,10 @@ class _PyFlame:
                 Destination folder path in Shot Folder.
                 Example 'Shot_Folder/Plates'
 
+            expand_dest_folder (bool):
+                Expands the destination folder after move is complete.
+                (Default: True)
+
         Examples
         --------
             Move to shot folder:
@@ -3713,6 +3722,8 @@ class _PyFlame:
             pyflame.raise_type_error('pyflame.move_to_shot_folder', 'search_location', 'PyLibrary or PyFolder', search_location)
         if not isinstance(dest_folder_path, str):
             pyflame.raise_type_error('pyflame.move_to_shot_folder', 'dest_folder_path', 'str', dest_folder_path)
+        if not isinstance(expand_dest_folder, bool):
+            pyflame.raise_type_error('pyflame.move_to_shot_folder', 'expand_dest_folder', 'bool', expand_dest_folder)
 
         # Get Destination Folder
         dest_folder = pyflame.get_media_panel_shot_folder(shot_name, pyobject, search_location, dest_folder_path)
@@ -3725,8 +3736,12 @@ class _PyFlame:
         # Move PyObject to Destination Folder
         flame.media_panel.move(pyobject, dest_folder)
 
+        # Expand Destination Folder
+        if expand_dest_folder:
+            dest_folder.expanded = True
+
     @staticmethod
-    def copy_to_shot_folder(shot_name: str, pyobject: flame.PyClip | flame.PyBatch | flame.PyDesktop, search_location: flame.PyLibrary | flame.PyFolder, dest_folder_path: str) -> None:
+    def copy_to_shot_folder(shot_name: str, pyobject: flame.PyClip | flame.PyBatch | flame.PyDesktop, search_location: flame.PyLibrary | flame.PyFolder, dest_folder_path: str, expand_dest_folder: bool=True) -> None:
         """
         Copy to Shot Folder
         ===================
@@ -3750,6 +3765,10 @@ class _PyFlame:
                 Destination folder path in Shot Folder.
                 Example 'Shot_Folder/Plates'
 
+            expand_dest_folder (bool):
+                Expands the destination folder after copy is complete.
+                (Default: True)
+
         Example
         -------
             Copy to shot folder:
@@ -3772,6 +3791,9 @@ class _PyFlame:
             pyflame.raise_type_error('pyflame.copy_to_shot_folder', 'search_location', 'PyLibrary or PyFolder', search_location)
         if not isinstance(dest_folder_path, str):
             pyflame.raise_type_error('pyflame.copy_to_shot_folder', 'dest_folder_path', 'str', dest_folder_path)
+        if not isinstance(expand_dest_folder, bool):
+            pyflame.raise_type_error('pyflame.copy_to_shot_folder', 'expand_dest_folder', 'bool', expand_dest_folder)
+
 
         # Get Destination Folder
         dest_folder = pyflame.get_media_panel_shot_folder(shot_name, pyobject, search_location, dest_folder_path)
@@ -3783,6 +3805,10 @@ class _PyFlame:
 
         # Copy PyObject to Destination Folder
         flame.media_panel.copy(pyobject, dest_folder)
+
+        # Expand Destination Folder
+        if expand_dest_folder:
+            dest_folder.expanded = True
 
 pyflame = _PyFlame
 
@@ -4097,255 +4123,330 @@ class PyFlameConfig:
     PyFlameConfig
     =============
 
-    A class to manage configuration settings for the PyFlame script.
+    Flexible configuration manager for pyflame scripts.
 
-    This class handles loading and saving configuration settings from and to a JSON file.
-    It updates instance attributes based on the configuration values.
+    This class loads and saves JSON config values while keeping attribute
+    access dynamic so different scripts can use different keys.
 
-    Values can be provided as their original data types. Values no longer need to be converted to strings.
+    Values are stored in `config_values` and mirrored as instance attributes.
+    Unknown keys are allowed and preserved.
 
     Args
     ----
         `config_values` (Dict[str, Any]):
-            A dictionary to store configuration key-value pairs.
+            Dictionary of default config key-value pairs.
+            Must contain at least one key.
+            (Default: Required)
 
         `config_path` (str):
-            The file path to the configuration JSON file.
+            Path to the config json file.
+            (Default: `os.path.join(SCRIPT_PATH, 'config/config.json')`)
 
         `script_name` (str):
-            The name of the script. This is used to identify the script in the configuration file. This does not need to be set in most cases.
+            Script name to persist in config.
             (Default: `SCRIPT_NAME`)
 
     Methods
     -------
-        `load_config(config_values: Dict[str, Any])`:
-            Loads configuration values from a JSON file and updates instance attributes.
+        `load_config()`:
+            Load config from disk and hydrate attributes.
 
-        `save_config(config_values: Dict[str, Any])`:
-            Saves the current configuration values to a JSON file.
+        `save_config(config_values: Dict[str, Any] | None=None, config_path: str | None=None)`:
+            Save updated config values to disk.
 
-        `get_config_values()` -> Dict[str, Any]:
-            Returns the current configuration values.
+        `get(key: str, default: Any=None) -> Any`:
+            Return raw value from config dictionary.
 
-    Raises
-    ------
-        TypeError:
-            If `config_values` is not a dictionary.
-            If `config_path` is not a string.
-        ValueError:
-            If `config_values` is empty.
+        `get_str(key: str, default: str='') -> str`:
+            Return value as string.
 
-    Examples
-    --------
-        To Load/Create settings:
-        ```
-        settings = PyFlameConfig(
-                config_values={
-                'camera_path': '/opt/Autodesk',
-                'scene_scale': 100,
-                'import_type': 'Action Objects',
-                'st_map_setup': False,
-                }
-            )
-        ```
+        `get_int(key: str, default: int=0) -> int`:
+            Return value as integer.
 
-        To save settings:
-        ```
-        settings.save_config(
-            config_values={
-                'camera_path': self.path_entry.text(),
-                'scene_scale': self.scene_scale_slider.get_value(),
-                'import_type': self.import_type.text(),
-                'st_map_setup': self.st_map_setup.isChecked(),
-                }
-            )
-        ```
+        `get_float(key: str, default: float=0.0) -> float`:
+            Return value as float.
 
-        To get setting values:
-        ```
-        print(settings.camera_path)
-        >'/opt/Autodesk'
-        ```
+        `get_bool(key: str, default: bool=False) -> bool`:
+            Return value as boolean.
+
+        `get_config_values(config_path: str) -> Dict[str, Any]`:
+            Static helper to load and return config values from a path.
     """
 
-    def __init__(self,
-                 config_values: Dict[str, Any],
-                 config_path: str=os.path.join(SCRIPT_PATH, 'config/config.json'),
-                 script_name: str=SCRIPT_NAME
-                 ):
+    def __init__(self, config_values: Dict[str, Any], config_path: str = os.path.join(SCRIPT_PATH, 'config/config.json'), script_name: str = SCRIPT_NAME) -> None:
 
-        # Argument type validation
+        # Validate Argument types
         if not isinstance(config_values, dict):
-            raise TypeError(f"PyFlameConfig: Expected 'config_values' to be a dictionary, got {type(config_values).__name__} instead.")
+            pyflame.raise_type_error('PyFlameConfig', 'config_values', 'dict[str, Any]', config_values)
         if not config_values:
-            raise ValueError("PyFlameConfig: config_values dictionary cannot be empty.")
+            pyflame.raise_value_error('PyFlameConfig', 'config_values', 'non-empty dictionary', config_values)
         if not isinstance(config_path, str):
-            raise TypeError(f"PyFlameConfig: Expected 'config_path' to be a string, got {type(config_path).__name__} instead.")
+            pyflame.raise_type_error('PyFlameConfig', 'config_path', 'str', config_path)
+        if not isinstance(script_name, str):
+            pyflame.raise_type_error('PyFlameConfig', 'script_name', 'str', script_name)
 
-        # Initialize instance attributes
-        self.config_values: Dict[str, Any] = config_values
-        self.config_path = config_path
-        self.script_name = script_name
+        # Core attributes are assigned with object.__setattr__ to avoid
+        # __setattr__ mirroring before config_values exists.
+        object.__setattr__(self, 'config_values', dict(config_values))
+        object.__setattr__(self, 'config_path', config_path)
+        object.__setattr__(self, 'script_name', script_name)
 
-        # Load the configuration
+        # Load persisted configuration and hydrate dynamic attributes.
         self.load_config()
+
+    # -------------------------------------------------------------------------
+    # Dynamic attribute behavior
+    # -------------------------------------------------------------------------
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Dynamic attribute fallback.
+
+        If an attribute does not exist on the instance/class, look it up
+        in config_values so `settings.some_key` works for arbitrary keys.
+        """
+
+        try:
+            return self.config_values[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Dynamic attribute assignment.
+
+        Non-core attributes are mirrored into config_values automatically.
+        This keeps attribute-style updates and dictionary values in sync.
+        """
+
+        object.__setattr__(self, name, value)
+
+        # Mirror non-core keys once config_values has been initialized.
+        if (
+            name not in {'config_values', 'config_path', 'script_name'}
+            and 'config_values' in self.__dict__
+            and isinstance(self.__dict__['config_values'], dict)
+        ):
+            self.__dict__['config_values'][name] = value
+
+    # -------------------------------------------------------------------------
+    # Load / Save
+    # -------------------------------------------------------------------------
+
+    def print_config(self, action: str) -> None:
+
+        pad = max(len(k) for k in self.config_values) + 1
+
+        label = f'--[ {SCRIPT_NAME}: {action} Config ]'
+        top_rule = label + '-' * max(2, 80 - len(label))
+        bottom_rule = '-' * 80
+
+        print(f'{top_rule}')
+        for key, val in self.config_values.items():
+            print(f'{key:<{pad}}: {val}')
+        print(bottom_rule)
 
     def load_config(self) -> None:
         """
         Load Config
         ===========
 
-        Loads the configuration from the JSON file and updates instance attributes.
+        Load configuration from disk and update dynamic attributes.
 
-        This method reads the configuration file specified by `config_path`. If the file exists,
-        it updates the instance's configuration values and attributes with those read from the file.
-        If the file does not exist, it saves the default configuration values to the file.
+        If the config file exists:
+            - Read json object
+            - Merge into current config_values (file values override defaults)
+
+        If the config file does not exist:
+            - Create parent folder
+            - Save current defaults as new config file
         """
-
-        #print('Loading script configuration...\n')
-
-        pyflame.print('Loading Script Configuration', underline=True, )
 
         # Load the configuration from the JSON file
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r') as f:
-                loaded_config: Dict[str, Any] = json.load(f)
-                # Update the default values with the loaded ones
-                self.config_values.update(loaded_config)
+                loaded_config = json.load(f)
+
+            # Validate loaded config type
+            if not isinstance(loaded_config, dict):
+                pyflame.raise_value_error('PyFlameConfig.load_config', 'loaded_config', 'dictionary JSON root object', loaded_config)
+
+            # Update default values with loaded values
+            self.config_values.update(loaded_config)
         else:
-            # Ensure the config directory exists
+            # Ensure config directory exists then write defaults
             os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-            # Save the default configuration values if the file does not exist
             self.save_config(self.config_values)
 
-        # Set the attributes from config values
+        # Ensure script_name exists in current config
+        self.config_values['script_name'] = self.script_name
+
+        # Hydrate instance attributes from config values
         for key, value in self.config_values.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
-        # Print values to terminal
-        pyflame.print_json(
-            json_data=self.config_values,
-            indent=2,
-            )
+        # Print config values to terminal
+        self.print_config('Loading')
+        print(f'[\033[92mLOADED\033[0m] Configuration ready\n')
 
-        print('-' * 80, '\n')
-
-        pyflame.print('Script Configuration Loaded', arrow=True)
-
-    def save_config(self, config_values: Dict[str, Any] | None=None, config_path: str | None=None) -> None:
+    def save_config(self, config_values: Dict[str, Any] | None = None, config_path: str | None = None) -> None:
         """
         Save Config
         ===========
 
-        Saves the current configuration values to the JSON file.
-
-        This method updates the configuration values with any provided values and writes them to
-        the configuration file specified by `config_path`. It ensures that existing values are
-        preserved unless explicitly overwritten.
+        Save configuration values to disk.
 
         Args
         ----
-            `config_values` (Dict[str, Any]):
-                A dictionary of configuration values to update.
-                (Default: None)
+            `config_values` (Dict[str, Any] | None):
+                Optional values to merge before saving.
+                (Default: `None`)
 
-            `config_path` (str):
-                The file path to save the configuration JSON file. This does not need to be set in most cases.
-                (Default: None)
-
-        Raises
-        ------
-            TypeError:
-                If `config_values` is not a dictionary.
-
-        Example
-        -------
-            To save the current configuration values:
-            ```
-            settings.save_config(
-                config_values={
-                    'camera_path': self.path_entry.text(),
-                    'scene_scale': self.scene_scale_slider.get_value(),
-                    'import_type': self.import_type.text(),
-                    'st_map_setup': self.st_map_setup.isChecked(),
-                    }
-                )
-            ```
+            `config_path` (str | None):
+                Optional target path. Uses instance config_path when None.
+                (Default: `None`)
         """
 
         # Validate Argument types
         if config_values is not None and not isinstance(config_values, dict):
-            raise TypeError(f"PyFlameConfig.save_config: Expected 'config_values' to be a dictionary | None, got {type(config_values).__name__} instead.")
+            pyflame.raise_type_error('PyFlameConfig.save_config', 'config_values', 'dict[str, Any] | None', config_values)
         if config_path is not None and not isinstance(config_path, str):
-            raise TypeError(f"PyFlameConfig.save_config: Expected 'config_path' to be a str | None, got {type(config_path).__name__} instead.")
+            pyflame.raise_type_error('PyFlameConfig.save_config', 'config_path', 'str | None', config_path)
 
-        pyflame.print('Saving Script Configuration', underline=True, )
+        target_path = config_path if config_path is not None else self.config_path
 
-        if config_path is None:
-            config_path = self.config_path
-
+        # Merge provided values into current config
         if config_values:
             self.config_values.update(config_values)
 
-        # Ensure the script name is in the config
+        # Keep script name in config
         self.config_values['script_name'] = self.script_name
 
-        # script_name should be the first key in the config
-        self.config_values = {key: self.config_values[key] for key in ['script_name'] + list(self.config_values.keys())}
+        # Keep script_name first for readability
+        ordered_config: Dict[str, Any] = {'script_name': self.script_name}
+        for key, value in self.config_values.items():
+            if key != 'script_name':
+                ordered_config[key] = value
+        self.config_values = ordered_config
 
-        # Read existing config to keep unaltered values
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                existing_config: Dict[str, Any] = json.load(f)
+        # Load existing file so unmodified keys are preserved
+        action = 'Saving'
+        if os.path.exists(target_path):
+            with open(target_path, 'r') as f:
+                existing_config = json.load(f)
+
+            if not isinstance(existing_config, dict):
+                pyflame.raise_value_error('PyFlameConfig.save_config', 'existing_config', 'dictionary JSON root object', existing_config)
         else:
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             existing_config = {}
+            action = 'Creating'
 
-        # Update only provided values
+        # Update only values currently present in instance config
         existing_config.update(self.config_values)
 
-        with open(config_path, 'w') as f:
+        with open(target_path, 'w') as f:
             json.dump(existing_config, f, indent=4)
 
-        # Update the instance attributes with new config values
+        # Re-hydrate attributes after save
         for key, value in self.config_values.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
-        # Print values to terminal
-        pyflame.print_json(
-            json_data=self.config_values,
-            indent=2,
-            )
+        # Print config values to terminal
+        self.print_config(action)
+        print(f'[\033[92mSAVED\033[0m] Configuration saved\n')
 
-        print('-' * 80, '\n')
+    # -------------------------------------------------------------------------
+    # Access helpers (script-agnostic)
+    # -------------------------------------------------------------------------
 
-        pyflame.print('Script Configuration Saved', arrow=True)
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get raw config value by key.
+        """
+        return self.config_values.get(key, default)
 
+    def get_str(self, key: str, default: str = '') -> str:
+        """
+        Get config value as string.
+        """
+        value = self.config_values.get(key, default)
+        return value if isinstance(value, str) else str(value)
+
+    def get_int(self, key: str, default: int = 0) -> int:
+        """
+        Get config value as int.
+        """
+        value = self.config_values.get(key, default)
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get_float(self, key: str, default: float = 0.0) -> float:
+        """
+        Get config value as float.
+        """
+        value = self.config_values.get(key, default)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def get_bool(self, key: str, default: bool = False) -> bool:
+        """
+        Get config value as bool.
+        """
+        value = self.config_values.get(key, default)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+        return bool(value)
+
+    # -------------------------------------------------------------------------
+    # Static Helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
     def get_config_values(config_path: str) -> Dict[str, Any]:
         """
         Get Config Values
         =================
 
-        Returns the current configuration values.
-
-        This method provides access to the current state of configuration values stored in the instance.
+        Load and return config values from a json file path.
 
         Args
         ----
             `config_path` (str):
-                The file path to the configuration JSON file.
+                Path to config json file.
 
         Returns
         -------
-            Dict[str, Any]: The current configuration values.
+            Dict[str, Any]:
+                Loaded json dictionary.
         """
 
-        # Validate Argument type
         if not isinstance(config_path, str):
-            raise TypeError(f"PyFlameConfig.get_config_values: Expected 'config_path' to be a string, got {type(config_path).__name__} instead.")
+            pyflame.raise_type_error(
+                'PyFlameConfig.get_config_values',
+                'config_path',
+                'str',
+                config_path,
+            )
 
-        # Load the configuration from the JSON file
         with open(config_path, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            pyflame.raise_value_error(
+                'PyFlameConfig.get_config_values',
+                'data',
+                'dictionary JSON root object',
+                data,
+            )
+
+        return data
 
 # ==============================================================================
 # [PyFlame QT Widgets]
@@ -4464,7 +4565,7 @@ class PyFlameButton(QtWidgets.QPushButton):
 
     def __init__(self: 'PyFlameButton',
                  text: str='',
-                 connect: Callable[..., None]=None,
+                 connect: Callable[..., None] | None=None,
                  color: Color=Color.GRAY,
                  enabled: bool=True,
                  width: int | None=None,
@@ -4935,7 +5036,7 @@ class PyFlameButton(QtWidgets.QPushButton):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -5231,7 +5332,6 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         self.tooltip_delay = tooltip_delay * 1000
         self.tooltip_duration = tooltip_duration * 1000
 
-        # Set textChanged and setFocus signals
         self.text_changed(text_changed)
 
         # Settings for Alt+Click to show full entry text
@@ -5827,12 +5927,12 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         Set Focus
         =========
 
-        Set the focus to the entry widget.
+        Set widget focus to the entry widget.
         """
 
         self.setFocus()
 
-    def text_changed(self, connected_function: Callable) -> None:
+    def text_changed(self, connected_function: Callable | None) -> None:
         """
         Text Changed
         ============
@@ -6661,7 +6761,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -6734,7 +6834,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
             window_to_hide=window_to_hide,
             )
 
-        if new_path:
+        if isinstance(new_path, str):
             self.path = new_path
 
     #-------------------------------------
@@ -6798,6 +6898,2150 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
 
     def leaveEvent(self, event):
         self.tooltip_popup.leave_event()
+
+class PyFlameImageWidget(QtWidgets.QWidget):
+    """
+    PyFlameImageWidget
+    ==================
+
+    Custom QT Flame Image Widget
+
+    Displays a scaled image within a bordered frame, with an optional
+    single-line info bar below the image area.
+
+    When ``show_info=True`` a ``PyFlameEntry`` in read-only mode is shown below
+    the image area and is automatically populated with the image filename and
+    pixel dimensions whenever an image is loaded. The text can also be set
+    directly via the ``info_text`` property.
+
+
+
+    Args
+    ----
+        image (str | QPixmap | None):
+            Path to an image file, a QPixmap, or None to show an empty frame.
+            Supports any format that QPixmap can decode (PNG, JPG, EXR via
+            plugins, DPX, TIFF, etc.).
+            (Default: `None`)
+
+        show_info (bool):
+            Enable to show image filename and resolution at the botttom of the widget.
+            (Default: `False`)
+
+        show_border (bool):
+            Draws a 1-pixel border around the image area.
+            (Default: `False`)
+
+        popup_viewer (bool):
+            When True, double-clicking the image opens a standalone popup
+            viewer window. When False, double-clicks are ignored.
+            (Default: `False`)
+
+        width (int | None):
+            Optional fixed width in pixels. When None the widget expands to
+            fill available horizontal space.
+            (Default: `None`)
+
+        height (int | None):
+            Optional fixed height in pixels. When None the widget expands to
+            fill available vertical space.
+            (Default: `None`)
+
+        parent (QWidget | None):
+            Optional parent widget.
+            (Default: `None`)
+
+    Properties
+    ----------
+        image (str | QPixmap | None):
+            Get or set the displayed image. Accepts a file path, a QPixmap, or
+            None to clear the display.
+
+        image_path (str | None):
+            Read-only. The file-system path of the currently loaded image, or
+            None if no image is loaded or the image was set via QPixmap.
+
+        has_image (bool):
+            Read-only. True if a valid image is currently loaded.
+
+        image_size (tuple[int, int] | None):
+            Read-only. Pixel dimensions of the loaded image as (width, height),
+            or None if no image is loaded.
+
+        show_info (bool):
+            Read-only. True if the info bar entry is present.
+
+        info_text (str):
+            Get or set the text shown in the info bar. Only meaningful when
+            ``show_info=True``. Setting this property overrides the
+            automatically generated filename/resolution string until the next
+            time ``image`` is assigned.
+
+        background_color (Color):
+            Color used to fill the areas not covered by the scaled image.
+            Defaults to ``Color.DARK_GRAY``.
+
+        border_color (Color):
+            Color of the 1-pixel border surrounding the image area.
+            Defaults to ``Color.BORDER``.
+
+    Examples
+    --------
+        Load image from file with info bar::
+
+            widget = PyFlameImageWidget(image='/path/to/image.png', show_info=True)
+
+        Set image from QPixmap::
+
+            pixmap = QtGui.QPixmap('/path/to/image.png')
+            widget = PyFlameImageWidget(image=pixmap, show_info=True)
+
+        Override info bar text::
+
+            widget.info_text = 'Plate A  |  16-bit EXR'
+
+        Change colors after creation::
+
+            widget.background_color = Color.BLACK
+            widget.border_color = Color.BORDER_BRIGHTER
+    """
+
+    # Height of the info bar entry and the gap between it and the image area
+    _INFO_HEIGHT  = 28
+    _INFO_SPACING = 4
+
+    # Shared viewer geometry — persists across opens for all instances
+    _viewer_geometry: Optional[QtCore.QRect] = None
+
+    def __init__(
+        self,
+        image: Optional[Union[str, QtGui.QPixmap]] = None,
+        show_info: bool = False,
+        show_border: bool = False,
+        popup_viewer: bool = False,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        super().__init__(parent)
+
+        # Internal state
+        self._pixmap: Optional[QtGui.QPixmap] = None
+        self._source_path: Optional[str] = None
+        self._show_border: bool = show_border
+        self._popup_viewer: bool = popup_viewer
+        self._bg_color_enum: Color = Color.DARK_GRAY
+        self._background_color: QtGui.QColor = self._color_to_qcolor(Color.DARK_GRAY)
+        self._border_color_enum: Color = Color.BORDER
+        self._border_color: QtGui.QColor = self._color_to_qcolor(Color.BORDER)
+
+        # Viewer window reference — kept alive while the popup is open
+        self._viewer_window: Optional['PyFlameImageWidget._ImageViewerWindow'] = None
+
+        # Widget Settings
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
+        self.setMinimumSize(10, 10)
+
+        if width is not None:
+            self.setFixedWidth(width)
+        if height is not None:
+            self.setFixedHeight(height)
+
+        # Optional info bar — parented to self, positioned manually in resizeEvent
+        self._info_entry: Optional[PyFlameEntry] = None
+        if show_info:
+            self._info_entry = PyFlameEntry(read_only=True)
+            self._info_entry.setParent(self)
+            self._info_entry.show()
+
+        # Set initial image
+        if image is not None:
+            self.image = image
+
+    # -------------------------------------------------------------------------
+    # Size hints
+    # -------------------------------------------------------------------------
+
+    def sizeHint(self) -> QtCore.QSize:
+        """Default size hint when no explicit size is set."""
+
+        h = 360
+        if self._info_entry is not None:
+            h += self._INFO_SPACING + self._INFO_HEIGHT
+        return QtCore.QSize(640, h)
+
+    def minimumSizeHint(self) -> QtCore.QSize:
+        """Minimum sensible size for the widget."""
+
+        return QtCore.QSize(10, 10)
+
+    # -------------------------------------------------------------------------
+    # Properties
+    # -------------------------------------------------------------------------
+
+    @property
+    def image(self) -> Optional[QtGui.QPixmap]:
+        """
+        Image
+        =====
+
+        Get or set the image displayed in the widget.
+
+        Returns
+        -------
+            Optional[QtGui.QPixmap]:
+                The current pixmap, or None if no image is loaded.
+
+        Set
+        ---
+            `value` (str | QtGui.QPixmap | None):
+                A file-system path to load, a QPixmap to display directly,
+                or None to clear the display. Triggers an immediate repaint.
+                When an info bar is present its text is updated automatically.
+
+        Raises
+        ------
+            FileNotFoundError:
+                If a str path points to a missing file.
+            ValueError:
+                If the file exists but cannot be loaded as an image.
+            TypeError:
+                If the value is not str, QPixmap, or None.
+
+        Examples
+        --------
+            ```
+            # Get current image
+            pixmap = widget.image
+
+            # Set image from file path
+            widget.image = '/path/to/image.png'
+
+            # Set image from QPixmap
+            widget.image = QtGui.QPixmap('/path/to/image.png')
+
+            # Clear image
+            widget.image = None
+            ```
+        """
+
+        return self._pixmap
+
+    @image.setter
+    def image(self, value: Optional[Union[str, QtGui.QPixmap]]) -> None:
+        """
+        Image
+        =====
+
+        Set the image displayed in the widget.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, (str, QtGui.QPixmap)):
+            pyflame.raise_type_error(
+                'PyFlameImageWidget',
+                'image',
+                'str | QPixmap | None',
+                value,
+            )
+
+        self._source_path = None
+
+        if value is None:
+            self._pixmap = None
+        elif isinstance(value, str):
+            if not os.path.isfile(value):
+                pyflame.raise_value_error(
+                    'PyFlameImageWidget',
+                    'image',
+                    'existing file path',
+                    value,
+                )
+            pixmap = QtGui.QPixmap(value)
+            if pixmap.isNull():
+                pyflame.raise_value_error(
+                    'PyFlameImageWidget',
+                    'image',
+                    'valid image file',
+                    value,
+                )
+            self._pixmap = pixmap
+            self._source_path = value
+        else:
+            self._pixmap = value
+
+        self.update()
+        self._update_info_bar()
+
+    @property
+    def image_path(self) -> Optional[str]:
+        """
+        Image Path
+        ==========
+
+        Get the file-system path of the currently loaded image.
+
+        Read-only — the path is set automatically when ``image`` is assigned
+        a string. Returns ``None`` when no image is loaded or when the image
+        was supplied as a QPixmap (no path available).
+
+        Returns
+        -------
+            Optional[str]:
+                Absolute path to the loaded image file, or ``None``.
+
+        Examples
+        --------
+            ```
+            widget.image = '/path/to/image.png'
+            print(widget.image_path)  # '/path/to/image.png'
+
+            widget.image = QtGui.QPixmap('/path/to/image.png')
+            print(widget.image_path)  # None
+            ```
+        """
+
+        return self._source_path
+
+    @property
+    def has_image(self) -> bool:
+        """
+        Has Image
+        =========
+
+        Return whether an image is currently loaded in the widget.
+
+        Read-only — reflects whether the ``image`` property holds a valid
+        pixmap.
+
+        Returns
+        -------
+            bool:
+                ``True`` if an image is loaded, ``False`` otherwise.
+
+        Examples
+        --------
+            ```
+            if widget.has_image:
+                print('Image is loaded.')
+            ```
+        """
+
+        return self._pixmap is not None and not self._pixmap.isNull()
+
+    @property
+    def image_size(self) -> Optional[tuple[int, int]]:
+        """
+        Image Size
+        ==========
+
+        Get the pixel dimensions of the currently loaded image.
+
+        Read-only — reflects the size of the source pixmap, not the size at
+        which it is displayed. Returns ``None`` when no image is loaded.
+
+        Returns
+        -------
+            Optional[tuple[int, int]]:
+                ``(width, height)`` of the loaded image in pixels, or
+                ``None`` if no image is loaded.
+
+        Examples
+        --------
+            ```
+            size = widget.image_size
+            if size is not None:
+                width, height = size
+                print(width, height)
+            ```
+        """
+
+        if self._pixmap is None or self._pixmap.isNull():
+            return None
+
+        return (self._pixmap.width(), self._pixmap.height())
+
+    @property
+    def show_info(self) -> bool:
+        """
+        Show Info
+        =========
+
+        Return whether the info bar is present on the widget.
+
+        Read-only — reflects the ``show_info`` argument passed at
+        construction time.
+
+        Returns
+        -------
+            bool:
+                ``True`` if the info bar entry is present, ``False``
+                otherwise.
+
+        Examples
+        --------
+            ```
+            if widget.show_info:
+                widget.info_text = 'Custom label'
+            ```
+        """
+
+        return self._info_entry is not None
+
+    @property
+    def info_text(self) -> str:
+        """
+        Info Text
+        =========
+
+        Get or set the text shown in the info bar.
+
+        Returns
+        -------
+            str:
+                The current info bar text, or an empty string when no info
+                bar is present.
+
+        Set
+        ---
+            `value` (str):
+                The text to display in the info bar. Overrides the
+                auto-generated filename/resolution string until the next time
+                ``image`` is assigned. Has no effect when ``show_info=False``.
+
+        Raises
+        ------
+            TypeError:
+                If the provided value is not a string.
+
+        Examples
+        --------
+            ```
+            # Get info bar text
+            print(widget.info_text)
+
+            # Set info bar text
+            widget.info_text = 'Plate A  |  16-bit EXR'
+            ```
+        """
+
+        if self._info_entry is None:
+            return ''
+
+        return self._info_entry.text
+
+    @info_text.setter
+    def info_text(self, value: str) -> None:
+        """
+        Info Text
+        =========
+
+        Set the text shown in the info bar.
+        """
+
+        # Validate Argument
+        if not isinstance(value, str):
+            pyflame.raise_type_error(
+                'PyFlameImageWidget',
+                'info_text',
+                'str',
+                value,
+                )
+
+        if self._info_entry is not None:
+            self._info_entry.setText(value)
+
+    @property
+    def background_color(self) -> Color:
+        """
+        Background Color
+        ================
+
+        Get or set the background fill color.
+
+        Returns
+        -------
+            Color:
+                The Color enum value used to fill letterbox/pillarbox areas
+                not covered by the scaled image.
+
+        Set
+        ---
+            `value` (Color):
+                The Color enum value to use for the background fill.
+                Triggers an immediate repaint.
+
+        Raises
+        ------
+            TypeError:
+                If the provided value is not a Color enum member.
+
+        Examples
+        --------
+            ```
+            # Get background color
+            print(widget.background_color)
+
+            # Set background color
+            widget.background_color = Color.BLACK
+            ```
+        """
+
+        return self._bg_color_enum
+
+    @background_color.setter
+    def background_color(self, value: Color) -> None:
+        """
+        Background Color
+        ================
+
+        Set the background fill color.
+        """
+
+        # Validate Argument
+        if not isinstance(value, Color):
+            pyflame.raise_type_error(
+                'PyFlameImageWidget',
+                'background_color',
+                'Color',
+                value,
+            )
+
+        self._bg_color_enum = value
+        self._background_color = self._color_to_qcolor(value)
+        self.update()
+
+    @property
+    def border_color(self) -> Color:
+        """
+        Border Color
+        ============
+
+        Get or set the 1-pixel border color.
+
+        Returns
+        -------
+            Color:
+                The Color enum value used for the 1-pixel border surrounding
+                the image area.
+
+        Set
+        ---
+            `value` (Color):
+                The Color enum value to use for the border.
+                Triggers an immediate repaint.
+
+        Raises
+        ------
+            TypeError:
+                If the provided value is not a Color enum member.
+
+        Examples
+        --------
+            ```
+            # Get border color
+            print(widget.border_color)
+
+            # Set border color
+            widget.border_color = Color.BORDER_BRIGHTER
+            ```
+        """
+
+        return self._border_color_enum
+
+    @border_color.setter
+    def border_color(self, value: Color) -> None:
+        """
+        Border Color
+        ============
+
+        Set the 1-pixel border color.
+        """
+
+        # Validate Argument
+        if not isinstance(value, Color):
+            pyflame.raise_type_error(
+                'PyFlameImageWidget',
+                'border_color',
+                'Color',
+                value,
+            )
+
+        self._border_color_enum = value
+        self._border_color = self._color_to_qcolor(value)
+        self.update()
+
+    # -------------------------------------------------------------------------
+    # Events
+    # -------------------------------------------------------------------------
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """
+        Resize Event
+        ============
+
+        Repositions the info bar entry at the bottom of the widget whenever
+        the widget is resized.
+        """
+
+        super().resizeEvent(event)
+        if self._info_entry is not None:
+            y = self.height() - self._INFO_HEIGHT
+            self._info_entry.setGeometry(0, y, self.width(), self._INFO_HEIGHT)
+
+    def enterEvent(self, event: QtCore.QEvent) -> None:
+        self._show_border = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QtCore.QEvent) -> None:
+        self._show_border = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        """
+        Paint Event
+        ===========
+
+        Draws:
+          1. A 1-pixel border around the image area (Color.BORDER).
+          2. A dark grey background fill inside the border (Color.DARK_GRAY).
+          3. The image, scaled to fit inside the border while preserving the
+             original aspect ratio, centered within the inner area.
+
+        The info bar (when present) is a child widget that sits below the
+        painted image area and is not affected by this paint event.
+        """
+
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+
+        canvas = self._canvas_rect()
+        cw = canvas.width()
+        ch = canvas.height()
+
+        # Step 1 – border (optional) and background
+        if self._show_border:
+            painter.fillRect(canvas, self._border_color)
+            inner_rect = QtCore.QRect(1, 1, cw - 2, ch - 2)
+        else:
+            inner_rect = canvas
+
+        # Step 2 – background fill
+        painter.fillRect(inner_rect, self._background_color)
+
+        # Step 3 – scaled image centered inside the inner area
+        if self._pixmap is not None and not self._pixmap.isNull():
+            scaled = self._pixmap.scaled(
+                inner_rect.width(),
+                inner_rect.height(),
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation,
+            )
+            x = inner_rect.x() + (inner_rect.width() - scaled.width()) // 2
+            y = inner_rect.y() + (inner_rect.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+
+        painter.end()
+
+    # -------------------------------------------------------------------------
+    # Internal helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _color_to_qcolor(color: Color) -> QtGui.QColor:
+        """
+        Convert a Color enum value (CSS rgb / rgba string) to a QColor.
+
+        Supports both ``rgb(r, g, b)`` and ``rgba(r, g, b, a)`` formats where
+        the alpha channel is expressed as a float in the range [0, 1].
+
+        Args:
+            color: A Color enum member whose ``.value`` is an rgb/rgba string.
+
+        Returns:
+            The equivalent QColor.
+
+        Raises:
+            ValueError: If the string cannot be parsed.
+        """
+
+        raw = color.value.strip()
+        m = re.fullmatch(
+            r'rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)',
+            raw,
+        )
+        if not m:
+            pyflame.raise_value_error(
+                'PyFlameImageWidget',
+                'color',
+                'valid Color enum string',
+                raw,
+            )
+        assert m is not None
+        r, g, b = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        a = int(float(m.group(4)) * 255) if m.group(4) is not None else 255
+        return QtGui.QColor(r, g, b, a)
+
+    def _canvas_rect(self) -> QtCore.QRect:
+        """
+        The rectangle available for image painting.
+
+        When the info bar is present this is the full widget rect minus the
+        height reserved for the info entry and its spacing gap.
+        """
+
+        h = self.height()
+        if self._info_entry is not None:
+            h -= self._INFO_SPACING + self._INFO_HEIGHT
+        return QtCore.QRect(0, 0, self.width(), max(h, 0))
+
+    def _update_info_bar(self) -> None:
+        """Refresh the info bar text from the current image state."""
+
+        if self._info_entry is None:
+            return
+
+        if self._pixmap is None or self._pixmap.isNull():
+            self._info_entry.setText('')
+            return
+
+        w = self._pixmap.width()
+        h = self._pixmap.height()
+
+        if self._source_path:
+            name = os.path.basename(self._source_path)
+            self._info_entry.setText(f'{name}  |  {w} x {h}')
+        else:
+            self._info_entry.setText(f'{w} x {h}')
+
+    # -------------------------------------------------------------------------
+    # Double-click viewer
+    # -------------------------------------------------------------------------
+
+    def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
+        """Open the popup image viewer on a left double-click when popup_viewer is enabled."""
+
+        if self._popup_viewer and event.button() == QtCore.Qt.MouseButton.LeftButton and self.has_image:
+            self._open_viewer()
+        super().mouseDoubleClickEvent(event)
+
+    def _open_viewer(self) -> None:
+        """Open the popup viewer, or raise it if it is already visible."""
+
+        if self._viewer_window is not None and self._viewer_window.isVisible():
+            self._viewer_window.raise_()
+            self._viewer_window.activateWindow()
+            return
+
+        self._viewer_window = PyFlameImageWidget._ImageViewerWindow(
+            pixmap=self._pixmap,
+            source_path=self._source_path,
+            geometry=PyFlameImageWidget._viewer_geometry,
+            parent=self.window(),
+        )
+        self._viewer_window.geometry_saved.connect(self._on_viewer_geometry_saved)
+        self._viewer_window.show()
+
+    def _on_viewer_geometry_saved(self, rect: QtCore.QRect) -> None:
+        """Store the viewer window geometry so it is restored on the next open."""
+
+        PyFlameImageWidget._viewer_geometry = rect
+
+    # ==========================================================================
+    # Popup Image Viewer
+    # ==========================================================================
+
+    class _ImageViewerWindow(QtWidgets.QWidget):
+        """
+        _ImageViewerWindow
+        ==================
+
+        Standalone popup window opened by double-clicking a PyFlameImageWidget.
+
+        Displays the image with zoom controls, a copy-to-clipboard button, a
+        save-as-PNG button, and an info bar that mirrors the parent widget's
+        style (filename  |  width x height).
+
+        Zoom controls
+        -------------
+        - **Fit** button   — scale image to fill the window (default on open).
+        - **100%** button  — display at native 1:1 pixel resolution.
+        - **Mouse wheel**  — zoom in / out continuously.
+
+        Keyboard shortcuts
+        ------------------
+        - ``Escape``    — close the window.
+        - ``Ctrl/Cmd+S``— open the Save PNG dialog.
+        """
+
+        geometry_saved = QtCore.Signal(QtCore.QRect)
+
+        _ZOOM_MIN  = 0.05
+        _ZOOM_MAX  = 8.0
+        _ZOOM_STEP = 1.15
+
+        def __init__(
+            self,
+            pixmap: QtGui.QPixmap,
+            source_path: Optional[str],
+            geometry: Optional[QtCore.QRect] = None,
+            parent: Optional[QtWidgets.QWidget] = None,
+        ) -> None:
+            super().__init__(parent)
+
+            self._original_pixmap = pixmap
+            self._source_path = source_path
+            self._zoom_factor: float = 1.0
+            self._fit_mode: bool = True
+
+            # Pan state
+            self._pan_active: bool = False
+            self._pan_origin: QtCore.QPoint = QtCore.QPoint()
+
+            # --- Window setup ---
+            title = os.path.basename(source_path) if source_path else 'Image Viewer'
+            self.setWindowTitle(title)
+            self.setMinimumSize(200, 200)
+            self.setWindowFlags(
+                QtCore.Qt.WindowType.Window
+                | QtCore.Qt.WindowType.WindowCloseButtonHint
+                | QtCore.Qt.WindowType.WindowMinMaxButtonsHint,
+                )
+            self.setStyleSheet(f'background-color: {Color.GRAY.value};')
+
+            # --- Scroll area + image label ---
+            self._image_label = QtWidgets.QLabel()
+            self._image_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            self._image_label.setStyleSheet('background-color: transparent;')
+
+            self._scroll_area = QtWidgets.QScrollArea()
+            self._scroll_area.setWidget(self._image_label)
+            self._scroll_area.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            self._scroll_area.setStyleSheet(f"""
+                QScrollArea {{
+                    background-color: {Color.DARK_GRAY.value};
+                    border: 1px solid {Color.BORDER.value};
+                }}
+                QScrollBar:vertical {{
+                    background: {Color.GRAY.value};
+                    width: 10px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background: {Color.BRIGHT_GRAY.value};
+                    border-radius: 5px;
+                    min-height: 20px;
+                }}
+                QScrollBar:horizontal {{
+                    background: {Color.GRAY.value};
+                    height: 10px;
+                }}
+                QScrollBar::handle:horizontal {{
+                    background: {Color.BRIGHT_GRAY.value};
+                    border-radius: 5px;
+                    min-width: 20px;
+                }}
+            """)
+            self._scroll_area.viewport().installEventFilter(self)
+            self._scroll_area.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
+
+            # --- Info bar ---
+            self._info_entry = PyFlameEntry(read_only=True)
+            self._info_entry.setFixedHeight(28)
+            self._refresh_info()
+
+            # --- Buttons ---
+            _btn_style = f"""
+                QPushButton {{
+                    color: {Color.BUTTON_TEXT.value};
+                    background-color: {Color.GRAY.value};
+                    border: 1px solid {Color.BORDER.value};
+                    padding: 0px 12px;
+                    height: 28px;
+                }}
+                QPushButton:hover {{
+                    background-color: {Color.BRIGHT_GRAY.value};
+                    border: 1px solid {Color.BORDER_BRIGHTER.value};
+                }}
+                QPushButton:pressed {{
+                    background-color: {Color.SELECTED_GRAY.value};
+                }}
+            """
+
+            self._btn_fit  = QtWidgets.QPushButton('Fit')
+            self._btn_100  = QtWidgets.QPushButton('100%')
+            self._btn_copy = QtWidgets.QPushButton('Copy')
+            self._btn_save = QtWidgets.QPushButton('Save PNG')
+
+            for btn in (self._btn_fit, self._btn_100, self._btn_copy, self._btn_save):
+                btn.setStyleSheet(_btn_style)
+                btn.setFixedHeight(28)
+                btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+
+            self._btn_fit.clicked.connect(self._zoom_fit)
+            self._btn_100.clicked.connect(self._zoom_100)
+            self._btn_copy.clicked.connect(self._copy_to_clipboard)
+            self._btn_save.clicked.connect(self._save_png)
+
+            # --- Keyboard shortcuts ---
+            QtGui.QShortcut(QtGui.QKeySequence('Escape'), self, self.close)
+            QtGui.QShortcut(QtGui.QKeySequence.StandardKey.Save, self, self._save_png)
+
+            # --- Button bar ---
+            btn_bar = QtWidgets.QHBoxLayout()
+            btn_bar.setContentsMargins(0, 0, 0, 0)
+            btn_bar.setSpacing(4)
+            btn_bar.addWidget(self._btn_fit)
+            btn_bar.addWidget(self._btn_100)
+            btn_bar.addStretch()
+            btn_bar.addWidget(self._btn_copy)
+            btn_bar.addWidget(self._btn_save)
+
+            # --- Main layout ---
+            layout = QtWidgets.QVBoxLayout(self)
+            layout.setContentsMargins(8, 8, 8, 8)
+            layout.setSpacing(4)
+            layout.addWidget(self._scroll_area)
+            layout.addWidget(self._info_entry)
+            layout.addLayout(btn_bar)
+
+            # --- Geometry ---
+            if geometry is not None:
+                self.setGeometry(geometry)
+            else:
+                self.resize(960, 600)
+                screen = QtGui.QGuiApplication.primaryScreen()
+                if screen:
+                    center = screen.availableGeometry().center()
+                    self.move(center.x() - self.width() // 2, center.y() - self.height() // 2)
+
+            # Defer initial fit so the viewport is fully laid out first
+            QtCore.QTimer.singleShot(0, self._zoom_fit)
+
+        # -------------------------------------------------------------------------
+        # Events
+        # -------------------------------------------------------------------------
+
+        def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+            self.geometry_saved.emit(self.geometry())
+            super().closeEvent(event)
+
+        def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+            super().resizeEvent(event)
+            if self._fit_mode:
+                self._apply_zoom(self._calc_fit_factor())
+
+        def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+            """Intercept viewport mouse and wheel events for zoom and pan."""
+
+            if obj is self._scroll_area.viewport():
+                t = event.type()
+
+                if t == QtCore.QEvent.Type.Wheel:
+                    delta = event.angleDelta().y()
+                    step = self._ZOOM_STEP if delta > 0 else 1.0 / self._ZOOM_STEP
+                    self._set_zoom(self._zoom_factor * step)
+                    return True
+
+                if t == QtCore.QEvent.Type.MouseButtonPress and event.button() == QtCore.Qt.MouseButton.LeftButton:
+                    self._pan_active = True
+                    self._pan_origin = event.position().toPoint()
+                    self._scroll_area.viewport().setCursor(QtCore.Qt.CursorShape.ClosedHandCursor)
+                    return True
+
+                if t == QtCore.QEvent.Type.MouseMove and self._pan_active:
+                    delta = event.position().toPoint() - self._pan_origin
+                    self._pan_origin = event.position().toPoint()
+                    h_bar = self._scroll_area.horizontalScrollBar()
+                    v_bar = self._scroll_area.verticalScrollBar()
+                    h_bar.setValue(h_bar.value() - delta.x())
+                    v_bar.setValue(v_bar.value() - delta.y())
+                    return True
+
+                if t == QtCore.QEvent.Type.MouseButtonRelease and event.button() == QtCore.Qt.MouseButton.LeftButton:
+                    self._pan_active = False
+                    self._scroll_area.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
+                    return True
+
+            return super().eventFilter(obj, event)
+
+        # -------------------------------------------------------------------------
+        # Zoom helpers
+        # -------------------------------------------------------------------------
+
+        def _calc_fit_factor(self) -> float:
+            """Return the zoom factor required to fit the image in the viewport."""
+
+            vp = self._scroll_area.viewport().size()
+            pw = self._original_pixmap.width()
+            ph = self._original_pixmap.height()
+            if pw == 0 or ph == 0:
+                return 1.0
+            return min(vp.width() / pw, vp.height() / ph)
+
+        def _apply_zoom(self, factor: float) -> None:
+            """Scale the image label to the given factor."""
+
+            self._zoom_factor = max(self._ZOOM_MIN, min(self._ZOOM_MAX, factor))
+            w = int(self._original_pixmap.width()  * self._zoom_factor)
+            h = int(self._original_pixmap.height() * self._zoom_factor)
+            scaled = self._original_pixmap.scaled(
+                w, h,
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation,
+            )
+            self._image_label.setPixmap(scaled)
+            self._image_label.resize(scaled.size())
+
+        def _set_zoom(self, factor: float) -> None:
+            """Apply an explicit zoom factor and exit fit mode."""
+
+            self._fit_mode = False
+            self._apply_zoom(factor)
+
+        def _zoom_fit(self) -> None:
+            """Scale image to fill the current viewport (fit mode)."""
+
+            self._fit_mode = True
+            self._apply_zoom(self._calc_fit_factor())
+
+        def _zoom_100(self) -> None:
+            """Display image at its native 1:1 pixel resolution."""
+
+            self._fit_mode = False
+            self._apply_zoom(1.0)
+
+        # -------------------------------------------------------------------------
+        # Actions
+        # -------------------------------------------------------------------------
+
+        def _copy_to_clipboard(self) -> None:
+            """Copy the original unscaled image to the system clipboard."""
+
+            QtGui.QGuiApplication.clipboard().setPixmap(self._original_pixmap)
+
+        def _save_png(self) -> None:
+            """Open a native save dialog and write the image as a PNG file."""
+
+            if self._source_path:
+                base = os.path.splitext(self._source_path)[0]
+                default_path = base + '.png'
+            else:
+                default_path = os.path.join(os.path.expanduser('~'), 'image.png')
+
+            path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                'Save Image As PNG',
+                default_path,
+                'PNG Images (*.png)',
+            )
+            if not path:
+                return
+            if not path.lower().endswith('.png'):
+                path += '.png'
+            self._original_pixmap.save(path, 'PNG')
+
+        def _refresh_info(self) -> None:
+            """Populate the info bar with filename and pixel dimensions."""
+
+            w = self._original_pixmap.width()
+            h = self._original_pixmap.height()
+            if self._source_path:
+                name = os.path.basename(self._source_path)
+                self._info_entry.setText(f'{name}  |  {w} x {h}')
+            else:
+                self._info_entry.setText(f'{w} x {h}')
+
+class PyFlameImageGallery(QtWidgets.QWidget):
+    """
+    PyFlameImageGallery
+    ===================
+
+    Custom QT Flame Image Gallery Widget
+
+    Scrollable image gallery widget that displays images from a folder in a
+    grid, built on top of PyFlameImageWidget.
+
+    Exactly one of ``columns`` or ``rows`` must be provided. Providing both
+    raises a ``ValueError``.
+
+    When ``columns`` is set the grid has a fixed number of columns and images
+    wrap onto new rows as needed. A vertical scrollbar appears on the right
+    when there are more rows than fit within the widget height.
+
+    When ``rows`` is set the grid has a fixed number of rows and images wrap
+    onto new columns as needed. A horizontal scrollbar appears at the bottom
+    when there are more columns than fit within the widget width.
+
+    Each image occupies a square cell whose side length is computed from the
+    available viewport dimension divided by the fixed axis count.
+    Cells are recomputed on every resize. Clicking a cell selects it
+    (blue border); arrow keys move the selection. An optional read-only info
+    bar below the grid shows the selected image filename and pixel dimensions.
+
+    Args
+    ----
+        folder (str | None):
+            Path to the folder to load images from. Can be changed later via
+            the ``folder`` property.
+            (Default: `None`)
+
+        columns (int | None):
+            Number of grid columns. Must be >= 1. Cannot be combined with
+            ``rows``. When set, images flow left-to-right and wrap into new
+            rows with a vertical scrollbar. Defaults to 4 when neither
+            ``columns`` nor ``rows`` is provided.
+            (Default: `None`)
+
+        rows (int | None):
+            Number of grid rows. Must be >= 1. Cannot be combined with
+            ``columns``. When set, images flow top-to-bottom and wrap into
+            new columns with a horizontal scrollbar.
+            (Default: `None`)
+
+        show_info (bool):
+            When True, a read-only ``PyFlameEntry`` is displayed below the
+            grid showing the selected image filename and resolution.
+            (Default: `False`)
+
+        popup_viewer (bool):
+            When True, double-clicking a gallery image opens a standalone
+            popup viewer window. When False, double-clicks are ignored.
+            (Default: `False`)
+
+        sort_ascending (bool):
+            Filename sort order. True = A-Z, False = Z-A.
+            (Default: `True`)
+
+        extensions (list[str] | None):
+            File extensions to include, e.g. ``['.png', '.exr']``. When
+            None the default set of common image formats is used.
+            (Default: `None`)
+
+        image_selected (Callable[[str], None] | None):
+            Callback invoked with the full path of the selected image
+            whenever the selection changes.
+            (Default: `None`)
+
+        width (int | None):
+            Optional fixed widget width in pixels.
+            (Default: `None`)
+
+        height (int | None):
+            Optional fixed widget height in pixels.
+            (Default: `None`)
+
+        parent (QWidget | None):
+            Optional parent widget.
+            (Default: `None`)
+
+    Properties
+    ----------
+        folder (str | None):
+            Get or set the folder path. Setting reloads the gallery.
+
+        columns (int | None):
+            Get or set the number of grid columns. Only valid when the
+            gallery was created in columns mode. Setting rebuilds the grid.
+
+        rows (int | None):
+            Get or set the number of grid rows. Only valid when the
+            gallery was created in rows mode. Setting rebuilds the grid.
+
+        sort_ascending (bool):
+            Get or set the sort direction. Setting resorts and rebuilds.
+
+        extensions (list[str]):
+            Get or set the allowed extensions. Setting reloads.
+
+        show_info (bool):
+            Read-only. True if the info bar is present.
+
+        image_count (int):
+            Read-only. Total images currently loaded.
+
+        selected_path (str | None):
+            Read-only. Full path of the selected image.
+
+        selected_name (str | None):
+            Read-only. Filename of the selected image.
+
+        selected_size (tuple[int, int] | None):
+            Read-only. ``(width, height)`` of the selected image pixmap.
+
+        selected_index (int | None):
+            Read-only. Zero-based grid index of the selected image.
+
+    Examples
+    --------
+        Column-based gallery with vertical scrolling::
+
+            gallery = PyFlameImageGallery(
+                folder='/path/to/images',
+                columns=5,
+                show_info=True,
+            )
+
+        Row-based gallery with horizontal scrolling::
+
+            gallery = PyFlameImageGallery(
+                folder='/path/to/images',
+                rows=3,
+                show_info=True,
+            )
+
+        Refresh after folder contents change::
+
+            gallery.refresh()
+    """
+
+    _DEFAULT_EXTENSIONS: frozenset = frozenset({
+        '.png', '.jpg', '.jpeg', '.tif', '.tiff',
+        '.exr', '.dpx', '.bmp', '.gif', '.webp', '.hdr',
+    })
+
+    _INFO_HEIGHT  = 28
+    _INFO_SPACING = 4
+
+    def __init__(
+        self,
+        folder: Optional[str] = None,
+        columns: Optional[int] = None,
+        rows: Optional[int] = None,
+        show_info: bool = False,
+        popup_viewer: bool = False,
+        sort_ascending: bool = True,
+        extensions: Optional[list] = None,
+        image_selected: Optional[Callable] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        super().__init__(parent)
+
+        # Validate Arguments
+        if columns is not None and rows is not None:
+            pyflame.raise_value_error(
+                'PyFlameImageGallery',
+                'columns/rows',
+                'one of columns or rows, not both',
+                f'columns={columns!r}, rows={rows!r}',
+            )
+        if columns is None and rows is None:
+            columns = 4
+        if folder is not None and not isinstance(folder, str):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'folder',
+                'str | None',
+                folder,
+            )
+        if columns is not None and (not isinstance(columns, int) or columns < 1):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'columns',
+                'int >= 1',
+                columns,
+            )
+        if rows is not None and (not isinstance(rows, int) or rows < 1):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'rows',
+                'int >= 1',
+                rows,
+            )
+        if not isinstance(show_info, bool):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'show_info',
+                'bool',
+                show_info,
+            )
+        if not isinstance(popup_viewer, bool):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'popup_viewer',
+                'bool',
+                popup_viewer,
+            )
+        if not isinstance(sort_ascending, bool):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'sort_ascending',
+                'bool',
+                sort_ascending,
+            )
+        if extensions is not None and not isinstance(extensions, list):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'extensions',
+                'list | None',
+                extensions,
+            )
+        if image_selected is not None and not callable(image_selected):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'image_selected',
+                'callable | None',
+                image_selected,
+            )
+        if width is not None and (not isinstance(width, int) or width < 1):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'width',
+                'int >= 1 | None',
+                width,
+            )
+        if height is not None and (not isinstance(height, int) or height < 1):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'height',
+                'int >= 1 | None',
+                height,
+            )
+
+        # Internal state
+        self._mode: str = 'columns' if columns is not None else 'rows'
+        self._folder: Optional[str] = folder
+        self._columns: Optional[int] = columns
+        self._rows: Optional[int] = rows
+        self._show_info: bool = show_info
+        self._popup_viewer: bool = popup_viewer
+        self._sort_ascending: bool = sort_ascending
+        self._extensions: set = (
+            set(extensions) if extensions is not None
+            else set(self._DEFAULT_EXTENSIONS)
+        )
+        self._image_selected: Optional[Callable] = image_selected
+        self._image_paths: list = []
+        self._cells: list = []
+        self._selected_index: Optional[int] = None
+
+        # Widget settings
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
+        if width is not None:
+            self.setFixedWidth(width)
+        if height is not None:
+            self.setFixedHeight(height)
+
+        # Border style strings for hover toggle
+        self._border_off = f'border: 1px solid transparent;'
+        self._border_on = f'border: 1px solid {Color.BORDER.value};'
+
+        # Build UI
+        self._build_ui()
+
+        # Load initial folder
+        if self._folder is not None:
+            self._load_images()
+            self._build_grid()
+
+    # -------------------------------------------------------------------------
+    # UI construction
+    # -------------------------------------------------------------------------
+
+    def _build_ui(self) -> None:
+        """Build the scroll area, grid container, and optional info bar."""
+
+        self.setStyleSheet(self._border_off)
+
+        # Scroll area — parented directly, positioned in resizeEvent
+        self._scroll_area = QtWidgets.QScrollArea(self)
+        self._scroll_area.setWidgetResizable(True)
+        self._scroll_area.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self._scroll_area.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+
+        if self._mode == 'columns':
+            self._scroll_area.setHorizontalScrollBarPolicy(
+                QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
+            self._scroll_area.setVerticalScrollBarPolicy(
+                QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+            )
+        else:
+            self._scroll_area.setHorizontalScrollBarPolicy(
+                QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+            )
+            self._scroll_area.setVerticalScrollBarPolicy(
+                QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
+
+        # Grid container
+        bg = Color.DARK_GRAY.value
+        self._scroll_area.setStyleSheet(f'QScrollArea {{ background-color: {bg}; }}')
+
+        self._grid_widget = QtWidgets.QWidget()
+        self._grid_widget.setStyleSheet(f'background-color: {bg};')
+        self._grid_widget.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+
+        self._grid_layout = QtWidgets.QGridLayout(self._grid_widget)
+        self._grid_layout.setContentsMargins(0, 0, 0, 0)
+        self._grid_layout.setSpacing(2)
+        self._grid_layout.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft
+        )
+
+        self._scroll_area.setWidget(self._grid_widget)
+
+        # Optional info bar — parented directly, positioned in resizeEvent
+        self._info_entry: Optional[PyFlameEntry] = None
+        if self._show_info:
+            self._info_entry = PyFlameEntry(read_only=True)
+            self._info_entry.setParent(self)
+            self._info_entry.show()
+
+    # -------------------------------------------------------------------------
+    # Size hints
+    # -------------------------------------------------------------------------
+
+    def sizeHint(self) -> QtCore.QSize:
+        """Default size hint based on mode."""
+
+        if self._mode == 'columns':
+            columns = self._columns or 1
+            vp_width = self._scroll_area.viewport().width()
+            if vp_width <= 0:
+                vp_width = 400
+            cell_size = max(vp_width // columns, 10)
+            h = cell_size * 3
+            if self._show_info:
+                h += self._INFO_SPACING + self._INFO_HEIGHT
+            return QtCore.QSize(vp_width, h)
+        else:
+            rows = self._rows or 1
+            vp_height = self._scroll_area.viewport().height()
+            if vp_height <= 0:
+                vp_height = 300
+            cell_size = max(vp_height // rows, 10)
+            w = cell_size * 4
+            if self._show_info:
+                vp_height += self._INFO_SPACING + self._INFO_HEIGHT
+            return QtCore.QSize(w, vp_height)
+
+    # -------------------------------------------------------------------------
+    # Properties
+    # -------------------------------------------------------------------------
+
+    @property
+    def folder(self) -> Optional[str]:
+        """
+        Folder
+        ======
+
+        Get or set the folder path. Setting this property re-scans the folder
+        and rebuilds the grid.
+
+        Returns
+        -------
+            Optional[str]:
+                The current folder path, or None if not set.
+
+        Set
+        ---
+            `value` (str | None):
+                Path to an image folder, or None to clear the gallery.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not str or None.
+
+        Examples
+        --------
+            ```
+            gallery.folder = '/path/to/images'
+            gallery.folder = None  # clears the gallery
+            ```
+        """
+
+        return self._folder
+
+    @folder.setter
+    def folder(self, value: Optional[str]) -> None:
+
+        # Validate Argument
+        if value is not None and not isinstance(value, str):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'folder',
+                'str | None',
+                value,
+            )
+
+        self._folder = value
+        self._load_images()
+        self._build_grid()
+
+    @property
+    def columns(self) -> Optional[int]:
+        """
+        Columns
+        =======
+
+        Get or set the number of grid columns. Only meaningful when the
+        gallery was created in columns mode. Setting this property rebuilds
+        the grid with the new column count.
+
+        Returns
+        -------
+            Optional[int]:
+                Current number of grid columns, or None if in rows mode.
+
+        Set
+        ---
+            `value` (int):
+                New column count. Must be >= 1.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not an int >= 1.
+            RuntimeError:
+                If the gallery is in rows mode.
+
+        Examples
+        --------
+            ```
+            gallery.columns = 6
+            ```
+        """
+
+        return self._columns
+
+    @columns.setter
+    def columns(self, value: int) -> None:
+
+        if self._mode != 'columns':
+            raise RuntimeError(
+                "PyFlameImageGallery: Cannot set 'columns' when the "
+                "gallery is in rows mode."
+            )
+        if not isinstance(value, int) or value < 1:
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'columns',
+                'int >= 1',
+                value,
+            )
+
+        self._columns = value
+        self._build_grid()
+
+    @property
+    def rows(self) -> Optional[int]:
+        """
+        Rows
+        ====
+
+        Get or set the number of grid rows. Only meaningful when the gallery
+        was created in rows mode. Setting this property rebuilds the grid
+        with the new row count.
+
+        Returns
+        -------
+            Optional[int]:
+                Current number of grid rows, or None if in columns mode.
+
+        Set
+        ---
+            `value` (int):
+                New row count. Must be >= 1.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not an int >= 1.
+            RuntimeError:
+                If the gallery is in columns mode.
+
+        Examples
+        --------
+            ```
+            gallery.rows = 5
+            ```
+        """
+
+        return self._rows
+
+    @rows.setter
+    def rows(self, value: int) -> None:
+
+        if self._mode != 'rows':
+            raise RuntimeError(
+                "PyFlameImageGallery: Cannot set 'rows' when the "
+                "gallery is in columns mode."
+            )
+        if not isinstance(value, int) or value < 1:
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'rows',
+                'int >= 1',
+                value,
+            )
+
+        self._rows = value
+        self._build_grid()
+
+    @property
+    def sort_ascending(self) -> bool:
+        """
+        Sort Ascending
+        ==============
+
+        Get or set the filename sort direction. Setting this property resorts
+        the image list and rebuilds the grid.
+
+        Returns
+        -------
+            bool:
+                True for A→Z ordering, False for Z→A.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not a bool.
+
+        Examples
+        --------
+            ```
+            gallery.sort_ascending = False  # reverse sort
+            ```
+        """
+
+        return self._sort_ascending
+
+    @sort_ascending.setter
+    def sort_ascending(self, value: bool) -> None:
+
+        # Validate Argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'sort_ascending',
+                'bool',
+                value,
+            )
+
+        self._sort_ascending = value
+        self._load_images()
+        self._build_grid()
+
+    @property
+    def extensions(self) -> list:
+        """
+        Extensions
+        ==========
+
+        Get or set the allowed file extensions. Setting reloads images from
+        the current folder with the new filter applied.
+
+        Returns
+        -------
+            list[str]:
+                Sorted list of current allowed extensions (e.g.
+                ``['.exr', '.png']``).
+
+        Set
+        ---
+            `value` (list[str]):
+                New list of extensions to allow.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not a list.
+
+        Examples
+        --------
+            ```
+            gallery.extensions = ['.png', '.jpg']
+            ```
+        """
+
+        return sorted(self._extensions)
+
+    @extensions.setter
+    def extensions(self, value: list) -> None:
+
+        # Validate Argument
+        if not isinstance(value, list):
+            pyflame.raise_type_error(
+                'PyFlameImageGallery',
+                'extensions',
+                'list',
+                value,
+            )
+
+        self._extensions = set(value)
+        self._load_images()
+        self._build_grid()
+
+    @property
+    def show_info(self) -> bool:
+        """
+        Show Info
+        =========
+
+        Read-only. True if the info bar entry is present.
+
+        Returns
+        -------
+            bool:
+                True if ``show_info=True`` was passed at construction time.
+
+        Examples
+        --------
+            ```
+            if gallery.show_info:
+                print(gallery.selected_name)
+            ```
+        """
+
+        return self._info_entry is not None
+
+    @property
+    def image_count(self) -> int:
+        """
+        Image Count
+        ===========
+
+        Read-only. Total number of images currently loaded in the gallery.
+
+        Returns
+        -------
+            int:
+                Number of image paths that matched the folder scan.
+
+        Examples
+        --------
+            ```
+            print(f'{gallery.image_count} images loaded')
+            ```
+        """
+
+        return len(self._image_paths)
+
+    @property
+    def selected_path(self) -> Optional[str]:
+        """
+        Selected Path
+        =============
+
+        Read-only. Full filesystem path of the currently selected image, or
+        None when nothing is selected.
+
+        Returns
+        -------
+            Optional[str]:
+                Absolute path to the selected image file, or None.
+
+        Examples
+        --------
+            ```
+            path = gallery.selected_path
+            if path:
+                print(path)
+            ```
+        """
+
+        if self._selected_index is None:
+            return None
+        return self._image_paths[self._selected_index]
+
+    @property
+    def selected_name(self) -> Optional[str]:
+        """
+        Selected Name
+        =============
+
+        Read-only. Filename (basename) of the currently selected image, or
+        None when nothing is selected.
+
+        Returns
+        -------
+            Optional[str]:
+                Filename of the selected image, or None.
+
+        Examples
+        --------
+            ```
+            name = gallery.selected_name
+            ```
+        """
+
+        path = self.selected_path
+        if path is None:
+            return None
+        return os.path.basename(path)
+
+    @property
+    def selected_size(self) -> Optional[tuple]:
+        """
+        Selected Size
+        =============
+
+        Read-only. Pixel dimensions of the currently selected image as
+        ``(width, height)``, or None when nothing is selected or the image
+        failed to load.
+
+        Returns
+        -------
+            Optional[tuple[int, int]]:
+                ``(width, height)`` of the selected image pixmap, or None.
+
+        Examples
+        --------
+            ```
+            size = gallery.selected_size
+            if size:
+                w, h = size
+            ```
+        """
+
+        if self._selected_index is None:
+            return None
+        return self._cells[self._selected_index].image_size
+
+    @property
+    def selected_index(self) -> Optional[int]:
+        """
+        Selected Index
+        ==============
+
+        Read-only. Zero-based grid index of the currently selected image, or
+        None when nothing is selected.
+
+        Returns
+        -------
+            Optional[int]:
+                Grid index of the selected image, or None.
+
+        Examples
+        --------
+            ```
+            idx = gallery.selected_index
+            ```
+        """
+
+        return self._selected_index
+
+    # -------------------------------------------------------------------------
+    # Public methods
+    # -------------------------------------------------------------------------
+
+    def refresh(self) -> None:
+        """
+        Refresh
+        =======
+
+        Re-scan the current folder and rebuild the grid without recreating
+        the gallery widget itself. Useful when the folder contents may have
+        changed on disk.
+
+        Examples
+        --------
+            ```
+            gallery.refresh()
+            ```
+        """
+
+        self._load_images()
+        self._build_grid()
+
+    # -------------------------------------------------------------------------
+    # Events
+    # -------------------------------------------------------------------------
+
+    def showEvent(self, event: QtCore.QEvent) -> None:
+        super().showEvent(event)
+        self._position_children()
+        self._resize_cells()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """Reposition children and recompute cell sizes."""
+
+        super().resizeEvent(event)
+        self._position_children()
+        self._resize_cells()
+
+    def enterEvent(self, event: QtCore.QEvent) -> None:
+        self.setStyleSheet(self._border_on)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QtCore.QEvent) -> None:
+        self.setStyleSheet(self._border_off)
+        super().leaveEvent(event)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        """Arrow key navigation between cells."""
+
+        if not self._cells:
+            super().keyPressEvent(event)
+            return
+
+        key   = event.key()
+        count = len(self._cells)
+        idx   = self._selected_index
+        columns = self._columns or 1
+        rows = self._rows or 1
+
+        if self._mode == 'columns':
+            # Columns mode: left/right ±1, up/down ±columns
+            if key == QtCore.Qt.Key.Key_Right:
+                new_idx = 0 if idx is None else min(idx + 1, count - 1)
+            elif key == QtCore.Qt.Key.Key_Left:
+                new_idx = 0 if idx is None else max(idx - 1, 0)
+            elif key == QtCore.Qt.Key.Key_Down:
+                new_idx = 0 if idx is None else min(idx + columns, count - 1)
+            elif key == QtCore.Qt.Key.Key_Up:
+                new_idx = 0 if idx is None else max(idx - columns, 0)
+            else:
+                super().keyPressEvent(event)
+                return
+        else:
+            # Rows mode: up/down ±1, left/right ±rows
+            if key == QtCore.Qt.Key.Key_Down:
+                new_idx = 0 if idx is None else min(idx + 1, count - 1)
+            elif key == QtCore.Qt.Key.Key_Up:
+                new_idx = 0 if idx is None else max(idx - 1, 0)
+            elif key == QtCore.Qt.Key.Key_Right:
+                new_idx = 0 if idx is None else min(idx + rows, count - 1)
+            elif key == QtCore.Qt.Key.Key_Left:
+                new_idx = 0 if idx is None else max(idx - rows, 0)
+            else:
+                super().keyPressEvent(event)
+                return
+
+        self._select_cell(new_idx)
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        """Intercept mouse and hover events on cell widgets."""
+
+        event_type = event.type()
+
+        if event_type == QtCore.QEvent.Type.MouseButtonPress:
+            for i, cell in enumerate(self._cells):
+                if obj is cell:
+                    self.setFocus()
+                    self._select_cell(i)
+                    return True
+
+        elif event_type in (
+            QtCore.QEvent.Type.MouseMove,
+            QtCore.QEvent.Type.MouseButtonRelease,
+        ):
+            if obj in self._cells:
+                return True
+
+        elif event_type == QtCore.QEvent.Type.Enter:
+            for i, cell in enumerate(self._cells):
+                if obj is cell:
+                    cell._show_border = True
+                    cell.update()
+                    return True
+
+        elif event_type == QtCore.QEvent.Type.Leave:
+            for i, cell in enumerate(self._cells):
+                if obj is cell:
+                    if i != self._selected_index:
+                        cell._show_border = False
+                        cell.update()
+                    return True
+
+        return super().eventFilter(obj, event)
+
+    # -------------------------------------------------------------------------
+    # Internal helpers
+    # -------------------------------------------------------------------------
+
+    def _position_children(self) -> None:
+        """Position the scroll area and info bar within the widget."""
+
+        w = self.width()
+        h = self.height()
+
+        if self._info_entry is not None:
+            scroll_h = h - self._INFO_SPACING - self._INFO_HEIGHT
+            self._scroll_area.setGeometry(0, 0, w, max(scroll_h, 0))
+            info_y = h - self._INFO_HEIGHT
+            self._info_entry.setGeometry(0, info_y, w, self._INFO_HEIGHT)
+        else:
+            self._scroll_area.setGeometry(0, 0, w, h)
+
+    def _load_images(self) -> None:
+        """Scan the current folder and populate ``_image_paths``."""
+
+        self._image_paths = []
+        if self._folder is None or not os.path.isdir(self._folder):
+            return
+
+        paths = []
+        for entry in os.scandir(self._folder):
+            if not entry.is_file():
+                continue
+            ext = os.path.splitext(entry.name)[1].lower()
+            if ext in self._extensions:
+                paths.append(entry.path)
+
+        paths.sort(
+            key=lambda p: os.path.basename(p).lower(),
+            reverse=not self._sort_ascending,
+        )
+        self._image_paths = paths
+
+    def _build_grid(self) -> None:
+        """Clear and rebuild the grid with the current image paths."""
+
+        self._clear_grid()
+        self._selected_index = None
+        self._update_info_bar()
+
+        cell_size = self._cell_size()
+        columns = self._columns or 1
+        rows = self._rows or 1
+
+        for i, path in enumerate(self._image_paths):
+            if self._mode == 'columns':
+                row = i // columns
+                col = i % columns
+            else:
+                row = i % rows
+                col = i // rows
+
+            cell = PyFlameImageWidget(popup_viewer=self._popup_viewer)
+            cell.setFixedSize(cell_size, cell_size)
+            cell.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+
+            try:
+                cell.image = path
+            except (FileNotFoundError, ValueError):
+                pass
+
+            cell.installEventFilter(self)
+            self._cells.append(cell)
+            self._grid_layout.addWidget(cell, row, col)
+
+        if self._image_paths:
+            if self._mode == 'columns':
+                last_col = len(self._image_paths) % columns
+                if last_col != 0:
+                    last_row = (len(self._image_paths) - 1) // columns
+                    for col in range(last_col, columns):
+                        placeholder = QtWidgets.QWidget()
+                        placeholder.setFixedSize(cell_size, cell_size)
+                        placeholder.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+                        self._grid_layout.addWidget(placeholder, last_row, col)
+            else:
+                last_row = len(self._image_paths) % rows
+                if last_row != 0:
+                    last_col = (len(self._image_paths) - 1) // rows
+                    for row in range(last_row, rows):
+                        placeholder = QtWidgets.QWidget()
+                        placeholder.setFixedSize(cell_size, cell_size)
+                        placeholder.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+                        self._grid_layout.addWidget(placeholder, row, last_col)
+
+    def _clear_grid(self) -> None:
+        """Remove all widgets from the grid layout."""
+
+        for cell in self._cells:
+            cell.removeEventFilter(self)
+        self._cells = []
+
+        while self._grid_layout.count():
+            item = self._grid_layout.takeAt(0)
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)  # type: ignore[call-overload]
+
+    def _cell_size(self) -> int:
+        """Compute the square cell side length from the fixed axis viewport dimension."""
+
+        spacing = self._grid_layout.spacing()
+
+        if self._mode == 'columns':
+            columns = self._columns or 1
+            vp_width = self._scroll_area.viewport().width()
+            if vp_width <= 0:
+                vp_width = 400
+            total_spacing = spacing * (columns - 1)
+            size = (vp_width - total_spacing) // columns
+        else:
+            rows = self._rows or 1
+            vp_height = self._scroll_area.viewport().height()
+            if vp_height <= 0:
+                vp_height = 300
+            total_spacing = spacing * (rows - 1)
+            size = (vp_height - total_spacing) // rows
+
+        return max(size, 10)
+
+    def _resize_cells(self) -> None:
+        """Resize all grid widgets to the current computed cell size."""
+
+        if not self._cells:
+            return
+
+        size = self._cell_size()
+        for i in range(self._grid_layout.count()):
+            item = self._grid_layout.itemAt(i)
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.setFixedSize(size, size)
+
+        self._grid_layout.invalidate()
+        self._grid_widget.updateGeometry()
+
+    def _select_cell(self, index: int) -> None:
+        """Update selection state, border colors, info bar, and fire callback."""
+
+        if index < 0 or index >= len(self._cells):
+            return
+
+        # Deselect previous
+        if self._selected_index is not None:
+            prev = self._cells[self._selected_index]
+            prev.border_color = Color.BORDER
+            prev._show_border = False
+            prev.update()
+
+        self._selected_index = index
+        self._cells[index].border_color = Color.BLUE
+        self._cells[index]._show_border = True
+        self._cells[index].update()
+
+        self._update_info_bar()
+
+        if self._image_selected is not None:
+            self._image_selected(self._image_paths[index])
+
+    def _update_info_bar(self) -> None:
+        """Write ``filename | W x H`` to the info entry."""
+
+        if self._info_entry is None:
+            return
+
+        if self._selected_index is None:
+            self._info_entry.setText('')
+            return
+
+        name = self.selected_name or ''
+        size = self.selected_size
+
+        if size is not None:
+            self._info_entry.setText(f'{name}  |  {size[0]} x {size[1]}')
+        else:
+            self._info_entry.setText(name)
 
 class PyFlameLabel(QtWidgets.QLabel):
     """
@@ -7751,7 +9995,7 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         self.setAlternatingRowColors(value)
 
     @property
-    def multi_selection(self) -> None:
+    def multi_selection(self) -> bool:
         """
         Multi Selection
         ===============
@@ -8865,7 +11109,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -9119,9 +11363,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
 
         self._menu_options = []
         self._connect_callback = connect
-        self.menu_options = menu_options  # This calls the setter
-
-        self.setMenu(self.menu)
+        self.menu_options = menu_options  # This calls the setter (which applies dropdown visibility)
 
         # Set Button Stylesheets
         self._set_button_stylesheet()
@@ -9270,12 +11512,9 @@ class PyFlameMenu(QtWidgets.QPushButton):
             ```
         """
 
-        #return self._menu_options
-
-        if self.menu is not None:
-            menu_options = [action.text() for action in self.menu.actions()]
-            print(menu_options)
-            return menu_options
+        if self.menu is not None and self.menu.actions():
+            return [action.text() for action in self.menu.actions()]
+        return self._menu_options
 
     @menu_options.setter
     def menu_options(self, options: List[str]) -> None:
@@ -9289,7 +11528,11 @@ class PyFlameMenu(QtWidgets.QPushButton):
         if not isinstance(options, list) or not all(isinstance(item, str) for item in options):
             pyflame.raise_type_error('PyFlameMenu', 'menu_options', 'List[str]', options)
 
-        self.menu.clear()  # Clear existing actions
+        # Keep internal options in sync for refresh_menu()
+        self._menu_options = options
+
+        # Clear existing actions
+        self.menu.clear()
 
         for menu_label in options:
             action = self.menu.addAction(
@@ -9297,6 +11540,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
                 partial(self._create_menu, menu_label, self._connect_callback)
                 )
             action.setFont(FONT)
+
+        self._update_dropdown_visibility()
 
     @property
     def menu_indicator(self) -> bool:
@@ -9728,9 +11973,12 @@ class PyFlameMenu(QtWidgets.QPushButton):
         if not isinstance(menu_options, list):
             pyflame.raise_type_error('PyFlameMenu.update_menu', 'menu_options', 'list', menu_options)
         if not all(isinstance(menu, str) for menu in menu_options):
-            pyflame.raise_type_error('PyFlameMenu.update_menu', 'menu_options:items', 'str', menu)
+            pyflame.raise_type_error('PyFlameMenu.update_menu', 'menu_options:items', 'str', menu_options)
         if connect is not None and not callable(connect):
             pyflame.raise_type_error('PyFlameMenu.update_menu', 'connect', 'Callable', connect)
+
+        # Keep internal options in sync for refresh_menu()
+        self._menu_options = menu_options
 
         # Set button text
         self.text = text
@@ -9742,6 +11990,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
         for menu in menu_options:
             new_menu = self.menu.addAction(menu, partial(self._create_menu, menu, connect))
             new_menu.setFont(FONT)  # Apply font to menu item
+
+        self._update_dropdown_visibility()
 
     def refresh_menu(self) -> None:
         """
@@ -9756,6 +12006,21 @@ class PyFlameMenu(QtWidgets.QPushButton):
     #-------------------------------------
     # [Internal Methods]
     #-------------------------------------
+
+    def _update_dropdown_visibility(self) -> None:
+        """
+        Show dropdown only when there are two or more options.
+        With zero or one option, no menu is shown and the button displays the single option (or empty).
+        """
+        options = self._menu_options
+        if len(options) <= 1:
+            self.setMenu(None)
+            self.setText(' ' + (options[0] if options else ''))
+        else:
+            self.setMenu(self.menu)
+            current = self.text
+            if current not in options:
+                self.text = options[0]
 
     def _match_push_button_width(self):
         """
@@ -12376,7 +14641,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
     # [Methods]
     #-------------------------------------
 
-    def connect_callback(self, callback: Callable) -> None:
+    def connect_callback(self, callback: Callable | None) -> None:
         """
         Connect Callback
         ================
@@ -12407,6 +14672,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
     def _calculator(self):
 
         def clear():
+
             calc_entry.setText('')
 
         def button_press(key):
@@ -12531,29 +14797,29 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                     }}
                 """)
 
-        def calc_null():
-
-            # Does nothing
-            pass
-
-        def close_calculator():
-
-            calc_window.close()
-
         self.clean_line = False
 
         class CalcWindow(PyFlameWindow):
             """
             Calculator Window
-            ================
-
-            Subclass of :class:`PyFlameWindow`
+            =================
 
             Adds a focus out event to close the window when the user clicks outside of the calculator window or switches focus to another window.
             """
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
+
+            def _check_close_on_focus_lost(self):
+                if not self.isActiveWindow():
+                    self._close_check_timer.stop()
+                    self.close()
+
+
+            def closeEvent(self, event):
+                self._close_check_timer.stop()
+                super().closeEvent(event)
+
 
             def focusOutEvent(self, event):
                 """
@@ -12573,21 +14839,50 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
                 self.close()
 
+            def keyPressEvent(self, event):
+                """
+                Handle keyboard input for calculator buttons
+                """
+
+                key = event.key()
+                text = event.text()
+
+                # Number keys 0-9
+                if text in '0123456789':
+                    button_press(text)
+                # Operators and decimal point
+                elif text == '+':
+                    button_press('+')
+                elif text == '-':
+                    button_press('-')
+                elif text == '*':
+                    button_press('*')
+                elif text == '/':
+                    button_press('/')
+                elif text == '.':
+                    button_press('.')
+                # Backspace to delete last character
+                elif key == QtCore.Qt.Key_Backspace:
+                    calc_entry.backspace()
+                else:
+                    # Pass unhandled keys to the parent class
+                    super().keyPressEvent(event)
+
         calc_window = CalcWindow(
             title='Calculator',
+            title_height=26,
+            title_font_size=14,
+            message_bar=False,
             grid_layout_columns=4,
             grid_layout_rows=6,
             grid_layout_column_width=40,
             return_pressed=enter,
             escape_pressed=close_calc,
-            parent=None,
+            parent=self.window(),
             )
-        calc_window.move(QtGui.QCursor.pos().x() - 110, QtGui.QCursor.pos().y() - 290)
+        calc_window.move(QtGui.QCursor.pos().x() - 110, QtGui.QCursor.pos().y() - 320)
         calc_window.setWindowFlags(calc_window.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
         calc_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-
-        # Label
-        calc_label = PyFlameLabel('Calculator')
 
         # Entry
         calc_entry = PyFlameEntry(
@@ -12604,7 +14899,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         # Buttons
         blank_button = PyFlameButton(
             text='',
-            connect=calc_null,
+            #connect=calc_null,
             )
         blank_button.setDisabled(True)
 
@@ -12688,12 +14983,10 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         _1_button = PyFlameButton(
             text='1',
             connect=(partial(button_press, '1')),
-            #width=40,
             )
         _2_button = PyFlameButton(
             text='2',
             connect=(partial(button_press, '2')),
-            #width=40,
             )
         _3_button = PyFlameButton(
             text='3',
@@ -12711,7 +15004,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             text='0',
             connect=(partial(button_press, '0')),
             )
-        point_button = PyFlameButton(
+        dot_button = PyFlameButton(
             text='.',
             connect=(partial(button_press, '.')),
             )
@@ -12746,7 +15039,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         calc_window.grid_layout.addWidget(enter_button, 5, 3, 2, 1)
 
         calc_window.grid_layout.addWidget(_0_button, 6, 0, 1, 2)
-        calc_window.grid_layout.addWidget(point_button, 6, 2)
+        calc_window.grid_layout.addWidget(dot_button, 6, 2)
 
     def _value_changed(self):
 
@@ -12779,6 +15072,9 @@ class PyFlameSlider(QtWidgets.QLineEdit):
     def mouseReleaseEvent(self, event):
 
         if event.button() == QtCore.Qt.LeftButton:
+
+            if self.pos_at_press is None:
+                return
 
             # Open calculator if button is released within 10 pixels of button click
 
@@ -13578,9 +15874,9 @@ class PyFlameTable(QtWidgets.QTableView):
 
         # Open input dialog to get new value
         rename_column_header_input_dialog = PyFlameInputDialog(
-            #text=f'New Column Header Name\n\nCurrent Header Name: {current_header_text}',
             text=current_header_text,
             title='Rename Column Header',
+            parent = self.parentWidget() if isinstance(self.parentWidget(), PyFlameWindow) else None
             )
 
         header_text = rename_column_header_input_dialog.text
@@ -13597,20 +15893,26 @@ class PyFlameTable(QtWidgets.QTableView):
         Rename all selected cells to a new value.
         """
 
-        for index in self.selectionModel().selectedIndexes():
-            item = self.model.itemFromIndex(index)
+        selected_indexes = self.selectionModel().selectedIndexes()
+        if not selected_indexes:
+            return
+
+        item = self.model.itemFromIndex(selected_indexes[0])
+        if not item:
+            return
 
         # Open input dialog to get new value
         rename_selected_cells = PyFlameInputDialog(
             label_text='Enter New Value',
             text=item.text(),
             title='Rename Selected Cells',
+            parent = self.parentWidget() if isinstance(self.parentWidget(), PyFlameWindow) else None
             )
 
         # If the user confirmed, rename the selected cells
         cell_text = rename_selected_cells.text
         if cell_text:
-            for index in self.selectionModel().selectedIndexes():
+            for index in selected_indexes:
                 item = self.model.itemFromIndex(index)
                 if item:
                     item.setText(cell_text)
@@ -13830,7 +16132,7 @@ class PyFlameTable(QtWidgets.QTableView):
                 }}
             """)
 
-    def _set_menu_stylesheet(self) -> None:
+    def _set_menu_stylesheet(self) -> str:
         """
         Set Menu Stylesheet
         ==================
@@ -14813,6 +17115,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             Options:
                 `TextStyle.EDITABLE`: Editable text.
                 `TextStyle.READ_ONLY`: Read only text.
+                `TextStyle.READ_ONLY_SELECTABLE`: Read only text that is selectable.
                 `TextStyle.UNSELECTABLE`: Unselectable text.
             (Default: `TextStyle.EDITABLE`)
 
@@ -14881,6 +17184,11 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             Get or set the tooltip duration in seconds.
             (Default: `5`)
 
+    Methods
+    -------
+        `set_focus()`:
+            Sets focus to the TextEdit.
+
     Examples
     --------
         To create a PyFlameTextEdit:
@@ -14907,7 +17215,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
-                 tooltip: str=None,
+                 tooltip: str | None=None,
                  tooltip_delay: int=3,
                  tooltip_duration: int=5,
                  ) -> None:
@@ -15040,6 +17348,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             return self.toMarkdown()
         elif self.text_type == TextType.HTML:
             return self.toHtml()
+        return self.toPlainText()
 
     @text.setter
     def text(self, value: str):
@@ -15125,6 +17434,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Text Style Options
             `TextStyle.EDITABLE`: Editable text.
             `TextStyle.READ_ONLY`: Read only text.
+            `TextStyle.READ_ONLY_SELECTABLE`: Read only text that is selectable.
             `TextStyle.UNSELECTABLE`: Unselectable text.
 
         Returns
@@ -15169,8 +17479,16 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
 
         self._text_style = value
 
-        # Set Text Interaction Flags
-        if self._text_style == TextStyle.UNSELECTABLE or self._text_style == TextStyle.READ_ONLY:
+        if self._text_style == TextStyle.EDITABLE:
+            self.setReadOnly(False)
+            self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
+        elif self._text_style in (TextStyle.READ_ONLY, TextStyle.READ_ONLY_SELECTABLE):
+            self.setReadOnly(True)
+            self.setTextInteractionFlags(
+                QtCore.Qt.TextSelectableByMouse | QtCore.Qt.TextSelectableByKeyboard
+            )
+        elif self._text_style == TextStyle.UNSELECTABLE:
+            self.setReadOnly(True)
             self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 
         self._set_stylesheet()
@@ -15502,6 +17820,20 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         self.tooltip_popup.duration = value
 
     #-------------------------------------
+    # [Methods]
+    #-------------------------------------
+
+    def set_focus(self) -> None:
+        """
+        Set Focus
+        =========
+
+        Set widget focus to the entry widget.
+        """
+
+        self.setFocus()
+
+    #-------------------------------------
     # [Stylesheet]
     #-------------------------------------
 
@@ -15511,7 +17843,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         ==============
         """
 
-        if self.text_style == TextStyle.READ_ONLY:
+        if self.text_style == TextStyle.READ_ONLY or self.text_style == TextStyle.READ_ONLY_SELECTABLE:
             self.setStyleSheet(f"""
                 QTextEdit{{
                     color: {Color.TEXT.value};
@@ -15707,7 +18039,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
-                 tooltip: str=None,
+                 tooltip: str | None=None,
                  tooltip_delay: int=3,
                  tooltip_duration: int=5,
                  ) -> None:
@@ -15841,6 +18173,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             return self.toMarkdown()
         elif self.text_type == TextType.HTML:
             return self.toHtml()
+        return self.toPlainText()
 
     @text.setter
     def text(self, value: str):
@@ -16709,11 +19042,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.column_names = column_names
         self.sort = sort
         self.tree_dict = tree_dict
-        self.top_level_item = top_level_item
         self.tree_list = tree_list
         self.top_level_editable = top_level_editable
-        self.connect_callback = connect
-        self.update_connect_callback = update_connect
         self.alternating_row_colors = alternating_row_colors
         self.min_items = min_items
         self.allow_children = allow_children
@@ -16724,6 +19054,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.tooltip = tooltip
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
+
+        self.connect_callback = connect
+        self.update_connect_callback = update_connect
+        self.top_level_item = top_level_item
+
 
         # Set the first top-level item as the current item
         self.setCurrentItem(self.topLevelItem(0))
@@ -16843,7 +19178,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             self.sortItems(0, QtCore.Qt.AscendingOrder)
 
     @property
-    def tree_dict(self) -> Dict[str, Dict[str, str]] | None:
+    def tree_dict(self) -> Dict[str, Any] | None:
         """
         Tree Dict
         =========
@@ -16944,7 +19279,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return tree_dict
 
     @tree_dict.setter
-    def tree_dict(self, value: Dict[str, Dict[str, str]]) -> None:
+    def tree_dict(self, value: Dict[str, Any]) -> None:
         """
         Tree Dict
         =========
@@ -16961,7 +19296,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             self.fill_tree_dict(value)
 
     @property
-    def top_level_item(self) -> str:
+    def top_level_item(self) -> str | None:
         """
         Top Level Item
         ==============
@@ -16997,7 +19332,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._top_level_item
 
     @top_level_item.setter
-    def top_level_item(self, value: str) -> None:
+    def top_level_item(self, value: str | None) -> None:
         """
         Top Level Item
         ==============
@@ -17073,11 +19408,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Validate argument
         if not isinstance(value, list):
             pyflame.raise_type_error('PyFlameTreeWidget', 'tree_list', 'list | None', value)
-        # if not value == [] and not self.top_level_editable:
-        #     pyflame.raise_value_error(error_message='PyFlameTreeWidget: When passing a List a top_level_item must also be passed.')
 
         # Convert list to dictionary and fill tree
-        if value != []:
+        if value != [] and self.top_level_item is not None:
             self.tree_dict = {self.top_level_item: {str(item): {} for item in value}}
 
     @property
@@ -17089,10 +19422,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Return the tree list excluding the root item.
         """
 
-        return self.tree_list[1:]
+        tree_list = self.tree_list
+        if tree_list is None:
+            return []
+
+        return tree_list[1:]
 
     @property
-    def connect_callback(self) -> Callable[..., None]:
+    def connect_callback(self) -> Callable[..., None] | None:
         """
         Connect Callback
         ================
@@ -17128,7 +19465,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._connect_callback
 
     @connect_callback.setter
-    def connect_callback(self, value: Callable[..., None]) -> None:
+    def connect_callback(self, value: Callable[..., None] | None) -> None:
         """
         Connect Callback
         ================
@@ -17147,7 +19484,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self._connect_callback = value
 
     @property
-    def update_connect_callback(self) -> Callable[..., None]:
+    def update_connect_callback(self) -> Callable[..., None] | None:
         """
         Update Connect Callback
         =======================
@@ -17183,7 +19520,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._update_connect_callback
 
     @update_connect_callback.setter
-    def update_connect_callback(self, value: Callable[..., None]) -> None:
+    def update_connect_callback(self, value: Callable[..., None] | None) -> None:
         """
         Update Connect Callback
         =======================
@@ -17940,16 +20277,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             ```
         """
 
-        def get_item_path():
-
-            item = self.currentItem()
+        def get_item_path(item):
 
             path = []
             while item is not None:
-                path.insert(0, item.text(0))  # Insert at the beginning to build from root to leaf
-                item = item.parent()  # Move up to the parent item
+                path.insert(0, item.text(0))
+                item = item.parent()
 
-            return "/".join(path)  # Combine path elements with "/"
+            return "/".join(path)
 
         return [get_item_path(item) for item in self.selectedItems()]
 
@@ -17980,7 +20315,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
     # [Methods]
     #-------------------------------------
 
-    def fill_tree_dict(self, tree_dict: Dict[str, str], editable: bool=False) -> None:
+    def fill_tree_dict(self, tree_dict: Dict[str, Any], editable: bool=False) -> None:
         """
         Fill Tree Dict
         ==============
@@ -18160,7 +20495,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         # Iterate the item name if it already exists in the tree
         existing_item_names = self.tree_list
-        item_name = pyflame.iterate_name(existing_item_names, item_name)
+        if existing_item_names:
+            item_name = pyflame.iterate_name(existing_item_names, item_name)
 
         # Get the currently selected items
         selected_items = self.selectedItems()
@@ -19720,7 +22056,7 @@ class PyFlameGridLayout(QtWidgets.QGridLayout):
                  column_width: int=150,
                  row_height: int=28,
                  adjust_column_widths: dict[int, int]={},
-                 adjust_row_heights: dict[int, int]={}
+                 adjust_row_heights: dict[int, int]={},
                  ) -> None:
         super().__init__()
 
@@ -20580,6 +22916,11 @@ class PyFlameWindow(QtWidgets.QDialog):
             Dictionary of row heights to adjust.
             (Default: `{}`)
 
+        `window_margins` (int | tuple[int, int, int, int]):
+            Margin in pixels around the main content area. Pass a single int to use the same value for left, top, right,
+            and bottom; or pass a tuple of four ints for (left, top, right, bottom). Values are scaled by `pyflame.gui_resize()`.
+            (Default: `15`)
+
     Properties
     ----------
         `title` (str):
@@ -20650,6 +22991,11 @@ class PyFlameWindow(QtWidgets.QDialog):
             Get or set the dictionary of row heights to adjust.
             (Default: `{}`)
 
+        `window_margins` (int | tuple[int, int, int, int]):
+            Get or set the margin in pixels around the main content area. Accepts a single int or a tuple of four ints
+            (left, top, right, bottom). Getter always returns a tuple of four ints.
+            (Default: `15`)
+
     Notes
     -----
         For proper sizing of widgets and placement of widgets in the window,
@@ -20709,6 +23055,7 @@ class PyFlameWindow(QtWidgets.QDialog):
                  grid_layout_row_height: int=28,
                  grid_layout_adjust_column_widths: dict[int, int]={},
                  grid_layout_adjust_row_heights: dict[int, int]={},
+                 window_margins: int | tuple[int, int, int, int]=15,
                  ) -> None:
 
         # Validate Parent
@@ -20730,6 +23077,12 @@ class PyFlameWindow(QtWidgets.QDialog):
             align=Align.LEFT,
             )
 
+        # Init window layout widgets
+        self.title_text_hbox = PyFlameHBoxLayout()
+        self.message_bar_hbox = PyFlameHBoxLayout()
+        self.main_vbox2 = PyFlameVBoxLayout()
+        self.center_layout = PyFlameGridLayout() # Main UI added to this widget
+
         #-------------------------------------
         # [Window Properties]
         #-------------------------------------
@@ -20750,6 +23103,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         self.grid_layout_row_height = grid_layout_row_height
         self.grid_layout_adjust_column_widths = grid_layout_adjust_column_widths
         self.grid_layout_adjust_row_heights = grid_layout_adjust_row_heights
+        self.window_margins = window_margins
 
         # Set Window Flags
         self.setWindowFlags(QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
@@ -20763,32 +23117,25 @@ class PyFlameWindow(QtWidgets.QDialog):
         # [Window Layout]
         #-------------------------------------
 
-        title_text_hbox = PyFlameHBoxLayout()
-        title_text_hbox.addWidget(self.title_label)
-        title_text_hbox.setContentsMargins(2, 0, 0, 0)  # Set margin to 2px to account for the line overlay.
+        self.title_text_hbox.addWidget(self.title_label)
+        self.title_text_hbox.setContentsMargins(2, 0, 0, 0)  # Set margin to 2px to account for the line overlay.
 
-        message_bar_hbox = PyFlameHBoxLayout()
-        message_bar_hbox.addWidget(self.message_bar_label)
-        message_bar_hbox.setContentsMargins(2, 0, 0, 0)  # Set margin to 2px to account for the line overlay.
-
-        # Center layout - where main UI is added
-        center_layout = PyFlameGridLayout()
+        self.message_bar_hbox.addWidget(self.message_bar_label)
+        self.message_bar_hbox.setContentsMargins(2, 0, 0, 0)  # Set margin to 2px to account for the line overlay.
 
         # Create widget to hold the center layout
         center_widget = QtWidgets.QWidget()
-        center_widget.setLayout(center_layout)
+        center_widget.setLayout(self.center_layout)
 
         # Add the center layout to the main layout
-        main_vbox2 = PyFlameVBoxLayout()
-        main_vbox2.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
-        main_vbox2.addStretch()
-        main_vbox2.setContentsMargins(pyflame.gui_resize(15), pyflame.gui_resize(15), pyflame.gui_resize(15), pyflame.gui_resize(15)) # Add margin around main UI
+        self.main_vbox2.addWidget(center_widget, alignment=QtCore.Qt.AlignCenter)
+        self.main_vbox2.addStretch()
 
         main_vbox3 = PyFlameVBoxLayout()
-        main_vbox3.addLayout(title_text_hbox)
-        main_vbox3.addLayout(main_vbox2)
+        main_vbox3.addLayout(self.title_text_hbox)
+        main_vbox3.addLayout(self.main_vbox2)
         if self.message_bar:
-            main_vbox3.addLayout(message_bar_hbox)
+            main_vbox3.addLayout(self.message_bar_hbox)
         main_vbox3.setContentsMargins(0, 0, 0, 0)  # Remove margins
 
         self.setLayout(main_vbox3)
@@ -20803,7 +23150,7 @@ class PyFlameWindow(QtWidgets.QDialog):
             adjust_row_heights=self.grid_layout_adjust_row_heights,
             )
 
-        center_layout.addLayout(self.grid_layout, 0, 0)
+        self.center_layout.addLayout(self.grid_layout, 0, 0)
 
         # Show Window
         self.show()
@@ -20978,7 +23325,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         self.title_label.style = value
 
     @property
-    def title_align(self) -> Align:
+    def title_align(self) -> Align | None:
         """
         Title Align
         ===========
@@ -21083,7 +23430,7 @@ class PyFlameWindow(QtWidgets.QDialog):
             self.title_label.underline_color = value
 
     @property
-    def title_height(self) -> int:
+    def title_height(self) -> int | None:
         """
         Title Height
         ============
@@ -21135,7 +23482,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         self.title_label.height = value
 
     @property
-    def title_font_size(self) -> int:
+    def title_font_size(self) -> int | None:
         """
         Title Font Size
         ===============
@@ -21709,6 +24056,75 @@ class PyFlameWindow(QtWidgets.QDialog):
             pyflame.raise_type_error('PyFlameWindow', 'grid_layout_adjust_row_heights', 'dict', value)
 
         self._grid_layout_adjust_row_heights = value
+
+    @property
+    def window_margins(self) -> tuple[int, int, int, int]:
+        """
+        Window Margins
+        =====================
+
+        Get or set the margin in pixels around the main content area.
+
+        Returns
+        -------
+            tuple[int, int, int, int]:
+                Margins as (left, top, right, bottom).
+
+        Set
+        ---
+            window_margins (int | tuple[int, int, int, int]):
+                A single int (same value for all sides) or a tuple of four ints (left, top, right, bottom).
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not an int or a tuple of four ints.
+
+        Examples
+        --------
+            ```
+            # Get window margins (always returns tuple of four ints)
+            left, top, right, bottom = window.window_margins
+
+            # Set with single int (same for all sides)
+            window.window_margins = 20
+
+            # Set with tuple (left, top, right, bottom)
+            window.window_margins = (10, 15, 10, 15)
+            ```
+        """
+
+        return self.window_margins_value
+
+    @window_margins.setter
+    def window_margins(self, value: int | tuple[int, int, int, int]) -> None:
+        """
+        Window Margins
+        ==============
+
+        Set the margin in pixels around the main content area.
+        """
+
+        # Validate Argument and normalize to (left, top, right, bottom)
+        margins: tuple[int, int, int, int]
+        if isinstance(value, int):
+            margins = (value, value, value, value)
+        elif isinstance(value, tuple) and len(value) == 4:
+            if not all(isinstance(v, int) for v in value):
+                pyflame.raise_type_error('PyFlameWindow', 'window_margins', 'tuple of 4 ints (left, top, right, bottom)', value)
+                return
+            margins = value
+        else:
+            pyflame.raise_type_error('PyFlameWindow', 'window_margins', 'int or tuple of 4 ints (left, top, right, bottom)', value)
+            return
+
+        self.window_margins_value = margins
+        self.main_vbox2.setContentsMargins(
+            pyflame.gui_resize(margins[0]),
+            pyflame.gui_resize(margins[1]),
+            pyflame.gui_resize(margins[2]),
+            pyflame.gui_resize(margins[3]),
+            )
 
     #-------------------------------------
     # [Methods]
@@ -22895,7 +25311,7 @@ class PyFlameMessageWindow:
         self.message_window.title_style = value
 
     @property
-    def title_align(self) -> Align:
+    def title_align(self) -> Align | None:
         """
         Title Align
         ============
@@ -22999,22 +25415,24 @@ class PyFlameMessageWindow:
         if value is not None and not isinstance(value, Color):
             pyflame.raise_type_error('PyFlameMessageWindow', 'line_color', 'Color Enum | None', value)
 
-        # Set line color
-        if value is None:
-            # Set message window based on message_type options
+        # Resolve line color from message type when value is None
+        resolved_color = value
+        if resolved_color is None:
             if self.message_type == MessageType.INFO:
-                value = Color.BLUE
+                resolved_color = Color.BLUE
             elif self.message_type == MessageType.OPERATION_COMPLETE:
-                value = Color.BLUE
+                resolved_color = Color.BLUE
             elif self.message_type == MessageType.ERROR:
-                value = Color.YELLOW
+                resolved_color = Color.YELLOW
             elif self.message_type == MessageType.CONFIRM:
-                value = Color.BLUE
+                resolved_color = Color.BLUE
             elif self.message_type == MessageType.WARNING:
-                value = Color.RED
-            self.message_window.line_color = value
-        else:
-            self.message_window.line_color = value
+                resolved_color = Color.RED
+            else:
+                # Fallback for unexpected enum values
+                resolved_color = Color.BLUE
+
+        self.message_window.line_color = resolved_color
 
     @property
     def message_bar_text(self) -> str:
@@ -23619,7 +26037,7 @@ class PyFlamePasswordWindow:
         self.password_window.title_style = value
 
     @property
-    def title_align(self) -> Align:
+    def title_align(self) -> Align | None:
         """
         Title Align
         ============
@@ -23772,7 +26190,7 @@ class PyFlamePasswordWindow:
         pyflame.pause()
 
     @property
-    def password(self) -> str:
+    def password(self) -> str | None:
         """
         Password
         ========
@@ -23808,7 +26226,7 @@ class PyFlamePasswordWindow:
         return self._password
 
     @password.setter
-    def password(self, value: str = None) -> None:
+    def password(self, value: str | None=None) -> None:
         """
         Password
         ========
@@ -23823,7 +26241,7 @@ class PyFlamePasswordWindow:
         self._password = value
 
     @property
-    def username(self) -> str:
+    def username(self) -> str | None:
         """
         Username
         ========
@@ -23859,7 +26277,7 @@ class PyFlamePasswordWindow:
         return self._user_name
 
     @username.setter
-    def username(self, value: str = None) -> None:
+    def username(self, value: str | None=None) -> None:
         """
         User Name
         =========
@@ -23903,7 +26321,7 @@ class PyFlamePasswordWindow:
                     self.password_text_edit.text = 'Password incorrect, try again.'
                     return None
             except Exception as e:
-                pyflame.print('Error occurred while testing sudo password:', str(e))
+                pyflame.print(f'Error occurred while testing sudo password: {e}')
                 self.password_text_edit.text = 'Error occurred while testing sudo password.'
                 return None
 
@@ -24542,7 +26960,7 @@ class PyFlameProgressWindow:
         self.progress_window.title_style = value
 
     @property
-    def title_align(self) -> Align:
+    def title_align(self) -> Align | None:
         """
         Title Align
         ============
@@ -24735,7 +27153,7 @@ class PyFlameProgressWindow:
 
         pyflame.pause()
 
-    def tasks_completed(self, done_button_enabled: bool=True, task_progress_message: str=None, title: str=None, text_append: str=None) -> None:
+    def tasks_completed(self, done_button_enabled: bool=True, task_progress_message: str | None=None, title: str | None=None, text_append: str | None=None) -> None:
         """
         Tasks Completed
         ===============

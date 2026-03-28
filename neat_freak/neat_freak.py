@@ -1,5 +1,5 @@
 # Neat Freak
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Neat Freak
-Script Version: 2.0.0
-Flame Version: 2025
+Script Version: 2.1.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.22.21
-Update Date: 12.18.25
+Update Date: 03.28.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -34,7 +34,7 @@ Description:
     Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new
     batch group with Neat/Render/Write nodes for all selected clips.
 
-    NEAT OFX is required
+    NEAT OFX is required!
 
     Works with Neat OFX v5.x and Neat OFX v6.x.
 
@@ -59,6 +59,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.1.0 03.28.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.0.0 12.18.25
         - Removed Write node options from setup. Write nodes now use default settings set in Flame Preferences(2026.2+).
@@ -133,7 +136,7 @@ from lib.pyflame_lib_neat_freak import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Neat Freak'
-SCRIPT_VERSION = 'v2.0.0'
+SCRIPT_VERSION = 'v2.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -610,7 +613,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Neat Freak Setup',
                     'execute': setup,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -628,7 +631,7 @@ def get_batch_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_clip,
                     'execute': neat_batch_clips,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -646,7 +649,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_clip,
                     'execute': neat_media_panel_clips,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
