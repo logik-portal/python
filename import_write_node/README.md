@@ -1,10 +1,10 @@
 # Import Write Node
 
-**Script Version:** 2.11.0  
-**Flame Version:** 2025  
+**Script Version:** 2.12.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 05.26.19  
-**Update Date:** 07.10.25  
+**Update Date:** 03.30.26  
 
 **Script Type:** Batch
 
@@ -30,6 +30,10 @@ https://github.com/logik-portal/python/import_write_node
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.12.0 [03.30.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v2.11.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

@@ -1,5 +1,5 @@
 # Import Write Node
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Import Write Node
-Script Version: 2.11.0
-Flame Version: 2025
+Script Version: 2.12.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 05.26.19
-Update Date: 07.10.25
+Update Date: 03.30.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -51,6 +51,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.12.0 03.30.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.11.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -107,26 +110,26 @@ Updates:
         - Code cleanup.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 
 import flame
 from lib.pyflame_lib_import_write_node import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Import Write Node'
-SCRIPT_VERSION = 'v2.11.0'
+SCRIPT_VERSION = 'v2.12.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class ImportWriteNode:
 
@@ -171,7 +174,7 @@ class ImportWriteNode:
 
         return settings
 
-    def translate_write_node_path(self):
+    def translate_write_node_path(self) -> str | None:
 
         print ('Translating write node path...')
 
@@ -209,7 +212,7 @@ class ImportWriteNode:
 
             return translated_path
 
-    #-------------------------------------
+    # ==============================================================================
 
     def setup(self):
 
@@ -379,6 +382,9 @@ class ImportWriteNode:
         """
 
         open_clip_path = self.translate_write_node_path()
+        if open_clip_path is None:
+            pyflame.print('Open clip path not found.', print_type=PrintType.ERROR)
+            return
 
         if not os.path.isfile(open_clip_path):
             PyFlameMessageWindow(
@@ -401,6 +407,9 @@ class ImportWriteNode:
         """
 
         open_clip_path = self.translate_write_node_path()
+        if open_clip_path is None:
+            pyflame.print('Open clip path not found.', print_type=PrintType.ERROR)
+            return
 
         if not os.path.isfile(open_clip_path):
             PyFlameMessageWindow(
@@ -459,7 +468,7 @@ class ImportWriteNode:
         else:
             pyflame.print('Import write node not enabled. Nothing Imported.', print_type=PrintType.ERROR)
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def create_schematic_reel(self):
         """
@@ -507,7 +516,7 @@ class ImportWriteNode:
 
         flame.import_clips(path, self.shelf_reel_for_import)
 
-#-------------------------------------
+# ------------------------------------------------------------------------------
 
 def schematic_import(selection):
 
@@ -528,9 +537,9 @@ def setup(selection):
     script = ImportWriteNode(selection)
     script.setup()
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_write_node(selection):
 
@@ -539,9 +548,9 @@ def scope_write_node(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -559,7 +568,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Import Write Node Setup',
                     'execute': setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -575,13 +584,13 @@ def get_batch_custom_ui_actions():
                     'name': 'Import Open Clip to Batch',
                     'isVisible': scope_write_node,
                     'execute': schematic_import,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Import Open Clip to Renders Reel',
                     'isVisible': scope_write_node,
                     'execute': shelf_import,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
