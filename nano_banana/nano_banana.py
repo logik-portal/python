@@ -19,7 +19,7 @@
 
 """
 Script Name: Nano Banana
-Script Version: v1.1.2
+Script Version: 1.1.2
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
