@@ -1,10 +1,10 @@
 # Delete Empty Folders
 
-**Script Version:** 1.5.0  
-**Flame Version:** 2023.2  
+**Script Version:** 1.6.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 11.15.23  
-**Update Date:** 07.10.25  
+**Update Date:** 03.31.26  
 
 **Script Type:** MediaPanel
 
@@ -25,6 +25,10 @@ https://github.com/logik-portal/python/delete_empty_folders
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.6.0 [03.31.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.5.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
