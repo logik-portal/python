@@ -1,5 +1,5 @@
 # Replace Render Nodes
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Replace Render Nodes
-Script Version: 2.2.0
-Flame Version: 2023.2
+Script Version: 2.3.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 02.22.20
-Update Date: 04.14.25
+Update Date: 04.02.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -31,9 +31,10 @@ Script Type: Batch
 
 Description:
 
-    Use to replace all render nodes in comp when they fail to properly show up in render list.
+    Replace all render nodes in batch when they fail to properly show up in render list.
 
 URL:
+
     https://github.com/logik-portal/python/replace_render_nodes
 
 Menus:
@@ -46,6 +47,9 @@ To install:
 
 Updates:
 
+    v2.3.0 04.02.26
+        - Updated to PyFlameLib v5.3.0.
+
     v2.2.0 04.14.25
         - Updated to PyFlameLib 4.3.0.
 
@@ -57,24 +61,24 @@ Updates:
         - Updated to be compatible with Flame 2022/Python 3.7
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 from lib.pyflame_lib_replace_render_nodes import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Replace Render Nodes'
-SCRIPT_VERSION = 'v2.2.0'
+SCRIPT_VERSION = 'v2.3.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def replace_render_nodes(selection):
 
@@ -89,11 +93,11 @@ def replace_render_nodes(selection):
             pyflame.print(f'Render Node Replaced: {str(node.name)[1:-1]}')
             node.delete()
 
-    pyflame.print('All Render Nodes Replaced')
+    pyflame.print('All Render Nodes Replaced', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_render_nodes(selection):
 
@@ -102,9 +106,9 @@ def scope_render_nodes(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -118,7 +122,7 @@ def get_batch_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_render_nodes,
                     'execute': replace_render_nodes,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

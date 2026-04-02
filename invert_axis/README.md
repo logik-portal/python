@@ -1,16 +1,20 @@
 # Invert Axis
 
-**Script Version:** 2.10.0  
-**Flame Version:** 2025  
+**Script Version:** 2.11.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 07.26.19  
-**Update Date:** 12.18.25  
+**Update Date:** 04.02.26  
 
 **Script Type:** Action / GMask Tracer
 
 ## Description
 
 Create inverted axis at current frame or copy parent axis and invert at current frame.
+
+## URL
+
+https://github.com/logik-portal/python/invert_axis
 
 ## Menus
 
@@ -26,6 +30,10 @@ Create inverted axis at current frame or copy parent axis and invert at current 
 Copy script into /opt/Autodesk/shared/python/invert_axis
 
 ## Updates
+
+### v2.11.0 [04.02.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v2.10.0 [12.18.25]
 - Updated to PyFlameLib v5.1.1.
