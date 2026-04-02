@@ -1,5 +1,5 @@
 # Create Projection
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Projection
-Script Version: 2.10.0
-Flame Version: 2025
+Script Version: 2.11.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 07.09.19
-Update Date: 07.10.25
+Update Date: 04.02.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -49,6 +49,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.11.0 04.02.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.10.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -100,9 +103,9 @@ Updates:
         - Code Cleanup
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import shutil
@@ -110,17 +113,17 @@ import shutil
 import flame
 from lib.pyflame_lib_create_projection import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Create Projection'
-SCRIPT_VERSION = 'v2.10.0'
+SCRIPT_VERSION = 'v2.11.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 print('\n')
 
@@ -642,9 +645,9 @@ def create_diffuse_projection(selection):
 
     pyflame.print('Diffuse Projection Created', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_geo(selection):
 
@@ -655,9 +658,9 @@ def scope_geo(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_action_custom_ui_actions():
 
@@ -669,19 +672,19 @@ def get_action_custom_ui_actions():
                     'name': 'Diffuse Projection',
                     'isVisible': scope_geo,
                     'execute': create_diffuse_projection,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Projector Projection',
                     'isVisible': scope_geo,
                     'execute': create_projector_projection,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Projector Light-Linked Projection',
                     'isVisible': scope_geo,
                     'execute': create_light_linked_projector_projection,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
