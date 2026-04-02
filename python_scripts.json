@@ -611,13 +611,13 @@
   },
   {
     "Script Name": "invert axis",
-    "Script Version": "2.10.0",
-    "Flame Version": "2025",
+    "Script Version": "2.11.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "07.26.19",
-    "Update Date": "12.18.25",
-    "Description": "Script Name: Invert Axis\nScript Version: 2.10.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 07.26.19\nUpdate Date: 12.18.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Action / GMask Tracer\n\nDescription:\n\nCreate inverted axis at current frame or copy parent axis and invert at current frame.\n\nMenus:\n\nAction Axis Nodes:\nRight-click on axis node -> Axis... -> Create Inverted Axis At Current Frame\nRight-click on axis node -> Axis... -> Invert Parent Axis At Current Frame\n\nGMask Tracer Axis Nodes:\nRight-click on axis node -> Axis... -> GMask - Create Inverted Axis At Current Frame\nRight-click on axis node -> Axis... -> GMask - Invert Parent Axis At Current Frame\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/invert_axis\n\nUpdates:\n\nv2.10.0 12.18.25\n- Updated to PyFlameLib v5.1.1.\n\nv2.9.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.8.0 12.27.24\n- Updated to PyFlameLib v4.0.0.\n- Script now only works with Flame 2023.2+.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv2.7.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.6.0 01.19.24\n- Updates to PySide.\n\nv2.5.0 07.27.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semeantic versioning.\n\nv2.4 07.17.22\n- Messages print to Flame message window - Flame 2023.1 and later.\n- Fixed: Right-clicking in Action or GMask Tracer with no axis selected causes error to show in shell.\n\nv2.3 03.25.22\n- Now works with axis nodes in GMask Tracer in Flame 2023.\n\nv2.2 11.12.21\n- Changed menu name to Axis...\n\nv2.1 10.26.21\n- Script now works when media layer is selected instead of action node.\n\nv2.0 05.23.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n- Fixed inverting axis not working when multiple axis parented to same axis.\n\nv1.5 05.10.20\n- Inverted axis is now added as child of selected axis.\n\nv1.3 10.24.19\n- Menu's now show up under Invert Axis... when right-clicking on axis node in action schematic.\n- Removed menu's from showing up in GMask Tracer. Action python commands do not work in GMask Tracer."
+    "Update Date": "04.02.26",
+    "Description": "Script Name: Invert Axis\nScript Version: 2.11.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 07.26.19\nUpdate Date: 04.02.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Action / GMask Tracer\n\nDescription:\n\nCreate inverted axis at current frame or copy parent axis and invert at current frame.\n\nURL:\n\nhttps://github.com/logik-portal/python/invert_axis\n\nMenus:\n\nAction Axis Nodes:\nRight-click on axis node -> Axis... -> Create Inverted Axis At Current Frame\nRight-click on axis node -> Axis... -> Invert Parent Axis At Current Frame\n\nGMask Tracer Axis Nodes:\nRight-click on axis node -> Axis... -> GMask - Create Inverted Axis At Current Frame\nRight-click on axis node -> Axis... -> GMask - Invert Parent Axis At Current Frame\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/invert_axis\n\nUpdates:\n\nv2.11.0 04.02.26\n- Updated to PyFlameLib v5.3.0.\n\nv2.10.0 12.18.25\n- Updated to PyFlameLib v5.1.1.\n\nv2.9.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.8.0 12.27.24\n- Updated to PyFlameLib v4.0.0.\n- Script now only works with Flame 2023.2+.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n\nv2.7.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.6.0 01.19.24\n- Updates to PySide.\n\nv2.5.0 07.27.23\n- Updated to PyFlameLib v2.0.0.\n- Updated versioning to semeantic versioning.\n\nv2.4 07.17.22\n- Messages print to Flame message window - Flame 2023.1 and later.\n- Fixed: Right-clicking in Action or GMask Tracer with no axis selected causes error to show in shell.\n\nv2.3 03.25.22\n- Now works with axis nodes in GMask Tracer in Flame 2023.\n\nv2.2 11.12.21\n- Changed menu name to Axis...\n\nv2.1 10.26.21\n- Script now works when media layer is selected instead of action node.\n\nv2.0 05.23.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n- Fixed inverting axis not working when multiple axis parented to same axis.\n\nv1.5 05.10.20\n- Inverted axis is now added as child of selected axis.\n\nv1.3 10.24.19\n- Menu's now show up under Invert Axis... when right-clicking on axis node in action schematic.\n- Removed menu's from showing up in GMask Tracer. Action python commands do not work in GMask Tracer."
   },
   {
     "Script Name": "invert timewarps",
@@ -871,13 +871,13 @@
   },
   {
     "Script Name": "replace render nodes",
-    "Script Version": "2.2.0",
-    "Flame Version": "2023.2",
+    "Script Version": "2.3.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "02.22.20",
-    "Update Date": "04.14.25",
-    "Description": "Script Name: Replace Render Nodes\nScript Version: 2.2.0\nFlame Version: 2023.2\nWritten by: Michael Vaglienty\nCreation Date: 02.22.20\nUpdate Date: 04.14.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nUse to replace all render nodes in comp when they fail to properly show up in render list.\n\nURL:\nhttps://github.com/logik-portal/python/replace_render_nodes\n\nMenus:\n\nRight-click in batch -> Replace Render Nodes\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.2.0 04.14.25\n- Updated to PyFlameLib 4.3.0.\n\nv2.1.0 09.18.23\n- Updated menus for Flame 2023.2+\n- Updated to pyflame lib 2.0.0.\n\nv2.0 06.03.21\n- Updated to be compatible with Flame 2022/Python 3.7"
+    "Update Date": "04.02.26",
+    "Description": "Script Name: Replace Render Nodes\nScript Version: 2.3.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 02.22.20\nUpdate Date: 04.02.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nReplace all render nodes in batch when they fail to properly show up in render list.\n\nURL:\n\nhttps://github.com/logik-portal/python/replace_render_nodes\n\nMenus:\n\nRight-click in batch -> Replace Render Nodes\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.3.0 04.02.26\n- Updated to PyFlameLib v5.3.0.\n\nv2.2.0 04.14.25\n- Updated to PyFlameLib 4.3.0.\n\nv2.1.0 09.18.23\n- Updated menus for Flame 2023.2+\n- Updated to pyflame lib 2.0.0.\n\nv2.0 06.03.21\n- Updated to be compatible with Flame 2022/Python 3.7"
   },
   {
     "Script Name": "reveal path",
