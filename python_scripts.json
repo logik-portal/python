@@ -91,13 +91,13 @@
   },
   {
     "Script Name": "axis to point locators",
-    "Script Version": "1.5.0",
-    "Flame Version": "2023.2",
+    "Script Version": "1.6.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "11.12.21",
-    "Update Date": "04.03.25",
-    "Description": "Script Name: Axis to Point Locators\nScript Version: 1.5.0\nFlame Version: 2023.2\nWritten by: Michael Vaglienty\nCreation Date: 11.12.21\nUpdate Date: 04.03.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Action\n\nDescription:\n\nConvert selected axis nodes to point locators\n\nURL:\nhttps://github.com/logik-portal/python/axis_to_point_locators\n\nMenu:\n\nRight-click on axis node -> Axis to Point Locator\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.5.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.4.0 12.28.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv1.3.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv1.2.2 05.17.24\n- Fixed: Point locators not in proper position.\n\nv1.2.1 01.15.24\n- Updated PySide.\n\nv1.2.0 07.29.23\n- Updated to PyFlameLib v2.0.0.\n\nv1.1 01.04.23:\n- Updated menu for Flame 2023.2+"
+    "Update Date": "04.02.26",
+    "Description": "Script Name: Axis to Point Locators\nScript Version: 1.6.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 11.12.21\nUpdate Date: 04.02.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Action\n\nDescription:\n\nConvert selected axis nodes to point locators\n\nURL:\nhttps://github.com/logik-portal/python/axis_to_point_locators\n\nMenu:\n\nRight-click on axis node -> Axis to Point Locator\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.6.0 04.02.26\n- Updated to PyFlameLib v5.3.0.\n\nv1.5.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.4.0 12.28.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv1.3.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv1.2.2 05.17.24\n- Fixed: Point locators not in proper position.\n\nv1.2.1 01.15.24\n- Updated PySide.\n\nv1.2.0 07.29.23\n- Updated to PyFlameLib v2.0.0.\n\nv1.1 01.04.23:\n- Updated menu for Flame 2023.2+"
   },
   {
     "Script Name": "batch nodes",
