@@ -1,5 +1,5 @@
 # Axis to Point Locators
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Axis to Point Locators
-Script Version: 1.5.0
-Flame Version: 2023.2
+Script Version: 1.6.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 11.12.21
-Update Date: 04.03.25
+Update Date: 04.02.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -45,6 +45,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.6.0 04.02.26
+        - Updated to PyFlameLib v5.3.0.
 
     v1.5.0 04.03.25
         - Updated to PyFlameLib v4.3.0.
@@ -70,9 +73,9 @@ Updates:
         - Updated menu for Flame 2023.2+
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import shutil
@@ -81,17 +84,17 @@ from random import randint
 import flame
 from lib.pyflame_lib_axis_to_point_locators import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Axis to Point Locators'
-SCRIPT_VERSION = 'v1.5.0'
+SCRIPT_VERSION = 'v1.6.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class AxisToPointLocators(object):
 
@@ -279,7 +282,7 @@ End
         # Build axis insert for each selected axis node.
         point_locator_insert = ''
         for axis in self.axis_list:
-            print('    Converting:', axis.name)
+            print('Converting:', str(axis.name)[1:-1])
             axis_insert = self.build_axis_insert(axis)
             point_locator_insert = point_locator_insert + axis_insert
         print() # Print blank line
@@ -460,9 +463,9 @@ End
                     item_value = line.rsplit(' ', 1)[1]
                     return item_value
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_axis(selection):
 
@@ -471,9 +474,9 @@ def scope_axis(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_action_custom_ui_actions():
 
@@ -487,7 +490,7 @@ def get_action_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_axis,
                     'execute': AxisToPointLocators,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

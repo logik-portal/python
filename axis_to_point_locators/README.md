@@ -1,10 +1,10 @@
 # Axis To Point Locators
 
-**Script Version:** 1.5.0  
-**Flame Version:** 2023.2  
+**Script Version:** 1.6.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 11.12.21  
-**Update Date:** 04.03.25  
+**Update Date:** 04.02.26  
 
 **Script Type:** Action
 
@@ -25,6 +25,10 @@ https://github.com/logik-portal/python/axis_to_point_locators
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.6.0 [04.02.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.5.0 [04.03.25]
 - Updated to PyFlameLib v4.3.0.
