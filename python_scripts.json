@@ -931,13 +931,13 @@
   },
   {
     "Script Name": "set in and out plus one frame",
-    "Script Version": "1.3.0",
-    "Flame Version": "2023.2",
+    "Script Version": "1.4.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "05.01.24",
-    "Update Date": "04.03.25",
-    "Description": "Script Name: Set In and Out Plus One Frame\nScript Version: 1.3.0\nFlame Version: 2023.2\nWritten by: Michael Vaglienty\nCreation Date: 05.01.24\nUpdate Date: 04.03.25\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: MediaPanel\n\nDescription:\n\nSets in and out marks for selected sequences/clips to their full duration, plus one additional frame.\nThis extra frame ensures a clean black frame at the end of exports when using Export Between Marks.\n\nURL:\nhttps://github.com/logik-portal/python/set_in_and_out_plus_one_frame\n\nMenus:\n\nRight-click on selected sequences/clips in the Media Panel -> Set In and Out -> Set In and Out +1 Frame of Black\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/set_in_and_out_plus_one_frame\n\nUpdates:\n\nv1.3.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.2.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n\nv1.1.0 08.12.24\n- Updated to PyFlameLib v3.0.0."
+    "Update Date": "04.02.26",
+    "Description": "Script Name: Set In and Out Plus One Frame\nScript Version: 1.4.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 05.01.24\nUpdate Date: 04.02.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: MediaPanel\n\nDescription:\n\nSets in and out marks for selected sequences/clips to their full duration, plus one additional frame.\nThis extra frame ensures a clean black frame at the end of exports when using Export Between Marks.\n\nURL:\nhttps://github.com/logik-portal/python/set_in_and_out_plus_one_frame\n\nMenus:\n\nRight-click on selected sequences/clips in the Media Panel -> Set In and Out -> Set In and Out +1 Frame of Black\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/set_in_and_out_plus_one_frame\n\nUpdates:\n\nv1.4.0 04.02.26\n- Updated to PyFlameLib v5.3.0.\n\nv1.3.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.2.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n\nv1.1.0 08.12.24\n- Updated to PyFlameLib v3.0.0."
   },
   {
     "Script Name": "set in out marks",
