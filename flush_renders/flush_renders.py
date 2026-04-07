@@ -1,5 +1,5 @@
 # Flush Renders
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Flush Renders
-Script Version: 1.3.0
+Script Version: 1.4.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 08.05.24
-Update Date: 07.10.25
+Update Date: 04.07.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -46,6 +46,9 @@ To install:
 
 Updates:
 
+    v1.4.0 04.07.26
+        - Updated to PyFlameLib v5.3.0.
+
     v1.3.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
 
@@ -56,23 +59,23 @@ Updates:
         - Updated to PyFlameLib v4.0.0.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 from lib.pyflame_lib_flush_renders import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Flush Renders'
-SCRIPT_VERSION = 'v1.3.0'
+SCRIPT_VERSION = 'v1.4.0'
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class Flusher:
 
@@ -167,9 +170,9 @@ class Flusher:
 
         pyflame.print('Renders have been flushed.', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope(selection):
 
@@ -178,9 +181,9 @@ def scope(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 

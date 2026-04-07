@@ -1,10 +1,10 @@
 # Flush Renders
 
-**Script Version:** 1.3.0  
+**Script Version:** 1.4.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 08.05.24  
-**Update Date:** 07.10.25  
+**Update Date:** 04.07.26  
 
 **Script Type:** MediaPanel
 
@@ -25,6 +25,10 @@ https://github.com/logik-portal/python/flush_renders
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.4.0 [04.07.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.3.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
