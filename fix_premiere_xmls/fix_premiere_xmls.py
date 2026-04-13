@@ -1,10 +1,10 @@
 """
 Script Name: fix premiere xmls
-Script Version: 3.0.0
+Script Version: 3.0.1
 Flame Version: 2025
 Written by: Ted Stanley, John Geehreng, and Michael Vaglienty
 Creation Date: 03.03.21
-Update Date: 03.01.26
+Update Date: 04.13.26
 
 Custom Action Type: MediaHub
 
@@ -21,6 +21,7 @@ To install:
     Copy script into /opt/Autodesk/shared/python/fix_premiere_xmls or put it wherever you keep your scripts
 
 Updates:
+    04.13.26 - v3.0.1 - Fixed the issue with the scale factor calculation.
     03.01.26 - v3.0.0 - Updated for pyflame lib v5.2.3
     02.13.25 - v2.1.2  Update to latest pyflame lib and SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
     05.06.24 - v2.1.1  Changed Scoping to show up only if xml's are selected
@@ -54,7 +55,7 @@ from lib.pyflame_lib_fix_premiere_xmls import *
 # Main Script
 
 SCRIPT_NAME = "Fix Premiere XMLs"
-SCRIPT_VERSION = 'v3.0.0'
+SCRIPT_VERSION = 'v3.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class fix_premiere_xmls():
@@ -327,8 +328,8 @@ class fix_premiere_xmls():
                 # Resize the XML Output
                 output_width = (self.root.find('.//width'))
                 output_height = (self.root.find('.//height'))
-                output_width.text = self.online_x_res_slider.value
-                output_height.text = self.online_y_res_slider.value
+                output_width.text = str(self.online_x_res_slider.value)
+                output_height.text = str(self.online_y_res_slider.value)
                 print("Online Res:  ",f'{output_width.text}x{output_height.text}')
 
                 if online_aspect_ratio >= offline_aspect_ratio:
