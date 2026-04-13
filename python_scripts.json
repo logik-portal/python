@@ -781,13 +781,13 @@
   },
   {
     "Script Name": "remove xml crap",
-    "Script Version": "0.3.0",
+    "Script Version": "0.4.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Ted Stanley, based on John Geehreng's fix_corrupt_actions script",
     "Creation Date": "01.07.26",
-    "Update Date": "01.07.26",
-    "Description": "Script Name: remove xml crap\nScript Version: 0.3.0\nFlame Version: 2025\nWritten by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script\nCreation Date: 01.07.26\nUpdate Date: 01.07.26\n\nCustom Action Type: MediaPanel\n\nDescription:\nRemoves Global Axis, Light and Shadow nodes from Action setups imported from XMLs\n\nMenus:\nMedia Panel -> Remove XML Crap"
+    "Update Date": "04.07.26",
+    "Description": "Script Name: remove_XML_crap\nScript Version: 0.4.0\nFlame Version: 2025\nWritten by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script\nCreation Date: 01.07.26\nUpdate Date: 04.07.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nRemoves Global Axis, Light and Shadow nodes from Action setups imported from XMLs\n\nMenus:\nAction Tools -> Remove XML Crap"
   },
   {
     "Script Name": "rename aaf clip",
@@ -898,6 +898,16 @@
     "Creation Date": "08.01.23",
     "Update Date": "08.01.23",
     "Description": "Script Name: Sanitize Names\nScript Version: 1.0.0\nFlame Version: 2022\nWritten by: John Geehreng\nCreation Date: 08.01.23\nUpdate Date: 08.01.23\n\nScript Type: MediaPanel\n\nDescription:\n\nRemoves illegal characters and replace spaces with underscores.\n\nMenu:\n\nRight-click in Media Panel -> UC Renamers -> Sanitize Names\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0.0 08.01.23\n- Initial release."
+  },
+  {
+    "Script Name": "scale action",
+    "Script Version": "0.1",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Ted Stanley, with help from Claude",
+    "Creation Date": "04.07.26",
+    "Update Date": "04.07.26",
+    "Description": "Script Name: scale_action\nScript Version: 0.1\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.07.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected Actions, scales the top Axis (axis1 or axis_L1) by a user-supplied value\n\nMenus:\nAction Tools -> Scale Action"
   },
   {
     "Script Name": "scale compensator",
