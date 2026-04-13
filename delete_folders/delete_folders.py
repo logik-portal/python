@@ -1,5 +1,5 @@
 # Delete Folders
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Delete Folders
-Script Version: 2.10.0
-Flame Version: 2025
+Script Version: 2.11.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.04.20
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -47,6 +47,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.11.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.10.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -83,9 +86,9 @@ Updates:
         - Updated to be compatible with Flame 2022/Python 3.7.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import shutil
@@ -93,17 +96,17 @@ import flame
 
 from lib.pyflame_lib_delete_folders import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Delete Folders'
-SCRIPT_VERSION = 'v2.10.0'
+SCRIPT_VERSION = 'v2.11.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def delete_folders(selection):
     """
@@ -151,9 +154,9 @@ def delete_folders(selection):
 
         pyflame.print('\nSelected Folders Deleted', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_folder(selection):
 
@@ -162,9 +165,9 @@ def scope_folder(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_mediahub_files_custom_ui_actions():
 
@@ -178,7 +181,7 @@ def get_mediahub_files_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_folder,
                     'execute': delete_folders,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

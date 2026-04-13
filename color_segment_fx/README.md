@@ -1,10 +1,10 @@
 # Color Segment Fx
 
-**Script Version:** 1.4.0  
-**Flame Version:** 2025  
+**Script Version:** 1.5.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.02.24  
-**Update Date:** 07.10.25  
+**Update Date:** 03.24.26  
 
 **Script Type:** Timeline
 
@@ -25,6 +25,10 @@ https://github.com/logik-portal/python/color_segment_fx
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.5.0 [03.24.26]
+- Update to PyFlameLib v5.3.0.
+<br>
 
 ### v1.4.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

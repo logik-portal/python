@@ -1,5 +1,5 @@
 # Refresh Python Hooks
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Refresh Python Hooks
-Script Version: 1.8.0
-Flame Version: 2023.2
+Script Version: 1.9.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 05.12.22
-Update Date: 04.03.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -31,11 +31,10 @@ Script Type: Batch / Flame Main Menu
 
 Description:
 
-    Refresh python hooks and print message to Flame message window(Flame 2023.1+) and terminal.
-
-    Message to Flame message window only shows up in Flame 2023.1+.
+    Refresh python hooks and print message to Flame message window and terminal.
 
 URL:
+
     https://github.com/logik-portal/python/refresh_python_hooks
 
 Menus:
@@ -50,6 +49,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.9.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v1.8.0 04.03.25
         - Updated to PyFlameLib v4.3.0.
@@ -80,27 +82,27 @@ Updates:
         - Updated menu for Flame 2023.2+.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 from lib.pyflame_lib_refresh_python_hooks import *
 
 SCRIPT_NAME = 'Refresh Python Hooks'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
-SCRIPT_VERSION = 'v1.8.0'
+SCRIPT_VERSION = 'v1.9.0'
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def refresh_hooks(selection):
 
     pyflame.refresh_hooks()
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -113,7 +115,7 @@ def get_main_menu_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': refresh_hooks,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                },
            ]
         }
@@ -130,7 +132,7 @@ def get_batch_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': refresh_hooks,
-                    'minimumVersion': '2023.2',
+                    'minimumVersion': '2025.1',
                },
            ]
         }
@@ -147,7 +149,7 @@ def get_media_panel_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': refresh_hooks,
-                    'minimumVersion': '2023.2',
+                    'minimumVersion': '2025.1',
                },
            ]
         }
@@ -164,7 +166,7 @@ def get_timeline_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': refresh_hooks,
-                    'minimumVersion': '2023.2',
+                    'minimumVersion': '2025.1',
                },
            ]
         }

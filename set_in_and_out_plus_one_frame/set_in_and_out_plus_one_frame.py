@@ -1,5 +1,5 @@
 # Set In And Out Plus One Frame
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Set In and Out Plus One Frame
-Script Version: 1.3.0
-Flame Version: 2023.2
+Script Version: 1.4.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 05.01.24
-Update Date: 04.03.25
+Update Date: 04.02.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -47,6 +47,9 @@ To install:
 
 Updates:
 
+    v1.4.0 04.02.26
+        - Updated to PyFlameLib v5.3.0.
+
     v1.3.0 04.03.25
         - Updated to PyFlameLib v4.3.0.
 
@@ -57,25 +60,25 @@ Updates:
         - Updated to PyFlameLib v3.0.0.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 
 from lib.pyflame_lib_set_in_and_out_plus_one_frame import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Set In and Out Plus One Frame'
-SCRIPT_VERSION = 'v1.3.0'
+SCRIPT_VERSION = 'v1.4.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class SetInAndOutPlusOne():
 
@@ -128,7 +131,8 @@ class SetInAndOutPlusOne():
                         message='Sequence Start Time cannot be negative.\n\n'
                                 'Selected Sequence Start Time: ' + str(sequence.start_time) + '\n\n'
                                 'Please check the sequence start time and try again.',
-                        type=MessageType.ERROR,
+                        message_type=MessageType.ERROR,
+                        parent=None
                         )
                     return
 
@@ -148,9 +152,9 @@ class SetInAndOutPlusOne():
 
         pyflame.print('In and Out marks set for selected sequences/clips.', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_seq(selection):
 
@@ -159,9 +163,9 @@ def scope_seq(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
@@ -173,7 +177,7 @@ def get_media_panel_custom_ui_actions():
                     'name': 'Set In and Out +1 Frame of Black',
                     'isVisible': scope_seq,
                     'execute': SetInAndOutPlusOne,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

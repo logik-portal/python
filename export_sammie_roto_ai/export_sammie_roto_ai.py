@@ -79,7 +79,7 @@ SAMMIE_CMD = ["/bin/bash", "/home/wilton.silva/Sammie-Roto-2/run_sammie.command"
 EXPORT_ROOT = "/mnt/cache/Flame_Exports/SammieRoto"
 
 # JPEG preset path (Shared presets location)
-PRESET_PATH = "/opt/Autodesk/shared/python/export_SammieRotoAI/EXPORT_JPEG_SAMMIE.xml"
+PRESET_PATH = "/opt/Autodesk/shared/python/export_sammie_roto_ai/EXPORT_JPEG_SAMMIE.xml"
 
 # Timeout waiting for first frame (seconds):
 FILE_WAIT_TIMEOUT = 60

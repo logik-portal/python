@@ -1,5 +1,5 @@
 # Import ST Map
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Import ST Map
-Script Version: 3.1.0
-Flame Version: 2025
+Script Version: 3.2.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 04.30.21
-Update Date: 07.10.25
+Update Date: 04.07.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -31,7 +31,7 @@ Script Type: Batch
 
 Description:
 
-    Imports ST Maps and builds ST Map setup
+    Import ST Maps and build ST Map setup
 
     Comp work is recomped over original plate at end of setup
 
@@ -47,6 +47,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v3.2.0 04.07.26
+        - Updated to PyFlameLib v5.3.0.
 
     v3.1.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -92,9 +95,9 @@ Updates:
         - Updated to be compatible with Flame 2022/Python 3.7.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -102,17 +105,17 @@ import re
 import flame
 from lib.pyflame_lib_import_st_map import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Import ST Maps'
-SCRIPT_VERSION = 'v3.1.0'
+SCRIPT_VERSION = 'v3.2.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class ImportSTMap:
 
@@ -186,7 +189,7 @@ class ImportSTMap:
                 }
             )
 
-    #-------------------------------------
+    # -------------------------------------
 
     def get_st_maps(self) -> tuple:
         """
@@ -327,9 +330,9 @@ class ImportSTMap:
             # Path to UVMap_3vis matchbox
             matchbox_path = os.path.join(SCRIPT_PATH, 'assets/matchbox/uvmap_3vis')
 
-            #-------------
+            # -------------------------------------
             # Create nodes
-            #-------------
+            # -------------------------------------
 
             plate_in_mux = flame.batch.create_node('MUX')
             plate_in_mux.name = new_node_names[0]
@@ -481,9 +484,9 @@ class ImportSTMap:
                 existing_node_names=[str(node.name)[1:-1] for node in flame.batch.nodes]
                 )
 
-            #-------------
+            # -------------------------------------
             # Create nodes
-            #-------------
+            # -------------------------------------
 
             plate_in_mux = flame.batch.create_node('MUX')
             plate_in_mux.name = new_node_names[0]
@@ -594,7 +597,7 @@ class ImportSTMap:
         else:
             pyflame.print('ST Map Import Cancelled', text_color=TextColor.RED)
 
-#-------------------------------------
+# ------------------------------------------------------------------------------
 
 def import_matchbox_setup(selection):
 
@@ -604,9 +607,9 @@ def import_st_map_node_setup(selection):
 
     ImportSTMap(selection, 'st_map_node')
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -617,12 +620,12 @@ def get_batch_custom_ui_actions():
                 {
                     'name': 'Import ST Map - Matchbox Setup',
                     'execute': import_matchbox_setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Import ST Map - ST Map Node Setup',
                     'execute': import_st_map_node_setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

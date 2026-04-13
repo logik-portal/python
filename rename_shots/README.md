@@ -1,10 +1,10 @@
 # Rename Shots
 
-**Script Version:** 1.12.0  
-**Flame Version:** 2025  
+**Script Version:** 1.13.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 04.05.22  
-**Update Date:** 07.10.25  
+**Update Date:** 03.26.26  
 
 **Script Type:** MediaPanel/Timeline
 
@@ -30,6 +30,10 @@ https://github.com/logik-portal/python/rename_shots
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.13.0 [03.26.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v1.12.0 [01.03.26]
 - Progress messages print to script window

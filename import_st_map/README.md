@@ -1,16 +1,16 @@
-# Import ST Map
+# Import St Map
 
-**Script Version:** 3.1.0  
-**Flame Version:** 2025  
+**Script Version:** 3.2.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 04.30.21  
-**Update Date:** 07.10.25  
+**Update Date:** 04.07.26  
 
 **Script Type:** Batch
 
 ## Description
 
-Imports ST Maps and builds ST Map setup
+Import ST Maps and build ST Map setup
 <br><br>
 Comp work is recomped over original plate at end of setup
 
@@ -27,6 +27,10 @@ https://github.com/logik-portal/python/import_st_map
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v3.2.0 [04.07.26]
+- Updated to PyFlameLib v5.3.0.
+<br>
 
 ### v3.1.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

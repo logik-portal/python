@@ -1,5 +1,5 @@
 # Add Audio
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Audio
-Script Version: 1.4.0
-Flame Version: 2023
+Script Version: 1.5.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 02.04.22
-Update Date: 01.20.24
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -60,6 +60,9 @@ To install:
 
 Updates:
 
+    v1.5.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
+
     v1.4.0 01.20.24
         - Updates to PySide.
         - Fixed scoping issue with Flame 2023.2+ menus.
@@ -88,15 +91,18 @@ from lib.pyflame_lib_add_audio import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Audio'
-SCRIPT_VERSION = 'v1.4.0'
-SCRIPT_PATH = '/opt/Autodesk/shared/python/add_audio'
+SCRIPT_VERSION = 'v1.5.0'
+SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 class AddAudio():
 
     def __init__(self, selection):
 
-        print ('\n')
-        print ('>' * 10, f'{SCRIPT_NAME} {SCRIPT_VERSION}', '<' * 10, '\n')
+        pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
+
+        # Check script path, if path is incorrect, stop script.
+        if not pyflame.verify_script_install():
+            return
 
         self.selection = selection
 
@@ -111,18 +117,15 @@ class AddAudio():
 
         self.audio_library.expanded = True
 
-        pyflame.message_print(
-            message='New audio library created.',
-            script_name=SCRIPT_NAME,
-            )
+        pyflame.print('New audio library created.')
 
     def add_stereo_audio(self, timecode):
 
         if len(self.selection) < 2:
             PyFlameMessageWindow(
                 message='At least one clip/sequence and audio clip must be selected.',
-                script_name=SCRIPT_NAME,
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
+                parent=None,
                 )
             return
 
@@ -132,8 +135,8 @@ class AddAudio():
         if len(sequence_selection) != len(audio_selection):
             PyFlameMessageWindow(
                 message='For every sequence/clip selected an audio clip must be selected.',
-                script_name=SCRIPT_NAME,
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
+                parent=None,
                 )
             return
 
@@ -163,10 +166,9 @@ class AddAudio():
             open_sequence.insert(audio_clip, insert_time = insert_timecode)
 
         PyFlameMessageWindow(
-            message=f"""Stereo audio added to selected clips at {timecode}.<br><br>
-            New clips can be found here: {str(self.audio_library.name)[1:-1]} Library""",
-            script_name=SCRIPT_NAME,
-            type=MessageType.OPERATION_COMPLETE,
+            message=f'Stereo audio added to selected clips at {timecode}.\n\nNew clips can be found here: {str(self.audio_library.name)[1:-1]} Library',
+            message_type=MessageType.OPERATION_COMPLETE,
+            parent=None,
             )
 
     def add_surround_audio(self, timecode):
@@ -193,11 +195,9 @@ class AddAudio():
         for group in selected_groups:
             if len(group) != 8:
                 PyFlameMessageWindow(
-                    message="""Selection should be sequence followed by surround audio tracks:<br><br>
-                    LF, RF, C, LFE, LS, RS, Stereo.<br><br>
-                    Audio does not need to be in proper order.""",
-                    script_name=SCRIPT_NAME,
-                    type=MessageType.ERROR,
+                    message='Selection should be sequence followed by surround audio tracks:\n\nLF, RF, C, LFE, LS, RS, Stereo.\n\nAudio does not need to be in proper order.',
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return
 
@@ -213,11 +213,9 @@ class AddAudio():
             # Make sure 7 tracks are selected per clip
             if len(audio_selection) != 7:
                 PyFlameMessageWindow(
-                    message="""Audio selection for 5.1 should contain these tracks:<br><br>
-                    LF, RF, C, LFE, LS, RS, Stereo<br><br>
-                    Audio does not need to be selected in proper order.""",
-                    script_name=SCRIPT_NAME,
-                    type=MessageType.ERROR,
+                    message='Audio selection for 5.1 should contain these tracks:\n\nLF, RF, C, LFE, LS, RS, Stereo\n\nAudio does not need to be selected in proper order.',
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return
 
@@ -244,10 +242,9 @@ class AddAudio():
                 open_sequence.overwrite(audio_clip, insert_timecode, audio_track)
 
         PyFlameMessageWindow(
-            message=f"""5.1 audio added to selected clips at {timecode}.<br><br>
-            New clips can be found here: {str(self.audio_library.name)[1:-1]} Library""",
-            script_name=SCRIPT_NAME,
-            type=MessageType.OPERATION_COMPLETE,
+            message=f'5.1 audio added to selected clips at {timecode}.\n\nNew clips can be found here: {str(self.audio_library.name)[1:-1]} Library',
+            message_type=MessageType.OPERATION_COMPLETE,
+            parent=None,
             )
 
 def add_stereo_audio_one_hour(selection):
@@ -295,25 +292,25 @@ def get_media_panel_custom_ui_actions():
                     'name': 'Insert Stereo Audio - 01:00:00:00',
                     'isVisible': scope_sequence,
                     'execute': add_stereo_audio_one_hour,
-                    'minimumVersion': '2023'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Insert Stereo Audio - 00:59:58:00',
                     'isVisible': scope_sequence,
                     'execute': add_stereo_audio_two_pop,
-                    'minimumVersion': '2023'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Insert 5.1 Audio - 01:00:00:00',
                     'isVisible': scope_sequence,
                     'execute': add_surround_audio_one_hour,
-                    'minimumVersion': '2023'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Insert 5.1 Audio - 00:59:58:00',
                     'isVisible': scope_sequence,
                     'execute': add_surround_audio_two_pop,
-                    'minimumVersion': '2023'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

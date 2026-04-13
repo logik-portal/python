@@ -1,5 +1,5 @@
 # Invert Axis
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Invert Axis
-Script Version: 2.10.0
-Flame Version: 2025
+Script Version: 2.11.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 07.26.19
-Update Date: 12.18.25
+Update Date: 04.02.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -32,6 +32,10 @@ Script Type: Action / GMask Tracer
 Description:
 
     Create inverted axis at current frame or copy parent axis and invert at current frame.
+
+URL:
+
+    https://github.com/logik-portal/python/invert_axis
 
 Menus:
 
@@ -48,6 +52,9 @@ To install:
     Copy script into /opt/Autodesk/shared/python/invert_axis
 
 Updates:
+
+    v2.11.0 04.02.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.10.0 12.18.25
         - Updated to PyFlameLib v5.1.1.
@@ -110,7 +117,7 @@ from lib.pyflame_lib_invert_axis import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Invert Axis'
-SCRIPT_VERSION = 'v2.10.0'
+SCRIPT_VERSION = 'v2.11.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -526,25 +533,25 @@ def get_action_custom_ui_actions():
                     'name': 'Create Inverted Axis At Current Frame',
                     'isVisible': scope_action_axis,
                     'execute': invert,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Invert Parent Axis At Current Frame',
                     'isVisible': scope_action_axis,
                     'execute': invert_parent,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Create Inverted Axis At Current Frame ',
                     'isVisible': scope_gmask_tracer_axis,
                     'execute': invert,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Invert Parent Axis At Current Frame ',
                     'isVisible': scope_gmask_tracer_axis,
                     'execute': invert_parent,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

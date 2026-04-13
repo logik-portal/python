@@ -1,5 +1,5 @@
 # Add GMask
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Add GMask
-Script Version: 2.9.0
-Flame Version: 2025
+Script Version: 2.10.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 01.05.20
-Update Date: 07.10.25
+Update Date: 03.26.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -47,6 +47,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.10.0 03.26.26
+        - Updated to PyFlameLib v5.3.0.
 
     v2.9.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -85,26 +88,26 @@ Updates:
         - Gmask nodes can now be added loose in batch at cursor position.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 
 import flame
 from lib.pyflame_lib_add_gmask import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Add GMask'
-SCRIPT_VERSION = 'v2.9.0'
+SCRIPT_VERSION = 'v2.10.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 def create_gmask_node(selection, gmask_type):
 
@@ -199,9 +202,9 @@ def add_gmask(selection):
 
     create_gmask_node(selection, gmask_type)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope(selection):
 
@@ -217,9 +220,9 @@ def scope(selection):
 
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -233,14 +236,14 @@ def get_batch_custom_ui_actions():
                     'order': 1,
                     'isVisible': scope,
                     'execute': add_gmask_tracer,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add GMask Node',
                     'order': 2,
                     'isVisible': scope,
                     'execute': add_gmask,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

@@ -1,5 +1,5 @@
 """
-Script Name: About to Mux Shit Up
+Script Name: About to Mux it Up
 Script Version: 1.0.1
 Flame Version: 2022
 Written By: Kieran Hanrahan
@@ -14,7 +14,7 @@ Description:
 
 Menus:
 
-    Right-click selected Clip nodes in the Batch schematic -> Create... -> About to Mux Shit Up
+    Right-click selected Clip nodes in the Batch schematic -> Create... -> About to Mux it Up
 
 To install:
 
@@ -27,7 +27,7 @@ To install:
 
 import flame
 
-TITLE = 'About to Mux Shit Up'
+TITLE = 'About to Mux it Up'
 VERSION_INFO = (1, 0, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = '{} v{}'.format(TITLE, VERSION)
@@ -126,7 +126,7 @@ def connect_downstream_mux(node):
             flame.batch.connect_nodes(node, alpha, mux, 'Matte_0')
 
 
-def mux_shit_up(selection):
+def mux_it_up(selection):
     """Process all selected nodes."""
     message(TITLE_VERSION)
     message('Script called from {}'.format(__file__))
@@ -144,7 +144,7 @@ def scope_clip_node(selection):
 def get_batch_custom_ui_actions():
     """Python hook to add custom item to right click menu in Batch."""
     return [{'name': 'Create...',
-             'actions': [{'name': 'About to Mux Shit Up',
+             'actions': [{'name': 'About to Mux it Up',
                           'isVisible': scope_clip_node,
-                          'execute': mux_shit_up,
+                          'execute': mux_it_up,
                           'minimumVersion': '2022'}]}]

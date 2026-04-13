@@ -1,4 +1,4 @@
-# About To Mux Shit Up
+# About To Mux It Up
 
 **Script Version:** 1.0.1  
 **Flame Version:** 2022  
@@ -18,7 +18,7 @@ http://github.com/khanrahan/about-to-mux-shit-up
 
 ## Menus
 
-- Right-click selected Clip nodes in the Batch schematic → Create... → About to Mux Shit Up
+- Right-click selected Clip nodes in the Batch schematic → Create... → About to Mux it Up
 
 ## Installation
 
