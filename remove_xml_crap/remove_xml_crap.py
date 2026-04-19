@@ -1,18 +1,18 @@
 """
-Script Name: remove xml crap
-Script Version: 0.3.0
+Script Name: remove_XML_crap
+Script Version: 0.4.0
 Flame Version: 2025
 Written by: Ted Stanley, based on John Geehreng's fix_corrupt_actions script
 Creation Date: 01.07.26
-Update Date: 01.07.26
+Update Date: 04.07.26
 
-Custom Action Type: MediaPanel
+Custom Action Type: MediaPanel, Timeline
 
 Description:
     Removes Global Axis, Light and Shadow nodes from Action setups imported from XMLs
 
 Menus:
-    Media Panel -> Remove XML Crap
+    Action Tools -> Remove XML Crap    
 """
 
 import flame
@@ -21,9 +21,9 @@ import traceback
 import re
 from pathlib import Path
 
-FOLDER_NAME = 'KE'
+FOLDER_NAME = 'Action Tools'
 SCRIPT_NAME = 'Remove XML Crap'
-SCRIPT_VERSION = 'v.3'
+SCRIPT_VERSION = 'v0.4'
 
 class RemoveXMLCrap():
     def __init__(self, selection) -> None:
@@ -31,15 +31,26 @@ class RemoveXMLCrap():
         print('[=========', f'{SCRIPT_NAME} {SCRIPT_VERSION}', '=========]\n')
         self.remove_xml_crap(selection)
 
-    def catch_exception(method):
-        def wrapper(self, *args, **kwargs):
-            try:
-                return method(self, *args, **kwargs)
-            except:
-                traceback.print_exc()
-        return wrapper
-
+    def catch_exception(method):                                                                                                                                              
+        def wrapper(self, *args, **kwargs):                                                                                                                                     
+            try:                                                                                                                                                              
+                return method(self, *args, **kwargs)                                                                                                                            
+            except:                                                                                                                                                           
+                traceback.print_exc()                                                                                                                                         
+        return wrapper                                                                                                                                                        
+        
     @catch_exception
+
+    def get_segments(self, selection):
+        segments = []
+        for item in selection:
+            if isinstance(item, flame.PySegment):
+                segments.append(item)
+            elif isinstance(item, flame.PySequence):
+                for version in item.versions:
+                    for track in version.tracks:
+                        segments.extend(track.segments)
+        return segments
 
     def grabnode(self, content):
         number = 0
@@ -49,7 +60,7 @@ class RemoveXMLCrap():
             nodegroup += '\n'
             if line.startswith("End"):
                 return nodegroup, number
-
+    
     def newaction(self, action_path):
         # Read action file
         action_path += "/_action.action"
@@ -70,7 +81,7 @@ class RemoveXMLCrap():
             intro +='\n'
 
         content = content[(number-1):]
-        print(content[0])
+        #print(content[0])
 
         ### Grab all nodes, stop at ConcreteEnd
         nodegroup = ""
@@ -83,8 +94,8 @@ class RemoveXMLCrap():
             content = content[(number+1):]
             nodelist.append(nodegroup)
             #print("nodegoup found " + nodegroup + '\n')
-            print(content[0])
-
+            #print(content[0])
+        
         ### Before we go any further, did this Action even come from an XML?
         namelist = []
         for item in nodelist:
@@ -184,7 +195,7 @@ class RemoveXMLCrap():
             if line.startswith("	Child "):
                 #print("Removed old Child from Node Group")
                 continue
-            elif line.startswith("	MotionPath"):
+            elif line.startswith("	MotionPath"):  
                 fixedline += fixed_child + '\n'
                 fixedline += line + '\n'
                 print("Added new Child to Node Group")
@@ -198,7 +209,7 @@ class RemoveXMLCrap():
 
         for item in child_nodelist:
             newfile  += item
-            print(item.splitlines()[0])
+            #print(item.splitlines()[0])
 
         for item in content:
             newfile += item
@@ -214,7 +225,7 @@ class RemoveXMLCrap():
 
     def remove_xml_crap(self, selection):
         project_name = flame.project.current_project.name
-
+        
         # Setup temporary action path
         action_path = f"/opt/Autodesk/project/{project_name}/tmp/auto_action_temp.action"
         #print(action_path)
@@ -222,30 +233,32 @@ class RemoveXMLCrap():
             action_path = '/var/tmp/auto_action_temp.action'
 
         # Process all selected sequences
-        for item in selection:
-            for version in item.versions:
-                for track in version.tracks:
-                    for segment in track.segments:
-                        for tlfx in segment.effects:
-                            if tlfx.type == 'Action':
-                                print(f"Processing Action effect in {segment.name}")
-                                # Save the action setup
-                                tlfx.save_setup(action_path)
-                                self.newaction(action_path)
-                                # Delete and recreate action
-                                flame.delete(tlfx)
-                                action_fx = segment.create_effect('Action')
-                                action_fx.load_setup(action_path)
-                                #segment.colour = (50, 50, 50)  # Mark as processed
-
+        for segment in self.get_segments(selection):
+            for tlfx in segment.effects:
+                if tlfx.type == 'Action':
+                    print(f"*-- Processing Action effect in {segment.name} --*")
+                    # Save the action setup
+                    tlfx.save_setup(action_path)
+                    self.newaction(action_path)
+                    # Delete and recreate action
+                    flame.delete(tlfx)
+                    action_fx = segment.create_effect('Action')
+                    action_fx.load_setup(action_path)
+        
         print('[=========', f'{SCRIPT_NAME} {SCRIPT_VERSION} - Complete', '=========]\n')
 
 def scope_sequence(selection):
     return any(isinstance(item, flame.PySequence) for item in selection)
 
+def scope_segment(selection):
+    for item in selection:
+        if isinstance(item, flame.PySegment):
+            return True
+    return False
+
 def get_media_panel_custom_ui_actions():
     return [{
-        'name': [],
+        'name': FOLDER_NAME,
         'actions': [{
             'name': SCRIPT_NAME,
             'execute': RemoveXMLCrap,
@@ -253,3 +266,18 @@ def get_media_panel_custom_ui_actions():
             'minimumVersion': '2025'
         }]
     }]
+
+def get_timeline_custom_ui_actions():
+    return [
+        {
+            'name': FOLDER_NAME,
+            'actions': [
+                {
+                    'name': SCRIPT_NAME,
+                    'execute': RemoveXMLCrap,
+                    'isVisible': scope_segment,
+                    'minimumVersion': '2025'
+                }
+            ]
+        }
+    ]
