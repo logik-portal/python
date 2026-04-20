@@ -1,17 +1,24 @@
 """
 Script Name: scale_action
-Script Version: 0.1
+Script Version: 0.2
 Flame Version: 2025
 Written by: Ted Stanley, with help from Claude
 Creation Date: 04.07.26
+Update Date: 04.17.26
 
 Custom Action Type: MediaPanel, Timeline
 
 Description:
-    For all selected Actions, scales the top Axis (axis1 or axis_L1) by a user-supplied value
+    For all selected segments with Actions, scales the top Axis by a user-supplied value
 
 Menus:
-    Action Tools -> Scale Action
+    Right-click on a segment or timeline --> Action Tools -> Scale Action
+
+Updates:
+    v.1 - 04.07.26
+    - Initial Release
+    v.2 - 04.17.26
+    - Now scales the first Node Axis it finds, instead of only axis-L1 or axis1.
 """
 
 import flame
@@ -24,7 +31,7 @@ from pyflame_lib_action_tools import *
 
 FOLDER_NAME = 'Action Tools'
 SCRIPT_NAME = 'Scale Action'
-SCRIPT_VERSION = 'v.1'
+SCRIPT_VERSION = 'v.2'
 
 
 TARGET_AXIS_NAMES = {"axis_L1", "axis1"}
@@ -124,7 +131,7 @@ class ScaleAction():
             text='',
             placeholder_text='1.0',
             read_only=False,
-            tooltip='',
+            tooltip='1.0 = 100%',
             )
 
         # Buttons
@@ -138,7 +145,7 @@ class ScaleAction():
         self.Scale_Actions = PyFlameButton(
             text='Scale Actions',
             color=Color.GRAY,
-            tooltip='',
+            tooltip='1.0 = 100%',
             connect=self.BeginActionScale
             # connect=on_Scale_Actions_click,  # TODO: Uncomment and implement callback
             )
@@ -250,6 +257,8 @@ class ScaleAction():
         output_lines = []
         i = 0
 
+        should_scale = True
+
         while i < len(lines):
             line = lines[i]
 
@@ -269,7 +278,7 @@ class ScaleAction():
                         break
                     i += 1
 
-                should_scale = axis_name in TARGET_AXIS_NAMES
+                #should_scale = axis_name in TARGET_AXIS_NAMES
 
                 # Continue reading the rest of the node block until top-level "End"
                 in_specifics = False
@@ -321,6 +330,7 @@ class ScaleAction():
                     i += 1
 
                 output_lines.extend(node_lines)
+                should_scale = False
                 continue
 
             output_lines.append(line)
@@ -330,4 +340,3 @@ class ScaleAction():
             f.writelines(output_lines)
 
         print(f"Done. Written to: {output_path}")
-        

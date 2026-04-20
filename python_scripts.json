@@ -610,6 +610,16 @@
     "Description": "Script Name: Import Write Node\nScript Version: 2.12.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 05.26.19\nUpdate Date: 03.30.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nImport open clip created by selected write node into batch schematic reel or\nshelf reel or auto-import write node image sequence when render is complete.\n\nURL:\nhttps://github.com/logik-portal/python/import_write_node\n\nMenus:\n\nSetup:\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> Import Write Node Setup\n\nTo import open clips:\nRight-click on write file node in batch -> Import... -> Import Open Clip to Batch\nRight-click on write file node in batch -> Import... -> Import Open Clip to Renders Reel\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv2.12.0 03.30.26\n- Updated to PyFlameLib v5.3.0.\n\nv2.11.0 07.10.25\n- Updated to PyFlameLib v5.0.0.\n\nv2.10.0 04.10.25\n- Updated to PyFlameLib v4.3.0.\n\nv2.9.0 12.31.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv2.8.0 09.02.24\n- Updated to PyFlameLib v3.0.0.\n\nv2.7.0 01.15.24\n- Updates to PySide.\n- Updated to PyFlameLib v2.0.0.\n- Updated script versioning to semantic versioning.\n\nv2.6 03.02.23\n- Updated config file loading/saving.\n- Updated menus for Flame 2023.2+\n- Added check to make sure script is installed in the correct location.\n\nv2.5 11.10.22\n- Fixed bug loading open clip when (ext) token is used in the Create Open Clip path.\n\nv2.4 05.30.22\n- Messages print to Flame message window - Flame 2023.1 and later.\n\nv2.3 04.13.22\n- Script renamed to: Import Write Node.\n- Updated UI for Flame 2023.\n- Moved UI widgets to external file.\n\nv2.1 09.24.21\n- Added token translation for project nickname.\n\nv2.0 05.25.21\n- Updated to be compatible with Flame 2022/Python 3.7.\n\nv1.5 09.19.20\n- Pops up message box when open clip doesn't exist.\n\nv1.4 07.01.20\n- Open clips can be imported to Batch Renders shelf reel - Batch group must have shelf reel called Batch Renders.\n- Added token for version name.\n\nv1.3 11.01.19\n- Right-click menu now appears under Import...\n\nv1.1 09.29.19\n- Code cleanup."
   },
   {
+    "Script Name": "insert scale axis",
+    "Script Version": "0.1",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Ted Stanley, with help from Claude",
+    "Creation Date": "04.17.26",
+    "Update Date": "04.17.26",
+    "Description": "Script Name: insert_scale_axis\nScript Version: 0.1\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.17.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected segments with Actions, creates a new top level Axis node with a user-supplied scale value\n\nMenus:\nRight-click on a segment or timeline --> Action Tools -> Scale Action with Axis\n\nUpdates:\nv.1 - 04.17.26\n- Initial Release"
+  },
+  {
     "Script Name": "invert axis",
     "Script Version": "2.11.0",
     "Flame Version": "2025.1",
@@ -901,13 +911,13 @@
   },
   {
     "Script Name": "scale action",
-    "Script Version": "0.1",
+    "Script Version": "0.2",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Ted Stanley, with help from Claude",
     "Creation Date": "04.07.26",
-    "Update Date": "04.07.26",
-    "Description": "Script Name: scale_action\nScript Version: 0.1\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.07.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected Actions, scales the top Axis (axis1 or axis_L1) by a user-supplied value\n\nMenus:\nAction Tools -> Scale Action"
+    "Update Date": "04.17.26",
+    "Description": "Script Name: scale_action\nScript Version: 0.2\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.07.26\nUpdate Date: 04.17.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected segments with Actions, scales the top Axis by a user-supplied value\n\nMenus:\nRight-click on a segment or timeline --> Action Tools -> Scale Action\n\nUpdates:\nv.1 - 04.07.26\n- Initial Release\nv.2 - 04.17.26\n- Now scales the first Node Axis it finds, instead of only axis-L1 or axis1."
   },
   {
     "Script Name": "scale compensator",
