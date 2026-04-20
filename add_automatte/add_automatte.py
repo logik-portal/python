@@ -1,7 +1,7 @@
 '''
 Script Name: add_automatte
 Script Version: 1.0.0
-Flame Version: 2026.2.2
+Flame Version: 2026.2
 Written by: John Geehreng
 Creation Date: 04.17.26
 Update Date:  
