@@ -27,7 +27,7 @@
     "Author": "John Geehreng",
     "Creation Date": "04.17.26",
     "Update Date": "04.17.26",
-    "Description": "Script Name: add_automatte\nScript Version: 1.0.0\nFlame Version: 2026.2\nWritten by: John Geehreng\nCreation Date: 04.17.26\n\nDescription: Quickly add an automatte setup to a Gmask Tracer node in Batch.\n\nUpdates:\n04.17.26 - v1.0.0 - Start"
+    "Description": "Script Name: add_automatte\nScript Version: 1.0.0\nFlame Version: 2026.2\nWritten by: John Geehreng\nCreation Date: 04.17.26\n\nDescription:\n\nQuickly add an automatte setup to a Gmask Tracer node in Batch.\n\nUpdates:\n04.17.26 - v1.0.0 - Start"
   },
   {
     "Script Name": "add dated and timed folders",
