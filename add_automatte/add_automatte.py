@@ -5,7 +5,9 @@ Flame Version: 2026.2
 Written by: John Geehreng
 Creation Date: 04.17.26
 
-Description: Quickly add an automatte setup to a Gmask Tracer node in Batch.
+Description:
+    
+    Quickly add an automatte setup to a Gmask Tracer node in Batch.
 
 Updates:
 04.17.26 - v1.0.0 - Start
