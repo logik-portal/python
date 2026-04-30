@@ -410,6 +410,16 @@
     "Description": "Script Name: Export_SammieRotoAI\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Wilton Matos\nCreation Date: 11.12.24\nUpdate Date: 11.12.24\n\nCustom Action Type: Media Panel / Batch\n\nDescription:\nExport selected clips or batch clip nodes as JPEG sequences and automatically\nopen them in Sammie Roto 2.0 for AI-powered rotoscoping.\n\nThis script works in two contexts:\n1. Media Panel: Select clips from your library\n2. Batch: Right-click on Clip Nodes in the batch schematic\n\nThe script will:\n- Export the selected clip(s) as JPEG sequences (100% quality, 8-bit)\n- Create organized subdirectories for each clip\n- Wait for export completion (foreground export with progress visible)\n- Automatically launch Sammie Roto 2.0 with the exported sequence\n\nMenus:\nRight-click selected clip(s) in Media Panel -> Export -> Open Sammie 2.0\nRight-click Clip Node in Batch -> Export -> Open Sammie 2.0\n\nRequirements:\n- JPEG preset must be at: /opt/Autodesk/shared/python/export_SammieRotoAI/EXPORT_JPEG_SAMMIE.xml\n- Download flame export preset here.: https://drive.google.com/file/d/1r3qOdS3Ka94ZO4Ssqgc1Iwus2UXdZORo/view?usp=drive_link\n- Sammie Roto 2.0 installed and configured (see SAMMIE_CMD path below)\n- run_sammie.command must forward arguments: python3 launcher.py \"$@\"\n\nTo install:\n1. Copy script to: /opt/Autodesk/shared/python/export_SammieRotoAI.py\n2. Copy JPEG preset to: /opt/Autodesk/shared/python/export_SammieRotoAI/EXPORT_JPEG_SAMMIE.xml\n3. Adjust paths in CONFIG section below if needed\n4. Restart Flame or reload Python hooks\n\nConfiguration:\nEdit the CONFIG section below to customize:\n- SAMMIE_CMD: Path to Sammie Roto 2.0 launcher\n- EXPORT_ROOT: Destination folder for JPEG sequences\n- PRESET_PATH: Path to JPEG export preset\n- FILE_WAIT_TIMEOUT: Maximum time to wait for export completion\n\nUpdates:\nv1.0.0 11.12.24\n- Initial release.\n- Support for Media Panel clips and Batch Clip Nodes\n- Foreground export with progress visualization\n- Automatic Sammie Roto 2.0 integration\n- JPEG sequence export with organized folder structure"
   },
   {
+    "Script Name": "export srt",
+    "Script Version": "2.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "07.22.20",
+    "Update Date": "04.30.26",
+    "Description": "Script Name: Export SRT\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: Michael Vaglienty\nCreation Date: 07.22.20\nUpdate Date: 04.30.26\n\nCustom Action Type: Timeline\n\nDescription:\n\nExport SRT file from timeline Text FX.\n\nMenu:\n\nRight-click on selected clips with timeline text fx -> SRT... -> Export SRT\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/export_srt\n\nUpdates:\n\nv2.0.0 04.30.26\n\n- Updated to work with PySide6/Flame 2025+\n\nv1.3 07.18.22\n\nMessages print to Flame message window - Flame 2023.1 and later\n\nFlame file browser used to select export path - Flame 2023.1 and later\n\nv1.2 03.30.22\n\nUpdated config to xml\n\nUpdated UI for Flame 2023\n\nUI Widgets moved to external file\n\nv1.1 10.23.21\n\nUpdated to be compatible with Flame 2022/Python 3.7"
+  },
+  {
     "Script Name": "fill gaps",
     "Script Version": "1.4.0",
     "Flame Version": "2025",
