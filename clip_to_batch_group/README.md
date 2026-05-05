@@ -1,47 +1,41 @@
 # Clip To Batch Group
 
-**Script Version:** 2.7.0  
-**Flame Version:** 2025  
+**Script Version:** 3.0.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.16.19  
-**Update Date:** 04.09.25  
+**Update Date:** 05.05.26  
 
 **Script Type:** MediaPanel / Media Hub
 
 ## Description
 
-Import selected clips from the mediahub into newly created batch groups set to clip length with a render node
+Create batch group(s) from selected clips in the media panel or media hub.
+
+## Usage
+
+Script Setup:
+- Set batch group to use either Render or Write File node.
+(Default:  Render)
+- Set batch group suffix.
+(Default: _comp)
+- Set tokenized save path. Batch setup will be saved when the batch group is created.
+Leaving Tokenized Save Path button off will not save the batch group and the default Flame path will be used.
+(Default: off)
 <br><br>
-Option to switch to batch tab when batch groups are done being created can be
-turned off and on. Edit the following line in the __init__ section to either be True or False:
-<br><br>
-self.go_to_batch = False
-<br><br>
-Additional naming can be added to the end of batch group names. Edit the following line
-in the __init__ section. Naming must be in quotes.
-<br><br>
-self.additional_naming = '_comp'
-<br><br>
-Names of the batch group reels that are created by default can be
-changed by editing these two lists in the __init__ section:
-<br><br>
-schematic_reel_list = [
-'Elements',
-'Plates',
-'PreRenders',
-'Ref',
-]
-<br><br>
-shelf_reel_list = [
-'Renders',
-]
+When creating a batch group from all clips, clips are loaded in the order
+they are selected. Select clips individually to control the order, or use
+shift-select to load them top-down. The first clip in the selection
+determines the batch group settings.
 
 ## URL
 
-https://github.com/logik-portal/python/clip_to_batch_group
+https://logik-portal.com/scripts/#clip_to_batch_group
 
 ## Menus
 
+### Setup
+- Flame Main Menu → Logik Portal → Logik Portal Script Setup → Clip to Batch Group Setup
 ### To import clips into batch group with shot name extracted from clip name
 - Right-click on clip in MediaHub → Import... → Create New Batch Group - Shot Name
 - Right-click on clip in MediaHub → Import... → Create New Batch Group - Shot Name - All Clips One Batch
@@ -50,14 +44,26 @@ https://github.com/logik-portal/python/clip_to_batch_group
 - Right-click on clip in MediaHub → Import... → Create New Batch Group - Clip Name - All Clips One Batch
 ### To create batch group from clips in media panel with shot name extracted from clip name
 - Right-click on clip in Media Panel → Create New Batch Group... → Shot Name
+- Right-click on clip in Media Panel → Create New Batch Group... → Shot Name - All Clips One Batch
 ### To create batch group from clips in media panel with clip name
 - Right-click on clip in Media Panel → Create New Batch Group... → Clip Name
+- Right-click on clip in Media Panel → Create New Batch Group... → Clip Name - All Clips One Batch
 
 ## Installation
 
 Copy script into /opt/Autodesk/shared/python/clip_to_batch_group
 
 ## Updates
+
+### v3.0.0 [05.05.26]
+- Updated to work in Flame 2027.
+- Added setup window to configure script options:
+- Set batch group to use either Render or Write File node.
+- Set batch group suffix.
+- Set tokenized save path. Batch setup will be saved when the batch group is created.
+- Leaving Tokenized Save Path button off will not save the batch group and the default Flame path will be used.
+- Updated to PyFlameLib v5.3.1.
+<br>
 
 ### v2.7.0 [04.09.25]
 - Updated to PyFlameLib v4.3.0.
