@@ -19,10 +19,10 @@
 
 """
 PyFlame Library
-Version: 5.3.0
+Version: 5.3.1
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 03.13.26
+Update Date: 05.04.26
 
 Minimum Flame 2025.1
 
@@ -32,7 +32,7 @@ Description:
     This library provides custom PyQt widgets styled to resemble Autodesk Flame,
     along with other useful utility functions.
 
-    https://github.com/logik-portal/pyflame
+    https://logik-portal.com/#pyflame
 
 Usage:
     - Place this file inside a folder named "lib" located in the same directory
@@ -2421,22 +2421,7 @@ class _PyFlame:
             )
 
     @staticmethod
-    def resolve_path_tokens(tokenized_path: str, flame_pyobject=None, date=None) -> str:
-        """
-        Resolve Path Tokens
-        ===================
-
-        Resolves paths with tokens.
-
-        **Deprecated** Use `pyflame.resolve_tokens` instead.
-        """
-
-        print('\033[91m--> DeprecationWarning - pyflame.resolve_path_tokens - use pyflame.resolve_tokens instead.\033[0m\n')
-
-        return pyflame.resolve_tokens(tokenized_path, flame_pyobject, date) # Resolve path tokens
-
-    @staticmethod
-    def resolve_tokens(tokenized_string: str, flame_pyobject=None, date=None) -> str:
+    def resolve_tokens(tokenized_string: str, flame_pyobject=None, date=None, shot_name_tag: str = 'ShotName') -> str:
         """
         Resolve Path Tokens
         ===================
@@ -2676,7 +2661,7 @@ class _PyFlame:
                         if batch.tags.get_value() != []:
                             print('Batch Tags:', batch.tags.get_value())
                             for tag in batch.tags.get_value():
-                                if tag.startswith('ShotName:'):
+                                if tag.startswith(f'{shot_name_tag}:'):
                                     shot_name = tag.split(': ')[1]
                                     print(f'Batch Shot Name Tag Found: {shot_name}')
                                     return shot_name
@@ -2732,7 +2717,7 @@ class _PyFlame:
                     print(f'Resolved Path: {resolved_path}')
 
                     return resolved_path
-                print(6)
+
                 resolved_path = resolve_batch_tokens(flame_pyobject, resolved_path)
 
         pyflame.print(f'Resolved Tokenized String: {resolved_path}', text_color=TextColor.GREEN, new_line=False)
@@ -2789,26 +2774,40 @@ class _PyFlame:
         # three digits, followed by 'C', followed by three more digits.
         if re.match(r'^A\d{3}C\d{3}', name):
             shot_name = name[:8]
+            return shot_name
         else:
-            # If the name is not a camera source, we assume it's in a different format
-            # that requires splitting to find the shot name.
-            # We split the name using digit sequences as delimiters.
-            shot_name_split = re.split(r'(\d+)', name)
+            # # If the name is not a camera source, we assume it's in a different format
+            # # that requires splitting to find the shot name.
+            # # We split the name using digit sequences as delimiters.
+            # shot_name_split = re.split(r'(\d+)', name)
 
-            # After splitting, we need to reassemble the shot name.
-            # If there is at least one split, we check if the second element in the
-            # split is alphanumeric. If it is, we concatenate the first two elements.
-            # If it's not alphanumeric, we concatenate the first three elements.
-            if len(shot_name_split) > 1:
-                if shot_name_split[1].isalnum():
-                    shot_name = shot_name_split[0] + shot_name_split[1]
-                else:
-                    shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
-            else:
-                # If the name wasn't split (no digits found), we keep the original name.
-                shot_name = name
+            # # After splitting, we need to reassemble the shot name.
+            # # If there is at least one split, we check if the second element in the
+            # # split is alphanumeric. If it is, we concatenate the first two elements.
+            # # If it's not alphanumeric, we concatenate the first three elements.
+            # if len(shot_name_split) > 1:
+            #     if shot_name_split[1].isalnum():
+            #         shot_name = shot_name_split[0] + shot_name_split[1]
+            #     else:
+            #         shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
+            # else:
+            #     # If the name wasn't split (no digits found), we keep the original name.
+            #     shot_name = name
 
-        return shot_name
+
+
+            match = re.match(r'^([a-zA-Z]+)([_-]?)(\d+)', name)
+            if match:
+                prefix, separator, number = match.groups()
+                return prefix + separator + number
+            return name
+
+
+
+
+
+
+        #return shot_name
 
     @staticmethod
     def untar(tar_file_path: str, untar_path: str, sudo_password: str | None=None) -> bool:
@@ -3302,7 +3301,7 @@ class _PyFlame:
             return ''
 
     @staticmethod
-    def set_shot_tagging(pyobject: flame.PyLibrary | flame.PyFolder | flame.PyDesktop | flame.PyBatch | flame.PyClip, shot_name: str, append: bool=False) -> None:
+    def set_shot_tagging(pyobject: flame.PyLibrary | flame.PyFolder | flame.PyDesktop | flame.PyBatch | flame.PyClip, shot_name: str, append: bool=False, shot_name_tag: str = 'ShotName') -> None:
         """
         Set Shot Tagging
         ================
@@ -3349,15 +3348,15 @@ class _PyFlame:
             all_tags = pyobject.tags.get_value()
 
             # If tag starting with ShotName: already exists, remove it
-            if any(tag.startswith('ShotName:') for tag in all_tags):
-                all_tags = [tag for tag in all_tags if not tag.startswith('ShotName:')]
+            if any(tag.startswith(f'{shot_name_tag}:') for tag in all_tags):
+                all_tags = [tag for tag in all_tags if not tag.startswith(f'{shot_name_tag}:')]
 
             # Add new ShotName tag
-            all_tags.append(f'ShotName: {shot_name}')
+            all_tags.append(f'{shot_name_tag}: {shot_name}')
 
             pyobject.tags = all_tags
         else:
-            pyobject.tags = [f'ShotName: {shot_name}'] # Set tag directly
+            pyobject.tags = [f'{shot_name_tag}: {shot_name}'] # Set tag directly
 
     @staticmethod
     def find_by_tag(pyobject: flame.PyLibrary | flame.PyDesktop | flame.PyFolder, target_tag: str, sorted: bool=True):
@@ -3367,7 +3366,7 @@ class _PyFlame:
 
         Perform binary or linear search on PyObject's contained objects by tags.
 
-        For example, search through a Library for a folder with a specific tag. It will not recursively search through subfolders.
+        Search through a Library for a folder with a specific tag. It will not recursively search through subfolders.
 
         If `sorted` is True, uses binary search to efficiently find a Flame object that contains the target tag in its tag list.
         The search assumes PyObjects contained within the given PyObject are sorted by the tag being searched for.
@@ -3475,7 +3474,7 @@ class _PyFlame:
         return None
 
     @staticmethod
-    def shot_name_from_clip(clip: flame.PyClip) -> str:
+    def shot_name_from_clip(clip: flame.PyClip, shot_name_tag: str = 'ShotName') -> str:
         """
         Shot Name From Clip
         ===================
@@ -3512,12 +3511,12 @@ class _PyFlame:
             pyflame.print(f'Shot Name Found: {shot_name}', text_color=TextColor.GREEN)
             return shot_name
 
-        # Check if clip is tagged with ShotName
+        # Check if clip has shot name tag
         if clip.tags:
             clip_tags = clip.tags.get_value()
-            shot_name_tag = [tag for tag in clip_tags if tag.startswith('ShotName:')]
-            if shot_name_tag:
-                shot_name = shot_name_tag[0].split(': ')[1]
+            shot_name_tag_value = [tag for tag in clip_tags if tag.startswith(f'{shot_name_tag}:')]
+            if shot_name_tag_value:
+                shot_name = shot_name_tag_value[0].split(': ')[1]
                 pyflame.print(f'Shot Name Tag Found: {shot_name}', text_color=TextColor.GREEN)
                 return shot_name
 
@@ -3551,6 +3550,59 @@ class _PyFlame:
             pass
 
         pyflame.print(f'Shot Name from Clip Name: {shot_name}', text_color=TextColor.GREEN)
+
+        return shot_name
+
+    @staticmethod
+    def shot_name_from_batch_group(batch_group: flame.PyBatch, shot_name_tag: str = 'ShotName') -> str:
+        """
+        Shot Name From Batch Group
+        ==========================
+
+        Extracts shot name from batch group name using regex.
+
+        Args
+        ----
+            batch_group (flame.PyBatch):
+                Batch group to get shot name from
+
+        Returns
+        -------
+            shot_name (str):
+                Shot name
+
+        Notes
+        -----
+            - Check if batch group has assigned Shot Name.
+            - Check if batch group is tagged with ShotName (shot_name_tag: PYT_0010)
+            - If no Shot Name is assigned or tagged, extract shot name from batch group name.
+        """
+
+        # Validate Argument
+        if not isinstance(batch_group, flame.PyBatch):
+            pyflame.raise_type_error('pyflame.shot_name_from_batch_group', 'batch_group', 'flame.PyBatch', batch_group)
+
+        pyflame.print('Getting Shot Name From Batch Group', new_line=False)
+
+        # Check if batch group has shot name tag
+        if batch_group.tags:
+            batch_group_tags = batch_group.tags.get_value()
+            shot_name_tag_value = [tag for tag in batch_group_tags if tag.startswith(f'{shot_name_tag}:')]
+            if shot_name_tag_value:
+                shot_name = shot_name_tag_value[0].split(': ')[1]
+                pyflame.print(f'Shot Name Tag Found: {shot_name}', text_color=TextColor.GREEN)
+                return shot_name
+
+        # Extract shot name from batch group name
+        shot_name = pyflame.resolve_shot_name(str(batch_group.name)[1:-1])
+
+        # Tag batch group with shot name, pass if Flame 2025 or older
+        try:
+            pyflame.set_shot_tagging(batch_group, shot_name)
+        except:
+            pass
+
+        pyflame.print(f'Batch Group Shot Name: {shot_name}', text_color=TextColor.GREEN)
 
         return shot_name
 
@@ -4271,8 +4323,11 @@ class PyFlameConfig:
             if not isinstance(loaded_config, dict):
                 pyflame.raise_value_error('PyFlameConfig.load_config', 'loaded_config', 'dictionary JSON root object', loaded_config)
 
-            # Update default values with loaded values
-            self.config_values.update(loaded_config)
+            # Merge defaults into loaded config so the JSON file's key order is preserved.
+            for key, default_val in self.config_values.items():
+                if key not in loaded_config:
+                    loaded_config[key] = default_val
+            self.config_values = loaded_config
         else:
             # Ensure config directory exists then write defaults
             os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
@@ -4565,7 +4620,7 @@ class PyFlameButton(QtWidgets.QPushButton):
 
     def __init__(self: 'PyFlameButton',
                  text: str='',
-                 connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
                  color: Color=Color.GRAY,
                  enabled: bool=True,
                  width: int | None=None,
@@ -5299,7 +5354,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     def __init__(self: 'PyFlameEntry',
                  text: str='',
                  align: Align=Align.LEFT,
-                 text_changed: Callable[..., None] | None=None,
+                 text_changed: Callable[..., Any] | None=None,
                  placeholder_text: str='',
                  read_only: bool=False,
                  password_echo: bool=False,
@@ -6155,6 +6210,10 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
 
     Displays a Flame file browser when clicked.
 
+    Note:
+
+        Focus cannot be set to this widget like it can be with a regular Entry widget.
+
     Args
     ----
         `path` (str):
@@ -6282,7 +6341,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
                  browser_ext: List[str]=[],
                  browser_title: str='Select File',
                  window_to_hide: list[QtWidgets.QWidget] | QtWidgets.QWidget | None=None,
-                 connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
@@ -10637,7 +10696,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
     def __init__(self,
                  text: str='',
                  checked: bool=False,
-                 connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
@@ -11327,7 +11386,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
                  align: Align=Align.LEFT,
                  menu_options: List[str]=[],
                  menu_indicator: bool=False,
-                 connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
@@ -11925,7 +11984,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
     # [Methods]
     #-------------------------------------
 
-    def update_menu(self, text: str, menu_options: list[str], connect: Callable[..., None] | None=None) -> None:
+    def update_menu(self, text: str, menu_options: list[str], connect: Callable[..., Any] | None=None) -> None:
         """
         Update Menu
         ===========
@@ -14068,7 +14127,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                  max_value: int=100,
                  start_value: int=0,
                  rate: int | float=10,
-                 connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
@@ -15806,6 +15865,9 @@ class PyFlameTable(QtWidgets.QTableView):
                 for row in data[1:]:
                     items = [QtGui.QStandardItem(cell) for cell in row]
                     self.model.appendRow(items)
+
+                # Resize columns to fit
+                self.resizeColumnsToContents()
 
     def save_csv_file(self, csv_file_path: str) -> None:
         """
@@ -19013,8 +19075,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                  tree_dict: Dict[str, Dict[str, str]]={},
                  tree_list: List[str]=[],
                  top_level_item: str | None=None,
-                 connect: Callable[..., None] | None=None,
-                 update_connect: Callable[..., None] | None=None,
+                 connect: Callable[..., Any] | None=None,
+                 update_connect: Callable[..., Any] | None=None,
                  top_level_editable: bool=False,
                  allow_children: bool=True,
                  min_items: int=1,
@@ -19429,7 +19491,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return tree_list[1:]
 
     @property
-    def connect_callback(self) -> Callable[..., None] | None:
+    def connect_callback(self) -> Callable[..., Any] | None:
         """
         Connect Callback
         ================
@@ -19465,7 +19527,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._connect_callback
 
     @connect_callback.setter
-    def connect_callback(self, value: Callable[..., None] | None) -> None:
+    def connect_callback(self, value: Callable[..., Any] | None) -> None:
         """
         Connect Callback
         ================
@@ -19484,7 +19546,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self._connect_callback = value
 
     @property
-    def update_connect_callback(self) -> Callable[..., None] | None:
+    def update_connect_callback(self) -> Callable[..., Any] | None:
         """
         Update Connect Callback
         =======================
@@ -19520,7 +19582,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         return self._update_connect_callback
 
     @update_connect_callback.setter
-    def update_connect_callback(self, value: Callable[..., None] | None) -> None:
+    def update_connect_callback(self, value: Callable[..., Any] | None) -> None:
         """
         Update Connect Callback
         =======================
@@ -23047,8 +23109,8 @@ class PyFlameWindow(QtWidgets.QDialog):
                  message_bar: bool=True,
                  line_color: Color=Color.BLUE,
                  tab_order: list[QtWidgets.QWidget] | None=None,
-                 return_pressed: Callable[..., None] | None=None,
-                 escape_pressed: Callable[..., None] | None=None,
+                 return_pressed: Callable[..., Any] | None=None,
+                 escape_pressed: Callable[..., Any] | None=None,
                  grid_layout_columns: int=4,
                  grid_layout_rows: int=3,
                  grid_layout_column_width: int=150,
@@ -24345,6 +24407,7 @@ class PyFlameInputDialog:
         input_dialog = PyFlameInputDialog(
             text="Mike",
             label_text="Enter your name:",
+            parent=None
             )
 
         # Get Input Dialog Text
@@ -26518,12 +26581,6 @@ class PyFlameProgressWindow:
             )
         ```
 
-        ```
-        To set progress window as complete.
-        ```
-        progress_window.tasks_completed()
-        ```
-
         To update progress bar progress value:
         ```
         progress_window.current_task = 2
@@ -26542,6 +26599,11 @@ class PyFlameProgressWindow:
         To update message bar text:
         ```
         progress_window.message_bar_text = 'Some message'
+        ```
+
+        To set progress window as complete.
+        ```
+        progress_window.tasks_completed()
         ```
     """
 
