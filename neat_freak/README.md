@@ -1,42 +1,65 @@
 # Neat Freak
 
-**Script Version:** 2.1.0  
+**Script Version:** 2.2.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.22.21  
-**Update Date:** 03.28.26  
+**Update Date:** 04.19.26  
 
-**Script Type:** Batch/Media Panel
+**Script Type:** Batch/Media Panel/Timeline
 
 ## Description
 
-Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new
-batch group with Neat/Render/Write nodes for all selected clips.
+Add Neat/Render/Write nodes to selected clips in Batch, Media Panel, or Timeline Segments.
+
+## Usage
+
+Neat OFX 5.x or 6.x is required!
 <br><br>
-NEAT OFX is required!
+Select multiple clips in Batch, Media Panel, or Timeline Segments. When selecting clips in the Media Panel, a new Batch Group will be created.
 <br><br>
-Works with Neat OFX v5.x and Neat OFX v6.x.
+Render/Write node outputs are set to match each clip's: name, duration, timecode, fps, etc.
 <br><br>
-Render/Write node outputs are set to match each clip(name, duration, timecode, fps).
+Using Neat Node Profiles:
+<br><br>
+- Using Neat Node Profiles allows for easily applying the same Neat node
+settings to multiple clips bypassing having to set each Neat node manually.
+<br><br>
+- Enabled by default. To turn off, disable in Neat Freak setup. When
+disabled, the Neat node loads with default settings. When enabled, a
+prompt appears to select a Neat node profile.
+<br><br>
+- To create a Neat node profile: add a Neat node, go into the node and apply
+desired settings, then right-click on the Neat node and select
+Neat Freak... -> Save Neat Node Profile. The profile then appears in
+the selection prompt. Multiple profiles can be created. Profiles
+are saved per project.
 
 ## URL
 
-https://github.com/logik-portal/python/neat_freak
+https://logik-portal.com/scripts/#neat_freak
 
 ## Menus
 
 ### Script Setup
 - Flame Main Menu → Logik → Logik Portal Script Setup → Neat Freak Setup
 ### Batch
-- Right-click on any clips(s) in batch → Neat Denoise Selected Clips
+- Right-click on any clips(s) in batch → Neat Freak... → Neat Denoise Selected Clips
 ### Media Panel
-- Right-click on any clips(s) in media panel → Neat Denoise Selected Clips
+- Right-click on any clips(s) in media panel → Neat Freak... → Neat Denoise Selected Clips
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.2.0 [04.19.26]
+- Updated to work in Flame 2027+.
+- Added option to save/use Neat node profiles.
+- Added ability to add Neat OFX to selected timeline segments.
+- Fixed: Bug causing multiple Neat reels to be created in a batch group.
+<br>
 
 ### v2.1.0 [03.28.26]
 - Updated to PyFlameLib v5.3.0.
@@ -72,7 +95,7 @@ Copy script folder into /opt/Autodesk/shared/python
 <br>
 
 ### v1.6.0 [02.05.24]
-- Added entry field for render node extension name in setup.
+- Added entry field for render node suffix name in setup.
 - Added option to turn Add to Workspace on/off for Write nodes.
 - Updates to UI/PySide.
 - Updated to PyFlameLib v2.0.0.
