@@ -160,6 +160,16 @@
     "Description": "Script Name: build_resolution_list\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 12.20.24\nUpdate Date: 03.01.26\n\nCustom Action Type: MediaPanel\n\nDescription:\n\nThe goal is to be able to select multiple xmls that have been run through the fix premiere xmls script at various resolutions using a json file.\n\nMenus:\n\nMedia Panel -> UC Timelines -> Build Resolution List\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/build_resolution_list or put it wherever you keep your scripts\n\nUpdates:\n\nv2.0.0   03.01.26\n\nFix v1 and how it wasn't really using flame.projects.current_project.project_folder to determine where to save json's\n\nv1.0.0   10.22.25\n\nuse flame.projects.current_project.project_folder to determine where to save json's\n\nv0.2   12.27.24\n\nadded aspect ratio to json file\n\nv0.1   12.20.24\n\nInception"
   },
   {
+    "Script Name": "change render destination",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025.1",
+    "Maximum Flame Version": "Latest",
+    "Author": "Gaspar",
+    "Creation Date": "05.06.26",
+    "Update Date": "05.06.26",
+    "Description": "Script Name: Change Render Destination\nScript Version: 1.0.0\nFlame Version: 2025.1\nWritten by: Gaspar\nCreation Date: 05.06.26\nUpdate Date: 05.06.26\n\nScript Type: Media Panel\n\nDescription:\n\nChange the render destination of all Render nodes in the selected batch groups.\n\nUsage:\n\nSelect one or more batch groups in the Media Panel Desktop.\n\nURL:\n\nhttps://logik-portal.com/scripts/#change_render_destination\n\nMenus:\n\nMedia Panel:\n\nRight-click on any batch group(s) in media panel desktop -> Change Render Destination...\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0.0 05.06.26\n- Initial release."
+  },
+  {
     "Script Name": "clip to batch group",
     "Script Version": "3.0.0",
     "Flame Version": "2025.1",
