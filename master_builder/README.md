@@ -1,10 +1,10 @@
 # Master Builder
 
-**Script Version:** 1.6.0  
-**Flame Version:** 2025  
+**Script Version:** 1.7.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.09.22  
-**Update Date:** 05.28.25  
+**Update Date:** 05.13.26  
 
 **Script Type:** Reel Group
 
@@ -48,6 +48,11 @@ Sequences can contain multiple tracks but not multiple versions.
 Copy script into /opt/Autodesk/shared/python/master_builder
 
 ## Updates
+
+### v1.7.0 [05.13.26]
+- Fixed window parent issue.
+- Updated to PyFlameLib v5.3.1.
+<br>
 
 ### v1.6.0 [05.28.25]
 - Updated to PyFlameLib v5.0.0.
