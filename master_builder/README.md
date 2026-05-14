@@ -1,10 +1,10 @@
 # Master Builder
 
-**Script Version:** 1.7.0  
+**Script Version:** 1.7.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.09.22  
-**Update Date:** 05.13.26  
+**Update Date:** 05.14.26  
 
 **Script Type:** Reel Group
 
@@ -48,6 +48,10 @@ Sequences can contain multiple tracks but not multiple versions.
 Copy script into /opt/Autodesk/shared/python/master_builder
 
 ## Updates
+
+### v1.7.1 [05.14.26]
+- Fixed reel name bug.
+<br>
 
 ### v1.7.0 [05.13.26]
 - Fixed window parent issue.

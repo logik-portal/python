@@ -19,11 +19,11 @@
 
 """
 Script Name: Master Builder
-Script Version: 1.7.0
+Script Version: 1.7.1
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 02.09.22
-Update Date: 05.13.26
+Update Date: 05.14.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -70,6 +70,9 @@ To install:
 
 Updates:
 
+    v1.7.1 05.14.26
+        - Fixed reel name bug.
+
     v1.7.0 05.13.26
         - Fixed window parent issue.
         - Updated to PyFlameLib v5.3.1.
@@ -113,7 +116,7 @@ from lib.pyflame_lib_master_builder import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Master Builder'
-SCRIPT_VERSION = 'v1.7.0'
+SCRIPT_VERSION = 'v1.7.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -315,7 +318,7 @@ class MasterBuilder:
                         clip = reel.clips[x]
                     elif reel.sequences:
                         clip = reel.sequences[x]
-                    if reel.name == self.desktop_reels_push_button.text():
+                    if reel.name == self.desktop_reels_push_button.text:
                         master_name = str(clip.name)[1:-1]
                     clip_list.append(clip)
 
