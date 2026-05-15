@@ -1,5 +1,5 @@
 # Batch Nodes
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Batch Nodes
-Script Version: 3.11.0
-Flame Version: 2025
+Script Version: 3.12.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 04.18.20
-Update Date: 07.10.25
+Update Date: 05.15.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -42,6 +42,10 @@ Description:
     Nodes added by right-clicking on them in batch will be saved with current settings.
 
     All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus
+
+URL:
+
+    https://logik-portal.com/scripts/#batch_nodes
 
 Menus:
 
@@ -68,6 +72,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v3.12.0 05.15.26
+        - Updated to PyFlameLib v5.3.1.
 
     v3.11.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -144,7 +151,7 @@ from lib.pyflame_lib_batch_nodes import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Batch Nodes'
-SCRIPT_VERSION = 'v3.11.0'
+SCRIPT_VERSION = 'v3.12.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -164,6 +171,7 @@ class BatchNodes:
         #  Init variables
         self.create_node_line = ''
         self.selection = selection
+        self.node_name = ''
 
         # Set paths
         self.save_selected_template = os.path.join(SCRIPT_PATH, 'assets/templates', 'save_selected')
@@ -886,7 +894,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Batch Nodes Setup',
                     'execute': edit_node_lists,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -904,13 +912,13 @@ def get_batch_custom_ui_actions():
                     'order': 0,
                     'isVisible': scope_node,
                     'execute': save_node,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': '----------------------------------',
                     'order': 1,
                     'isVisible': scope_node,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
