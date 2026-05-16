@@ -31,17 +31,19 @@ Script Type: Batch / Flame Main Menu
 
 Description:
 
-    *** Does not work with Flame 2024.0 due to bug in Flame ***
+    Add menus to batch right-click for your favorite nodes in batch.
 
-    Add menus to batch right-click for your favorite nodes.
+Usage:
 
     Works with standard batch nodes/matchboxes/ofx.
 
     OFX can only be added by right clicking on an existing node in batch.
 
-    Nodes added by right-clicking on them in batch will be saved with current settings.
+    Nodes added by right-clicking on them in batch will be saved with current node settings.
 
     All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus
+
+    Menus can be renamed and removed from the node list in the Batch Nodes setup window.
 
 URL:
 
