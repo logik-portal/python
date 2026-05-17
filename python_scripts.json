@@ -450,7 +450,7 @@
     "Description": "Script Name: Filter Selection\nWritten by: Kieran Hanrahan\n\nScript Version: 2.1.1\nFlame Version: 2025\n\nURL: http://www.github.com/khanrahan/filter-selection\n\nCreation Date: 03.07.25\nUpdate Date: 04.10.25\n\nDescription:\n\nFilter the current selection in the Media Panel.\n\nMenus:\n\nRight-click selected items on the Desktop -> Select... -> Filter Selection\nRight-click selected items in the Media Hub -> Select... -> Filter Selection\nRight-click selected items in the Media Panel -> Select... -> Filter Selection\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
-    "Script Name": "find and replace",
+    "Script Name": "find and replace mediahub",
     "Script Version": "1.0.0",
     "Flame Version": "2026",
     "Maximum Flame Version": "Latest",
