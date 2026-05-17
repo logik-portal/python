@@ -12,7 +12,7 @@ Usage: Right click a selection of files and look for UC Renamers -> Find and Rep
 
 Description: Find and Replaces characters in a bunch of clips or sequences.
 
-To install: Copy script into /opt/Autodesk/shared/python/find_and_replace or wherever you wish.
+To install: Copy script into /opt/Autodesk/shared/python/find_and_replace_mediahub or wherever you wish.
 
 Updates:
 10.06.25 - v1.0.0  Updated for Flame 2026 and pyflame lib v4.
@@ -28,7 +28,7 @@ import os
 
 import flame
 
-from lib.pyflame_lib_find_and_replace import *
+from lib.pyflame_lib_find_and_replace_mediahub import *
 
 #-------------------------------------
 # [Constants]
