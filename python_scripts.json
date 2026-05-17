@@ -457,7 +457,7 @@
     "Author": "John Geehreng",
     "Creation Date": "06.07.22",
     "Update Date": "10.06.25",
-    "Description": "Script Name: find and replace mediahub\nScript Version: 1.0.0\nFlame Version: 2026\nWritten by: John Geehreng\nCreation Date: 06.07.22\nUpdate Date: 10.06.25\n\nCustom Action Type: Media Panel\n\nUsage: Right click a selection of files and look for UC Renamers -> Find and Replace\n\nDescription: Find and Replaces characters in a bunch of clips or sequences.\n\nTo install: Copy script into /opt/Autodesk/shared/python/find_and_replace or wherever you wish.\n\nUpdates:\n10.06.25 - v1.0.0  Updated for Flame 2026 and pyflame lib v4.\n12.13.23 - v0.3  Updated for pyflame lib v2. Start updates for Flame 2025."
+    "Description": "Script Name: find and replace mediahub\nScript Version: 1.0.0\nFlame Version: 2026\nWritten by: John Geehreng\nCreation Date: 06.07.22\nUpdate Date: 10.06.25\n\nCustom Action Type: Media Panel\n\nUsage: Right click a selection of files and look for UC Renamers -> Find and Replace\n\nDescription: Find and Replaces characters in a bunch of clips or sequences.\n\nTo install: Copy script into /opt/Autodesk/shared/python/find_and_replace_mediahub or wherever you wish.\n\nUpdates:\n10.06.25 - v1.0.0  Updated for Flame 2026 and pyflame lib v4.\n12.13.23 - v0.3  Updated for pyflame lib v2. Start updates for Flame 2025."
   },
   {
     "Script Name": "find folder",
