@@ -1,10 +1,10 @@
 '''
 Script Name: scale compensator
-Script Version: 2.0.0
+Script Version: 2.0.3
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 11.18.23
-Update Date: 03.01.26
+Update Date: 05.18.26
 
 Custom Action Type: Action and Timeline
 
@@ -17,6 +17,9 @@ To install:
     Copy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator
 
 Updates:
+    05.18.26 - v2.0.3 - minor UI adjustment - pyflame lib update (v5.3.1)
+    05.14.26 - v2.0.2 - fixed a float/value error
+    05.12.26 - v2.0.1 - fixed an error saving the config settings
     03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3
     10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's
     01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.
@@ -40,7 +43,7 @@ from lib.pyflame_lib_scale_compensator import *
 
 SCRIPT_NAME = 'Scale Compensator'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
-SCRIPT_VERSION = 'v2.0.0'
+SCRIPT_VERSION = 'v2.0.3'
 
 #-------------------------------------#
 # Main Script
@@ -352,8 +355,8 @@ class ScaleCompensator(object):
                     'online_x_res': self.online_x_res_slider.value,
                     'online_y_res': self.online_y_res_slider.value,
                     'anamorphic_footage': self.anamorphic_btn.checked,
-                    'pixel_ratio_value': self.pixel_ratio_slider.value,
-                    'combo_scale': self.combo_calculation_bg_label.value,
+                    'pixel_ratio_value': float(self.pixel_ratio_slider.value),
+                    'combo_scale': self.combo_calculation_bg_label.text,
                     }
                 )
             
@@ -369,6 +372,8 @@ class ScaleCompensator(object):
             escape_pressed=cancel_button,
             grid_layout_rows=12,
             grid_layout_columns=4,
+            # grid_layout_adjust_column_widths={0:250},
+            grid_layout_column_width=230,
             parent=None
             )
 
@@ -380,7 +385,7 @@ class ScaleCompensator(object):
         self.full_y_res_label = PyFlameLabel(text='Footage Y Res', style=Style.UNDERLINE)
         self.scale_calculation_label = PyFlameLabel(text='Full Res to Proxy', style=Style.UNDERLINE)
         self.scale_calculation_bg_label = PyFlameLabel(text='100.00', style=Style.BACKGROUND)
-        self.scale_calculation_bg_label.setAlignment(QtCore.Qt.AlignCenter)
+        # self.scale_calculation_bg_label.setAlignment(QtCore.Qt.AlignCenter)
         self.offline_x_res_label = PyFlameLabel(text='Offline X Res', style=Style.UNDERLINE)
         self.offline_y_res_label = PyFlameLabel(text='Offline Y Res', style=Style.UNDERLINE)
         self.online_x_res_label = PyFlameLabel(text='Online X Res', style=Style.UNDERLINE)
@@ -396,17 +401,17 @@ class ScaleCompensator(object):
         
         # Sliders
 
-        self.proxy_x_res_slider = PyFlameSlider(start_value=self.settings.proxy_x_res, min_value=0, max_value=15000, rate=1)
-        self.proxy_y_res_slider = PyFlameSlider(start_value=self.settings.proxy_y_res, min_value=0, max_value=15000, rate=1)
-        self.full_x_res_slider = PyFlameSlider(start_value=self.settings.full_x_res, min_value=0, max_value=15000, rate=1)
-        self.full_y_res_slider = PyFlameSlider(start_value=self.settings.full_y_res, min_value=0, max_value=15000, rate=1)
+        self.proxy_x_res_slider = PyFlameSlider(start_value=self.settings.proxy_x_res, min_value=0, max_value=15000)
+        self.proxy_y_res_slider = PyFlameSlider(start_value=self.settings.proxy_y_res, min_value=0, max_value=15000)
+        self.full_x_res_slider = PyFlameSlider(start_value=self.settings.full_x_res, min_value=0, max_value=15000)
+        self.full_y_res_slider = PyFlameSlider(start_value=self.settings.full_y_res, min_value=0, max_value=15000)
 
         self.pixel_ratio_slider = PyFlameSlider(start_value=self.settings.pixel_ratio_value, min_value=.9, max_value=3.0)
        
-        self.offline_x_res_slider = PyFlameSlider(start_value=self.settings.offline_x_res, min_value=0, max_value=15000, rate=1)
-        self.offline_y_res_slider = PyFlameSlider(start_value=self.settings.offline_y_res, min_value=0, max_value=15000, rate=1)
-        self.online_x_res_slider = PyFlameSlider(start_value=self.settings.online_x_res, min_value=0, max_value=15000, rate=1)
-        self.online_y_res_slider = PyFlameSlider(start_value=self.settings.online_y_res, min_value=0, max_value=15000, rate=1)
+        self.offline_x_res_slider = PyFlameSlider(start_value=self.settings.offline_x_res, min_value=0, max_value=15000)
+        self.offline_y_res_slider = PyFlameSlider(start_value=self.settings.offline_y_res, min_value=0, max_value=15000)
+        self.online_x_res_slider = PyFlameSlider(start_value=self.settings.online_x_res, min_value=0, max_value=15000)
+        self.online_y_res_slider = PyFlameSlider(start_value=self.settings.online_y_res, min_value=0, max_value=15000)
 
         # Slider updates
         self.full_x_res_slider.textChanged.connect(self.update_auto_scale_multiplier)
