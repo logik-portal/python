@@ -951,13 +951,13 @@
   },
   {
     "Script Name": "scale compensator",
-    "Script Version": "2.0.0",
+    "Script Version": "2.0.3",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "John Geehreng",
     "Creation Date": "11.18.23",
-    "Update Date": "03.01.26",
-    "Description": "Script Name: scale compensator\nScript Version: 2.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 11.18.23\nUpdate Date: 03.01.26\n\nCustom Action Type: Action and Timeline\n\nDescription:\n\nCompensate for different resolutions. In Action, you can generate Axes. In Timeline, you can color code a selection.\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator\n\nUpdates:\n03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3\n10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's\n01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.\n12.27.24 - v1.0 - changed script path, started using json file with aspect ratios and resolutions\n01.02.24 - v0.6 - Fixed some miscalcuations and errors\n12.13.23 - v0.5 - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n12.05.23 - v0.4 - Updated for pyflame lib v2.\n11.28.23 - v0.3 - UI Adjustments and Minor Code Cleanup\n11.22.23 - v0.2 - Added Offline Res and Online Res Compensation + Combo Button"
+    "Update Date": "05.18.26",
+    "Description": "Script Name: scale compensator\nScript Version: 2.0.3\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 11.18.23\nUpdate Date: 05.18.26\n\nCustom Action Type: Action and Timeline\n\nDescription:\n\nCompensate for different resolutions. In Action, you can generate Axes. In Timeline, you can color code a selection.\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator\n\nUpdates:\n05.18.26 - v2.0.3 - minor UI adjustment - pyflame lib update (v5.3.1)\n05.14.26 - v2.0.2 - fixed a float/value error\n05.12.26 - v2.0.1 - fixed an error saving the config settings\n03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3\n10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's\n01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.\n12.27.24 - v1.0 - changed script path, started using json file with aspect ratios and resolutions\n01.02.24 - v0.6 - Fixed some miscalcuations and errors\n12.13.23 - v0.5 - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n12.05.23 - v0.4 - Updated for pyflame lib v2.\n11.28.23 - v0.3 - UI Adjustments and Minor Code Cleanup\n11.22.23 - v0.2 - Added Offline Res and Online Res Compensation + Combo Button"
   },
   {
     "Script Name": "sequence renamer",
