@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-https://github.com/logik-portal/pyflame
+https://logik-portal.com/#pyflame
+
+## v5.3.1 [05.04.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameTable`
+        - load_csv()
+            - Cells resize to fit content when data is added to the table.
+
+- Misc type hinting and argument validation improvements.
 
 ## v5.3.0 [03.13.26]
 

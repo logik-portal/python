@@ -1,10 +1,10 @@
 # Batch Nodes
 
-**Script Version:** 3.11.0  
-**Flame Version:** 2025  
+**Script Version:** 3.12.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 04.18.20  
-**Update Date:** 07.10.25  
+**Update Date:** 05.15.26  
 
 **Script Type:** Batch / Flame Main Menu
 
@@ -42,6 +42,10 @@ https://github.com/logik-portal/python/batch_nodes
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v3.12.0 [05.15.26]
+- Updated to PyFlameLib v5.3.1.
+<br>
 
 ### v3.11.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

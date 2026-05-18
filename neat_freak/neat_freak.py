@@ -19,29 +19,46 @@
 
 """
 Script Name: Neat Freak
-Script Version: 2.1.0
+Script Version: 2.2.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.22.21
-Update Date: 03.28.26
+Update Date: 04.19.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
-Script Type: Batch/Media Panel
+Script Type: Batch/Media Panel/Timeline
 
 Description:
 
-    Add Neat/Render/Write nodes to selected clips in batch or select multiple clips in the media panel to build a new
-    batch group with Neat/Render/Write nodes for all selected clips.
+    Add Neat/Render/Write nodes to selected clips in Batch, Media Panel, or Timeline Segments.
 
-    NEAT OFX is required!
+Usage:
 
-    Works with Neat OFX v5.x and Neat OFX v6.x.
+    Neat OFX 5.x or 6.x is required!
 
-    Render/Write node outputs are set to match each clip(name, duration, timecode, fps).
+    Select multiple clips in Batch, Media Panel, or Timeline Segments. When selecting clips in the Media Panel, a new Batch Group will be created.
+
+    Render/Write node outputs are set to match each clip's: name, duration, timecode, fps, etc.
+
+    Using Neat Node Profiles:
+
+        - Using Neat Node Profiles allows for easily applying the same Neat node
+          settings to multiple clips bypassing having to set each Neat node manually.
+
+        - Enabled by default. To turn off, disable in Neat Freak setup. When
+          disabled, the Neat node loads with default settings. When enabled, a
+          prompt appears to select a Neat node profile.
+
+        - To create a Neat node profile: add a Neat node, go into the node and apply
+          desired settings, then right-click on the Neat node and select
+          Neat Freak... -> Save Neat Node Profile. The profile then appears in
+          the selection prompt. Multiple profiles can be created. Profiles
+          are saved per project.
 
 URL:
-    https://github.com/logik-portal/python/neat_freak
+
+    https://logik-portal.com/scripts/#neat_freak
 
 Menus:
 
@@ -49,16 +66,22 @@ Menus:
         Flame Main Menu -> Logik -> Logik Portal Script Setup -> Neat Freak Setup
 
     Batch:
-        Right-click on any clips(s) in batch -> Neat Denoise Selected Clips
+        Right-click on any clips(s) in batch -> Neat Freak... -> Neat Denoise Selected Clips
 
     Media Panel:
-        Right-click on any clips(s) in media panel -> Neat Denoise Selected Clips
+        Right-click on any clips(s) in media panel -> Neat Freak... -> Neat Denoise Selected Clips
 
 To install:
 
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.2.0 04.19.26
+        - Updated to work in Flame 2027+.
+        - Added option to save/use Neat node profiles.
+        - Added ability to add Neat OFX to selected timeline segments.
+        - Fixed: Bug causing multiple Neat reels to be created in a batch group.
 
     v2.1.0 03.28.26
         - Updated to PyFlameLib v5.3.0.
@@ -88,7 +111,7 @@ Updates:
         - Misc bug fixes.
 
     v1.6.0 02.05.24
-        - Added entry field for render node extension name in setup.
+        - Added entry field for render node suffix name in setup.
         - Added option to turn Add to Workspace on/off for Write nodes.
         - Updates to UI/PySide.
         - Updated to PyFlameLib v2.0.0.
@@ -136,7 +159,7 @@ from lib.pyflame_lib_neat_freak import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Neat Freak'
-SCRIPT_VERSION = 'v2.1.0'
+SCRIPT_VERSION = 'v2.2.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -159,6 +182,7 @@ class NeatFreak:
         self.x_position = 0
         self.batch_duration = 1
         self.created_nodes = []
+        self.selected_neat_node_profile = None
 
         # Load/Create config
         self.settings = self.load_config()
@@ -178,8 +202,9 @@ class NeatFreak:
                 'render_node_type': 'Render',
                 'render_reel_type': 'Schematic',
                 'render_reel_name': 'Neat Renders',
-                'render_node_extension': '_NEAT',
+                'render_node_suffix': '_NEAT',
                 'render_node_enabled': True,
+                'use_neat_node_profile': True,
                 }
             )
 
@@ -198,6 +223,14 @@ class NeatFreak:
         # Get current batch
         self.batch_group = flame.batch
 
+        # Select Neat node profile if option is enabled
+        if self.settings.use_neat_node_profile:
+            self.select_neat_node_profile()
+            if self.selected_neat_node_profile == 'abort':
+                pyflame.print('Neat node profile not selected. Aborting.')
+                return
+
+        # Create Neat/Render node setups for all clips in selection
         for clip in self.selection:
             self.x_position = clip.pos_x
             self.y_position = clip.pos_y
@@ -206,15 +239,13 @@ class NeatFreak:
 
             self.create_batch_nodes(clip)
 
-        # Convert self.selection to list and append self.created_nodes to it
-        self.selection = list(self.selection)
-        self.selection.extend(self.created_nodes)
-
         # Select new nodes in batch group and frame them
-        self.batch_group.select_nodes(self.selection)
+        new_selection = list(self.selection) + self.created_nodes
+        self.batch_group.select_nodes(new_selection)
         self.batch_group.frame_selected()
 
-        print('Done\n')
+        pyflame.print('Neat Nodes Created')
+        return True
 
     def media_panel_neat_clips(self):
         """
@@ -254,9 +285,171 @@ class NeatFreak:
                 batch_group.duration = int(str(clip.duration))
 
         # Run batch neat clips on all clips in batch
-        self.batch_neat_clips()
+        neat_nodes_created = self.batch_neat_clips()
+        print('Neat nodes created:', neat_nodes_created)
+        if not neat_nodes_created:
+            pyflame.print('Neat nodes not created. Deleting batch group.')
+            flame.delete(batch_group)
+            return
 
         batch_group.frame_all()
+
+    def timeline_neat_clips(self):
+        """
+        Timeline Neat Clips
+        ===================
+
+        Add Neat OFX to selected timeline segments.
+        """
+
+        pyflame.print('Adding Neat OFX to selected timeline segments...')
+
+        # Select Neat node profile if option is enabled
+        if self.settings.use_neat_node_profile:
+            self.select_neat_node_profile()
+            if self.selected_neat_node_profile == 'abort':
+                pyflame.print('Neat node profile not selected. Aborting.')
+                return
+
+        print('Selected Neat node profile:', self.selected_neat_node_profile, '\n')
+
+        for item in self.selection:
+            if item.type == 'Video Segment':
+                try:
+                    neat_ofx = item.create_effect('OpenFX')
+                except:
+                    pyflame.print('Error creating Neat OFX on segment')
+                    continue
+                if self.selected_neat_node_profile:
+                    neat_ofx.load_setup(self.selected_neat_node_profile)
+                    pyflame.print(f'{item.name}: Neat OFX setup loaded from profile.')
+                else:
+                    try:
+                        neat_ofx.load_setup(f'{SCRIPT_PATH}/assets/timeline_fx_default_setups/Neat_v6.openfx_node')
+                        pyflame.print(f'{item.name}: Loaded default Neat OFX v6 setup.')
+                    except:
+                        try:
+                            neat_ofx.load_setup(f'{SCRIPT_PATH}/assets/timeline_fx_default_setups/Neat_v5.openfx_node')
+                            pyflame.print(f'{item.name}: Loaded default Neat OFX v5 setup.')
+                        except:
+                            flame.delete(neat_ofx)
+                            pyflame.print(f'{item.name}: Error loading Neat OFX setup.')
+                            return
+
+        PyFlameMessageWindow(
+            message=f'Neat OFX added to selected timeline segments.',
+            message_type=MessageType.INFO,
+            parent=None,
+            )
+
+    # ==============================================================================
+
+    def select_neat_node_profile(self):
+        """
+        Select Neat Node Profile
+        ========================
+
+        Select Neat node profile from saved profiles.
+        """
+
+        def apply_profile() -> None:
+            """
+            Apply Profile
+            ============
+
+            Apply selected Neat node profile.
+            """
+
+            self.selected_neat_node_profile = os.path.join(neat_node_profile_folder, self.select_profile_menu.text + '.openfx_node')
+
+            self.select_profile_window.close()
+
+        def close_window() -> None:
+            """
+            Close Window
+            ============
+
+            Close window and cancel changes.
+            """
+
+            self.select_profile_window.close()
+
+            self.selected_neat_node_profile = 'abort'
+
+        neat_node_profile_folder = os.path.join(SCRIPT_PATH, f'neat_node_profiles/{flame.project.current_project.name}')
+        print('Neat node profile folder:', neat_node_profile_folder)
+
+        # Check if neat node profile folder exists
+        if not os.path.isdir(neat_node_profile_folder) or not os.listdir(neat_node_profile_folder):
+
+            continue_without_profile = PyFlameMessageWindow(
+                message=(
+                    'No saved Neat node profiles found.\n\n'
+                    'To create a Neat node profile:\n'
+                    'Add a Neat node, create a grain profile, right-click on the Neat node '
+                    'and select Neat Freak... -> Save Neat Node Profile.\n\n'
+                    'Use of saved profiles can be disabled in Neat Freak setup.\n'
+                    'Flame Main Menu -> Logik -> Logik Portal Script Setup -> Neat Freak Setup.\n\n'
+                    'Cancel to abort or continue without profile?'
+                    ),
+                message_type=MessageType.CONFIRM,
+                parent=None,
+                )
+
+            if not continue_without_profile:
+                self.selected_neat_node_profile = 'abort'
+                return
+            else:
+                self.selected_neat_node_profile = None
+                return
+
+        neat_node_profile_files = [f.split('.')[0] for f in os.listdir(neat_node_profile_folder) if f.endswith('.openfx_node')]
+        print('Neat Node Profile Files:', neat_node_profile_files, '\n')
+
+        self.select_profile_window = PyFlameWindow(
+            title=f'{SCRIPT_NAME}: Setup <small>{SCRIPT_VERSION}</small>',
+            return_pressed=apply_profile,
+            escape_pressed=close_window,
+            grid_layout_columns=2,
+            grid_layout_rows=3,
+            parent=None,
+            )
+
+        # Labels
+        self.select_profile_label = PyFlameLabel(
+            text='Select Neat Node Profile',
+            )
+
+        # Menus
+        self.select_profile_menu = PyFlameMenu(
+            text=neat_node_profile_files[0],
+            menu_options=neat_node_profile_files,
+            )
+
+        # Buttons
+        self.select_profile_apply_button = PyFlameButton(
+            text='Apply',
+            connect=apply_profile,
+            color=Color.BLUE,
+            )
+        self.select_profile_cancel_button = PyFlameButton(
+            text='Cancel',
+            connect=close_window,
+            )
+
+        # ==============================================================================
+        # [Widget Layout]
+        # ==============================================================================
+
+        self.select_profile_window.grid_layout.addWidget(self.select_profile_label, 0, 0)
+        self.select_profile_window.grid_layout.addWidget(self.select_profile_menu, 0, 1)
+
+        self.select_profile_window.grid_layout.addWidget(self.select_profile_cancel_button, 2, 0)
+        self.select_profile_window.grid_layout.addWidget(self.select_profile_apply_button, 2, 1)
+
+        # ==============================================================================
+
+        self.select_profile_window.exec_()
 
     def get_clip_info(self, clip):
         """
@@ -277,7 +470,7 @@ class NeatFreak:
         self.clip_timecode = clip.clip.start_time
         self.clip_shot_name = pyflame.resolve_shot_name(self.clip_name)
 
-    def create_batch_nodes(self, clip):
+    def create_batch_nodes(self, clip) -> None:
         """
         Create Batch Nodes
         ==================
@@ -288,6 +481,10 @@ class NeatFreak:
         ----
             clip (PyFlameClip):
                Flame clip object.
+
+        Returns
+        -------
+            None
         """
 
         def set_render_destination():
@@ -303,15 +500,17 @@ class NeatFreak:
             if self.settings.render_reel_type == 'Schematic':
                 for reel in self.batch_group.reels:
                     if reel.name == self.settings.render_reel_name:
-                        break
+                        return
                 if not render_destination:
-                    self.batch_group.create_reel(self.settings.render_reel_name) # Create schematic reel
+                    reel = self.batch_group.create_reel(self.settings.render_reel_name) # Create schematic reel
+                    return
             elif self.settings.render_reel_type == 'Shelf':
                 for reel in self.batch_group.shelf_reels:
                     if reel.name == self.settings.render_reel_name:
-                        break
+                        return
                 if not render_destination:
                     self.batch_group.create_shelf_reel(self.settings.render_reel_name)
+                    return
 
         def add_render_node(node_type: str):
             """
@@ -334,8 +533,15 @@ class NeatFreak:
             # Create render node
             render_node = self.batch_group.create_node(node_type)
 
+            # Set basic metadata for render/write file node for Flame 2027+
+            try:
+                render_node.basic_metadata = 'Custom Values'
+                render_node.collapsed = True
+            except:
+                pass
+
             # Set render node values
-            render_node.name = self.clip_name + self.settings.render_node_extension
+            render_node.name = self.clip_name + self.settings.render_node_suffix
             render_node.range_start = self.batch_group.start_frame
             render_node.range_end = int(str(self.batch_group.start_frame)) + int(str(self.clip_duration)) - 1
             render_node.frame_rate = self.clip_frame_rate
@@ -357,10 +563,7 @@ class NeatFreak:
 
             Add Neat node to batch group and set Neat node values.
 
-            Returns:
-            --------
-                neat_node (PyFlameNode):
-                    Neat node object. None if Neat OFX is not found.
+            If a Neat node profile is selected, load the profile instead of creating a new Neat node.
             """
 
             # Try to add an OpenFX node. If not found, return None.
@@ -371,6 +574,11 @@ class NeatFreak:
                 self.created_nodes.append(neat_node)
             except:
                 return None
+
+            # Load Neat node profile if selected
+            if self.selected_neat_node_profile:
+                neat_node.load_node_setup(self.selected_neat_node_profile)
+                return neat_node
 
             # Try to load Neat v6, if not found, try Neat v5.
             try:
@@ -419,10 +627,10 @@ class NeatFreak:
 
     def neat_freak_setup(self):
         """
-        Write Node Setup
+        Neat Freak Setup
         ================
 
-        Setup window for setting up Write Nodes.
+        Setup window for setting up Neat Freak.
         """
 
         def save_config():
@@ -433,7 +641,7 @@ class NeatFreak:
             Check if all required fields are filled in and save config values.
             """
 
-            if not self.render_node_extension_entry.text:
+            if not self.render_node_suffix_entry.text:
                 PyFlameMessageWindow(
                     message='Enter Render Node NameExtension.',
                     message_type=MessageType.ERROR,
@@ -451,10 +659,11 @@ class NeatFreak:
                 self.settings.save_config(
                     config_values={
                         'render_node_type': self.render_node_type_menu.text,
-                        'render_node_extension': self.render_node_extension_entry.text,
+                        'render_node_suffix': self.render_node_suffix_entry.text,
                         'render_reel_type': self.render_reel_type_menu.text,
                         'render_reel_name': self.render_reel_name_entry.text,
                         'render_node_enabled': self.render_node_enabled_push_button.checked,
+                        'use_neat_node_profile': self.use_neat_node_profile_push_button.checked,
                         }
                     )
 
@@ -473,7 +682,7 @@ class NeatFreak:
             return_pressed=save_config,
             escape_pressed=close_window,
             grid_layout_columns=5,
-            grid_layout_rows=4,
+            grid_layout_rows=6,
             grid_layout_adjust_column_widths={2: 50},
             parent=None,
             )
@@ -482,8 +691,8 @@ class NeatFreak:
         self.render_node_type_label = PyFlameLabel(
             text='Render Node Type',
             )
-        self.render_node_extension_label = PyFlameLabel(
-            text='Render Node Extension',
+        self.render_node_suffix_label = PyFlameLabel(
+            text='Render Node Suffix',
             )
         self.render_reel_type_label = PyFlameLabel(
             text='Render Destination',
@@ -493,8 +702,8 @@ class NeatFreak:
             )
 
         # Entries
-        self.render_node_extension_entry = PyFlameEntry(
-            text=self.settings.render_node_extension,
+        self.render_node_suffix_entry = PyFlameEntry(
+            text=self.settings.render_node_suffix,
             )
         self.render_reel_name_entry = PyFlameEntry(
             text=self.settings.render_reel_name,
@@ -520,6 +729,12 @@ class NeatFreak:
         self.render_node_enabled_push_button = PyFlamePushButton(
             text='Render Node Enabled',
             checked=self.settings.render_node_enabled,
+            tooltip='Disable to have render node bypassed by default.',
+            )
+        self.use_neat_node_profile_push_button = PyFlamePushButton(
+            text='Use Saved Profiles',
+            checked=self.settings.use_neat_node_profile,
+            tooltip='Enable to use saved Neat node profiles. A neat node with a grain profile set will need to be saved. A prompt will appear to select from saved profiles.',
             )
 
         # Buttons
@@ -540,10 +755,11 @@ class NeatFreak:
         self.setup_window.grid_layout.addWidget(self.render_node_type_label, 0, 0)
         self.setup_window.grid_layout.addWidget(self.render_node_type_menu, 0, 1)
 
-        self.setup_window.grid_layout.addWidget(self.render_node_extension_label, 1, 0)
-        self.setup_window.grid_layout.addWidget(self.render_node_extension_entry, 1, 1)
+        self.setup_window.grid_layout.addWidget(self.render_node_suffix_label, 1, 0)
+        self.setup_window.grid_layout.addWidget(self.render_node_suffix_entry, 1, 1)
 
-        self.setup_window.grid_layout.addWidget(self.render_node_enabled_push_button, 2, 0)
+        self.setup_window.grid_layout.addWidget(self.render_node_enabled_push_button, 3, 3)
+        self.setup_window.grid_layout.addWidget(self.use_neat_node_profile_push_button, 3, 4)
 
         self.setup_window.grid_layout.addWidget(self.render_reel_type_label, 0, 3)
         self.setup_window.grid_layout.addWidget(self.render_reel_type_menu, 0, 4)
@@ -551,17 +767,17 @@ class NeatFreak:
         self.setup_window.grid_layout.addWidget(self.render_reel_name_label, 1, 3)
         self.setup_window.grid_layout.addWidget(self.render_reel_name_entry, 1, 4)
 
-        self.setup_window.grid_layout.addWidget(self.cancel_button, 3, 3)
-        self.setup_window.grid_layout.addWidget(self.save_button, 3, 4)
+        self.setup_window.grid_layout.addWidget(self.cancel_button, 5, 3)
+        self.setup_window.grid_layout.addWidget(self.save_button, 5, 4)
 
         # ==============================================================================
 
         # Set focus to first entry.
-        self.render_node_extension_entry.set_focus()
+        self.render_node_suffix_entry.set_focus()
 
         # Tab-key focus order
         self.setup_window.tab_order = [
-            self.render_node_extension_entry,
+            self.render_node_suffix_entry,
             self.render_reel_name_entry,
             ]
 
@@ -577,10 +793,48 @@ def neat_batch_clips(selection):
     script = NeatFreak(selection)
     script.batch_neat_clips()
 
+def neat_timeline_clips(selection):
+
+    script = NeatFreak(selection)
+    script.timeline_neat_clips()
+
 def setup(selection):
 
     script = NeatFreak(selection)
     script.neat_freak_setup()
+
+def save_neat_node_profile(selection):
+    """
+    Save Neat Node Profile
+    ======================
+
+    Save Neat node profile.
+    """
+
+    # Create Input Dialog
+    input_dialog = PyFlameInputDialog(
+        title='Save Neat Node Profile',
+        text=f'{str(selection[0].name)[1:-1]}',
+        label_text='Enter Neat Node Profile Name',
+        parent=None,
+        )
+
+    if input_dialog.text:
+        neat_node_profile_folder = os.path.join(SCRIPT_PATH, f'neat_node_profiles/{flame.project.current_project.name}')
+        if not os.path.isdir(neat_node_profile_folder):
+            os.makedirs(neat_node_profile_folder)
+        neat_node_setup_path = os.path.join(SCRIPT_PATH, f'neat_node_profiles/{flame.project.current_project.name}', input_dialog.text)
+        selection[0].save_node_setup(neat_node_setup_path)
+        pyflame.print(f'Neat Node Setup Saved: {neat_node_setup_path}')
+
+        PyFlameMessageWindow(
+            message=f'Neat node profile saved: {input_dialog.text}',
+            parent=None,
+            )
+
+    else:
+        print('User canceled.')
+        return
 
 # ==============================================================================
 # [Scopes]
@@ -590,6 +844,19 @@ def scope_clip(selection):
 
     for item in selection:
         if isinstance(item, (flame.PyClip, flame.PyClipNode)):
+            return True
+    return False
+
+def scope_neat_node(selection):
+    for item in selection:
+        if isinstance(item, flame.PyNode) and 'Reduce_Noise' in str(item.name):
+            return True
+    return False
+
+def scope_segment(selection):
+
+    for item in selection:
+        if isinstance(item, flame.PySegment):
             return True
     return False
 
@@ -623,17 +890,25 @@ def get_batch_custom_ui_actions():
 
     return [
         {
-           'hierarchy': [],
-           'actions': [
-               {
+            'name': 'Neat Freak...',
+            'actions': [
+                {
                     'name': 'Neat Denoise Selected Clips',
                     'order': 1,
                     'separator': 'below',
                     'isVisible': scope_clip,
                     'execute': neat_batch_clips,
                     'minimumVersion': '2025.1'
-               }
-           ]
+                },
+                {
+                    'name': 'Save Neat Node Profile',
+                    'order': 1,
+                    'separator': 'below',
+                    'isVisible': scope_neat_node,
+                    'execute': save_neat_node_profile,
+                    'minimumVersion': '2025.1'
+                },
+            ]
         }
     ]
 
@@ -641,7 +916,7 @@ def get_media_panel_custom_ui_actions():
 
     return [
         {
-           'hierarchy': [],
+           'name': 'Neat Freak...',
            'actions': [
                {
                     'name': 'Neat Denoise Selected Clips',
@@ -649,6 +924,24 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_clip,
                     'execute': neat_media_panel_clips,
+                    'minimumVersion': '2025.1'
+               }
+           ]
+        }
+    ]
+
+def get_timeline_custom_ui_actions():
+
+    return [
+        {
+           'name': 'Neat Freak...',
+           'actions': [
+               {
+                    'name': 'Neat Denoise Selected Clips',
+                    'order': 1,
+                    'separator': 'below',
+                    'isVisible': scope_segment,
+                    'execute': neat_timeline_clips,
                     'minimumVersion': '2025.1'
                }
            ]

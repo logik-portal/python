@@ -1,37 +1,60 @@
 # Reveal Path
 
-**Script Version:** 2.9.0  
+**Script Version:** 2.10.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.16.19  
-**Update Date:** 03.26.26  
+**Update Date:** 05.05.26  
 
 **Script Type:** Timeline / Media Panel / MediaHub / Batch
 
 ## Description
 
-Reveal the path of a clip, open clip, or write node in the finder or Media Hub.
+Reveal the path of a clip, open clip, write node, or batch group shot folder in the finder or Media Hub.
+
+## Usage
+
+Script Setup menu allows for setting the tokenized shot folder path for batch group shot folders.
 <br><br>
-Path is also copied to clipboard.
+For batch group shot folder reveal, batch groups must have have a standard shot name or be tagged with a shot name tag.
+Shot name tag should be formatted as: ShotName: <shot_name>
+Example:
+ShotName: PYT_0010
+<br><br>
+If no shot name tag is found/assigned, the batch group name is used to resolve the shot name token.
+Examples:
+PYT_0010_comp -> PYT_0010
+PYT0010_comp -> PYT0010
+PYT010_comp -> PYT010
+<br><br>
+Path is copied to clipboard.
 
 ## URL
 
-https://github.com/logik-portal/python/reveal_path
+https://logik-portal.com/scripts/#reveal_path
 
 ## Menus
 
+### Script Setup
+- Flame Main Menu → Logik Portal Script Setup → Reveal Path Setup
 - Right-click on clip in timeline → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
 - Right-click on clip in media panel → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
 - Right-click on clip in batch → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
 - Right-click on clip in media hub → Reveal... → Reveal Clip in Finder
 - Right-click on Write File node in batch → Reveal... → Reveal in Finder
 - Right-click on Write File node in batch → Reveal... → Reveal in MediaHub
+- Right-click on batch group in media panel → Reveal... → Reveal Shot Folder in Finder / Reveal Shot Folder in MediaHub
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.10.0 [05.05.26]
+- Added ability to reveal shot folder for batch group in Finder and MediaHub.
+- Updated to PyFlameLib v5.3.1.
+<br>
 
 ### v2.9.0 [03.26.26]
 - Updated to PyFlameLib v5.3.0.

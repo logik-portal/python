@@ -1,5 +1,5 @@
 # Multi Batch Render
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Multi Batch Render
-Script Version: 4.13.0
-Flame Version: 2025
+Script Version: 4.14.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 12.12.18
-Update Date: 07.10.25
+Update Date: 05.12.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -34,7 +34,8 @@ Description:
     Batch render multiple batch groups
 
 URL:
-    https://github.com/logik-portal/python/multi_batch_render
+
+    https://logik-portal.com/scripts/#multi_batch_render
 
 Menus:
 
@@ -46,6 +47,10 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v4.14.0 05.12.26
+        - Clicking on the screen will now abort the batch render.
+        - Updated to PyFlameLib v5.3.1.
 
     v4.13.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -140,9 +145,9 @@ Updates:
         - Removed menu that showed up when clicking on items in media panel that could not be rendered.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import time
@@ -150,17 +155,17 @@ import time
 import flame
 from lib.pyflame_lib_multi_batch_render import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Multi Batch Render'
-SCRIPT_VERSION = 'v4.13.0'
+SCRIPT_VERSION = 'v4.14.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class MultiBatchRender:
 
@@ -178,7 +183,6 @@ class MultiBatchRender:
         self.desk = flame.project.current_project.current_workspace.desktop
         self.desktop_batch_group_object_list = self.desk.batch_groups
         self.desktop_batch_group_list = [str(b.name)[1:-1] for b in self.desktop_batch_group_object_list]
-        self.num_batch_groups = 0
         self.failed_render_list = []
         self.reactor_render_success = True
 
@@ -200,7 +204,7 @@ class MultiBatchRender:
         settings = PyFlameConfig(
             config_values={
                 'close_after_render': False,
-                'render_option': 'Foreground',
+                'render_option'     : 'Foreground',
                 }
             )
 
@@ -225,6 +229,8 @@ class MultiBatchRender:
             """
 
             current_batch_group = str(flame.batch.name)[1:-1]
+
+            current_batch_num = 0
 
             # Get current batch number
             for i in [i for i, x in enumerate(self.desktop_batch_group_list) if x == current_batch_group]:
@@ -297,11 +303,6 @@ class MultiBatchRender:
             """
 
             self.window.close()
-
-            try:
-                self.setup_window.close()
-            except:
-                pass
 
             pyflame.print('Cancelled.')
 
@@ -430,27 +431,6 @@ class MultiBatchRender:
         If exit_flame is checked, exit Flame after rendering.
         """
 
-        def open_progress_window() -> None:
-            """
-            Open Progress Window
-            ===================
-
-            Open progress window.
-            """
-
-            # Open Progress Window
-            self.progress_window = PyFlameProgressWindow(
-                total_tasks=self.num_batch_groups,
-                title='Rendering...',
-                parent=None,
-                )
-
-            # Set Progress Window Task
-            if self.settings.render_option == 'Foreground':
-                self.progress_window.task = 'Rendering Batch'
-            elif self.settings.render_option == 'BG Reactor':
-                self.progress_window.task = 'Submitting Batch Render to Background Reactor'
-
         def duplicate_render_nodes() -> None:
             """
             Duplicate Render Nodes
@@ -468,7 +448,7 @@ class MultiBatchRender:
                     new_node.smart_replace = smart_replace
                     n.delete()
 
-        def render_batch_group(batch_to_render) -> None:
+        def render_batch_group(batch_to_render) -> bool:
             """
             Render Batch Group
             ==================
@@ -478,7 +458,14 @@ class MultiBatchRender:
             Args:
                 batch_to_render (flame.PyBatchGroup):
                     Batch group to render.
+
+            Returns:
+            --------
+                bool:
+                    True if render is successful, False if render fails.
             """
+
+            self.progress_window.text_append(f'{str(batch_to_render.name)[1:-1]}')
 
             # Check for Render or Write node before rendering
             # If none found, skip and print message
@@ -494,7 +481,17 @@ class MultiBatchRender:
 
                 # Render - if render fails add to failed render list
                 if self.settings.render_option == 'Foreground':
-                    batch_to_render.render(render_option='Foreground')
+                    # If render is aborted by user, return False
+                    try:
+                        batch_to_render.render(render_option='Foreground')
+                    except Exception as e:
+                        self.failed_render_list.append(batch_to_render.name)
+                        pyflame.print(
+                            text=f'{str(batch_to_render.name)[1:-1]}: Render failed - {e}',
+                            print_type=PrintType.WARNING,
+                        )
+                        return False
+
                 elif self.settings.render_option == 'BG Reactor':
                     try:
                         batch_to_render.render(render_option='Background Reactor')
@@ -508,20 +505,23 @@ class MultiBatchRender:
 
             # Update Progress
             self.batch_groups_rendered += 1
+            return True
 
         def set_progress_window_complete() -> None:
             """
             Set Progress Window Complete
-            ==========================
+            ============================
 
             Set progress window render complete.
             """
 
             # Set Progress Window Render Complete
-            self.progress_window.tasks_complete = True
+            self.progress_window.current_task = self.num_batch_groups
+            self.progress_window.tasks_completed()
             if self.settings.render_option == 'Foreground':
                 pyflame.print('Rendering Complete')
                 self.progress_window.title = 'Rendering Complete'
+                self.progress_window.text_append('Rendering Complete')
             elif self.settings.render_option == 'BG Reactor':
                 pyflame.print('Submitting Renders Complete')
                 self.progress_window.title = 'Submitting Renders Complete'
@@ -561,25 +561,43 @@ class MultiBatchRender:
             Exit Flame if exit_flame is checked.
             """
 
-            if self.exit_flame.checked:
-                pyflame.print('Exiting Flame')
+            pyflame.print('Exiting Flame')
+
+            # Close progress window if it exists. Won't exist if user selects batch groups to render.
+            try:
                 self.progress_window.close()
-                flame.exit()
+            except:
+                pass
+
+            flame.exit()
 
         # Get number of batch groups to render
         self.num_batch_groups = len(self.selected_batch_groups)
 
         # Open Progress Window
-        open_progress_window()
+        self.progress_window = PyFlameProgressWindow(
+            total_tasks=self.num_batch_groups,
+            title='Rendering...',
+            parent=None,
+            )
+
+        # Set Progress Window Task
+        if self.settings.render_option == 'Foreground':
+            self.progress_window.task = 'Rendering Batch'
+        elif self.settings.render_option == 'BG Reactor':
+            self.progress_window.task = 'Submitting Batch Render to Background Reactor'
 
         # Initialize batch groups rendered
         self.batch_groups_rendered = 1
+
+        # Initialize render abort
+        render_successful = True
 
         # Render Selected Batch Groups
         for batch_group_number in self.selected_batch_groups:
 
             # Set Progress Window Progress
-            self.progress_window.processing_task = self.batch_groups_rendered
+            self.progress_window.current_task = self.batch_groups_rendered
             batch_to_render = self.desktop_batch_group_object_list[batch_group_number]
 
             # Open Selected Batch Group
@@ -595,16 +613,25 @@ class MultiBatchRender:
                     pass
 
             # Render Selected Batch Group
-            render_batch_group(batch_to_render)
+            render_successful = render_batch_group(batch_to_render)
+            if not render_successful:
+                break
+
+        # If render is aborted by user, show error message and return
+        if not render_successful:
+            self.progress_window.line_color = Color.RED
+            self.progress_window.text_append('Render aborted.')
+            self.progress_window.enable_done_button()
+            pyflame.print('Render aborted.')
+            return
 
         set_progress_window_complete()
 
         show_failed_renders()
 
         # Exit Flame if exit_flame is checked
-        exit_flame()
-
-#-------------------------------------
+        if self.exit_flame.checked:
+            exit_flame()
 
 def render_selected(selection):
 
@@ -621,9 +648,9 @@ def main_render_window(selection):
     script = MultiBatchRender(selection)
     script.main_window()
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_batch(selection):
 
@@ -634,9 +661,9 @@ def scope_batch(selection):
                 return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
@@ -650,7 +677,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_batch,
                     'execute': render_selected,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
@@ -667,7 +694,7 @@ def get_batch_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': main_render_window,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

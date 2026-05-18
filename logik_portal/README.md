@@ -1,20 +1,24 @@
 # Logik Portal
 
-**Script Version:** 7.0.1  
-**Flame Version:** 2025  
+**Script Version:** 7.1.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 01.04.26  
+**Update Date:** 05.04.26  
 
 **Script Type:** Flame Main Menu
 
 ## Description
 
-Share/install python scripts, batch setups, inference nodes, and download matchboxes
+Install python scripts, batch setups, inference nodes, and matchboxes from logik-portal.com
+
+## Notes
+
+Installing the Logik Matchbox Collection may be slow when installing over a network due to large numbder of small files.
 
 ## URL
 
-https://github.com/logik-portal/python/logik_portal
+https://logik-portal.com
 
 ## Menus
 
@@ -25,6 +29,14 @@ https://github.com/logik-portal/python/logik_portal
 Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.1.0 [05.04.26]
+- Submit buttons now redirect to logik-portal.com for submissions.
+- All files are now downloaded from logik-portal.com. FTP server is no longer used.
+- Increased window size.
+- Downloads now happen much faster.
+- Updated to PyFlameLib v5.3.1.
+<br>
 
 ### v7.0.1 [01.04.26]
 - Fixed window sizing issue.
