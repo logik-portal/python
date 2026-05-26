@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus
-Script Version: 5.4.1
+Script Version: 5.5.0
 Flame Version: 2026
 Written by: Michael Vaglienty
 Creation Date: 03.29.20
-Update Date: 02.27.26
+Update Date: 05.25.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -34,7 +34,8 @@ Description:
     Create custom right-click export menu's from saved export presets
 
 URL:
-    https://github.com/logik-portal/python/create_export_menus
+
+    https://logik-portal.com/scripts/#create_export_menus
 
 Menus:
 
@@ -50,6 +51,10 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v5.5.0 05.25.26
+        - Added Import Export button. When checked, exported clip will be imported back into Flame.
+          Only works with Movie preset types.
 
     v5.4.1 02.27.26
         - Fixed issue when trying to save more than one export to a menu.
@@ -173,31 +178,114 @@ Updates:
         - Fixed: Problem when checking for project presets to delete
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
 import shutil
 from functools import partial
+from typing import Any
 
 import flame
 from lib.pyflame_lib_create_export_menus import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Create Export Menus'
-SCRIPT_VERSION = 'v5.4.0'
+SCRIPT_VERSION = 'v5.5.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# Widget keys for preset tab dicts (self.create_tab_widgets / self.edit_tab_widgets).
+# All keys that toggle_ui / get_preset_info / disable_ui_elements operate on.
+_TW_TOGGLEABLE = (
+    'preset_type_label',
+    'presets_label',
+    'export_path_label',
+    'export_path_entry',
+    'top_layer_pushbutton',
+    'foreground_pushbutton',
+    'between_marks_pushbutton',
+    'import_export_pushbutton',
+    'token_pushbutton',
+    'preset_type_menu',
+    'path_browse_button',
+    'presets_menu',
+    'include_subtitles_pushbutton',
+    'subtitles_export_mode_menu',
+    'subtitles_tracks_menu',
+)
+
+# Subset of _TW_TOGGLEABLE used by no_presets_found() for tab 0 (excludes subtitle widgets)
+_TW_TAB0_NO_PRESETS = (
+    'preset_type_label',
+    'presets_label',
+    'export_path_label',
+    'export_path_entry',
+    'top_layer_pushbutton',
+    'foreground_pushbutton',
+    'between_marks_pushbutton',
+    'import_export_pushbutton',
+    'token_pushbutton',
+    'preset_type_menu',
+    'path_browse_button',
+    'presets_menu',
+)
+
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class ExportMenuSetup:
+
+    # ---------------------------------------------------------------------------
+    # Class-level attribute declarations
+    # These are set by get_saved_preset_lists() and setup_window() at runtime.
+    # Declared here so static type checkers know they are valid class attributes.
+    # ---------------------------------------------------------------------------
+
+    # Preset list attributes - set by get_saved_preset_lists()
+    project_movie_preset_list:    list
+    project_file_seq_preset_list: list
+    shared_movie_preset_list:     list
+    shared_file_seq_preset_list:  list
+
+    # Create-tab widget attributes - set by setup_window()
+    window:                       Any
+    main_tabs:                    Any
+    create_preset_tabs:           Any
+    create_tab_widgets:           list
+    menu_visibility_label:        Any
+    menu_name_label:              Any
+    current_preset_label:         Any
+    after_export_label:           Any
+    menu_name_entry:              Any
+    menu_visibility_menu:         Any
+    reveal_in_mediahub_pushbutton: Any
+    reveal_in_finder_pushbutton:  Any
+    create_button:                Any
+    done_button:                  Any
+
+    # Edit-tab widget attributes - set by setup_window()
+    edit_preset_tabs:                    Any
+    edit_tab_widgets:                    list
+    edit_menu_label:                     Any
+    edit_menu_visibility_label:          Any
+    edit_menu_name_label:                Any
+    edit_current_preset_label:           Any
+    edit_after_export_label:             Any
+    edit_menu_name_entry:                Any
+    edit_saved_export_menu_menu:         Any
+    edit_menu_visibility_menu:           Any
+    edit_reveal_in_mediahub_pushbutton:  Any
+    edit_reveal_in_finder_pushbutton:    Any
+    edit_delete_button:                  Any
+    edit_duplicate_button:               Any
+    edit_save_button:                    Any
+    edit_done_button:                    Any
 
     def __init__(self, selection):
 
@@ -211,20 +299,20 @@ class ExportMenuSetup:
         self.settings = self.load_config()
 
         # Get current flame version values
-        self.flame_version = pyflame.get_flame_version() # Get full flame version including point version.
-        self.flame_min_max_version = str(self.flame_version)[:4] # Flame version to set min/max version in export presets. This is the whole number of the version. For example 2022.1 would be 2022.
+        self.flame_version = pyflame.get_flame_version()
+        self.flame_min_max_version = str(self.flame_version)[:4]
 
         # Get current project name
         self.flame_project_name = flame.project.current_project.name
 
-        # Create export preset menu folders if they don't exist. Saved export presets are stored in these folders.
+        # Create export preset menu folders if they don't exist.
         self.project_menus_dir, self.shared_menus_dir = self.create_menu_folders()
 
         # Paths
-        self.menu_template_path = os.path.join(SCRIPT_PATH, 'assets/templates/menu_template') # Path to menu template used to create new export menus
-        self.current_project_created_presets_path = os.path.join(SCRIPT_PATH, 'project_menus', self.flame_project_name) # Path to current project export preset menus folder
-        self.project_preset_path = self.get_project_preset_path() # Path to current project export presets
-        self.shared_preset_path = '/opt/Autodesk/shared/export/presets' # Path to shared export presets
+        self.menu_template_path = os.path.join(SCRIPT_PATH, 'assets/templates/menu_template')
+        self.current_project_created_presets_path = os.path.join(SCRIPT_PATH, 'project_menus', self.flame_project_name)
+        self.project_preset_path = self.get_project_preset_path()
+        self.shared_preset_path = '/opt/Autodesk/shared/export/presets'
 
         # Saved Flame Export Preset Paths
         self.project_movie_preset_path = os.path.join(self.project_preset_path, 'movie_file')
@@ -258,6 +346,7 @@ class ExportMenuSetup:
                 'use_top_layer': False,
                 'export_in_foreground': True,
                 'export_between_marks': False,
+                'import_export': False,
                 'reveal_in_mediahub': False,
                 'reveal_in_finder': False,
                 'include_subtitles': False,
@@ -269,27 +358,27 @@ class ExportMenuSetup:
         return settings
 
     def create_menu_folders(self) -> tuple:
-            """
-            Create Menu Folders
-            ===================
+        """
+        Create Menu Folders
+        ===================
 
-            Create project and shared menu folders if they don't exist.
-            Export presets are saved in these folders.
+        Create project and shared menu folders if they don't exist.
+        Export presets are saved in these folders.
 
-            Returns:
-            --------
-                project_menus_dir, shared_menus_dir (tuple):
-                    project_menus_dir (str): Path to project export preset menus folder.
-                    shared_menus_dir (str): Path to shared export preset menus folder
-            """
+        Returns:
+        --------
+            project_menus_dir, shared_menus_dir (tuple):
+                project_menus_dir (str): Path to project export preset menus folder.
+                shared_menus_dir (str): Path to shared export preset menus folder
+        """
 
-            project_menus_dir = os.path.join(SCRIPT_PATH, 'project_menus')
-            shared_menus_dir = os.path.join(SCRIPT_PATH, 'shared_menus')
-            for folder in [project_menus_dir, shared_menus_dir]:
-                if not os.path.isdir(folder):
-                    os.makedirs(folder)
+        project_menus_dir = os.path.join(SCRIPT_PATH, 'project_menus')
+        shared_menus_dir = os.path.join(SCRIPT_PATH, 'shared_menus')
+        for folder in [project_menus_dir, shared_menus_dir]:
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
 
-            return project_menus_dir, shared_menus_dir
+        return project_menus_dir, shared_menus_dir
 
     def get_project_preset_path(self) -> str:
         """
@@ -308,19 +397,19 @@ class ExportMenuSetup:
             Checking project path from project.db file will not work with Flame 2025+.
         """
 
-        project_preset_path = f'/opt/Autodesk/project/{self.flame_project_name}/export/presets/flame' # Path to current project export presets
+        project_preset_path = f'/opt/Autodesk/project/{self.flame_project_name}/export/presets/flame'
 
-        # If path doesn't exist then project is may not be saved to default location. Try to get project path from project.db file. This doesn't work 2025+.
+        # If path doesn't exist then project may not be saved to default location.
+        # Try to get project path from project.db file. This doesn't work 2025+.
         if not os.path.isdir(project_preset_path):
             try:
-                project_values = open('/opt/Autodesk/project/project.db', 'r')
-                values = project_values.read().splitlines()
-                project_values.close()
+                with open('/opt/Autodesk/project/project.db', 'r') as f:
+                    values = f.read().splitlines()
                 project_line = [line for line in values if 'Project:' + self.flame_project_name in line][0]
                 project_line = project_line.split('SetupDir="', 1)[1]
                 project_line = project_line.split('"', 1)[0]
                 project_preset_path = os.path.join(project_line, 'export/presets/flame')
-            except:
+            except Exception:
                 pass
 
         return project_preset_path
@@ -359,10 +448,7 @@ class ExportMenuSetup:
 
                 Check export presets for flame version compatibility.
 
-                If preset version is less than or equal to current export version then return True to add preset to list. Otherwise return False.
-
-                current_export_version (str): Export version of preset at preset_path.
-                export_version (str): Current export version of flame.
+                If preset version is less than or equal to current export version then return True.
 
                 Args:
                 -----
@@ -375,49 +461,46 @@ class ExportMenuSetup:
                 """
 
                 current_export_version, export_version = pyflame.get_export_preset_version(path)
-
-                # If preset version is less than or equal to current export version then return True to add preset to list. Otherwise return False.
-                if current_export_version <= export_version:
-                    return True
-                return False
+                return current_export_version <= export_version
 
             try:
-                compatible_preset_list = [] # List of export presets compatible with current version of flame
-                preset_list = [] # List of all export presets in preset_path
+                compatible_preset_list = []
+                preset_list = []
 
-                # Walk through the directory and get the xml files
                 for root, dirs, files in os.walk(preset_path):
                     for file in files:
                         if file.endswith('.xml'):
-                            file_path = os.path.join(root, file) # Get full path to xml file
-                            file = file_path.rsplit(preset_path + '/', 1)[1] # Remove preset path from file path
+                            file_path = os.path.join(root, file)
+                            file = file_path.rsplit(preset_path + '/', 1)[1]
                             preset_list.append(file)
-                #print('preset_list:', preset_list, '\n')
 
-                # Check each preset for compatibility with current version of flame
                 for preset in preset_list:
                     path = os.path.join(preset_path, preset)
                     if check_preset_version(path):
                         compatible_preset_list.append(preset[:-4])
                 compatible_preset_list = sorted(compatible_preset_list)
-                return compatible_preset_list # Return list of export presets compatible with current version of flame
-            except:
-                return [] # Return empty list if no presets found
+                return compatible_preset_list
+            except Exception:
+                return []
 
-        # Get saved export preset lists
-        self.project_movie_preset_list = get_compatible_preset_list(self.project_movie_preset_path)
+        self.project_movie_preset_list    = get_compatible_preset_list(self.project_movie_preset_path)
         self.project_file_seq_preset_list = get_compatible_preset_list(self.project_file_seq_preset_path)
-        self.shared_movie_preset_list = get_compatible_preset_list(self.shared_movie_preset_path)
-        self.shared_file_seq_preset_list = get_compatible_preset_list(self.shared_file_seq_preset_path)
+        self.shared_movie_preset_list     = get_compatible_preset_list(self.shared_movie_preset_path)
+        self.shared_file_seq_preset_list  = get_compatible_preset_list(self.shared_file_seq_preset_path)
 
         print('\nSaved Export Presets:\n')
 
-        self.print_list('Project Movie Preset List', self.project_movie_preset_list)
-        self.print_list('Project File Seq Preset List', self.project_file_seq_preset_list)
-        self.print_list('Shared Movie Preset List', self.shared_movie_preset_list)
-        self.print_list('Shared File Seq Preset List', self.shared_file_seq_preset_list)
+        # Print each preset list to the terminal for debugging
+        preset_labels = [
+            ('Project Movie Preset List',    self.project_movie_preset_list),
+            ('Project File Seq Preset List', self.project_file_seq_preset_list),
+            ('Shared Movie Preset List',     self.shared_movie_preset_list),
+            ('Shared File Seq Preset List',  self.shared_file_seq_preset_list),
+        ]
+        for label, preset_list in preset_labels:
+            self.print_list(label, preset_list)
 
-    def print_list(self, list_name, list) -> None:
+    def print_list(self, list_name, items) -> None:
         """
         Print list
         ==========
@@ -428,13 +511,13 @@ class ExportMenuSetup:
         -----
             list_name (str):
                 List name.
-            list (list):
+            items (list):
                 List of items.
         """
 
         print(f'    {list_name}:')
-        if list:
-            for x in list:
+        if items:
+            for x in items:
                 print(f'        {x}')
         else:
             print('        None found')
@@ -443,6 +526,16 @@ class ExportMenuSetup:
     #-------------------------------------
 
     def setup_window(self) -> None:
+        """
+        Setup Window
+        ============
+
+        Build and display the main setup window.
+
+        Creates the Create and Edit tabs, each with up to five export preset tabs.
+        All widget references are stored as instance attributes so they can be
+        accessed from other methods.
+        """
 
         def export_preset_tab(
             tab,
@@ -451,11 +544,11 @@ class ExportMenuSetup:
             top_layer,
             export_foreground,
             export_between_marks,
+            import_export,
             include_subtitles,
             subtitles_export_mode,
             subtitles_tracks,
-            ) -> tuple:
-
+            ) -> dict:
             """
             Export Preset Tab
             =================
@@ -467,7 +560,7 @@ class ExportMenuSetup:
                 tab (PyFlameTabWidget.TabContainer):
                     The tab to create the layout in.
                 tab_number (str):
-                    The tab number.
+                    The tab number ('one' through 'five').
                 export_path (str):
                     The export path.
                 top_layer (bool):
@@ -476,6 +569,8 @@ class ExportMenuSetup:
                     Set state of export foreground pushbutton.
                 export_between_marks (bool):
                     Set state of export between marks pushbutton.
+                import_export (bool):
+                    Set state of import export pushbutton.
                 include_subtitles (bool):
                     Set state of include_subtitles pushbutton.
                 subtitles_export_mode (str):
@@ -485,62 +580,27 @@ class ExportMenuSetup:
 
             Returns:
             --------
-                tuple:
-                    UI elements for the tab.
+                dict:
+                    Widget dict for this preset tab.
             """
 
             def set_preset_menu() -> None:
                 """
-                Update the saved presets pushbutton menu based on the saved preset type pushbutton menu selection.
-
-                Args:
-                -----
-                    saved_preset_type_menu (PyFlameMenu):
-                        The saved preset type pushbutton menu.
-                    saved_presets_menu (PyFlameMenu):
-                        The saved presets pushbutton menu.
+                Update the saved presets menu based on the preset type menu selection.
                 """
 
-                def get_menu_text(preset_file_list) -> str:
-                    """
-                    Get the first preset in the list to set the pushbutton text.
-                    If no presets are found, return 'No Saved Presets Found'
-
-                    Args:
-                    -----
-                        preset_file_list (list):
-                            List of preset files.
-
-                    Returns:
-                    --------
-                        str: The first preset in the list or 'No Saved Presets Found'
-                    """
-
-                    if not preset_file_list:
-                        return 'No Saved Presets Found'
-                    else:
-                        return preset_file_list[0]
-
-                if saved_preset_type_menu.text == 'Project: Movie':
-                    saved_presets_menu.update_menu(
-                        text=get_menu_text(self.project_movie_preset_list),
-                        menu_options=self.project_movie_preset_list,
-                        )
-                elif saved_preset_type_menu.text == 'Project: File Sequence':
-                    saved_presets_menu.update_menu(
-                        text=get_menu_text(self.project_file_seq_preset_list),
-                        menu_options=self.project_file_seq_preset_list,
-                        )
-                elif saved_preset_type_menu.text == 'Shared: Movie':
-                    saved_presets_menu.update_menu(
-                        text=get_menu_text(self.shared_movie_preset_list),
-                        menu_options=self.shared_movie_preset_list,
-                        )
-                elif saved_preset_type_menu.text == 'Shared: File Sequence':
-                    saved_presets_menu.update_menu(
-                        text=get_menu_text(self.shared_file_seq_preset_list),
-                        menu_options=self.shared_file_seq_preset_list,
-                        )
+                preset_map = {
+                    'Project: Movie':         self.project_movie_preset_list,
+                    'Project: File Sequence': self.project_file_seq_preset_list,
+                    'Shared: Movie':          self.shared_movie_preset_list,
+                    'Shared: File Sequence':  self.shared_file_seq_preset_list,
+                }
+                preset_list = preset_map.get(saved_preset_type_menu.text, [])
+                saved_presets_menu.update_menu(
+                    text=preset_list[0] if preset_list else 'No Saved Presets Found',
+                    menu_options=preset_list,
+                    )
+                update_import_export_state()
 
             def toggle_ui() -> None:
                 """
@@ -548,51 +608,56 @@ class ExportMenuSetup:
                 =========
 
                 Enable/Disable UI elements based on the state of the enable preset pushbutton.
+                Only called for tabs 2-5, which always have an enable pushbutton.
                 """
 
-                if enable_preset_pushbutton.checked:
-                    switch = True
+                if enable_preset_pushbutton is None:
+                    return
+                switch = enable_preset_pushbutton.checked
+                for widget in [
+                    saved_preset_type_label, saved_presets_label, export_path_label,
+                    export_path_entry, top_layer_pushbutton, foreground_pushbutton,
+                    between_marks_pushbutton, token_pushbutton, saved_preset_type_menu,
+                    path_browse_button, saved_presets_menu, include_subtitles_pushbutton,
+                    subtitles_export_mode_menu, subtitles_tracks_menu,
+                    ]:
+                    widget.enabled = switch
+                if not switch:
+                    import_export_pushbutton.enabled = False
+                    import_export_pushbutton.checked = False
                 else:
-                    switch = False
-
-                saved_preset_type_label.enabled = switch
-                saved_presets_label.enabled = switch
-                export_path_label.enabled = switch
-                export_path_entry.enabled = switch
-                top_layer_pushbutton.enabled = switch
-                foreground_pushbutton.enabled = switch
-                between_marks_pushbutton.enabled = switch
-                token_pushbutton.enabled = switch
-                saved_preset_type_menu.enabled = switch
-                server_browse_button.enabled = switch
-                saved_presets_menu.enabled = switch
-                include_subtitles_pushbutton.enabled = switch
-                subtitles_export_mode_menu.enabled = switch
-                subtitles_tracks_menu.enabled = switch
+                    update_import_export_state()
 
             def subtitles_ui_toggle() -> None:
                 """
                 Subtitles UI Toggle
                 ===================
 
-                Enable or disable subtitle buttons/menus
-
-                If version of Flame is older than 2024.2 all buttons/menus are disabled.
-                Subtitles were added in 2024.2.
+                Enable or disable subtitle buttons/menus based on the Include Subtitles button state.
                 """
 
-                if self.flame_version < 2024.2:
-                    include_subtitles_pushbutton.enabled = False
-                    subtitles_export_mode_menu.enabled = False
-                    subtitles_tracks_menu.enabled = False
-                    pyflame.print('Subtitle options disabled. Not compatible with current version of Flame.')
+                subtitles_export_mode_menu.enabled = include_subtitles_pushbutton.checked
+                subtitles_tracks_menu.enabled = include_subtitles_pushbutton.checked
 
-                if include_subtitles_pushbutton.checked:
-                    subtitles_export_mode_menu.enabled = True
-                    subtitles_tracks_menu.enabled = True
+            def update_import_export_state() -> None:
+                """
+                Update Import Export State
+                ==========================
+
+                Enable or disable the Import Export pushbutton based on the Saved Preset
+                Type menu selection. Movie preset types enable the button; File Sequence
+                types disable it and clear its checked state.
+                """
+
+                if enable_preset_pushbutton is not None and not enable_preset_pushbutton.checked:
+                    import_export_pushbutton.enabled = False
+                    import_export_pushbutton.checked = False
+                    return
+                if saved_preset_type_menu.text in ('Project: Movie', 'Shared: Movie'):
+                    import_export_pushbutton.enabled = True
                 else:
-                    subtitles_export_mode_menu.enabled = False
-                    subtitles_tracks_menu.enabled = False
+                    import_export_pushbutton.enabled = False
+                    import_export_pushbutton.checked = False
 
             # Labels
             saved_preset_type_label = PyFlameLabel(
@@ -636,6 +701,11 @@ class ExportMenuSetup:
                 text='Export Between Marks',
                 checked=export_between_marks,
                 )
+            import_export_pushbutton = PyFlamePushButton(
+                text='Import Export',
+                checked=import_export,
+                tooltip='Import exported clip back into Flame - Only works with Movie preset types.',
+                )
             include_subtitles_pushbutton = PyFlamePushButton(
                 text='Include Subtitles',
                 checked=include_subtitles,
@@ -646,27 +716,27 @@ class ExportMenuSetup:
             token_pushbutton = PyFlameTokenMenu(
                 text='Add Token',
                 token_dict={
-                    'Project Name': '<ProjectName>',
+                    'Project Name':      '<ProjectName>',
                     'Project Nick Name': '<ProjectNickName>',
-                    'Shot Name': '<ShotName>',
-                    'SEQUENCE NAME': '<SEQNAME>',
-                    'Sequence Name': '<SeqName>',
-                    'Tape Name': '<TapeName>',
-                    'User Name': '<UserName>',
-                    'User Nickname': '<UserNickName>',
-                    'Clip Name': '<ClipName>',
-                    'Clip Resolution': '<Resolution>',
-                    'Clip Height': '<ClipHeight>',
-                    'Clip Width': '<ClipWidth>',
-                    'Year (YYYY)': '<YYYY>',
-                    'Year (YY)': '<YY>',
-                    'Month': '<MM>',
-                    'Day': '<DD>',
-                    'Hour (24 Hour)': '<Hour>',
-                    'Hour (12 Hour)': '<hour>',
-                    'Minute': '<Minute>',
-                    'AM/PM': '<AMPM>',
-                    'am/pm': '<ampm>',
+                    'Shot Name':         '<ShotName>',
+                    'SEQUENCE NAME':     '<SEQNAME>',
+                    'Sequence Name':     '<SeqName>',
+                    'Tape Name':         '<TapeName>',
+                    'User Name':         '<UserName>',
+                    'User Nickname':     '<UserNickName>',
+                    'Clip Name':         '<ClipName>',
+                    'Clip Resolution':   '<Resolution>',
+                    'Clip Height':       '<ClipHeight>',
+                    'Clip Width':        '<ClipWidth>',
+                    'Year (YYYY)':       '<YYYY>',
+                    'Year (YY)':         '<YY>',
+                    'Month':             '<MM>',
+                    'Day':               '<DD>',
+                    'Hour (24 Hour)':    '<Hour>',
+                    'Hour (12 Hour)':    '<hour>',
+                    'Minute':            '<Minute>',
+                    'AM/PM':             '<AMPM>',
+                    'am/pm':             '<ampm>',
                     },
                 token_dest=export_path_entry,
                 )
@@ -689,7 +759,7 @@ class ExportMenuSetup:
 
             def subtitles_update_tracks_menu() -> None:
                 """
-                Switch Subtitles Tracks Menu based on selection in Subtitles Export Mode Menu
+                Switch Subtitles Tracks Menu based on selection in Subtitles Export Mode Menu.
                 """
 
                 if subtitles_export_mode_menu.text == 'Burn in Image':
@@ -699,7 +769,6 @@ class ExportMenuSetup:
                             'Current Subtitles Track',
                             ],
                         )
-
                 elif subtitles_export_mode_menu.text == 'Export as Files':
                     subtitles_tracks_menu.update_menu(
                         text='Current Subtitles Track',
@@ -710,8 +779,8 @@ class ExportMenuSetup:
                         )
 
             subtitles_export_mode_menu = PyFlameMenu(
-                text =subtitles_export_mode,
-                menu_options = [
+                text=subtitles_export_mode,
+                menu_options=[
                     'Burn in Image',
                     'Export as Files',
                     ],
@@ -724,27 +793,18 @@ class ExportMenuSetup:
                 enabled=False,
                 )
 
-
-            if self.flame_version < 2024.2:
-                subtitles_label.setVisible(False)
-                include_subtitles_pushbutton.setVisible(False)
-                subtitles_export_mode_menu.setVisible(False)
-                subtitles_tracks_menu.setVisible(False)
-
-            # Set saved preset type pushbutton menu when tab is created
+            # Set saved preset type menu when tab is created
             set_preset_menu()
 
             # Buttons
-            server_browse_button = PyFlameButton(
+            path_browse_button = PyFlameButton(
                 text='Browse',
-                connect=partial(self.directory_path_browse, export_path_entry, [self.window]),
+                connect=partial(self.path_browse, export_path_entry, [self.window]),
                 )
 
-            # Toggle UI
-            try:
+            # Toggle UI for tabs 2-5 (tab 1 has no enable pushbutton)
+            if enable_preset_pushbutton:
                 toggle_ui()
-            except:
-                pass
 
             subtitles_update_tracks_menu()
 
@@ -760,7 +820,7 @@ class ExportMenuSetup:
 
             tab.grid_layout.addWidget(export_path_label, 3, 0)
             tab.grid_layout.addWidget(export_path_entry, 3, 1, 1, 3)
-            tab.grid_layout.addWidget(server_browse_button, 3, 4)
+            tab.grid_layout.addWidget(path_browse_button, 3, 4)
             tab.grid_layout.addWidget(token_pushbutton, 3, 5)
 
             if tab_number != 'one':
@@ -768,13 +828,91 @@ class ExportMenuSetup:
             tab.grid_layout.addWidget(top_layer_pushbutton, 1, 7)
             tab.grid_layout.addWidget(foreground_pushbutton, 2, 7)
             tab.grid_layout.addWidget(between_marks_pushbutton, 3, 7)
+            tab.grid_layout.addWidget(import_export_pushbutton, 4, 7)
 
             tab.grid_layout.addWidget(subtitles_label, 0, 8)
             tab.grid_layout.addWidget(include_subtitles_pushbutton, 1, 8)
             tab.grid_layout.addWidget(subtitles_export_mode_menu, 2, 8)
             tab.grid_layout.addWidget(subtitles_tracks_menu, 3, 8)
 
-            return saved_preset_type_menu, saved_presets_menu, export_path_entry, enable_preset_pushbutton, top_layer_pushbutton, foreground_pushbutton, between_marks_pushbutton, saved_preset_type_label, saved_presets_label, export_path_label, server_browse_button, token_pushbutton, include_subtitles_pushbutton, subtitles_export_mode_menu, subtitles_tracks_menu
+            return {
+                'preset_type_menu':             saved_preset_type_menu,
+                'presets_menu':                 saved_presets_menu,
+                'export_path_entry':            export_path_entry,
+                'enable_pushbutton':            enable_preset_pushbutton,
+                'top_layer_pushbutton':         top_layer_pushbutton,
+                'foreground_pushbutton':        foreground_pushbutton,
+                'between_marks_pushbutton':     between_marks_pushbutton,
+                'import_export_pushbutton':     import_export_pushbutton,
+                'preset_type_label':            saved_preset_type_label,
+                'presets_label':                saved_presets_label,
+                'export_path_label':            export_path_label,
+                'path_browse_button':           path_browse_button,
+                'token_pushbutton':             token_pushbutton,
+                'include_subtitles_pushbutton': include_subtitles_pushbutton,
+                'subtitles_export_mode_menu':   subtitles_export_mode_menu,
+                'subtitles_tracks_menu':        subtitles_tracks_menu,
+            }
+
+        def build_export_preset_tabs(tab_container) -> list:
+            """
+            Build Export Preset Tabs
+            ========================
+
+            Build 5 export preset tabs using export_preset_tab() and return a list of widget dicts.
+            Tab 1 (index 0) loads settings from config. Tabs 2-5 default to empty/disabled.
+
+            Args:
+            -----
+                tab_container (PyFlameTabWidget):
+                    Tab widget containing the 5 export preset tab pages.
+
+            Returns:
+            --------
+                list: List of 5 widget dicts, one per preset tab.
+            """
+
+            tab_names   = [
+                'Export Preset One',
+                'Export Preset Two',
+                'Export Preset Three',
+                'Export Preset Four',
+                'Export Preset Five',
+                ]
+            tab_numbers = ['one', 'two', 'three', 'four', 'five']
+
+            tab_widgets_list = []
+
+            for i, (tab_name, tab_number) in enumerate(zip(tab_names, tab_numbers)):
+                if i == 0:
+                    tab_widgets = export_preset_tab(
+                        tab=tab_container.tab_pages[tab_name],
+                        tab_number=tab_number,
+                        export_path=self.settings.export_path,
+                        top_layer=self.settings.use_top_layer,
+                        export_foreground=self.settings.export_in_foreground,
+                        export_between_marks=self.settings.export_between_marks,
+                        import_export=self.settings.import_export,
+                        include_subtitles=self.settings.include_subtitles,
+                        subtitles_export_mode=self.settings.subtitles_export_mode,
+                        subtitles_tracks=self.settings.subtitles_tracks,
+                        )
+                else:
+                    tab_widgets = export_preset_tab(
+                        tab=tab_container.tab_pages[tab_name],
+                        tab_number=tab_number,
+                        export_path='',
+                        top_layer=False,
+                        export_foreground=False,
+                        export_between_marks=False,
+                        import_export=False,
+                        include_subtitles=False,
+                        subtitles_export_mode='Burn in Image',
+                        subtitles_tracks='Current Subtitles Track',
+                        )
+                tab_widgets_list.append(tab_widgets)
+
+            return tab_widgets_list
 
         def create_tab() -> None:
             """
@@ -783,82 +921,6 @@ class ExportMenuSetup:
 
             Tab for creating export presets.
             """
-
-            def build_preset_tabs() -> None:
-                """
-                Create export preset tabs 1-5 using the export_preset_tab as a template.
-                """
-
-                self.create_preset_tabs = PyFlameTabWidget(
-                    tab_names=[
-                        'Export Preset One',
-                        'Export Preset Two',
-                        'Export Preset Three',
-                        'Export Preset Four',
-                        'Export Preset Five',
-                        ],
-                    grid_layout_columns=9,
-                    grid_layout_rows=5,
-                    )
-
-                # Create tabs
-                export_preset_one_tab = export_preset_tab(tab=self.create_preset_tabs.tab_pages['Export Preset One'],
-                                                          tab_number='one',
-                                                          export_path=self.settings.export_path,
-                                                          top_layer=self.settings.use_top_layer,
-                                                          export_foreground=self.settings.export_in_foreground,
-                                                          export_between_marks=self.settings.export_between_marks,
-                                                          include_subtitles=self.settings.include_subtitles,
-                                                          subtitles_export_mode=self.settings.subtitles_export_mode,
-                                                          subtitles_tracks=self.settings.subtitles_tracks,
-                                                          )
-                export_preset_two_tab = export_preset_tab(tab=self.create_preset_tabs.tab_pages['Export Preset Two'],
-                                                          tab_number='two',
-                                                          export_path='',
-                                                          top_layer=False,
-                                                          export_foreground=False,
-                                                          export_between_marks=False,
-                                                          include_subtitles=False,
-                                                          subtitles_export_mode='Burn in Image',
-                                                          subtitles_tracks='Current Subtitles Track',
-                                                          )
-                export_preset_three_tab = export_preset_tab(tab=self.create_preset_tabs.tab_pages['Export Preset Three'],
-                                                            tab_number='three',
-                                                            export_path='',
-                                                            top_layer=False,
-                                                            export_foreground=False,
-                                                            export_between_marks=False,
-                                                            include_subtitles=False,
-                                                            subtitles_export_mode='Burn in Image',
-                                                            subtitles_tracks='Current Subtitles Track',
-                                                            )
-                export_preset_four_tab = export_preset_tab(tab=self.create_preset_tabs.tab_pages['Export Preset Four'],
-                                                           tab_number='four',
-                                                           export_path='',
-                                                           top_layer=False,
-                                                           export_foreground=False,
-                                                           export_between_marks=False,
-                                                           include_subtitles=False,
-                                                           subtitles_export_mode='Burn in Image',
-                                                           subtitles_tracks='Current Subtitles Track',
-                                                           )
-                export_preset_five_tab = export_preset_tab(tab=self.create_preset_tabs.tab_pages['Export Preset Five'],
-                                                           tab_number='five',
-                                                           export_path='',
-                                                           top_layer=False,
-                                                           export_foreground=False,
-                                                           export_between_marks=False,
-                                                           include_subtitles=False,
-                                                           subtitles_export_mode='Burn in Image',
-                                                           subtitles_tracks='Current Subtitles Track',
-                                                           )
-
-                # Get values from tabs
-                self.preset_type_menu_01, self.presets_menu_01, self.export_path_entry_01, self.enable_preset_pushbutton_01, self.top_layer_pushbutton_01, self.foreground_pushbutton_01, self.between_marks_pushbutton_01, self.saved_preset_type_label_01, self.saved_presets_label_01, self.export_path_label_01, self.server_browse_button_01, self.token_push_button_01, self.include_subtitles_pushbutton_01, self.subtitles_export_mode_menu_01, self.subtitles_tracks_menu_01 = export_preset_one_tab
-                self.preset_type_menu_02, self.presets_menu_02, self.export_path_entry_02, self.enable_preset_pushbutton_02, self.top_layer_pushbutton_02, self.foreground_pushbutton_02, self.between_marks_pushbutton_02, self.saved_preset_type_label_02, self.saved_presets_label_02, self.export_path_label_02, self.server_browse_button_02, self.token_push_button_02, self.include_subtitles_pushbutton_02, self.subtitles_export_mode_menu_02, self.subtitles_tracks_menu_02 = export_preset_two_tab
-                self.preset_type_menu_03, self.presets_menu_03, self.export_path_entry_03, self.enable_preset_pushbutton_03, self.top_layer_pushbutton_03, self.foreground_pushbutton_03, self.between_marks_pushbutton_03, self.saved_preset_type_label_03, self.saved_presets_label_03, self.export_path_label_03, self.server_browse_button_03, self.token_push_button_03, self.include_subtitles_pushbutton_03, self.subtitles_export_mode_menu_03, self.subtitles_tracks_menu_03 = export_preset_three_tab
-                self.preset_type_menu_04, self.presets_menu_04, self.export_path_entry_04, self.enable_preset_pushbutton_04, self.top_layer_pushbutton_04, self.foreground_pushbutton_04, self.between_marks_pushbutton_04, self.saved_preset_type_label_04, self.saved_presets_label_04, self.export_path_label_04, self.server_browse_button_04, self.token_push_button_04, self.include_subtitles_pushbutton_04, self.subtitles_export_mode_menu_04, self.subtitles_tracks_menu_04 = export_preset_four_tab
-                self.preset_type_menu_05, self.presets_menu_05, self.export_path_entry_05, self.enable_preset_pushbutton_05, self.top_layer_pushbutton_05, self.foreground_pushbutton_05, self.between_marks_pushbutton_05, self.saved_preset_type_label_05, self.saved_presets_label_05, self.export_path_label_05, self.server_browse_button_05, self.token_push_button_05, self.include_subtitles_pushbutton_05, self.subtitles_export_mode_menu_05, self.subtitles_tracks_menu_05 = export_preset_five_tab
 
             # Labels
             self.menu_visibility_label = PyFlameLabel(
@@ -901,20 +963,11 @@ class ExportMenuSetup:
                 )
 
             # Buttons
-
-            def create_button_connect() -> None:
-                """
-                Connect create button to save_menus function.
-                """
-
-                self.save_menus('Create')
-
             self.create_button = PyFlameButton(
                 text='Create',
-                connect=create_button_connect,
+                connect=partial(self.save_menus, 'Create'),
                 color=Color.BLUE,
                 )
-
             self.done_button = PyFlameButton(
                 text='Done',
                 connect=self.window.close,
@@ -925,7 +978,19 @@ class ExportMenuSetup:
             horizontal_line_02 = PyFlameHorizontalLine()
 
             # Create export preset tabs 1-5
-            build_preset_tabs()
+            self.create_preset_tabs = PyFlameTabWidget(
+                tab_names=[
+                    'Export Preset One',
+                    'Export Preset Two',
+                    'Export Preset Three',
+                    'Export Preset Four',
+                    'Export Preset Five',
+                    ],
+                grid_layout_columns=9,
+                grid_layout_rows=5,
+                )
+
+            self.create_tab_widgets = build_export_preset_tabs(self.create_preset_tabs)
 
             #-------------------------------------
             # [Create Tab Layout]
@@ -956,100 +1021,13 @@ class ExportMenuSetup:
             Tab for editing export presets.
             """
 
-            def build_edit_preset_tabs():
-                """
-                Build Edit Export Preset Tabs
-                =============================
-
-                Create edit export preset tabs 1-5 using the export_preset_tab as a template.
-                """
-
-                self.edit_preset_tabs = PyFlameTabWidget(
-                    tab_names=[
-                        'Export Preset One',
-                        'Export Preset Two',
-                        'Export Preset Three',
-                        'Export Preset Four',
-                        'Export Preset Five',
-                        ],
-                    grid_layout_columns=9,
-                    grid_layout_rows=5,
-                    )
-
-                self.edit_presets_tab1 = self.edit_preset_tabs.add_tab('Export Preset One')
-                self.edit_presets_tab2 = self.edit_preset_tabs.add_tab('Export Preset Two')
-                self.edit_presets_tab3 = self.edit_preset_tabs.add_tab('Export Preset Three')
-                self.edit_presets_tab4 = self.edit_preset_tabs.add_tab('Export Preset Four')
-                self.edit_presets_tab5 = self.edit_preset_tabs.add_tab('Export Preset Five')
-
-                # Create tabs
-                edit_preset_one_tab = export_preset_tab(tab=self.edit_presets_tab1,
-                                                        tab_number='one',
-                                                        export_path=self.settings.export_path,
-                                                        top_layer=self.settings.use_top_layer,
-                                                        export_foreground=self.settings.export_in_foreground,
-                                                        export_between_marks=self.settings.export_between_marks,
-                                                        include_subtitles=self.settings.include_subtitles,
-                                                        subtitles_export_mode=self.settings.subtitles_export_mode,
-                                                        subtitles_tracks=self.settings.subtitles_tracks,
-                                                        )
-                edit_preset_two_tab = export_preset_tab(tab=self.edit_presets_tab2,
-                                                        tab_number='two',
-                                                        export_path='',
-                                                        top_layer=False,
-                                                        export_foreground=False,
-                                                        export_between_marks=False,
-                                                        include_subtitles=False,
-                                                        subtitles_export_mode='Burn in Image',
-                                                        subtitles_tracks='Current Subtitles Track',
-                                                        )
-                edit_preset_three_tab = export_preset_tab(tab=self.edit_presets_tab3,
-                                                          tab_number='three',
-                                                          export_path='',
-                                                          top_layer=False,
-                                                          export_foreground=False,
-                                                          export_between_marks=False,
-                                                          include_subtitles=False,
-                                                          subtitles_export_mode='Burn in Image',
-                                                          subtitles_tracks='Current Subtitles Track',
-                                                          )
-                edit_preset_four_tab = export_preset_tab(tab=self.edit_presets_tab4,
-                                                         tab_number='four',
-                                                         export_path='',
-                                                         top_layer=False,
-                                                         export_foreground=False,
-                                                         export_between_marks=False,
-                                                         include_subtitles=False,
-                                                         subtitles_export_mode='Burn in Image',
-                                                         subtitles_tracks='Current Subtitles Track',
-                                                         )
-                edit_preset_five_tab = export_preset_tab(tab=self.edit_presets_tab5,
-                                                         tab_number='five',
-                                                         export_path='',
-                                                         top_layer=False,
-                                                         export_foreground=False,
-                                                         export_between_marks=False,
-                                                         include_subtitles=False,
-                                                         subtitles_export_mode='Burn in Image',
-                                                         subtitles_tracks='Current Subtitles Track',
-                                                         )
-
-                # Get values from tabs
-                self.edit_preset_type_menu_01, self.edit_presets_menu_01, self.edit_export_path_entry_01, self.edit_enable_preset_pushbutton_01, self.edit_top_layer_pushbutton_01, self.edit_foreground_pushbutton_01, self.edit_between_marks_pushbutton_01, self.edit_saved_preset_type_label_01, self.edit_saved_presets_label_01, self.edit_export_path_label_01, self.edit_server_browse_button_01, self.edit_token_pushbutton_01, self.edit_include_subtitles_pushbutton_01, self.edit_subtitles_export_mode_menu_01, self.edit_subtitles_tracks_menu_01 = edit_preset_one_tab
-                self.edit_preset_type_menu_02, self.edit_presets_menu_02, self.edit_export_path_entry_02, self.edit_enable_preset_pushbutton_02, self.edit_top_layer_pushbutton_02, self.edit_foreground_pushbutton_02, self.edit_between_marks_pushbutton_02, self.edit_saved_preset_type_label_02, self.edit_saved_presets_label_02, self.edit_export_path_label_02, self.edit_server_browse_button_02, self.edit_token_pushbutton_02, self.edit_include_subtitles_pushbutton_02, self.edit_subtitles_export_mode_menu_02, self.edit_subtitles_tracks_menu_02 = edit_preset_two_tab
-                self.edit_preset_type_menu_03, self.edit_presets_menu_03, self.edit_export_path_entry_03, self.edit_enable_preset_pushbutton_03, self.edit_top_layer_pushbutton_03, self.edit_foreground_pushbutton_03, self.edit_between_marks_pushbutton_03, self.edit_saved_preset_type_label_03, self.edit_saved_presets_label_03, self.edit_export_path_label_03, self.edit_server_browse_button_03, self.edit_token_pushbutton_03, self.edit_include_subtitles_pushbutton_03, self.edit_subtitles_export_mode_menu_03, self.edit_subtitles_tracks_menu_03 = edit_preset_three_tab
-                self.edit_preset_type_menu_04, self.edit_presets_menu_04, self.edit_export_path_entry_04, self.edit_enable_preset_pushbutton_04, self.edit_top_layer_pushbutton_04, self.edit_foreground_pushbutton_04, self.edit_between_marks_pushbutton_04, self.edit_saved_preset_type_label_04, self.edit_saved_presets_label_04, self.edit_export_path_label_04, self.edit_server_browse_button_04, self.edit_token_pushbutton_04, self.edit_include_subtitles_pushbutton_04, self.edit_subtitles_export_mode_menu_04, self.edit_subtitles_tracks_menu_04 = edit_preset_four_tab
-                self.edit_preset_type_menu_05, self.edit_presets_menu_05, self.edit_export_path_entry_05, self.edit_enable_preset_pushbutton_05, self.edit_top_layer_pushbutton_05, self.edit_foreground_pushbutton_05, self.edit_between_marks_pushbutton_05, self.edit_saved_preset_type_label_05, self.edit_saved_presets_label_05, self.edit_export_path_label_05, self.edit_server_browse_button_05, self.edit_token_pushbutton_05, self.edit_include_subtitles_pushbutton_05, self.edit_subtitles_export_mode_menu_05, self.edit_subtitles_tracks_menu_05 = edit_preset_five_tab
-
             def delete_export_menu() -> None:
                 """
                 Delete export menu currently selected in the edit_saved_export_menu_menu.
                 """
 
-                # Get name of menu to delete from pushbutton text
                 menu_name = self.edit_saved_export_menu_menu.text.split(' ', 1)[1]
 
-                # Confirm delete
                 if PyFlameMessageWindow(
                     message=f'Delete preset: {menu_name}?',
                     message_type=MessageType.WARNING,
@@ -1057,26 +1035,21 @@ class ExportMenuSetup:
                     parent=None,
                     ):
 
-                    # Get menu path
                     if 'Shared: ' in self.edit_saved_export_menu_menu.text:
                         menu_path = os.path.join(self.shared_menus_dir, menu_name)
                     else:
                         menu_path = os.path.join(self.project_menus_dir, self.flame_project_name, menu_name)
-                    #print('Menu path:', menu_path, '\n')
 
-                    # Delete menu files
                     os.remove(menu_path + '.py')
                     try:
                         os.remove(menu_path + '.pyc')
-                    except:
+                    except Exception:
                         pass
 
                     pyflame.print(f'Menu deleted: {menu_name}')
 
-                    # Reload button menus
                     self.get_saved_menus()
 
-                    # Refresh python hooks
                     pyflame.refresh_hooks()
 
             def duplicate_preset() -> None:
@@ -1084,35 +1057,26 @@ class ExportMenuSetup:
                 Duplicate export menu currently selected in the Export Menus pushbutton menu.
                 """
 
-                # Get name of menu to duplicate from pushbutton text
                 menu_name = self.edit_saved_export_menu_menu.text.split(' ', 1)[1]
-                #print('Menu to duplicate:', menu_name)
 
-                # Get menu path
                 if 'Shared: ' in self.edit_saved_export_menu_menu.text:
                     menu_path = os.path.join(self.shared_menus_dir, menu_name) + '.py'
                     menu_prefix = 'Shared: '
                 else:
                     menu_path = os.path.join(self.project_menus_dir, self.flame_project_name, menu_name) + '.py'
                     menu_prefix = 'Project: '
-                #print('Existing menu path:', menu_path)
 
                 # Add 'copy' to menu name and check for existing file. If exists, add ' copy' until unique name is found.
                 new_menu_path = menu_path[:-3] + ' copy.py'
                 while os.path.exists(new_menu_path):
                     new_menu_path = new_menu_path[:-3] + ' copy.py'
-                #print('New menu path:', new_menu_path, '\n')
 
-                # Copy menu python file
                 shutil.copy(menu_path, new_menu_path)
 
-                # Load new menu name to Export Menus pushbutton
                 self.edit_saved_export_menu_menu.text = menu_prefix + new_menu_path.rsplit('/', 1)[1][:-3]
 
-                # Load menu settings from duplicated menu
                 self.load_preset()
 
-                # Refresh python hooks
                 pyflame.refresh_hooks()
 
                 pyflame.print('Duplicate preset created.')
@@ -1176,7 +1140,6 @@ class ExportMenuSetup:
                 text='Duplicate',
                 connect=duplicate_preset,
                 )
-
             self.edit_save_button = PyFlameButton(
                 text='Save',
                 connect=partial(self.save_menus, 'Edit'),
@@ -1191,10 +1154,20 @@ class ExportMenuSetup:
             horizontal_line_01 = PyFlameHorizontalLine()
             horizontal_line_02 = PyFlameHorizontalLine()
 
-            #-------------------------------------
+            # Create edit preset tabs 1-5
+            self.edit_preset_tabs = PyFlameTabWidget(
+                tab_names=[
+                    'Export Preset One',
+                    'Export Preset Two',
+                    'Export Preset Three',
+                    'Export Preset Four',
+                    'Export Preset Five',
+                    ],
+                grid_layout_columns=9,
+                grid_layout_rows=5,
+                )
 
-            # Create tabs for export presets
-            build_edit_preset_tabs()
+            self.edit_tab_widgets = build_export_preset_tabs(self.edit_preset_tabs)
 
             # Load saved menus
             self.get_saved_menus()
@@ -1265,38 +1238,33 @@ class ExportMenuSetup:
 
         print('Saved Export Menus:\n')
 
-        # Get saved project export menus
-        try:
-            project_export_menus = ['Project: ' + x[:-3] for x in os.listdir(os.path.join(self.project_menus_dir, self.flame_project_name)) if x.endswith('.py')]
-            project_export_menus.sort()
-        except:
-            project_export_menus = []
-        self.print_list('Project Export Menus', project_export_menus)
+        menu_sources = [
+            ('Project Export Menus', os.path.join(self.project_menus_dir, self.flame_project_name), 'Project: '),
+            ('Shared Export Menus',  self.shared_menus_dir,                                         'Shared: '),
+        ]
 
-        # Get saved shared export menus
-        try:
-            shared_export_menus = ['Shared: ' + x[:-3] for x in os.listdir(self.shared_menus_dir) if x.endswith('.py')]
-            shared_export_menus.sort()
-        except:
-            shared_export_menus = []
-        self.print_list('Shared Export Menus', shared_export_menus)
+        all_export_menus = []
 
-        # Combine project and shared export menus lists
-        all_export_menus = project_export_menus + shared_export_menus
+        for label, path, prefix in menu_sources:
+            try:
+                menus = sorted(
+                    [prefix + x[:-3] for x in os.listdir(path) if x.endswith('.py')]
+                    )
+            except Exception:
+                menus = []
+            self.print_list(label, menus)
+            all_export_menus.extend(menus)
 
-        # If no export menus are found then set the pushbutton text to 'No Saved Export Menus Found'
         if not all_export_menus:
             all_export_menus = ['No Saved Export Menus Found']
 
-        # Set saved presets pushbutton menu text and options
         self.edit_saved_export_menu_menu.update_menu(
             text=all_export_menus[0],
             menu_options=all_export_menus,
-            connect = self.load_preset,
+            connect=self.load_preset,
             )
 
-        # Load menu if only one menu is found
-        if not all_export_menus[0] == 'No Saved Export Menus Found':
+        if all_export_menus[0] != 'No Saved Export Menus Found':
             self.load_preset()
 
     def load_preset(self, preset_to_load=None) -> None:
@@ -1314,50 +1282,45 @@ class ExportMenuSetup:
             Turn off UI elements if no preset is found to load.
             """
 
-            self.edit_menu_label.enabled = False
-            self.edit_saved_export_menu_menu.enabled = False
-            self.edit_menu_visibility_label.enabled = False
-            self.edit_menu_visibility_menu.enabled = False
-            self.edit_menu_name_label.enabled = False
-            self.edit_menu_name_entry.enabled = False
-            self.edit_saved_preset_type_label_01.enabled = False
-            self.edit_saved_presets_label_01.enabled = False
-            self.edit_export_path_label_01.enabled = False
-            self.edit_preset_type_menu_01.enabled = False
-            self.edit_presets_menu_01.enabled = False
-            self.edit_export_path_entry_01.enabled = False
-            self.edit_server_browse_button_01.enabled = False
-            self.edit_token_pushbutton_01.enabled = False
-            self.edit_top_layer_pushbutton_01.enabled = False
-            self.edit_foreground_pushbutton_01.enabled = False
-            self.edit_between_marks_pushbutton_01.enabled = False
-            self.edit_enable_preset_pushbutton_02.enabled = False
-            self.edit_enable_preset_pushbutton_03.enabled = False
-            self.edit_enable_preset_pushbutton_04.enabled = False
-            self.edit_enable_preset_pushbutton_05.enabled = False
-            self.edit_delete_button.enabled = False
+            for widget in [
+                self.edit_menu_label,
+                self.edit_saved_export_menu_menu,
+                self.edit_menu_visibility_label,
+                self.edit_menu_visibility_menu,
+                self.edit_menu_name_label,
+                self.edit_menu_name_entry,
+                self.edit_delete_button,
+                ]:
+                widget.enabled = False
+
+            # Disable tab 0 (preset one) core widgets (subtitle widgets excluded - original behaviour)
+            tab0 = self.edit_tab_widgets[0]
+            for key in _TW_TAB0_NO_PRESETS:
+                tab0[key].enabled = False
+
+            # Disable enable pushbutton for tabs 2-5 (indices 1-4)
+            for tab in self.edit_tab_widgets[1:]:
+                tab['enable_pushbutton'].enabled = False
 
             self.edit_menu_visibility_menu.text = ''
-            self.edit_preset_type_menu_01.text = ''
-            self.edit_preset_type_menu_02.text = ''
-            self.edit_preset_type_menu_03.text = ''
-            self.edit_preset_type_menu_04.text = ''
-            self.edit_preset_type_menu_05.text = ''
+            for tab in self.edit_tab_widgets:
+                tab['preset_type_menu'].text = ''
 
             print('--> No existing presets found. \n')
 
-        if self.edit_saved_export_menu_menu.text == 'No Saved Presets Found':
-            no_presets_found() # Turn off UI elements
+        if self.edit_saved_export_menu_menu.text == 'No Saved Export Menus Found':
+            no_presets_found()
             return
 
         elif preset_to_load:
             self.edit_saved_export_menu_menu.text = preset_to_load
-        selected_menu_name = self.edit_saved_export_menu_menu.text.rsplit(': ', 1)[1] # Get selected menu name from pushbutton text
-        #print('Selected Menu Name:', selected_menu_name)
 
-        self.edit_menu_name_entry.text = selected_menu_name # Set Menu Name Entry
+        selected_menu_name = self.edit_saved_export_menu_menu.text.rsplit(': ', 1)[1]
 
-        # Set Menu Visibility Pushbutton Menu
+        self.edit_menu_name_entry.text = selected_menu_name
+
+        # Determine menu path from the visibility prefix ('Shared: ' or 'Project: ')
+        selected_menu_path: str = ''
         if 'Shared: ' in self.edit_saved_export_menu_menu.text:
             self.edit_menu_visibility_menu.text = 'Shared'
             selected_menu_path = os.path.join(self.shared_menus_dir, selected_menu_name) + '.py'
@@ -1365,129 +1328,141 @@ class ExportMenuSetup:
             self.edit_menu_visibility_menu.text = 'Project'
             selected_menu_path = os.path.join(self.project_menus_dir, self.flame_project_name, selected_menu_name) + '.py'
 
+        if not selected_menu_path:
+            return
+
         # Read in menu script
-        #-----------------------------------------
+        with open(selected_menu_path, 'r') as f:
+            menu_lines = f.read().splitlines()
 
-        get_menu_values = open(selected_menu_path, 'r')
-        menu_lines = get_menu_values.read().splitlines()
+        def get_preset_info(preset_num: str, tab_widgets: dict) -> None:
+            """
+            Get Preset Info
+            ===============
 
-        get_menu_values.close()
+            Read preset data from menu_lines and populate the tab's UI widgets.
 
-        def get_preset_info(preset_num, enable_btn, saved_preset_type_label, saved_presets_label, export_path_label, export_path_entry, top_layer_button, foreground_button, between_marks_button, token_button, export_button, server_button, saved_presets_button, include_subtitles_button, subtitles_export_mode_button, subtitles_tracks_button, ):
+            Args:
+            -----
+                preset_num (str):
+                    Preset number label used as a marker in the menu file (e.g. 'One').
+                tab_widgets (dict):
+                    Widget dict for the preset tab.
+            """
 
-            # Get preset info
             preset_start_index = menu_lines.index(f'        # Export preset {preset_num}')
             preset_end_index = menu_lines.index(f'        # Export preset {preset_num} END') + 1
             preset_lines = menu_lines[preset_start_index:preset_end_index]
 
+            enable_btn = tab_widgets['enable_pushbutton']
+
             if enable_btn:
                 enable_btn.checked = True
+            for key in _TW_TOGGLEABLE:
+                tab_widgets[key].enabled = True
 
-                # Enable UI elements
-                saved_preset_type_label.enabled = True
-                saved_presets_label.enabled = True
-                export_path_label.enabled = True
-                export_path_entry.enabled = True
-                top_layer_button.enabled = True
-                foreground_button.enabled = True
-                between_marks_button.enabled = True
-                token_button.enabled = True
-                export_button.enabled = True
-                server_button.enabled = True
-                saved_presets_button.enabled = True
-                include_subtitles_button.enabled = True
-                subtitles_export_mode_button.enabled = True
-                subtitles_tracks_button.enabled = True
+            # Default import_export to False before parsing; stays False if line is absent (older presets)
+            tab_widgets['import_export_pushbutton'].checked = False
 
-            # Set UI elements
             print(f'Preset: {preset_num}')
             for line in preset_lines:
                 if line == '        clip_output.use_top_video_track = True':
-                    top_layer_button.checked = True
+                    tab_widgets['top_layer_pushbutton'].checked = True
                     print('Use Top Layer: True')
                 elif line == '        clip_output.use_top_video_track = False':
-                    top_layer_button.checked = False
+                    tab_widgets['top_layer_pushbutton'].checked = False
                     print('Use Top Layer: False')
                 elif line == '        clip_output.foreground = True':
-                    foreground_button.checked = True
+                    tab_widgets['foreground_pushbutton'].checked = True
                     print('Foreground Export: True')
                 elif line == '        clip_output.foreground = False':
-                    foreground_button.checked = False
+                    tab_widgets['foreground_pushbutton'].checked = False
                     print('Foreground Export: False')
                 elif line == '        clip_output.export_between_marks = True':
-                    between_marks_button.checked = True
+                    tab_widgets['between_marks_pushbutton'].checked = True
                     print('Export Between Marks: True')
                 elif line == '        clip_output.export_between_marks = False':
-                    between_marks_button.checked = False
+                    tab_widgets['between_marks_pushbutton'].checked = False
                     print('Export Between Marks: False')
                 elif '        new_export_path = translate_tokenized_path(clip, ' in line:
                     path = line.split("'", 2)[1]
-                    export_path_entry.text = path
+                    tab_widgets['export_path_entry'].text = path
                     print('Export Path:', path)
                 elif '        clip_output.export(clip, ' in line:
                     preset_path = line.split("'", 2)[1]
                     preset_name = preset_path.rsplit('/', 1)[1][:-4]
-                    saved_presets_button.text = preset_name
+                    tab_widgets['presets_menu'].text = preset_name
                     print('Preset Name:', preset_name)
-                # Subtitles
                 elif '        clip_output.include_subtitles = True' in line:
-                    include_subtitles_button.checked = True
-                    subtitles_export_mode_button.enabled = True
-                    subtitles_tracks_button.enabled = True
+                    tab_widgets['include_subtitles_pushbutton'].checked = True
+                    tab_widgets['subtitles_export_mode_menu'].enabled = True
+                    tab_widgets['subtitles_tracks_menu'].enabled = True
                     print('Include subtitles: True')
                 elif '        clip_output.include_subtitles = False' in line:
-                    include_subtitles_button.checked = False
-                    subtitles_export_mode_button.enabled = False
-                    subtitles_tracks_button.enabled = False
+                    tab_widgets['include_subtitles_pushbutton'].checked = False
+                    tab_widgets['subtitles_export_mode_menu'].enabled = False
+                    tab_widgets['subtitles_tracks_menu'].enabled = False
                     print('Include subtitles: False')
                 elif '        clip_output.export_subtitles_as_files = False' in line:
-                    subtitles_export_mode_button.text = 'Burn in Image'
+                    tab_widgets['subtitles_export_mode_menu'].text = 'Burn in Image'
                     print('Subtitles export mode: Burn in Image')
                 elif '        clip_output.export_subtitles_as_files = True' in line:
-                    subtitles_export_mode_button.text = 'Export as Files'
+                    tab_widgets['subtitles_export_mode_menu'].text = 'Export as Files'
                     print('Subtitles export mode: Export as Files')
                 elif '        clip_output.export_all_subtitles = True' in line:
-                    subtitles_tracks_button.text = 'All Subtitles Tracks'
+                    tab_widgets['subtitles_tracks_menu'].text = 'All Subtitles Tracks'
                     print('Subtitles tracks: All Subtitles Tracks')
                 elif '        clip_output.export_all_subtitles = False' in line:
-                    subtitles_tracks_button.text = 'Current Subtitles Track'
+                    tab_widgets['subtitles_tracks_menu'].text = 'Current Subtitles Track'
                     print('Subtitles tracks: Current Subtitles Track')
+                elif line == '        import_export = True':
+                    tab_widgets['import_export_pushbutton'].checked = True
+                    print('Import Export: True')
+                elif line == '        import_export = False':
+                    tab_widgets['import_export_pushbutton'].checked = False
+                    print('Import Export: False')
 
                 if 'clip_output.export' in line:
                     if 'project' in line:
                         if 'file_sequence' in line:
-                            export_button.text = 'Project: File Sequence'
+                            tab_widgets['preset_type_menu'].text = 'Project: File Sequence'
                             print('Saved Preset Type: Project File Seq')
                         elif 'movie_file' in line:
-                            export_button.text = 'Project: Movie'
+                            tab_widgets['preset_type_menu'].text = 'Project: Movie'
                             print('Saved Preset Type: Project Movie File')
                     if 'shared' in line:
                         if 'file_sequence' in line:
-                            export_button.text = 'Shared: File Sequence'
+                            tab_widgets['preset_type_menu'].text = 'Shared: File Sequence'
                             print('Saved Preset Type: Shared File Seq')
                         elif 'movie_file' in line:
-                            export_button.text = 'Shared: Movie'
+                            tab_widgets['preset_type_menu'].text = 'Shared: Movie'
                             print('Saved Preset Type: Shared Movie File')
 
-        def disable_ui_elements(enable_btn, saved_preset_type_label, saved_presets_label, export_path_label, export_path_entry, top_layer_button, foreground_button, between_marks_button, token_button, export_button, server_button, saved_presets_button, include_subtitles_button, subtitles_export_mode_button, subtitles_tracks_button):
+            # Enable Import Export only for Movie preset types; clear checked for File Sequence
+            if tab_widgets['preset_type_menu'].text in ('Project: Movie', 'Shared: Movie'):
+                tab_widgets['import_export_pushbutton'].enabled = True
+            else:
+                tab_widgets['import_export_pushbutton'].enabled = False
+                tab_widgets['import_export_pushbutton'].checked = False
+                print('Import Export: disabled (File Sequence preset)')
 
-            # Disable UI elements
-            enable_btn.checked = False
-            saved_preset_type_label.enabled = False
-            saved_presets_label.enabled = False
-            export_path_label.enabled = False
-            export_path_entry.text = ''
-            export_path_entry.enabled = False
-            top_layer_button.enabled = False
-            foreground_button.enabled = False
-            between_marks_button.enabled = False
-            token_button.enabled = False
-            export_button.enabled = False
-            server_button.enabled = False
-            saved_presets_button.enabled = False
-            include_subtitles_button.enabled = False
-            subtitles_export_mode_button.enabled = False
-            subtitles_tracks_button.enabled = False
+        def disable_ui_elements(tab_widgets: dict) -> None:
+            """
+            Disable UI Elements
+            ===================
+
+            Disable all UI elements for a preset tab that failed to load.
+
+            Args:
+            -----
+                tab_widgets (dict):
+                    Widget dict for the preset tab.
+            """
+
+            tab_widgets['enable_pushbutton'].checked = False
+            tab_widgets['export_path_entry'].text = ''
+            for key in _TW_TOGGLEABLE:
+                tab_widgets[key].enabled = False
 
         print('Loading Preset...\n')
 
@@ -1505,66 +1480,38 @@ class ExportMenuSetup:
             self.edit_reveal_in_finder_pushbutton.checked = False
             print('Reveal in Finder: False')
 
-        # Get preset UI settings. If none are found, disable UI for that tab
+        # Load preset info for tab 1 (always present)
+        tab_preset_nums = ['One', 'Two', 'Three', 'Four', 'Five']
 
-        get_preset_info('One', None, self.edit_saved_presets_label_01, self.edit_saved_presets_label_01, self.edit_export_path_label_01, self.edit_export_path_entry_01, self.edit_top_layer_pushbutton_01, self.edit_foreground_pushbutton_01, self.edit_between_marks_pushbutton_01, self.edit_token_pushbutton_01, self.edit_preset_type_menu_01, self.edit_server_browse_button_01, self.edit_presets_menu_01, self.edit_include_subtitles_pushbutton_01, self.edit_subtitles_export_mode_menu_01, self.edit_subtitles_tracks_menu_01)
-        preset_01_push_btn_text = self.edit_presets_menu_01.text
+        get_preset_info(tab_preset_nums[0], self.edit_tab_widgets[0])
+        preset_menu_texts = [self.edit_tab_widgets[0]['presets_menu'].text]
 
-        try:
-            get_preset_info('Two', self.edit_enable_preset_pushbutton_02, self.edit_saved_preset_type_label_02, self.edit_saved_presets_label_02, self.edit_export_path_label_02, self.edit_export_path_entry_02, self.edit_top_layer_pushbutton_02, self.edit_foreground_pushbutton_02, self.edit_between_marks_pushbutton_02, self.edit_token_pushbutton_02, self.edit_preset_type_menu_02, self.edit_server_browse_button_02, self.edit_presets_menu_02, self.edit_include_subtitles_pushbutton_02, self.edit_subtitles_export_mode_menu_02, self.edit_subtitles_tracks_menu_02)
-            preset_02_push_btn_text = self.edit_presets_menu_02.text
-        except:
-            # Disable UI elements if nothing loaded for preset two
-            disable_ui_elements(self.edit_enable_preset_pushbutton_02, self.edit_saved_preset_type_label_02, self.edit_saved_presets_label_02, self.edit_export_path_label_02, self.edit_export_path_entry_02, self.edit_top_layer_pushbutton_02, self.edit_foreground_pushbutton_02, self.edit_between_marks_pushbutton_02, self.edit_token_pushbutton_02, self.edit_preset_type_menu_02, self.edit_server_browse_button_02, self.edit_presets_menu_02, self.edit_include_subtitles_pushbutton_02, self.edit_subtitles_export_mode_menu_02, self.edit_subtitles_tracks_menu_02)
-        try:
-            get_preset_info('Three', self.edit_enable_preset_pushbutton_03, self.edit_saved_preset_type_label_03, self.edit_saved_presets_label_03, self.edit_export_path_label_03, self.edit_export_path_entry_03, self.edit_top_layer_pushbutton_03, self.edit_foreground_pushbutton_03, self.edit_between_marks_pushbutton_03, self.edit_token_pushbutton_03, self.edit_preset_type_menu_03, self.edit_server_browse_button_03, self.edit_presets_menu_03, self.edit_include_subtitles_pushbutton_03, self.edit_subtitles_export_mode_menu_03, self.edit_subtitles_tracks_menu_03)
-            preset_03_push_btn_text = self.edit_presets_menu_03.text
-        except:
-            # Disable UI elements if nothing loaded for preset three
-            disable_ui_elements(self.edit_enable_preset_pushbutton_03, self.edit_saved_preset_type_label_03, self.edit_saved_presets_label_03, self.edit_export_path_label_03, self.edit_export_path_entry_03, self.edit_top_layer_pushbutton_03, self.edit_foreground_pushbutton_03, self.edit_between_marks_pushbutton_03, self.edit_token_pushbutton_03, self.edit_preset_type_menu_03, self.edit_server_browse_button_03, self.edit_presets_menu_03, self.edit_include_subtitles_pushbutton_03, self.edit_subtitles_export_mode_menu_03, self.edit_subtitles_tracks_menu_03)
-        try:
-            get_preset_info('Four', self.edit_enable_preset_pushbutton_04, self.edit_saved_preset_type_label_04, self.edit_saved_presets_label_04, self.edit_export_path_label_04, self.edit_export_path_entry_04, self.edit_top_layer_pushbutton_04, self.edit_foreground_pushbutton_04, self.edit_between_marks_pushbutton_04, self.edit_token_pushbutton_04, self.edit_preset_type_menu_04, self.edit_server_browse_button_04, self.edit_presets_menu_04, self.edit_include_subtitles_pushbutton_04, self.edit_subtitles_export_mode_menu_04, self.edit_subtitles_tracks_menu_04)
-            preset_04_push_btn_text = self.edit_presets_menu_04.text
-        except:
-            # Disable UI elements if nothing loaded for preset four
-            disable_ui_elements(self.edit_enable_preset_pushbutton_04, self.edit_saved_preset_type_label_04, self.edit_saved_presets_label_04, self.edit_export_path_label_04, self.edit_export_path_entry_04, self.edit_top_layer_pushbutton_04, self.edit_foreground_pushbutton_04, self.edit_between_marks_pushbutton_04, self.edit_token_pushbutton_04, self.edit_preset_type_menu_04, self.edit_server_browse_button_04, self.edit_presets_menu_04, self.edit_include_subtitles_pushbutton_04, self.edit_subtitles_export_mode_menu_04, self.edit_subtitles_tracks_menu_04)
-        try:
-            get_preset_info('Five', self.edit_enable_preset_pushbutton_05, self.edit_saved_preset_type_label_05, self.edit_saved_presets_label_05, self.edit_export_path_label_05, self.edit_export_path_entry_05, self.edit_top_layer_pushbutton_05, self.edit_foreground_pushbutton_05, self.edit_between_marks_pushbutton_05, self.edit_token_pushbutton_05, self.edit_preset_type_menu_05, self.edit_server_browse_button_05, self.edit_presets_menu_05, self.edit_include_subtitles_pushbutton_05, self.edit_subtitles_export_mode_menu_05, self.edit_subtitles_tracks_menu_05)
-            preset_05_push_btn_text = self.edit_presets_menu_05.text
-        except:
-            # Disable UI elements if nothing loaded for preset five
-            disable_ui_elements(self.edit_enable_preset_pushbutton_05, self.edit_saved_preset_type_label_05, self.edit_saved_presets_label_05, self.edit_export_path_label_05, self.edit_export_path_entry_05, self.edit_top_layer_pushbutton_05, self.edit_foreground_pushbutton_05, self.edit_between_marks_pushbutton_05, self.edit_token_pushbutton_05, self.edit_preset_type_menu_05, self.edit_server_browse_button_05, self.edit_presets_menu_05, self.edit_include_subtitles_pushbutton_05, self.edit_subtitles_export_mode_menu_05, self.edit_subtitles_tracks_menu_05)
+        # Load preset info for tabs 2-5; disable tab if preset not found in the menu file
+        for i in range(1, 5):
+            try:
+                get_preset_info(tab_preset_nums[i], self.edit_tab_widgets[i])
+                preset_menu_texts.append(self.edit_tab_widgets[i]['presets_menu'].text)
+            except Exception:
+                disable_ui_elements(self.edit_tab_widgets[i])
+                preset_menu_texts.append(None)
 
-        self.edit_presets_menu_01.text = preset_01_push_btn_text
-        try:
-            self.edit_presets_menu_02.text = preset_02_push_btn_text
-        except:
-            pass
-        try:
-            self.edit_presets_menu_03.text = preset_03_push_btn_text
-        except:
-            pass
-        try:
-            self.edit_presets_menu_04.text = preset_04_push_btn_text
-        except:
-            pass
-        try:
-            self.edit_presets_menu_05.text = preset_05_push_btn_text
-        except:
-            pass
+        # Restore preset menu texts (they may be overwritten during the export type detection pass)
+        for i, text in enumerate(preset_menu_texts):
+            if text is not None:
+                self.edit_tab_widgets[i]['presets_menu'].text = text
 
         print('\n--> Existing export presets loaded.\n')
 
-    def directory_path_browse(self, entry: PyFlameEntry, window_to_hide: PyFlameWindow) -> None:
+    def path_browse(self, entry: PyFlameEntry, window_to_hide: list) -> None:
         """
-        Directory Path Browse
-        =====================
+        Path Browse
+        ===========
 
-        Opens a file browser dialog to select a directory and sets the entry text to the selected directory.
+        Opens a file browser dialog to select a path and sets the entry text to the selected path.
 
         Args:
             entry (PyFlameEntry): Entry widget to set the path text.
-            window_to_hide (PyFlameWindow): Window to hide while the file browser dialog is open.
+            window_to_hide (list): List containing the window to hide while the file browser dialog is open.
         """
 
         try:
@@ -1576,11 +1523,26 @@ class ExportMenuSetup:
                 )
 
             if path:
-                entry.text = path
+                entry.text = str(path)
         except Exception as e:
-            print(f"An error occurred while browsing for a directory: {e}")
+            print(f'An error occurred while browsing for a directory: {e}')
 
     def save_menus(self, tab) -> None:
+        """
+        Save Menus
+        ==========
+
+        Build and save a Flame right-click export menu Python script from the current UI settings.
+
+        Called when the user clicks the Create or Save button. Collects settings from all
+        preset tabs, validates them, generates the menu script from the template, and writes
+        it to either the project or shared menus directory.
+
+        Args:
+        -----
+            tab (str):
+                'Create' when saving a new menu, 'Edit' when overwriting an existing one.
+        """
 
         def get_tab_settings(tab: str) -> dict:
             """
@@ -1597,152 +1559,56 @@ class ExportMenuSetup:
             """
 
             if tab == 'Create':
-                settings_dict = {
-                    'create_tab_zero':{
-                        'Menu Visibility': self.menu_visibility_menu.text,
-                        'Menu Name': self.menu_name_entry.text,
-                        'Reveal in MediaHub': self.reveal_in_mediahub_pushbutton.checked,
-                        'Reveal in Finder': self.reveal_in_finder_pushbutton.checked,
-                        },
-                    'create_tab_one': {
-                        'Enabled' : True,
-                        'Preset Type Menu' : self.preset_type_menu_01.text,
-                        'Preset Menu' : self.presets_menu_01.text,
-                        'Export Path' : self.export_path_entry_01.text,
-                        'Top Layer' : self.top_layer_pushbutton_01.checked,
-                        'Foreground Export' : self.foreground_pushbutton_01.checked,
-                        'Export Between Marks' : self.between_marks_pushbutton_01.checked,
-                        'Include Subtitles' : self.include_subtitles_pushbutton_01.checked,
-                        'Subtitles Export Mode': self.subtitles_export_mode_menu_01.text,
-                        'Subtitles Tracks': self.subtitles_tracks_menu_01.text,
-                        },
-                    'create_tab_two': {
-                        'Enabled' : self.enable_preset_pushbutton_02.checked,
-                        'Preset Type Menu' : self.preset_type_menu_02.text,
-                        'Preset Menu' : self.presets_menu_02.text,
-                        'Export Path' : self.export_path_entry_02.text,
-                        'Top Layer' : self.top_layer_pushbutton_02.checked,
-                        'Foreground Export' : self.foreground_pushbutton_02.checked,
-                        'Export Between Marks' : self.between_marks_pushbutton_02.checked,
-                        'Include Subtitles' : self.include_subtitles_pushbutton_02.checked,
-                        'Subtitles Export Mode': self.subtitles_export_mode_menu_02.text,
-                        'Subtitles Tracks': self.subtitles_tracks_menu_02.text,
-                        },
-                    'create_tab_three': {
-                        'Enabled' : self.enable_preset_pushbutton_03.checked,
-                        'Preset Type Menu' : self.preset_type_menu_03.text,
-                        'Preset Menu' : self.presets_menu_03.text,
-                        'Export Path' : self.export_path_entry_03.text,
-                        'Top Layer' : self.top_layer_pushbutton_03.checked,
-                        'Foreground Export' : self.foreground_pushbutton_03.checked,
-                        'Export Between Marks' : self.between_marks_pushbutton_03.checked,
-                        'Include Subtitles' : self.include_subtitles_pushbutton_03.checked,
-                        'Subtitles Export Mode': self.subtitles_export_mode_menu_03.text,
-                        'Subtitles Tracks': self.subtitles_tracks_menu_03.text,
-                        },
-                    'create_tab_four': {
-                        'Enabled' : self.enable_preset_pushbutton_04.checked,
-                        'Preset Type Menu' : self.preset_type_menu_04.text,
-                        'Preset Menu' : self.presets_menu_04.text,
-                        'Export Path' : self.export_path_entry_04.text,
-                        'Top Layer' : self.top_layer_pushbutton_04.checked,
-                        'Foreground Export' : self.foreground_pushbutton_04.checked,
-                        'Export Between Marks' : self.between_marks_pushbutton_04.checked,
-                        'Include Subtitles' : self.include_subtitles_pushbutton_04.checked,
-                        'Subtitles Export Mode': self.subtitles_export_mode_menu_04.text,
-                        'Subtitles Tracks': self.subtitles_tracks_menu_04.text,
-                        },
-                    'create_tab_five': {
-                        'Enabled' : self.enable_preset_pushbutton_05.checked,
-                        'Preset Type Menu' : self.preset_type_menu_05.text,
-                        'Preset Menu' : self.presets_menu_05.text,
-                        'Export Path' : self.export_path_entry_05.text,
-                        'Top Layer' : self.top_layer_pushbutton_05.checked,
-                        'Foreground Export' : self.foreground_pushbutton_05.checked,
-                        'Export Between Marks' : self.between_marks_pushbutton_05.checked,
-                        'Include Subtitles' : self.include_subtitles_pushbutton_05.checked,
-                        'Subtitles Export Mode': self.subtitles_export_mode_menu_05.text,
-                        'Subtitles Tracks': self.subtitles_tracks_menu_05.text,
-                        }
-                    }
-            elif tab == 'Edit':
-                settings_dict = {
-                    'edit_tab_zero':{
-                        'Menu Visibility': self.edit_menu_visibility_menu.text,
-                        'Menu Name': self.edit_menu_name_entry.text,
-                        'Reveal in MediaHub': self.edit_reveal_in_mediahub_pushbutton.checked,
-                        'Reveal in Finder': self.edit_reveal_in_finder_pushbutton.checked,
-                        },
-                    'edit_tab_one': {
-                        'Enabled' : True,
-                        'Preset Type Menu' : self.edit_preset_type_menu_01.text,
-                        'Preset Menu' : self.edit_presets_menu_01.text,
-                        'Export Path' : self.edit_export_path_entry_01.text,
-                        'Top Layer' : self.edit_top_layer_pushbutton_01.checked,
-                        'Foreground Export' : self.edit_foreground_pushbutton_01.checked,
-                        'Export Between Marks' : self.edit_between_marks_pushbutton_01.checked,
-                        'Include Subtitles' : self.edit_include_subtitles_pushbutton_01.checked,
-                        'Subtitles Export Mode': self.edit_subtitles_export_mode_menu_01.text,
-                        'Subtitles Tracks': self.edit_subtitles_tracks_menu_01.text,
-                        },
-                    'edit_tab_two': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_02.checked,
-                        'Preset Type Menu' : self.edit_preset_type_menu_02.text,
-                        'Preset Menu' : self.edit_presets_menu_02.text,
-                        'Export Path' : self.edit_export_path_entry_02.text,
-                        'Top Layer' : self.edit_top_layer_pushbutton_02.checked,
-                        'Foreground Export' : self.edit_foreground_pushbutton_02.checked,
-                        'Export Between Marks' : self.edit_between_marks_pushbutton_02.checked,
-                        'Include Subtitles' : self.edit_include_subtitles_pushbutton_02.checked,
-                        'Subtitles Export Mode': self.edit_subtitles_export_mode_menu_02.text,
-                        'Subtitles Tracks': self.edit_subtitles_tracks_menu_02.text,
-                        },
-                    'edit_tab_three': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_03.checked,
-                        'Preset Type Menu' : self.edit_preset_type_menu_03.text,
-                        'Preset Menu' : self.edit_presets_menu_03.text,
-                        'Export Path' : self.edit_export_path_entry_03.text,
-                        'Top Layer' : self.edit_top_layer_pushbutton_03.checked,
-                        'Foreground Export' : self.edit_foreground_pushbutton_03.checked,
-                        'Export Between Marks' : self.edit_between_marks_pushbutton_03.checked,
-                        'Include Subtitles' : self.edit_include_subtitles_pushbutton_03.checked,
-                        'Subtitles Export Mode': self.edit_subtitles_export_mode_menu_03.text,
-                        'Subtitles Tracks': self.edit_subtitles_tracks_menu_03.text,
-                        },
-                    'edit_tab_four': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_04.checked,
-                        'Preset Type Menu' : self.edit_preset_type_menu_04.text,
-                        'Preset Menu' : self.edit_presets_menu_04.text,
-                        'Export Path' : self.edit_export_path_entry_04.text,
-                        'Top Layer' : self.edit_top_layer_pushbutton_04.checked,
-                        'Foreground Export' : self.edit_foreground_pushbutton_04.checked,
-                        'Export Between Marks' : self.edit_between_marks_pushbutton_04.checked,
-                        'Include Subtitles' : self.edit_include_subtitles_pushbutton_04.checked,
-                        'Subtitles Export Mode': self.edit_subtitles_export_mode_menu_04.text,
-                        'Subtitles Tracks': self.edit_subtitles_tracks_menu_04.text,
-                        },
-                    'edit_tab_five': {
-                        'Enabled' : self.edit_enable_preset_pushbutton_05.checked,
-                        'Preset Type Menu' : self.edit_preset_type_menu_05.text,
-                        'Preset Menu' : self.edit_presets_menu_05.text,
-                        'Export Path' : self.edit_export_path_entry_05.text,
-                        'Top Layer' : self.edit_top_layer_pushbutton_05.checked,
-                        'Foreground Export' : self.edit_foreground_pushbutton_05.checked,
-                        'Export Between Marks' : self.edit_between_marks_pushbutton_05.checked,
-                        'Include Subtitles' : self.edit_include_subtitles_pushbutton_05.checked,
-                        'Subtitles Export Mode': self.edit_subtitles_export_mode_menu_05.text,
-                        'Subtitles Tracks': self.edit_subtitles_tracks_menu_05.text,
-                        }
+                prefix = 'create'
+                tab_widgets_list = self.create_tab_widgets
+                visibility_menu  = self.menu_visibility_menu
+                menu_name_entry  = self.menu_name_entry
+                reveal_mediahub  = self.reveal_in_mediahub_pushbutton
+                reveal_finder    = self.reveal_in_finder_pushbutton
+            else:
+                prefix = 'edit'
+                tab_widgets_list = self.edit_tab_widgets
+                visibility_menu  = self.edit_menu_visibility_menu
+                menu_name_entry  = self.edit_menu_name_entry
+                reveal_mediahub  = self.edit_reveal_in_mediahub_pushbutton
+                reveal_finder    = self.edit_reveal_in_finder_pushbutton
+
+            settings_dict = {
+                f'{prefix}_tab_zero': {
+                    'Menu Visibility':    visibility_menu.text,
+                    'Menu Name':          menu_name_entry.text,
+                    'Reveal in MediaHub': reveal_mediahub.checked,
+                    'Reveal in Finder':   reveal_finder.checked,
+                    },
+                }
+
+            tab_names = ['one', 'two', 'three', 'four', 'five']
+
+            for i, name in enumerate(tab_names):
+                tw = tab_widgets_list[i]
+                settings_dict[f'{prefix}_tab_{name}'] = {
+                    'Enabled':               True if i == 0 else tw['enable_pushbutton'].checked,
+                    'Preset Type Menu':      tw['preset_type_menu'].text,
+                    'Preset Menu':           tw['presets_menu'].text,
+                    'Export Path':           tw['export_path_entry'].text,
+                    'Top Layer':             tw['top_layer_pushbutton'].checked,
+                    'Foreground Export':     tw['foreground_pushbutton'].checked,
+                    'Export Between Marks':  tw['between_marks_pushbutton'].checked,
+                    'Import Export':         tw['import_export_pushbutton'].checked,
+                    'Include Subtitles':     tw['include_subtitles_pushbutton'].checked,
+                    'Subtitles Export Mode': tw['subtitles_export_mode_menu'].text,
+                    'Subtitles Tracks':      tw['subtitles_tracks_menu'].text,
                     }
 
             return settings_dict
 
-        def preset_check(tab_options_dict: dict) -> str:
+        def preset_check(tab_options_dict: dict) -> str | None:
             """
             Preset Check
             ============
 
             Check settings for each tab and return error message if any are found.
+            Returns None if all settings are valid.
 
             Args:
             -----
@@ -1751,39 +1617,32 @@ class ExportMenuSetup:
 
             Returns:
             --------
-                str: error message
+                str | None: error message, or None if no errors found
             """
 
             main_tab = str(next(iter(tab_options_dict))).split('_', 1)[0]
 
-            # Check Menu Name entry
             if main_tab == 'create':
                 if not self.menu_name_entry.text:
                     return 'Add menu name'
+                visibility_text = self.menu_visibility_menu.text
             else:
                 if not self.edit_menu_name_entry.text:
                     return 'Add menu name'
+                visibility_text = self.edit_menu_visibility_menu.text
 
             for key, value in tab_options_dict.items():
                 tab_number = key.rsplit('_', 1)[1].capitalize()
                 if tab_number != 'Zero':
 
-                    # If tab is enabled, check settings
-                    if value['Enabled'] == True:
+                    if value['Enabled']:
 
-                        # Make sure on Shared saved presets are used with shared visibility menus
-                        if main_tab == 'create':
-                            if 'Shared' in self.menu_visibility_menu.text and 'Shared:' not in value['Preset Type Menu']:
-                                return f'Preset {tab_number}: Only a SHARED Saved Preset can be added to a Menu with Shared Menu Visibility.'
-                        else:
-                            if 'Shared' in self.edit_menu_visibility_menu.text and 'Shared:' not in value['Preset Type Menu']:
-                                return f'Preset {tab_number}: Only a SHARED Saved Preset can be added to a Menu with Shared Menu Visibility.'
+                        if 'Shared' in visibility_text and 'Shared:' not in value['Preset Type Menu']:
+                            return f'Preset {tab_number}: Only a SHARED Saved Preset can be added to a Menu with Shared Menu Visibility.'
 
-                        # Give message if trying to save with No Save Presets Found
                         if value['Preset Menu'] == 'No Saved Presets Found':
                             return f'Preset {tab_number}: No saved preset selected. Select a different Preset Type or save a preset in Flame.'
 
-                        # Check path entry
                         if not value['Export Path']:
                             return f'Preset {tab_number}: Enter export path.'
 
@@ -1801,7 +1660,6 @@ class ExportMenuSetup:
                     menu_save_path (str): menu save path
             """
 
-            # Set path for new menu file
             if menu_visibility == 'Project':
                 menu_save_dir = os.path.join(self.project_menus_dir, self.flame_project_name)
                 menu_flame_project = self.flame_project_name
@@ -1813,7 +1671,6 @@ class ExportMenuSetup:
                 os.makedirs(menu_save_dir)
 
             menu_file_name = menu_name.replace('.', '_') + '.py'
-
             menu_save_path = os.path.join(menu_save_dir, menu_file_name)
 
             return menu_flame_project, menu_save_path
@@ -1831,16 +1688,14 @@ class ExportMenuSetup:
                     template token dictionary
             """
 
-            # Create dictionary for tokens in menu template with values from main tab
-            main_tab_token_dict = {}
-            main_tab_token_dict['<FlameProject>'] = menu_flame_project
-            main_tab_token_dict['<PresetName>'] = menu_name
-            main_tab_token_dict['<PresetType>'] = menu_visibility
-            main_tab_token_dict['<RevealInMediaHub>'] = reveal_in_mediahub
-            main_tab_token_dict['<RevealInFinder>'] = reveal_in_finder
-            main_tab_token_dict['<FlameMinMaxVersion>'] = self.flame_min_max_version
-
-            return main_tab_token_dict
+            return {
+                '<FlameProject>':       menu_flame_project,
+                '<PresetName>':         menu_name,
+                '<PresetType>':         menu_visibility,
+                '<RevealInMediaHub>':   reveal_in_mediahub,
+                '<RevealInFinder>':     reveal_in_finder,
+                '<FlameMinMaxVersion>': self.flame_min_max_version,
+                }
 
         def menu_template_preset_lines(tab_options_dict: dict) -> list:
             """
@@ -1862,7 +1717,6 @@ class ExportMenuSetup:
 
             def get_preset_path(preset_type_menu: str, preset_menu: str) -> str:
 
-                # Get selected preset path
                 if 'Project' in preset_type_menu:
                     preset_path = self.project_preset_path
                 else:
@@ -1873,26 +1727,21 @@ class ExportMenuSetup:
                 else:
                     preset_dir_path = preset_path + '/file_sequence'
 
-                preset_file_path = os.path.join(preset_dir_path, preset_menu) + '.xml'
-
-                #print('preset path:', preset_file_path, '\n')
-
-                return preset_file_path
+                return os.path.join(preset_dir_path, preset_menu) + '.xml'
 
             def new_lines(tab_number: str,
                           top_layer: str,
                           foreground_export: str,
                           export_between_marks: str,
+                          import_export_value: bool,
                           include_subtitles: str,
                           subtitles_export_mode: str,
                           subtitles_tracks: str,
                           export_path: str,
-                          preset_file_path: str) -> list:
+                          preset_file_path: str) -> None:
                 """
-                Build new lines to be added to menu template. Add subtitle lines if Flame is 2024.2 or later.
-
-                Returns:
-                    list: menu_lines
+                Build new lines to be added to menu template.
+                Appends generated lines to the outer ``menu_lines`` list in place.
                 """
 
                 menu_lines.append("")
@@ -1910,30 +1759,21 @@ class ExportMenuSetup:
                 menu_lines.append(f"        clip_output.export_between_marks = {export_between_marks}")
                 menu_lines.append(f"        print('--> Export between marks: {export_between_marks}\\n')")
 
-                # Add lines for subtitles if version of Flame is 2024.2 or greater.
-                if self.flame_version >= 2024.2:
-                    menu_lines.append("")
-                    menu_lines.append("        # Include subtitles")
-                    menu_lines.append(f"        clip_output.include_subtitles = {include_subtitles}")
-                    menu_lines.append(f"        print('--> Include subtitles: {include_subtitles}\\n')")
-                    menu_lines.append("")
-                    # Subtitles export mode: 'Burn in Image = False, 'Export as Files' = True
-                    if subtitles_export_mode == 'Burn in Image':
-                        subtitles_export_mode = False
-                    else:
-                        subtitles_export_mode = True
-                    menu_lines.append("        # Subtitles export mode")
-                    menu_lines.append(f"        clip_output.export_subtitles_as_files = {subtitles_export_mode}")
-                    menu_lines.append(f"        print('--> Subtitles export mode: {subtitles_export_mode}\\n')")
-                    menu_lines.append("")
-                    # Subtitles tracks: 'Current Subtitles Track' = False, 'All Subtitles Tracks' = True
-                    if subtitles_tracks == 'All Subtitles Tracks':
-                        subtitles_tracks = True
-                    else:
-                        subtitles_tracks = False
-                    menu_lines.append("        # Subtitles tracks")
-                    menu_lines.append(f"        clip_output.export_all_subtitles = {subtitles_tracks}")
-                    menu_lines.append(f"        print('--> Subtitles tracks: {subtitles_tracks}\\n')")
+                menu_lines.append("")
+                menu_lines.append("        # Include subtitles")
+                menu_lines.append(f"        clip_output.include_subtitles = {include_subtitles}")
+                menu_lines.append(f"        print('--> Include subtitles: {include_subtitles}\\n')")
+                menu_lines.append("")
+                # Convert menu text selections to the bool values used in the generated script
+                export_as_files = subtitles_export_mode != 'Burn in Image'
+                export_all_tracks = subtitles_tracks == 'All Subtitles Tracks'
+                menu_lines.append("        # Subtitles export mode")
+                menu_lines.append(f"        clip_output.export_subtitles_as_files = {export_as_files}")
+                menu_lines.append(f"        print('--> Subtitles export mode: {export_as_files}\\n')")
+                menu_lines.append("")
+                menu_lines.append("        # Subtitles tracks")
+                menu_lines.append(f"        clip_output.export_all_subtitles = {export_all_tracks}")
+                menu_lines.append(f"        print('--> Subtitles tracks: {export_all_tracks}\\n')")
 
                 menu_lines.append("")
                 menu_lines.append("        # Translate tokens in path")
@@ -1955,8 +1795,33 @@ class ExportMenuSetup:
                 menu_lines.append("                )")
                 menu_lines.append("                return")
                 menu_lines.append("")
+                menu_lines.append(f"        import_export = {import_export_value}")
+                menu_lines.append("")
+                menu_lines.append(f"        if import_export:")
+                menu_lines.append(f"            # Drop a marker file in the export directory to capture the server's clock")
+                menu_lines.append(f"            marker_fd, marker_path = tempfile.mkstemp(prefix='.flame_export_marker_', dir=new_export_path)")
+                menu_lines.append(f"            os.close(marker_fd)")
+                menu_lines.append(f"            export_start_time = os.path.getmtime(marker_path)")
+                menu_lines.append(f"            os.remove(marker_path)")
+                menu_lines.append("")
+
                 menu_lines.append(f"        clip_output.export(clip, '{preset_file_path}', new_export_path)")
                 menu_lines.append("")
+
+                menu_lines.append(f"        if import_export:")
+                menu_lines.append(f"            # Walk the entire tree to find .mov files modified at or after the marker's timestamp")
+                menu_lines.append(f"            exported_files = []")
+                menu_lines.append(f"            for dirpath, dirnames, filenames in os.walk(new_export_path):")
+                menu_lines.append(f"                for f in filenames:")
+                menu_lines.append(f"                    if f.lower().endswith('.mov'):")
+                menu_lines.append(f"                        full_path = os.path.join(dirpath, f)")
+                menu_lines.append(f"                        if os.path.getmtime(full_path) >= export_start_time:")
+                menu_lines.append(f"                            exported_files.append(full_path)")
+                menu_lines.append(f"            for path in sorted(exported_files):")
+                menu_lines.append(f"                flame.import_clips(path, clip.parent)")
+                menu_lines.append(f"                pyflame.print('Imported clip back into Flame.')")
+                menu_lines.append("")
+
                 menu_lines.append(f"        # Export preset {tab_number} END")
                 menu_lines.append("")
 
@@ -1964,13 +1829,23 @@ class ExportMenuSetup:
 
             print('tab options dict:', tab_options_dict, '\n')
 
-            # Loop through tabs to build preset menus
             for key, value in tab_options_dict.items():
                 tab_number = key.rsplit('_', 1)[1].capitalize()
                 if tab_number != 'Zero':
-                    if value['Enabled'] == True:
+                    if value['Enabled']:
                         preset_file_path = get_preset_path(value['Preset Type Menu'], value['Preset Menu'])
-                        new_lines(tab_number, value['Top Layer'], value['Foreground Export'], value['Export Between Marks'], value['Include Subtitles'], value['Subtitles Export Mode'], value['Subtitles Tracks'], value['Export Path'], preset_file_path)
+                        new_lines(
+                            tab_number,
+                            value['Top Layer'],
+                            value['Foreground Export'],
+                            value['Export Between Marks'],
+                            value['Import Export'],
+                            value['Include Subtitles'],
+                            value['Subtitles Export Mode'],
+                            value['Subtitles Tracks'],
+                            value['Export Path'],
+                            preset_file_path,
+                            )
 
             return menu_lines
 
@@ -1982,23 +1857,26 @@ class ExportMenuSetup:
             Save settings from main tab to config file.
             """
 
+            tw = self.create_tab_widgets[0]
             self.settings.save_config(
                 config_values={
-                    'export_path': self.export_path_entry_01.text,
-                    'use_top_layer': self.top_layer_pushbutton_01.checked,
-                    'export_in_foreground': self.foreground_pushbutton_01.checked,
-                    'export_between_marks': self.between_marks_pushbutton_01.checked,
-                    'reveal_in_mediahub': self.reveal_in_mediahub_pushbutton.checked,
-                    'reveal_in_finder': self.reveal_in_finder_pushbutton.checked,
+                    'export_path':           tw['export_path_entry'].text,
+                    'use_top_layer':         tw['top_layer_pushbutton'].checked,
+                    'export_in_foreground':  tw['foreground_pushbutton'].checked,
+                    'export_between_marks':  tw['between_marks_pushbutton'].checked,
+                    'import_export':         tw['import_export_pushbutton'].checked,
+                    'reveal_in_mediahub':    self.reveal_in_mediahub_pushbutton.checked,
+                    'reveal_in_finder':      self.reveal_in_finder_pushbutton.checked,
                     }
                 )
 
-        def get_original_menu_file_path(tab: str) -> str:
+        def get_original_menu_file_path(tab: str) -> str | None:
             """
             Get Original Menu File Path
             ===========================
 
-            Get path to original menu file.
+            Get path to the original menu file when editing an existing menu.
+            Returns None when creating a new menu (tab is not 'Edit').
 
             Args:
             -----
@@ -2007,30 +1885,92 @@ class ExportMenuSetup:
 
             Returns:
             --------
-                original_menu_file (str):
-                    original menu file path
+                str | None:
+                    original menu file path, or None if tab is not 'Edit'
             """
 
-            if tab == 'Edit':
-                original_menu_name = self.edit_saved_export_menu_menu.text.split(' ', 1)[1]
-            else:
-                original_menu_name = None
+            if tab != 'Edit':
+                return None
 
-            if original_menu_name:
-                if 'Shared: ' in self.edit_saved_export_menu_menu.text:
-                    original_menu_file = os.path.join(self.shared_menus_dir, original_menu_name + '.py')
-                else:
-                    original_menu_file = os.path.join(self.project_menus_dir, self.flame_project_name, original_menu_name + '.py')
-            else:
-                original_menu_file = None
+            original_menu_name = self.edit_saved_export_menu_menu.text.split(' ', 1)[1]
 
-            return original_menu_file
+            if 'Shared: ' in self.edit_saved_export_menu_menu.text:
+                return os.path.join(self.shared_menus_dir, original_menu_name + '.py')
+            return os.path.join(self.project_menus_dir, self.flame_project_name, original_menu_name + '.py')
 
-        original_menu_file_path = get_original_menu_file_path(tab)
-        #print('Original menu file path:', original_menu_file_path, '\n')
+        def load_menu_template() -> list:
+            """
+            Load Menu Template
+            ==================
 
-        # Crate dictionary of all tab settings
-        tab_options_dict = get_tab_settings(tab)
+            Open menu template and return as list of lines.
+
+            Returns:
+            --------
+                template_lines (list):
+                    menu template lines
+            """
+
+            with open(self.menu_template_path, 'r') as f:
+                template_lines = f.read().splitlines()
+            return template_lines
+
+        def replace_main_tab_tokens() -> list:
+            """
+            Replace Main Tab Tokens
+            =======================
+
+            Replace tokens in menu template with values from main tab token dictionary.
+
+            Returns:
+            --------
+                template_lines (list):
+                    menu template lines with tokens replaced
+            """
+
+            for key, value in main_tab_token_dict.items():
+                for idx, line in enumerate(template_lines):
+                    if key in line:
+                        template_lines[idx] = re.sub(key, value, line)
+
+            return template_lines
+
+        def insert_menu_lines() -> list:
+            """
+            Insert Menu Lines
+            =================
+
+            Insert new preset menu lines into template.
+
+            Returns:
+            --------
+                template_lines (list):
+                    template lines with new preset menu lines inserted
+            """
+
+            for i in range(len(template_lines)):
+                if template_lines[i] == '    for clip in selection:':
+                    i += 1
+                    for line in menu_lines:
+                        template_lines.insert(i, line)
+                        i += 1
+
+            return template_lines
+
+        def delete_original_menu_file() -> None:
+            """
+            Delete Original Menu File
+            =========================
+
+            Delete original menu file if tab is 'Edit'.
+            """
+
+            if original_menu_file_path:
+                os.remove(original_menu_file_path)
+                try:
+                    os.remove(original_menu_file_path + 'c')
+                except Exception:
+                    pass
 
         def get_main_tab_values(tab_options_dict: dict) -> tuple:
             """
@@ -2046,24 +1986,28 @@ class ExportMenuSetup:
 
             Returns:
             --------
-                menu_visibility, menu_name, reveal_in_mediahub, reveal_in_finder (tuple):
-                    menu_visibility (str): 'Project' or 'Shared'
-                    menu_name (str): menu name
-                    reveal_in_mediahub (str): 'True' or 'False'
-                    reveal_in_finder (str): 'True' or 'False'
+                menu_visibility, menu_name, reveal_in_mediahub, reveal_in_finder (tuple)
             """
 
-            # Get values from main tab
+            # Initialise with empty defaults; overwritten by the 'tab_zero' entry below
+            menu_visibility    = ''
+            menu_name          = ''
+            reveal_in_mediahub = ''
+            reveal_in_finder   = ''
+
             for key, value in tab_options_dict.items():
                 if 'tab_zero' in key:
-                    menu_visibility = value['Menu Visibility']
-                    menu_name = value['Menu Name']
+                    menu_visibility    = value['Menu Visibility']
+                    menu_name          = value['Menu Name']
                     reveal_in_mediahub = str(value['Reveal in MediaHub'])
-                    reveal_in_finder = str(value['Reveal in Finder'])
+                    reveal_in_finder   = str(value['Reveal in Finder'])
 
             return menu_visibility, menu_name, reveal_in_mediahub, reveal_in_finder
 
-        # Get values from main tab
+        original_menu_file_path = get_original_menu_file_path(tab)
+
+        tab_options_dict = get_tab_settings(tab)
+
         menu_visibility, menu_name, reveal_in_mediahub, reveal_in_finder = get_main_tab_values(tab_options_dict)
 
         # Check preset options for proper entries
@@ -2076,114 +2020,19 @@ class ExportMenuSetup:
             )
             return
 
-        # Get menu save path and name
         menu_flame_project, menu_save_path = get_menu_save_path()
 
-        # Create dict of tokens from main tab settings
         main_tab_token_dict = create_main_tab_token_dict()
 
-        def load_menu_template() -> list:
-            """
-            Load Menu Template
-            ==================
-
-            Open menu template and return as list of lines.
-
-            Returns:
-            --------
-                template_lines (list):
-                    menu template lines
-            """
-
-            # Open menu template
-            get_config_values = open(self.menu_template_path, 'r')
-            template_lines = get_config_values.read().splitlines()
-            get_config_values.close()
-
-            return template_lines
-
-        # Load menu template
         template_lines = load_menu_template()
 
-        def replace_main_tab_tokens() -> list:
-            """
-            Replace Main Tab Tokens
-            =======================
-
-            Replace tokens in menu template with values from main tab token dictionary.
-
-            Returns:
-            --------
-                template_lines (list):
-                    menu template lines with tokens replaced
-            """
-
-
-            # Replace tokens in menu template
-            for key, value in main_tab_token_dict.items():
-                for line in template_lines:
-                    if key in line:
-                        line_index = template_lines.index(line)
-                        new_line = re.sub(key, value, line)
-                        template_lines[line_index] = new_line
-
-            return template_lines
-
-        # Replace tokens with values from main tab token dictionary
         template_lines = replace_main_tab_tokens()
 
-        # Create new export preset menu lines
         menu_lines = menu_template_preset_lines(tab_options_dict)
-
-        def insert_menu_lines() -> list:
-            """
-            Insert Menu Lines
-            =================
-
-            Insert new preset menu lines into template.
-
-            Returns:
-            --------
-                template_lines (list):
-                    template lines with new preset menu lines inserted
-            """
-
-            # Insert new preset menu lines into template
-            for i in range(len(template_lines)):
-                if template_lines[i] == '    for clip in selection:':
-                    i += 1
-                    for line in menu_lines:
-                        template_lines.insert(i, line)
-                        i += 1
-
-            return template_lines
 
         template_lines = insert_menu_lines()
 
-        def delete_original_menu_file() -> None:
-            """
-            Delete Original Menu File
-            =========================
-
-            Delete original menu file if tab is 'Edit'.
-            """
-
-            if original_menu_file_path:
-                os.remove(original_menu_file_path)
-                try:
-                    os.remove(original_menu_file_path + 'c')
-                except:
-                    pass
-
-        # Delete original menu file if tab is 'Edit' before saving new menu.
         delete_original_menu_file()
-
-        def save_export_menu():
-            # Save new menu
-            out_file = open(menu_save_path, 'w')
-            for line in template_lines:
-                print(line, file=out_file)
-            out_file.close()
 
         if os.path.isfile(menu_save_path):
             overwrite = PyFlameMessageWindow(
@@ -2196,12 +2045,12 @@ class ExportMenuSetup:
                 return
 
         # Save new menu file
-        save_export_menu()
+        with open(menu_save_path, 'w') as f:
+            for line in template_lines:
+                print(line, file=f)
 
-        # Save config settings
         save_config()
 
-        # Refresh python hooks
         pyflame.refresh_hooks()
 
         PyFlameMessageWindow(
@@ -2212,9 +2061,9 @@ class ExportMenuSetup:
         self.get_saved_menus()
         self.load_preset(preset_to_load=f'{menu_visibility}: {menu_name}')
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -2232,7 +2081,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Create Export Menus',
                     'execute': ExportMenuSetup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2026'
                }
            ]
         }

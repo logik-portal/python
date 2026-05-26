@@ -1,5 +1,5 @@
 # User Batch Setups
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: User Batch Setups
-Script Version: 1.8.0
-Flame Version: 2025
+Script Version: 1.9.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 03.29.22
-Update Date: 07.10.25
+Update Date: 05.25.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -40,7 +40,8 @@ Description:
     Setup menus are automatically regenerated each time Flame starts up.
 
 URL:
-    https://github.com/logik-portal/python/user_batch_setups
+
+    https://logik-portal.com/scripts/#user_batch_setups
 
 Menus:
 
@@ -58,6 +59,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.9.0 05.25.26
+        - Updated to PyFlameLib v5.3.2.
 
     v1.8.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -93,9 +97,9 @@ Updates:
         - Flame file browser used to select folders - Flame 2023.1 and later.`
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -104,17 +108,32 @@ import xml.etree.ElementTree as ET
 
 from lib.pyflame_lib_user_batch_setups import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'User Batch Setups'
-SCRIPT_VERSION = 'v1.8.0'
+SCRIPT_VERSION = 'v1.9.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
+
+def print_action_header(action: str) -> None:
+
+    label = f'-=[ {action} ]='
+    line = label + '-' * max(2, 80 - len(label))
+    colored_line = ''.join(
+        f'{TextColor.BLUE.value}{ch}' if ch in '-='
+        else f'{TextColor.WHITE.value}{ch}'
+        for ch in line
+    ) + TextColor.RESET.value
+    print(colored_line)
+    flame.messages.show_in_console(f'{action}', 'info')
+
+def print_action_footer() -> None:
+    print(f'{TextColor.BLUE.value}-' * 80, f'{TextColor.RESET.value}\n')
 
 class UserSetups:
 
@@ -193,7 +212,7 @@ class UserSetups:
                 )
 
             if batch_dir:
-                self.setup_path_entry.text = batch_dir
+                self.setup_path_entry.text = str(batch_dir)
 
         def save_config():
             """
@@ -252,7 +271,7 @@ class UserSetups:
             )
 
         #-------------------------------------
-        # [Widget Layout]
+        # [Window Layout]
         #-------------------------------------
 
         self.setup_window.grid_layout.addWidget(self.setup_path_label, 0, 0)
@@ -291,7 +310,7 @@ class UserSetups:
                 )
             return
 
-        pyflame.print('Refreshing user batch menus...')
+        pyflame.print('Refreshing User Batch Menus')
 
         # Delete existing menus and recreate menus folder
         shutil.rmtree(self.menu_path)
@@ -300,13 +319,14 @@ class UserSetups:
         pyflame.print('Existing User Batch Menus Cleared')
 
         # Create new menus for all batch setups found in batch setup path
-        pyflame.print ('Generating New User Batch Menus:\n')
+        #pyflame.print ('Generating New User Batch Menus:\n')
+
+        print_action_header('Generating User Batch Menus')
 
         for f in os.listdir(self.settings.setup_path):
             if f.endswith('.batch'):
                 self.create_menu(os.path.join(self.settings.setup_path, f), f.split('.', 1)[0])
-
-        print ('\n')
+        print('-' * 80, '\n')
 
         # Refresh python hooks
         pyflame.refresh_hooks()
@@ -328,14 +348,20 @@ class UserSetups:
         Create menu for batch with menu minimum version set to flame version.
         """
 
-        print (f'    {batch_name}')
+        #print (f'    {batch_name}')
+        name = batch_name.replace('_', ' ').title()
+        pyflame.print(f'{name}', new_line=False)
 
         # Read flame version from batch setup file
         xml_tree = ET.parse(batch_path)
         root = xml_tree.getroot()
 
         xml_version = root.find('.//Version')
-        batch_version = xml_version.text
+        if xml_version is not None:
+            batch_version = str(xml_version.text)
+        else:
+            pyflame.print(f'Batch version not found for {batch_name}. Skipping...', text_color=TextColor.YELLOW)
+            return
 
         if 'pr' in batch_version:
             batch_version = batch_version.rsplit('.pr', 1)[0]
@@ -384,9 +410,9 @@ def startup_refresh(selection):
     script = UserSetups(selection)
     script.refresh_menus_folder(startup_refresh=True)
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -404,12 +430,12 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'User Batch Setups: Setup',
                     'execute': setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                },
                {
                     'name': 'User Batch Setups: Refresh Menus',
                     'execute': refresh,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }

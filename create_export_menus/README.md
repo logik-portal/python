@@ -1,10 +1,10 @@
 # Create Export Menus
 
-**Script Version:** 5.4.1  
+**Script Version:** 5.5.0  
 **Flame Version:** 2026  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.20  
-**Update Date:** 02.27.26  
+**Update Date:** 05.25.26  
 
 **Script Type:** MediaPanel
 
@@ -14,7 +14,7 @@ Create custom right-click export menu's from saved export presets
 
 ## URL
 
-https://github.com/logik-portal/python/create_export_menus
+https://logik-portal.com/scripts/#create_export_menus
 
 ## Menus
 
@@ -29,6 +29,11 @@ https://github.com/logik-portal/python/create_export_menus
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v5.5.0 [05.25.26]
+- Added Import Export button. When checked, exported clip will be imported back into Flame.
+- Only works with Movie preset types.
+<br>
 
 ### v5.4.1 [02.27.26]
 - Fixed issue when trying to save more than one export to a menu.
