@@ -150,6 +150,16 @@
     "Description": "Script Name: TVC Timecode Checker\nScript Version: 2.0\nFlame Version: 2026.1\nWritten by: Bryan Bayley\nCreation Date: 12.02.25\n\nDescription:\n\nSelect Clips or Sequences in the Media Panel to check:\n1. Does the Record Timecode start at 01:00:00:00?\n2. Is the duration a standard TVC length (6s, 15s, 30s, 60s, 90s)?\n\nMenu:\n\nRight-click on clips or sequences in the Media Panel -> TVC Checks... -> Check Start Timecode and Duration"
   },
   {
+    "Script Name": "black head and tail",
+    "Script Version": "1.1",
+    "Flame Version": "2027",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "08.16.21",
+    "Update Date": "06.02.26",
+    "Description": "Script Name: Black Head and Tail\nScript Version: 1.1\nFlame Version: 2027\nWritten by: Bryan Bayley\nHelp from: Fred Warren\nCreation Date: 08.16.21\nUpdate Date: 06.02.26\n\nDescription:\nAdd one second of virtual black head and tail to the selected sequences.\n\nThe black source is generated automatically (a temporary 1-second black Colour\nSource), so nothing needs to be set up on the desktop beforehand. Set each\nsequence's record patch to the track you want the black on (the patch can't be\ncontrolled from Python). The head black is placed before the first frame and the\ntail black after the last frame; neither edit ripples or shifts existing content.\nEach black handle's timeline segment colour is set to black. If a sequence has no\nroom before its start the head won't land, and a warning lists any sequence whose\nhead or tail was not added.\n\nMenus:\nRight-click a sequence in the Media Panel -> Sequence... -> Black Heads and Tails\n\nUpdates:\nv1.1 06.02.26\n- Restore the original selection and active timeline when finished (creating and\ndeleting the temp source otherwise left the top-most item selected).\n\nv1.0 08.16.21\n- Initial release."
+  },
+  {
     "Script Name": "build resolution list",
     "Script Version": "2.0.0",
     "Flame Version": "2025",
