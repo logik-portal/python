@@ -80,6 +80,16 @@
     "Description": "Script Name: Alternating Colours\nScript Version: 1.0.0\nFlame Version: 2025.1\nWritten by: Bryan Bayley\nCreation Date: 08.14.24\n\nScript Type: MediaPanel\n\nDescription:\n\nFor any group of items selected in the Media Panel you can apply an alternating colour scheme (light/dark versions of the color you select).\n\nOnly works when the items selected are the same type (Clip, Reel, Folder, etc.)\n\nMenus:\n\nRight-click in Media Panel -> Alternating Colors\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0.0 08.14.24\n- Initial release."
   },
   {
+    "Script Name": "append start frame to name",
+    "Script Version": "1.0",
+    "Flame Version": "2023.1",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "10.12.22",
+    "Update Date": "10.12.22",
+    "Description": "Script Name: Append Start Frame to Name\nScript Version: 1.0\nFlame Version: 2023.1\nWritten by: Bryan Bayley\nHelp from: Michael Vaglienty\nCreation Date: 10.12.22\n\nDescription:\nGet the Source Start Frame of the first segment in the clip and append it to\nthe end of the clip name, zero-padded to 8 digits. Useful in a color grading workflow\nwhen exporting multiple clips with the same name to prevent files overwriting each other.\n\nMenus:\nRight-click a clip in the Media Panel -> Rename... -> Append Start Frame to Name"
+  },
+  {
     "Script Name": "apply text timeline fx to segments",
     "Script Version": "3.0.0",
     "Flame Version": "2025",
