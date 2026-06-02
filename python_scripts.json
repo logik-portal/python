@@ -870,6 +870,16 @@
     "Description": "Script Name: Rename AAF Clip\nScript Version: 2.0\nFlame Version: 2020\nWritten by: John Fegan\nCreation Date: 10.07.19\nUpdate Date: 06.04.21\n\nScript Type: MediaPanel\n\nDescription:\n\nRemoves all the extra bull shit that comes across in the file name when importing an aaf from avid.\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/rename_aaf_clip\n\nUpdates:\n\nv2.0 06.04.21\n\nUpdated to be compatible with Flame 2022/Python 3.7"
   },
   {
+    "Script Name": "rename keep ad id",
+    "Script Version": "1.0",
+    "Flame Version": "2020",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "08.12.21",
+    "Update Date": "08.12.21",
+    "Description": "Script Name: Rename Keep AD-ID\nScript Version: 1.0\nFlame Version: 2020\nWritten by: Bryan Bayley\nCreation Date: 08.12.21\n\nDescription:\nTruncate clip names in the Media Panel to 9 characters (Older ISCI ID format), 12\ncharacters (AD-ID format), or remove the last 22 characters (to strip suffixes\nadded by Premiere XML fixer tools).\n\nThis is useful if your flame sequences are named with the ID + title,\ndescriptions, etc. and you need to export files with just the ID for the filename.\n\nMenus:\nRight-click a clip in the Media Panel -> Rename... -> Keep 9 (ISCI ID)\nRight-click a clip in the Media Panel -> Rename... -> Keep 12 (AD-ID)\nRight-click a clip in the Media Panel -> Rename... -> Remove Premiere XML Suffix"
+  },
+  {
     "Script Name": "rename keep adid only",
     "Script Version": "1.0",
     "Flame Version": "2020",
@@ -988,6 +998,16 @@
     "Creation Date": "11.18.23",
     "Update Date": "05.18.26",
     "Description": "Script Name: scale compensator\nScript Version: 2.0.3\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 11.18.23\nUpdate Date: 05.18.26\n\nCustom Action Type: Action and Timeline\n\nDescription:\n\nCompensate for different resolutions. In Action, you can generate Axes. In Timeline, you can color code a selection.\n\nTo install:\n\nCopy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator\n\nUpdates:\n05.18.26 - v2.0.3 - minor UI adjustment - pyflame lib update (v5.3.1)\n05.14.26 - v2.0.2 - fixed a float/value error\n05.12.26 - v2.0.1 - fixed an error saving the config settings\n03.01.26 - v2.0.0 - Updated for pyflame lib v5.2.3\n10.22.25 - v1.1.1 - Started using flame.projects.current_project.project_folder to determine where to save/load json's\n01.10.25 - v1.1 - Fixed odd issue when adusting the offline vs online sliders.\n12.27.24 - v1.0 - changed script path, started using json file with aspect ratios and resolutions\n01.02.24 - v0.6 - Fixed some miscalcuations and errors\n12.13.23 - v0.5 - Add Anamorphic Options. Fixed duplicated variables. Updates for Flame 2025.\n12.05.23 - v0.4 - Updated for pyflame lib v2.\n11.28.23 - v0.3 - UI Adjustments and Minor Code Cleanup\n11.22.23 - v0.2 - Added Offline Res and Online Res Compensation + Combo Button"
+  },
+  {
+    "Script Name": "segment color to clip color",
+    "Script Version": "1.0",
+    "Flame Version": "2024.1",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "08.01.24",
+    "Update Date": "08.01.24",
+    "Description": "Script Name: Segment Color to Clip Color\nScript Version: 1.0\nFlame Version: 2024.1\nWritten by: Bryan Bayley\nHelp from: Fred Warren\nCreation Date: 08.01.24\n\nDescription:\nThis is a simple script that takes the color (color label) of the first segment\nin a clip, and applies that color at the clip level.\n\nThis is useful in my color grading workflow where we have a timeline and source\nclips. I will apply color labels to segments in the timeline and those get synced\nto the sources but only at the segment level. This script automates the color\nlabels at the clip level so it's easier to see that sources are in fact connected\nto the segments in the sequences.\n\nMenus:\nRight-click a clip in the Media Panel -> Sequence... -> Copy Segment Color to Clip Color"
   },
   {
     "Script Name": "sequence renamer",
