@@ -251,13 +251,13 @@
   },
   {
     "Script Name": "copy dir listing to clipboard",
-    "Script Version": "2.0.0",
+    "Script Version": "2.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "11.01.22",
-    "Update Date": "03.06.25",
-    "Description": "Script Name: Copy Directory Listing to Clipboard\nWritten By: Kieran Hanrahan\n\nScript Version: 2.0.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/copy-dir-listing-to-clipboard\n\nCreation Date: 11.01.22\nUpdate Date: 03.06.25\n\nDescription:\n\nTakes the selected folders in the Media Hub, gets a listing of the directory,\nand copies the output to the clipboard.\n\nMenus:\n\nRight-click a folder in the Media Hub Files --> Copy... --> Directory Listing (by Date) to Clipboard\n\nRight-click a folder in the Media Hub Files --> Copy... --> Directory Listing (by Name) to Clipboard\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "06.02.26",
+    "Description": "Script Name: Copy Directory Listing to Clipboard\nWritten By: Kieran Hanrahan\n\nScript Version: 2.0.1\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/copy-dir-listing-to-clipboard\n\nCreation Date: 11.01.22\nUpdate Date: 06.02.26\n\nDescription:\n\nTakes the selected folders in the Media Hub, gets a listing of the\ndirectory, and copies the output to the clipboard.\n\nMenus:\n\nRight-click a folder in the Media Hub Files --> Copy... -->\nDirectory Listing (by Date) to Clipboard\n\nRight-click a folder in the Media Hub Files --> Copy... -->\nDirectory Listing (by Name) to Clipboard\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
     "Script Name": "copy filepath to clipboard",
