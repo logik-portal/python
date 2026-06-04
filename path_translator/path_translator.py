@@ -2,13 +2,13 @@ r"""
 Script Name: Path Translator
 Written By: Kieran Hanrahan
 
-Script Version: 2.1.0
+Script Version: 2.1.2
 Flame Version: 2025
 
 URL: http://www.github.com/khanrahan/path-translator
 
 Creation Date: 02.10.24
-Update Date: 09.05.25
+Update Date: 05.18.26
 
 Description:
 
@@ -47,7 +47,7 @@ import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Path Translator'
-VERSION_INFO = (2, 1, 0)
+VERSION_INFO = (2, 1, 2)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -1218,6 +1218,9 @@ class PathTranslator:
         self.main_window.preset = (self.settings.get_preset_names()[0] if
                                    self.settings.get_preset_names() else None)
         self.main_window.presets = self.settings.get_preset_names()
+        self.main_window.clipboard_enabled = self.get_clipboard_enabled()
+        self.main_window.path = self.path
+        self.main_window.path_enabled = not self.main_window.clipboard_enabled
         self.main_window.pattern_input = self.pattern_input
         self.main_window.pattern_output = self.pattern_output
         self.main_window.tokens_input = {key: values[0] for
@@ -1258,6 +1261,14 @@ class PathTranslator:
         """Generate filepath for settings."""
         user_folder = os.path.expanduser(SETTINGS_FOLDER)
         self.settings_file = os.path.join(user_folder, XML)
+
+    def get_clipboard_enabled(self):
+        """Return whether to load path from clipboard for first preset."""
+        clipboard_enabled = False
+        if self.settings.get_preset_names():
+            clipboard_enabled = self.settings.load_preset_by_index_element(
+                0, 'clipboard_contents') == 'true'
+        return clipboard_enabled
 
     def load_path(self):
         """Load the input path from the clipboard contents or empty str."""

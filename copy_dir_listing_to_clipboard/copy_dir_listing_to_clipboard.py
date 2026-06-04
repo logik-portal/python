@@ -2,24 +2,26 @@
 Script Name: Copy Directory Listing to Clipboard
 Written By: Kieran Hanrahan
 
-Script Version: 2.0.0
+Script Version: 2.0.1
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/copy-dir-listing-to-clipboard
 
 Creation Date: 11.01.22
-Update Date: 03.06.25
+Update Date: 06.02.26
 
 Description:
 
-    Takes the selected folders in the Media Hub, gets a listing of the directory,
-    and copies the output to the clipboard.
+    Takes the selected folders in the Media Hub, gets a listing of the
+    directory, and copies the output to the clipboard.
 
 Menus:
 
-    Right-click a folder in the Media Hub Files --> Copy... --> Directory Listing (by Date) to Clipboard
+    Right-click a folder in the Media Hub Files --> Copy... -->
+    Directory Listing (by Date) to Clipboard
 
-    Right-click a folder in the Media Hub Files --> Copy... --> Directory Listing (by Name) to Clipboard
+    Right-click a folder in the Media Hub Files --> Copy... -->
+    Directory Listing (by Name) to Clipboard
 
 To Install:
 
@@ -39,7 +41,7 @@ import flame
 from PySide6 import QtWidgets
 
 TITLE = 'Copy Directory List to Clipboard'
-VERSION_INFO = (2, 0, 0)
+VERSION_INFO = (2, 0, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -76,7 +78,7 @@ def gather_listings(selection, sort):
 
     for folder in selection:
         if len(results) != 0:
-            results += '\n'  # separate from previous listing by 1 line
+            results += '\n' * 2  # separate from previous listing
 
         results += folder.path
         results += '\n'
@@ -116,15 +118,18 @@ def scope_folders(selection):
 
 def get_mediahub_files_custom_ui_actions():
     """Add right click menu items."""
-    return [{'name': 'Copy...',
-             'actions': [{'name': 'Directory Listing (by Date) to Clipboard',
-                           'isVisible': scope_folders,
-                           'execute': dir_listing_by_date_to_clipboard,
-                           'minimumVersion': '2025',
-                          },
-                          {'name': 'Directory Listing (by Name) to Clipboard',
-                           'isVisible': scope_folders,
-                           'execute': dir_listing_to_clipboard,
-                           'minimumVersion': '2025',
-                           }]
-           }]
+    menu_name = 'Copy...'
+    action_by_date = {
+        'name': 'Directory Listing (by Date) to Clipboard',
+        'isVisible': scope_folders,
+        'execute': dir_listing_by_date_to_clipboard,
+        'minimumVersion': '2025.0.0.0'
+    }
+    action_by_name = {
+        'name': 'Directory Listing (by Name) to Clipboard',
+        'isVisible': scope_folders,
+        'execute': dir_listing_to_clipboard,
+        'minimumVersion': '2025.0.0.0'
+    }
+    menu = {'name': menu_name, 'actions': [action_by_date, action_by_name]}
+    return [menu]

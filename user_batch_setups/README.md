@@ -1,10 +1,10 @@
 # User Batch Setups
 
-**Script Version:** 1.8.0  
-**Flame Version:** 2025  
+**Script Version:** 1.9.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.22  
-**Update Date:** 07.10.25  
+**Update Date:** 05.25.26  
 
 **Script Type:** Batch
 
@@ -20,7 +20,7 @@ Setup menus are automatically regenerated each time Flame starts up.
 
 ## URL
 
-https://github.com/logik-portal/python/user_batch_setups
+https://logik-portal.com/scripts/#user_batch_setups
 
 ## Menus
 
@@ -36,6 +36,10 @@ https://github.com/logik-portal/python/user_batch_setups
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.9.0 [05.25.26]
+- Updated to PyFlameLib v5.3.2.
+<br>
 
 ### v1.8.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.

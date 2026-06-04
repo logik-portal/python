@@ -1,5 +1,5 @@
 # Create Export Menus - Export Menu: <PresetName>
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus - Export Menu: <PresetName>
-Script Version: 5.4.1
+Script Version: 5.5.0
 Flame Version: <FlameMinMaxVersion>
 Written by: Michael Vaglienty
 Creation Date: 04.27.20
-Update Date: 02.27.26
+Update Date: 05.25.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -38,22 +38,23 @@ Menu:
     Right-click on clip to export -> <PresetType> Export Presets... -> <PresetName>
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import flame
 
 import os
 import re
+import tempfile
 import datetime
 from pyflame_lib_create_export_menus import *
 
 FLAME_PROJECT = '<FlameProject>'
 
-#-------------------------------------
+# ==============================================================================
 # [Export Function]
-#-------------------------------------
+# ==============================================================================
 
 def export_clips(selection):
 
@@ -173,9 +174,9 @@ def export_clips(selection):
 
     pyflame.print('Export complete.', text_color=TextColor.GREEN)
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_clip(selection):
 
@@ -190,9 +191,9 @@ def scope_clip(selection):
                 return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_media_panel_custom_ui_actions():
 
