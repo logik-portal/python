@@ -110,6 +110,16 @@
     "Description": "Script Name: Apply Text TimelineFX to Segments\nWritten By: Kieran Hanrahan\n\nScript Version: 3.0.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/apply-text-timelinefx-to-segments\n\nCreation Date: 06.23.23\nUpdate Date: 03.04.25\n\nDescription:\n\nFind specific segments in the selected sequences then apply Text TimelineFX and load\nText setups based on a token pattern.\n\nPut simply... its for loading text setups in bulk!\n\nMenus:\n\nRight-click selected items on the Desktop --> Apply... --> Text TimelineFX to Segments\n\nRight-click selected items in the Media Panel --> Apply... --> Text TimelineFX to Segments\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
+    "Script Name": "auto initialise tablet",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "John Geehreng",
+    "Creation Date": "06.20.25",
+    "Update Date": "06.20.25",
+    "Description": "Script Name: auto initialise tablet\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 06.20.25\nUpdate Date: 06.20.25\n\nCustom Action Type: Project Launch\n\nDescription:\n\nThis script initialises the tablet when a project is launched. Helpful when using the Auto-USB-Bridge mode for Wacom tablets running HP Anyware. The script is only 4 lines and just executes the 'Initialise Tablet' shortcut.\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/auto_initialise_tablet or wherever you keep your scripts.\n\nUpdates:\n\nv1.0.0 06.20.25\n\nInception"
+  },
+  {
     "Script Name": "auto scale xmls",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
