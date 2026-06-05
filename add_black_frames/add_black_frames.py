@@ -2,7 +2,7 @@
 Script Name: Add Black Frames
 Script Version: 1.7.5
 Flame Version: 2025
-Written by: Cursor / ADSK
+Written by: John Geehreng with help from Cursor
 Creation Date: 05.28.26
 
 Custom Action Type: Media Panel
