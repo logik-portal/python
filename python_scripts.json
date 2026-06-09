@@ -1030,6 +1030,16 @@
     "Description": "Script Name: Segment Color to Clip Color\nScript Version: 1.0\nFlame Version: 2024.1\nWritten by: Bryan Bayley\nHelp from: Fred Warren\nCreation Date: 08.01.24\n\nDescription:\nThis is a simple script that takes the color (color label) of the first segment\nin a clip, and applies that color at the clip level.\n\nThis is useful in my color grading workflow where we have a timeline and source\nclips. I will apply color labels to segments in the timeline and those get synced\nto the sources but only at the segment level. This script automates the color\nlabels at the clip level so it's easier to see that sources are in fact connected\nto the segments in the sequences.\n\nMenus:\nRight-click a clip in the Media Panel -> Sequence... -> Copy Segment Color to Clip Color"
   },
   {
+    "Script Name": "select connected in media panel",
+    "Script Version": "1.0",
+    "Flame Version": "2026.2",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "03.05.26",
+    "Update Date": "03.05.26",
+    "Description": "Script Name: Select Connected in Media Panel\nScript Version: 1.0\nFlame Version: 2026.2\nWritten by: Bryan Bayley\nBased on Fred Warren's Script\nCreation Date: 03.05.26\n\nDescription:\nAdds a \"Connected Segments...\" context menu to the Timeline with three actions\nthat operate on the currently focused timeline segment:\n- Select Connected Clips in Media Panel: finds all Media Panel clips that contain\nsegments connected to the focused segment, expands their parent reels, and\nselects them.\n- Select and Color Clips in Media Panel: same as above, and also colours each\nconnected clip green for visual identification (useful when clips span multiple\nreels). Use \"Uncolor Connected Clips\" to clean up.\n- Uncolor Connected Clips: removes the colour label from the connected clips.\n\nActions are only visible when the focused segment has 2 or more connected\nsegments. Does not support multi-segment selection; operates on the single\nfocused segment.\n\nMenus:\nRight-click a segment in the Timeline -> Connected Segments... -> Select Connected Clips in Media Panel\nRight-click a segment in the Timeline -> Connected Segments... -> Select and Color Clips in Media Panel\nRight-click a segment in the Timeline -> Connected Segments... -> Uncolor Connected Clips"
+  },
+  {
     "Script Name": "sequence renamer",
     "Script Version": "2.1.0",
     "Flame Version": "2025",
