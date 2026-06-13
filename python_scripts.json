@@ -110,6 +110,16 @@
     "Description": "Script Name: Apply Text TimelineFX to Segments\nWritten By: Kieran Hanrahan\n\nScript Version: 3.0.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/apply-text-timelinefx-to-segments\n\nCreation Date: 06.23.23\nUpdate Date: 03.04.25\n\nDescription:\n\nFind specific segments in the selected sequences then apply Text TimelineFX and load\nText setups based on a token pattern.\n\nPut simply... its for loading text setups in bulk!\n\nMenus:\n\nRight-click selected items on the Desktop --> Apply... --> Text TimelineFX to Segments\n\nRight-click selected items in the Media Panel --> Apply... --> Text TimelineFX to Segments\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
+    "Script Name": "auto initialise tablet",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025",
+    "Maximum Flame Version": "Latest",
+    "Author": "John Geehreng",
+    "Creation Date": "06.20.25",
+    "Update Date": "06.20.25",
+    "Description": "Script Name: auto initialise tablet\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 06.20.25\nUpdate Date: 06.20.25\n\nCustom Action Type: Project Launch\n\nDescription:\n\nThis script initialises the tablet when a project is launched. Helpful when using the Auto-USB-Bridge mode for Wacom tablets running HP Anyware. The script is only 4 lines and just executes the 'Initialise Tablet' shortcut.\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/auto_initialise_tablet or wherever you keep your scripts.\n\nUpdates:\n\nv1.0.0 06.20.25\n\nInception"
+  },
+  {
     "Script Name": "auto scale xmls",
     "Script Version": "1.0.0",
     "Flame Version": "2025",
@@ -128,6 +138,16 @@
     "Creation Date": "11.12.21",
     "Update Date": "04.02.26",
     "Description": "Script Name: Axis to Point Locators\nScript Version: 1.6.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 11.12.21\nUpdate Date: 04.02.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Action\n\nDescription:\n\nConvert selected axis nodes to point locators\n\nURL:\nhttps://github.com/logik-portal/python/axis_to_point_locators\n\nMenu:\n\nRight-click on axis node -> Axis to Point Locator\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.6.0 04.02.26\n- Updated to PyFlameLib v5.3.0.\n\nv1.5.0 04.03.25\n- Updated to PyFlameLib v4.3.0.\n\nv1.4.0 12.28.24\n- Updated to PyFlameLib v4.0.0.\n- Updated SCRIPT_PATH to use absolute path. Allows script to be installed in different locations.\n- Script now only works with Flame 2023.2+.\n\nv1.3.0 08.04.24\n- Updated to PyFlameLib v3.0.0.\n\nv1.2.2 05.17.24\n- Fixed: Point locators not in proper position.\n\nv1.2.1 01.15.24\n- Updated PySide.\n\nv1.2.0 07.29.23\n- Updated to PyFlameLib v2.0.0.\n\nv1.1 01.04.23:\n- Updated menu for Flame 2023.2+"
+  },
+  {
+    "Script Name": "batch group to shot folders",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025.1",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "06.02.26",
+    "Update Date": "06.11.26",
+    "Description": "Script Name: Batch Group to Shot Folders\nScript Version: 1.0.0\nFlame Version: 2025.1\nWritten by: Michael Vaglienty\nCreation Date: 06.02.26\nUpdate Date: 06.11.26\n\nCustom Action Type: Media Panel\n\nDescription:\n\nCopy or Move selected batch groups to folders in the Media Panel using a tokenized path.\n\nUsage:\n\nTokenized path is used to determine the destination folder for the batch groups.\n\nThe tokenized path structure is: <LibraryName>/<FolderPath>\n\nIf the Library and/or Folder structure does not exist for a batch group, it will be created.\n\nExample Tokenized Path:\nShot Folders/<SEQNAME>/<ShotName>/Batch_Groups\n\nExample batch group name:\nPYT_0010_comp\n\nThis would create the following folder structure with the batch group going into the Batch Groups folder:\nLibrary: Shot Folders\nFolder Path: PYT/PYT_0010/Batch_Groups\n\nBatch groups must be named with a standard shot name or be tagged with a shot name tag.\n\nExample Batch Group Names:\nPYT_0010_comp\nPYT0010_comp\nPYT010_comp\nPYT_010_comp\nPYT_0010\nPYT0010\nPYT010\n\nExample Shot Name Tags:\nShotName: PYT_0010\nShotName: PYT0010\nShotName: PYT010\n\nScript menu will not show up if the current tab is MediaHub.\n\nMenus:\n\nSetup:\nFlame Main Menu ->  Logik -> Logik Portal Script Setup -> Batch Groups to Folders Setup\n\nTo Move Batch Groups:\nRight-click on selected batch groups in Media Panel/Desktop -> Move Batch Groups to Folders\n\nTo Copy Batch Groups:\nRight-click on selected batch groups in Media Panel/Desktop -> Copy Batch Groups to Folders\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/batch_group_to_shot_folders\n\nUpdates:\n\nv1.0.0 06.11.26\n- Initial release."
   },
   {
     "Script Name": "batch nodes",
@@ -257,7 +277,7 @@
     "Author": "John Geehreng",
     "Creation Date": "01.16.24",
     "Update Date": "01.28.26",
-    "Description": "Script Name: copy actions from\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 01.16.24\nUpdate Date: 01.28.26\n\nCustom Action Type: Timeline\n\nDescription:\n\nMass Copy Actions From other Tracks\n\nMenus:\n\nFlame 2025+:\n\nTimeline -> Copy Actions -> Copy From\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/copy_actions or appropriate shared python folder\n\nUpdates:\n\nv1.0.0 01.28.26\n\nFixed issue with incorrect project tmp path in Flame 2026+ again. Pyflame lib update. Turned off print statements.\n\nv0.6.2 10.31.25\n\nFixed issue with incorrect project tmp path in Flame 2026+ Turned off script path check\n\nv0.6.1 10.28.25\n\nRemoved .action extension from action_path\n\nv0.6.0 07.10.25\n\nFixed an issue where it was behaving more like Copy To\n\nv0.5 12.11.24\n\nDelete TL Action, create a new one, and then load the saved action - seems to fix the action xml bug.\n\nv0.4 10.15.24\n\nAdjusted action_path for 2025.1.2\n\nv0.3 01.19.24\n\nAdded limits to the sliders based on the number of tracks\n\nv0.2 01.18.24\n\nAdded a check for valid 'action_path'\n\nv0.1 01.16.24\n\nInception"
+    "Description": "Script Name: copy actions to\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: John Geehreng\nCreation Date: 01.16.24\nUpdate Date: 01.28.26\n\nCustom Action Type: Timeline\n\nDescription:\n\nMass Copy Actions To other Tracks\n\nMenus:\n\nFlame 2025+:\n\nTimeline -> Copy Actions -> Copy To\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/copy_actions or appropriate shared python folder\n\nUpdates:\n\nv1.0.0 01.28.26\n\nFixed issue with incorrect project tmp path in Flame 2026+ again. Pyflame lib update. Turned off print statements.\n\nv0.6.2 10.31.25\n\nFixed issue with incorrect project tmp path in Flame 2026+ Turned off script path check\n\nv0.6.1 10.28.25\n\nRemoved .action extension from action_path\n\nv0.6.0 07.10.25\n\nInverted default slider value\n\nv0.5 12.11.24\n\nDelete TL Action, create a new one, and then load the saved action - seems to fix the action xml bug.\n\nv0.4 10.15.24\n\nAdjusted action_path for 2025.1.2\n\nv0.3 01.19.24\n\nAdded limits to the sliders based on the number of tracks\n\nv0.2 01.18.24\n\nAdded a check for valid 'action_path'\n\nv0.1 01.16.24\n\nInception"
   },
   {
     "Script Name": "copy dir listing to clipboard",
@@ -1018,6 +1038,16 @@
     "Creation Date": "08.01.24",
     "Update Date": "08.01.24",
     "Description": "Script Name: Segment Color to Clip Color\nScript Version: 1.0\nFlame Version: 2024.1\nWritten by: Bryan Bayley\nHelp from: Fred Warren\nCreation Date: 08.01.24\n\nDescription:\nThis is a simple script that takes the color (color label) of the first segment\nin a clip, and applies that color at the clip level.\n\nThis is useful in my color grading workflow where we have a timeline and source\nclips. I will apply color labels to segments in the timeline and those get synced\nto the sources but only at the segment level. This script automates the color\nlabels at the clip level so it's easier to see that sources are in fact connected\nto the segments in the sequences.\n\nMenus:\nRight-click a clip in the Media Panel -> Sequence... -> Copy Segment Color to Clip Color"
+  },
+  {
+    "Script Name": "select connected in media panel",
+    "Script Version": "1.0",
+    "Flame Version": "2026.2",
+    "Maximum Flame Version": "Latest",
+    "Author": "Bryan Bayley",
+    "Creation Date": "03.05.26",
+    "Update Date": "03.05.26",
+    "Description": "Script Name: Select Connected in Media Panel\nScript Version: 1.0\nFlame Version: 2026.2\nWritten by: Bryan Bayley\nBased on Fred Warren's Script\nCreation Date: 03.05.26\n\nDescription:\nAdds a \"Connected Segments...\" context menu to the Timeline with three actions\nthat operate on the currently focused timeline segment:\n- Select Connected Clips in Media Panel: finds all Media Panel clips that contain\nsegments connected to the focused segment, expands their parent reels, and\nselects them.\n- Select and Color Clips in Media Panel: same as above, and also colours each\nconnected clip green for visual identification (useful when clips span multiple\nreels). Use \"Uncolor Connected Clips\" to clean up.\n- Uncolor Connected Clips: removes the colour label from the connected clips.\n\nActions are only visible when the focused segment has 2 or more connected\nsegments. Does not support multi-segment selection; operates on the single\nfocused segment.\n\nMenus:\nRight-click a segment in the Timeline -> Connected Segments... -> Select Connected Clips in Media Panel\nRight-click a segment in the Timeline -> Connected Segments... -> Select and Color Clips in Media Panel\nRight-click a segment in the Timeline -> Connected Segments... -> Uncolor Connected Clips"
   },
   {
     "Script Name": "sequence renamer",
