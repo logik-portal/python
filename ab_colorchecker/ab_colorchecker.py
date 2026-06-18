@@ -1,72 +1,54 @@
 """
 Script Name: AB ColorChecker
-Script Version: 3.8.3
+Script Version: 3.9.2
 Flame Version: 2026
 Written by: AB
 Creation Date: 06.01.26
-Update Date: 06.15.26
+Update Date: 06.17.26
 
 Description:
-
     Camera matching via Macbeth ColorChecker chart in ACEScg scene-linear.
-
-Usage:
-
     Load reference (Camera A) and source (Camera B) frames, click all 24
     colour patches on each, then apply a correction that maps Camera B to
     look like Camera A.
 
     Standard mode uses a pure 3x3 colour matrix — zero always maps to zero,
     full dynamic range preserved, clean shadows. Exports corrected EXR,
-    3D LUT (.cube), or both. The LUT closely matches the EXR output.
+    3D LUT (.cube), or both. Supports image sequence processing.
 
     HDR / 360 mode uses a Thin-Plate Spline RBF for better colour accuracy
     with wide-gamut cameras that produce negative channel values.
 
-    Sessions can be saved and recalled — Camera A patches never need to be
-    re-clicked. Load a session, load a new Camera B frame, click 24 patches,
-    and apply.
+    Sessions store both A and B patch data and can be recalled to apply
+    the same correction to new footage without re-clicking patches.
 
-To Install:
-  
-    Install Required Python packages
-    ----------------------------------------------------------------
-    This script requires numpy and opencv-python. Run the following command 
-    in Terminal before running the script:
-
-    Mac / Linux (Terminal):
-        /opt/Autodesk/python/<Flame Version>/bin/python3 -m pip install numpy opencv-python --break-system-packages
-
-    Example:
-        /opt/Autodesk/python/2026.2/bin/python3 -m pip install numpy opencv-python --break-system-packages
-
-    After installing, restart Flame or reload Python scripts.
-    ----------------------------------------------------------------
+    Uses OpenImageIO if available, falls back to OpenCV automatically.
+    Create ab_colorchecker_paths.py for custom library paths (IT/studio use).
 
 Menus:
-
     Right-click in Batch -> AB ColorChecker -> Match Cameras...
     Right-click in Media Panel -> AB ColorChecker -> Match Cameras...
 
 Updates:
-
-    3.8.2 06.15.26
-        - Apply Correction button now shows export dialog (EXR, LUT, or Both).
-        - Session save no longer defaults to a fixed path.
-        - Minor UI refinements.
-
-    3.8.0 06.14.26
-        - Standard mode now offers EXR, 3D LUT, or both on export.
-        - Auto-installs required Python packages on first launch.
-
+    3.9.2 06.17.26
+    - Fixed sequence import into Flame Batch as full clip not single frame.
+    3.9.1 06.17.26
+    - Export dialog redesigned with dropdown and LUT checkbox.
+    - Sequence naming fixed to name_matched.####.exr.
+    - HDR sessions store B patches for recall without re-clicking.
+    3.9.0 06.17.26
+    - OpenImageIO support with cv2 fallback.
+    - Side script for IT path configuration.
+    - Sequence processing added.
+    3.8.3 06.15.26
+    - Session save pre-fills filename from session name field.
     3.7.0 06.12.26
-        - Standard mode switched to pure 3x3 colour matrix for clean shadow handling.
-        - HDR mode uses single-stage TPS RBF for wide-gamut camera accuracy.
-        - Session save and load fixed.
+    - Standard mode switched to pure 3x3 colour matrix.
+    - HDR mode uses single-stage TPS RBF.
 """
 
 SCRIPT_NAME    = 'AB ColorChecker'
-SCRIPT_VERSION = '3.8.3'
+SCRIPT_VERSION = '3.9.2'
 
 PATCH_NAMES = [
     'Dark Skin','Light Skin','Blue Sky','Foliage','Blue Flower','Bluish Green',
@@ -93,48 +75,90 @@ def _find_flame_python():
     return None
 
 
-def _ensure_packages():
-    import sys, subprocess
-    missing = []
-    try: import numpy
-    except ImportError: missing.append('numpy')
-    try: import cv2
-    except ImportError: missing.append('opencv-python')
-    if not missing: return True
-    print(f'[AB ColorChecker] Installing: {missing}')
+def _setup_imaging():
+    """
+    Set up image I/O — tries oiio first, falls back to cv2.
+    Studios can create ab_colorchecker_paths.py alongside this script
+    to set custom import paths without modifying this file. Example:
+        import sys
+        sys.path.insert(0, '/path/to/oiio/python')
+        sys.path.insert(0, '/path/to/numpy')
+    """
+    import sys, os
+
+    # Load optional side script for custom paths (IT-friendly)
+    side_script = os.path.join(os.path.dirname(__file__), 'ab_colorchecker_paths.py')
+    if os.path.exists(side_script):
+        try:
+            exec(open(side_script).read())
+            print('[AB ColorChecker] Loaded custom paths from ab_colorchecker_paths.py')
+        except Exception as e:
+            print(f'[AB ColorChecker] Warning: could not load ab_colorchecker_paths.py: {e}')
+
+    # Try Flame's own Python packages
+    import glob
+    candidates = glob.glob('/opt/Autodesk/python/*/lib/python*/site-packages')
+    if candidates:
+        candidates.sort(reverse=True)
+        pkg = candidates[0]
+        if pkg not in sys.path:
+            sys.path.insert(0, pkg)
+
+    # Try oiio first (available on most Linux VFX systems)
     try:
-        subprocess.check_call(
-            [sys.executable, '-m', 'pip', 'install', '--break-system-packages', '--quiet'] + missing,
-            timeout=120)
-        print('[AB ColorChecker] Installed. Please restart Flame.')
-        return False
-    except Exception as e:
-        print(f'[AB ColorChecker] Auto-install failed: {e}')
-        print('[AB ColorChecker] Install manually — see docstring for instructions.')
-        return False
+        import OpenImageIO as oiio
+        import numpy as np
+        print('[AB ColorChecker] Using OpenImageIO for image I/O')
+        return 'oiio', oiio, np
+    except ImportError:
+        pass
+
+    # Fall back to OpenCV
+    try:
+        os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
+        import cv2
+        import numpy as np
+        print('[AB ColorChecker] Using OpenCV for image I/O')
+        return 'cv2', cv2, np
+    except ImportError:
+        pass
+
+    return None, None, None
 
 
 def launch_ui(selection):
-    if not _ensure_packages():
-        try:
-            import flame
-            flame.messages.show_in_console(
-                '[AB ColorChecker] Required packages installed. Please restart Flame.',
-                'info', 10)
-        except: pass
-        return
     import os
     import sys
     import json
 
-    os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
+    io_backend, io_lib, np_lib = _setup_imaging()
 
-    pkgs = _find_flame_python()
-    if pkgs and pkgs not in sys.path:
-        sys.path.insert(0, pkgs)
+    if io_backend is None:
+        # Try auto-install cv2 as last resort
+        try:
+            import subprocess
+            print('[AB ColorChecker] Installing opencv-python and numpy...')
+            subprocess.check_call(
+                [sys.executable, '-m', 'pip', 'install',
+                 '--break-system-packages', '--quiet',
+                 'numpy', 'opencv-python'],
+                timeout=120)
+            print('[AB ColorChecker] Installed. Please restart Flame.')
+        except Exception as e:
+            print(f'[AB ColorChecker] Could not install packages: {e}')
+            print('[AB ColorChecker] Please install numpy and opencv-python manually,')
+            print('[AB ColorChecker] or create ab_colorchecker_paths.py with your system paths.')
+        try:
+            import flame
+            flame.messages.show_in_console(
+                '[AB ColorChecker] Required packages installed or missing. Please restart Flame.',
+                'info', 10)
+        except: pass
+        return
 
     import numpy as np
-    import cv2
+    np = np_lib  # use the one found by _setup_imaging
+
     import flame
     from PySide6 import QtWidgets, QtCore, QtGui
 
@@ -198,43 +222,68 @@ def launch_ui(selection):
             super().__init__()
             self.choice = None
             self.setWindowTitle(SCRIPT_NAME)
-            self.setFixedSize(440, 160)
+            self.setFixedSize(500, 200)
             self.setStyleSheet('''
                 QDialog,QWidget{background:#232323;color:#cccccc;font-size:12px;}
                 QLabel{color:#cccccc;}
                 QLabel#title{font-size:13px;font-weight:bold;color:#ffffff;}
                 QLabel#sub{font-size:10px;color:#888888;margin-bottom:4px;}
                 QPushButton{background:#3c3c3c;color:#cccccc;border:1px solid #505050;
-                            padding:8px 16px;border-radius:3px;}
+                            padding:8px 16px;border-radius:3px;min-width:90px;}
                 QPushButton:hover{background:#4a4a4a;}
                 QPushButton#blue{background:#1a5fa8;color:#ffffff;border:1px solid #2070c0;}
                 QPushButton#blue:hover{background:#2272cc;}
+                QComboBox{background:#1c1c1c;border:1px solid #3a3a3a;color:#cccccc;
+                          padding:4px 8px;min-width:160px;}
+                QCheckBox{color:#cccccc;}
             ''')
             root = QtWidgets.QVBoxLayout(self)
-            root.setSpacing(10); root.setContentsMargins(20,16,20,16)
-            title = QtWidgets.QLabel('Export As')
+            root.setSpacing(12); root.setContentsMargins(20,16,20,16)
+
+            title = QtWidgets.QLabel('Apply Correction')
             title.setObjectName('title'); root.addWidget(title)
-            sub = QtWidgets.QLabel('Choose output format — LUT exactly matches EXR for standard mode.')
-            sub.setObjectName('sub'); root.addWidget(sub)
+
+            # Row 1: Image type selector
+            row1 = QtWidgets.QHBoxLayout(); row1.setSpacing(10)
+            row1.addWidget(QtWidgets.QLabel('Output:'))
+            self.type_combo = QtWidgets.QComboBox()
+            self.type_combo.addItems(['Single Image', 'Image Sequence'])
+            row1.addWidget(self.type_combo); row1.addStretch()
+
+            # LUT checkbox
+            self.lut_check = QtWidgets.QCheckBox('Also export 3D LUT (.cube)')
+            row1.addWidget(self.lut_check)
+            root.addLayout(row1)
+
+            sub = QtWidgets.QLabel('Single Image exports corrected EXR.  Image Sequence processes all frames in the sequence.')
+            sub.setObjectName('sub'); sub.setWordWrap(True)
+            root.addWidget(sub)
+
+            # Buttons
             btns = QtWidgets.QHBoxLayout(); btns.setSpacing(8)
-            btn_exr  = QtWidgets.QPushButton('EXR')
-            btn_exr.setObjectName('blue'); btn_exr.setFixedHeight(44)
-            btn_lut  = QtWidgets.QPushButton('3D LUT (.cube)')
-            btn_lut.setFixedHeight(44)
-            btn_both = QtWidgets.QPushButton('Both')
-            btn_both.setFixedHeight(44)
+            btns.addStretch()
+            btn_ok = QtWidgets.QPushButton('Apply')
+            btn_ok.setObjectName('blue'); btn_ok.setFixedHeight(36)
             btn_cancel = QtWidgets.QPushButton('Cancel')
-            btn_cancel.setFixedHeight(44)
-            btns.addWidget(btn_exr); btns.addWidget(btn_lut)
-            btns.addWidget(btn_both); btns.addWidget(btn_cancel)
+            btn_cancel.setFixedHeight(36)
+            btns.addWidget(btn_ok); btns.addWidget(btn_cancel)
             root.addLayout(btns)
-            btn_exr.clicked.connect(lambda: self._pick('exr'))
-            btn_lut.clicked.connect(lambda: self._pick('lut'))
-            btn_both.clicked.connect(lambda: self._pick('both'))
+
+            btn_ok.clicked.connect(self._apply)
             btn_cancel.clicked.connect(self.reject)
 
-        def _pick(self, c):
-            self.choice = c; self.accept()
+        def _apply(self):
+            seq = self.type_combo.currentIndex() == 1
+            lut = self.lut_check.isChecked()
+            if seq and lut:
+                self.choice = 'sequence_lut'
+            elif seq:
+                self.choice = 'sequence'
+            elif lut:
+                self.choice = 'both'
+            else:
+                self.choice = 'exr'
+            self.accept()
 
     src_dlg = SourceTypeDialog()
     if src_dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -276,18 +325,35 @@ def launch_ui(selection):
     # ----------------------------------------------------------------
 
     def load_image(path):
-        img = cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
-        if img is None:
-            raise ValueError(f'Cannot load: {path}')
-        img = img.astype(np.float32)
-        if img.ndim == 3 and img.shape[2] >= 3:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        return img
+        if io_backend == 'oiio':
+            buf = io_lib.ImageBuf(path)
+            spec = buf.spec()
+            arr = io_lib.ImageBufAlgo.copy(buf).get_pixels(io_lib.FLOAT)
+            if arr is None:
+                raise ValueError(f'Cannot load: {path}')
+            arr = arr[:,:,:3].astype(np.float32)
+            return arr
+        else:
+            img = io_lib.imread(path, io_lib.IMREAD_ANYCOLOR | io_lib.IMREAD_ANYDEPTH)
+            if img is None:
+                raise ValueError(f'Cannot load: {path}')
+            img = img.astype(np.float32)
+            if img.ndim == 3 and img.shape[2] >= 3:
+                img = io_lib.cvtColor(img, io_lib.COLOR_BGR2RGB)
+            return img
 
     def save_exr(img, path):
-        out = cv2.cvtColor(img.astype(np.float32), cv2.COLOR_RGB2BGR)
-        if not cv2.imwrite(path, out):
-            raise ValueError(f'Failed to write EXR: {path}')
+        if io_backend == 'oiio':
+            h, w = img.shape[:2]
+            spec = io_lib.ImageSpec(w, h, 3, io_lib.FLOAT)
+            buf = io_lib.ImageBuf(spec)
+            buf.set_pixels(io_lib.ROI(), img.astype(np.float32))
+            if not buf.write(path):
+                raise ValueError(f'Failed to write EXR: {path}')
+        else:
+            out = io_lib.cvtColor(img.astype(np.float32), io_lib.COLOR_RGB2BGR)
+            if not io_lib.imwrite(path, out):
+                raise ValueError(f'Failed to write EXR: {path}')
 
     def to_display(img):
         d = np.clip(img, 0, None)
@@ -349,6 +415,58 @@ def launch_ui(selection):
         # No clipping — preserves full dynamic range
         return corrected.reshape(h, w, 3).astype(np.float32)
 
+
+    def get_sequence_frames(path):
+        """Given one frame path, find all frames in the sequence."""
+        import re
+        dirname = os.path.dirname(path)
+        basename = os.path.basename(path)
+        # Match frame number pattern e.g. clip.0001.exr or clip_0001.exr
+        m = re.match(r'^(.*?)(\.?)(\d+)(\.[^.]+)$', basename)
+        if not m:
+            return [path]
+        prefix, sep, frame_str, ext = m.groups()
+        frame_len = len(frame_str)
+        pattern = re.compile(
+            r'^' + re.escape(prefix) + re.escape(sep) + r'(\d{' + str(frame_len) + r'})' + re.escape(ext) + r'$'
+        )
+        frames = []
+        try:
+            for fn in sorted(os.listdir(dirname)):
+                if pattern.match(fn):
+                    frames.append(os.path.join(dirname, fn))
+        except:
+            pass
+        return frames if frames else [path]
+
+    def process_sequence(frames, correction, out_dir, progress_cb=None):
+        """Apply correction to a list of frames, saving to out_dir.
+        Output naming: <name>_matched.####.exr
+        Returns list of output paths.
+        """
+        import re
+        total = len(frames)
+        out_paths = []
+        for i, frame_path in enumerate(frames):
+            if progress_cb:
+                progress_cb(i, total)
+            img = load_image(frame_path)
+            corrected = apply_to_image(img, correction)
+            basename = os.path.basename(frame_path)
+            # Extract base name and frame number: clip.0001.exr -> clip_matched.0001.exr
+            m = re.match(r'^(.*?)\.?(\d+)(\.[^.]+)$', basename)
+            if m:
+                base, frame_num, ext = m.groups()
+                out_name = f'{base}_matched.{frame_num}{ext}'
+            else:
+                name, ext = os.path.splitext(basename)
+                out_name = f'{name}_matched{ext}'
+            out_path = os.path.join(out_dir, out_name)
+            save_exr(corrected, out_path)
+            out_paths.append(out_path)
+        if progress_cb:
+            progress_cb(total, total)
+        return out_paths
 
     def build_lut_from_matrix(M, lut_size=33, domain_max=1.0):
         """
@@ -842,15 +960,15 @@ def launch_ui(selection):
             QtWidgets.QMessageBox.warning(win, 'No Reference', 'No reference patches available to save.')
             return
 
-        if state['src_img'] is not None and state['src_points'] is not None:
-            src_p = sample_at_points(state['src_img'], state['src_points'])
-        elif state['src_patches'] is not None:
+        if state['src_patches'] is not None:
             src_p = state['src_patches']
+        elif state['src_img'] is not None and state['src_points'] is not None:
+            src_p = sample_at_points(state['src_img'], state['src_points'])
         else:
             QtWidgets.QMessageBox.warning(win, 'No Source', 'No source patches available to save.')
             return
 
-        # Ask where to save — no default path, user chooses freely
+        # Ask where to save — filename pre-filled from session name, user chooses directory
         save_path, _ = QtWidgets.QFileDialog.getSaveFileName(
             win, 'Save Session',
             f'{name}.json',
@@ -881,10 +999,63 @@ def launch_ui(selection):
             return
 
         state['ref_patches']    = session['ref_patches']
+        state['src_patches']    = session['src_patches']  # store B patches too
         state['ref_points']     = None
         state['ref_img']        = None
         state['ref_path']       = f"[Session: {session['name']}]"
         state['session_loaded'] = True
+
+        # If session has B patches stored, offer to apply to a new clip directly
+        if session.get('src_patches') is not None and hdr_mode:
+            reply = QtWidgets.QMessageBox.question(
+                win,
+                'Session Loaded',
+                f'Session "{session["name"]}" loaded.\n\n'
+                'Apply this correction to a new Camera B image without re-clicking patches?',
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            )
+            if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+                path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                    win, 'Load New Camera B Image', '',
+                    'Images (*.exr *.tif *.tiff *.dpx *.png *.jpg);;All Files (*)')
+                if path:
+                    try:
+                        img = load_image(path)
+                        state['src_img']   = img
+                        state['src_path']  = path
+                        state['src_points'] = None  # no re-clicking needed
+                        # Build correction from stored patches directly
+                        ref_p = np.array(session['ref_patches'])
+                        src_p = np.array(session['src_patches'])
+                        correction = build_correction(src_p, ref_p, hdr=hdr_mode)
+                        # Ask where to save
+                        src_dir  = os.path.dirname(path)
+                        src_base = os.path.splitext(os.path.basename(path))[0]
+                        out_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                            win, 'Save Corrected EXR',
+                            os.path.join(src_dir, f'{src_base}_matched.exr'),
+                            'OpenEXR (*.exr);;All Files (*)')
+                        if out_path:
+                            if not out_path.lower().endswith('.exr'):
+                                out_path += '.exr'
+                            progress.setVisible(True); progress.setValue(30)
+                            QtWidgets.QApplication.processEvents()
+                            corrected = apply_to_image(img, correction)
+                            progress.setValue(80)
+                            save_exr(corrected, out_path)
+                            try:
+                                flame.batch.import_clip(out_path, 'Schematic Reel 1')
+                            except: pass
+                            progress.setValue(100)
+                            match_status.setText(f'✓  Saved: {os.path.basename(out_path)}')
+                            match_status.setStyleSheet('font-size:11px;color:#66cc66;')
+                            return
+                    except Exception as e:
+                        match_status.setText(f'Error: {e}')
+                        match_status.setStyleSheet('font-size:11px;color:#cc5555;')
+                        progress.setVisible(False)
+                        return
+
         match_status.setText(
             f'✓  Session "{session["name"]}" loaded — A side ready. '
             f'Now load a new Camera B frame and click 24 patches.'
@@ -991,6 +1162,96 @@ def launch_ui(selection):
                         f.write(cube_str)
                     print(f'[AB ColorChecker] LUT saved: {lut_path}')
                     saved_files.append(os.path.basename(lut_path))
+
+            # Apply to sequence
+            if export_choice in ('sequence', 'sequence_lut'):
+                frames = get_sequence_frames(state['src_path'])
+                if len(frames) <= 1:
+                    QtWidgets.QMessageBox.information(win, 'Single Frame',
+                        'Only one frame found — use Single Image instead.')
+                    progress.setVisible(False)
+                    return
+
+                # Show file picker on first frame so user can see the sequence
+                first_frame = frames[0]
+                seq_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                    win, f'Confirm Sequence — {len(frames)} frames found',
+                    first_frame,
+                    'EXR Sequences (*.exr);;All Files (*)')
+                if not seq_path:
+                    match_status.setText('Cancelled.')
+                    match_status.setStyleSheet('font-size:10px;color:#888888;')
+                    progress.setVisible(False); return
+
+                # Re-detect frames from confirmed path
+                frames = get_sequence_frames(seq_path)
+
+                # Choose output directory
+                out_dir = QtWidgets.QFileDialog.getExistingDirectory(
+                    win, f'Choose Output Folder for {len(frames)} frames', src_dir)
+                if not out_dir:
+                    match_status.setText('Cancelled.')
+                    match_status.setStyleSheet('font-size:10px;color:#888888;')
+                    progress.setVisible(False); return
+
+                match_status.setText(f'Processing {len(frames)} frames...')
+                match_status.setStyleSheet('font-size:10px;color:#aaaaaa;')
+                QtWidgets.QApplication.processEvents()
+
+                def seq_progress(i, total):
+                    pct = int(10 + 85 * i / max(total, 1))
+                    progress.setValue(pct)
+                    match_status.setText(f'Processing frame {i} of {total}...')
+                    QtWidgets.QApplication.processEvents()
+
+                out_paths = process_sequence(frames, correction, out_dir, seq_progress)
+                saved_files.append(f'{len(frames)} frames → {os.path.basename(out_dir)}/')
+
+                # Auto-import sequence into Batch using pattern path
+                if out_paths:
+                    try:
+                        import re
+                        # Build sequence pattern from first output path
+                        # e.g. /out/clip_matched.0001.exr -> /out/clip_matched.[0001-0030].exr
+                        first = out_paths[0]
+                        last  = out_paths[-1]
+                        m = re.match(r'^(.*?)(\d+)(\.[^.]+)$', os.path.basename(first))
+                        if m and len(out_paths) > 1:
+                            base, frame_str, ext = m.groups()
+                            pad = len(frame_str)
+                            first_num = int(frame_str)
+                            m2 = re.match(r'^(.*?)(\d+)(\.[^.]+)$', os.path.basename(last))
+                            last_num = int(m2.group(2)) if m2 else first_num + len(out_paths) - 1
+                            # Flame sequence pattern with frame range
+                            seq_pattern = os.path.join(
+                                os.path.dirname(first),
+                                f'{base}[{str(first_num).zfill(pad)}-{str(last_num).zfill(pad)}]{ext}'
+                            )
+                            flame.batch.import_clip(seq_pattern, 'Schematic Reel 1')
+                        else:
+                            flame.batch.import_clip(first, 'Schematic Reel 1')
+                        print(f'[AB ColorChecker] Sequence imported into Batch')
+                    except Exception as e:
+                        print(f'[AB ColorChecker] Auto-import skipped: {e}')
+                        # Fallback — try importing first frame only
+                        try:
+                            flame.batch.import_clip(out_paths[0], 'Schematic Reel 1')
+                        except: pass
+
+                # Also export LUT if requested
+                if export_choice == 'sequence_lut':
+                    lut_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                        win, 'Save 3D LUT',
+                        os.path.join(out_dir, f'{src_base}_matched.cube'),
+                        'LUT Cube (*.cube);;All Files (*)')
+                    if lut_path:
+                        if not lut_path.lower().endswith('.cube'):
+                            lut_path += '.cube'
+                        _, M = correction
+                        cube_str = build_lut_from_matrix(M, lut_size=33, domain_max=100.0)
+                        with open(lut_path, 'w') as f:
+                            f.write(cube_str)
+                        saved_files.append(os.path.basename(lut_path))
 
             progress.setValue(100)
             if saved_files:
