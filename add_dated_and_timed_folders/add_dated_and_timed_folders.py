@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Dated and Timed Folders
-Script Version: 2.5.0
+Script Version: 2.6.0
 Flame Version: 2025.1
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
-Update Date: 03.24.26
+Update Date: 06.18.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -55,6 +55,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.6.0 06.18.26
+        - No longer creates extra dated or timed folders if they already exist in the media panel.
 
     v2.5.0 03.24.26
         - Update to PyFlameLib v5.3.0.
@@ -102,7 +105,7 @@ from lib.pyflame_lib_add_dated_and_timed_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
-SCRIPT_VERSION = 'v2.5.0'
+SCRIPT_VERSION = 'v2.6.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -400,11 +403,34 @@ class AddDatedAndTimedFolders:
         =====================
 
         Create a folder with the current date and a subfolder with the current time.
+        Reuses an existing dated and/or timed folder if one already exists.
         """
 
         for item in self.selection:
-            item.create_folder(self.current_date).create_folder(self.current_time)
-            pyflame.print(f'Created date and timestamped folder: {self.current_date}/{self.current_time}', text_color=TextColor.GREEN)
+
+            # Check for an existing dated folder, otherwise create one.
+            dated_folder = None
+            for folders in item.folders:
+                if folders.name == self.current_date:
+                    dated_folder = folders
+                    break
+            if dated_folder is None:
+                dated_folder = item.create_folder(self.current_date)
+
+            # Check the dated folder for an existing timed folder, otherwise create one.
+            timed_folder_exists = False
+            for folders in dated_folder.folders:
+                if folders.name == self.current_time:
+                    timed_folder_exists = True
+                    break
+            if timed_folder_exists:
+                PyFlameMessageWindow(
+                    message=f'Timed folder already exists: {self.current_date}/{self.current_time}',
+                    parent=None,
+                    )
+            else:
+                dated_folder.create_folder(self.current_time)
+                pyflame.print(f'Created date and timestamped folder: {self.current_date}/{self.current_time}', text_color=TextColor.GREEN)
 
     def dated_folders(self):
         """
@@ -414,6 +440,17 @@ class AddDatedAndTimedFolders:
         Create a folder with the current date.
         """
 
+        # Check if dated folder already exists.
+        for item in self.selection:
+            for folders in item.folders:
+                if folders.name == self.current_date:
+                    PyFlameMessageWindow(
+                        message=f'Dated folder already exists: {self.current_date}',
+                        parent=None,
+                        )
+                    return
+
+        # Create dated folder if it does not exist.
         for item in self.selection:
             item.create_folder(self.current_date)
             pyflame.print(f'Created dated folder: {self.current_date}', text_color=TextColor.GREEN)
@@ -426,6 +463,17 @@ class AddDatedAndTimedFolders:
         Create a folder with the current time.
         """
 
+        # Check if timed folder already exists.
+        for item in self.selection:
+            for folders in item.folders:
+                if folders.name == self.current_time:
+                    PyFlameMessageWindow(
+                        message=f'Timed folder already exists: {self.current_time}',
+                        parent=None,
+                        )
+                    return
+
+        # Create timed folder if it does not exist.
         for item in self.selection:
             item.create_folder(self.current_time)
             pyflame.print(f'Created timestamped folder: {self.current_time}', text_color=TextColor.GREEN)

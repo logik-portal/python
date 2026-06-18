@@ -2,7 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
-https://github.com/logik-portal/pyflame
+https://logik-portal.com/pyflame
+
+## v5.4.0 [06.03.26]
+
+### Added
+
+- **PyFlameOptionWindow**
+    - New window class to display a message with up to four user-defined buttons along the bottom of the
+      window. The window blocks until the user presses a button (or closes the window),
+      then exposes the text of the pressed button.
+    - Buttons are positional. Positions are defined using a dictionary keyed by an int from 1 to 4,
+      where each value is a dictionary describing that button. Positions map directly to fixed columns
+      along the bottom of the window, so omitting a position leaves an empty gap in that slot.
+
+## v5.3.2 [05.25.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameSlider`
+        - **Fixed**
+            - Numbers not being entered in calculator entry field when pressing number keys in linux.
+
+## v5.3.1 [05.04.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameTable`
+        - load_csv()
+            - Cells resize to fit content when data is added to the table.
+
+- Misc type hinting and argument validation improvements.
 
 ## v5.3.0 [03.13.26]
 
