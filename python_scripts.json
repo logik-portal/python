@@ -1,5 +1,15 @@
 [
   {
+    "Script Name": "ab colorchecker",
+    "Script Version": "3.9.2",
+    "Flame Version": "2026",
+    "Maximum Flame Version": "Latest",
+    "Author": "AB",
+    "Creation Date": "06.01.26",
+    "Update Date": "06.17.26",
+    "Description": "Script Name: AB ColorChecker\nScript Version: 3.9.2\nFlame Version: 2026\nWritten by: AB\nCreation Date: 06.01.26\nUpdate Date: 06.17.26\n\nDescription:\nCamera matching via Macbeth ColorChecker chart in ACEScg scene-linear.\nLoad reference (Camera A) and source (Camera B) frames, click all 24\ncolour patches on each, then apply a correction that maps Camera B to\nlook like Camera A.\n\nStandard mode uses a pure 3x3 colour matrix — zero always maps to zero,\nfull dynamic range preserved, clean shadows. Exports corrected EXR,\n3D LUT (.cube), or both. Supports image sequence processing.\n\nHDR / 360 mode uses a Thin-Plate Spline RBF for better colour accuracy\nwith wide-gamut cameras that produce negative channel values.\n\nSessions store both A and B patch data and can be recalled to apply\nthe same correction to new footage without re-clicking patches.\n\nUses OpenImageIO if available, falls back to OpenCV automatically.\nCreate ab_colorchecker_paths.py for custom library paths (IT/studio use).\n\nMenus:\nRight-click in Batch -> AB ColorChecker -> Match Cameras...\nRight-click in Media Panel -> AB ColorChecker -> Match Cameras...\n\nUpdates:\n3.9.2 06.17.26\n- Fixed sequence import into Flame Batch as full clip not single frame.\n3.9.1 06.17.26\n- Export dialog redesigned with dropdown and LUT checkbox.\n- Sequence naming fixed to name_matched.####.exr.\n- HDR sessions store B patches for recall without re-clicking.\n3.9.0 06.17.26\n- OpenImageIO support with cv2 fallback.\n- Side script for IT path configuration.\n- Sequence processing added.\n3.8.3 06.15.26\n- Session save pre-fills filename from session name field.\n3.7.0 06.12.26\n- Standard mode switched to pure 3x3 colour matrix.\n- HDR mode uses single-stage TPS RBF."
+  },
+  {
     "Script Name": "about to mux it up",
     "Script Version": "1.0.1",
     "Flame Version": "2022",
