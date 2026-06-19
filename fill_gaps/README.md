@@ -1,17 +1,19 @@
 # Fill Gaps
 
-**Script Version:** 1.4.0  
-**Flame Version:** 2025  
+**Script Version:** 1.5.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.18.24  
-**Update Date:** 12.18.25  
+**Update Date:** 06.18.26  
 
 **Script Type:** Timeline
 
 ## Description
 
 Inserts black into selected gaps in the timeline.
-<br><br>
+
+## Usage
+
 Selection of segments in timeline should start with a gap, otherwise gaps will
 not be included in selection of timeline segments and the menu will not be visible.
 
@@ -24,6 +26,10 @@ not be included in selection of timeline segments and the menu will not be visib
 Copy script into /opt/Autodesk/shared/python/fill_gaps
 
 ## Updates
+
+### v1.5.0 [06.18.26]
+- Updated to PyFlameLib v5.4.0.
+<br>
 
 ### v1.4.0 [12.18.25]
 - Updated to PyFlameLib v5.1.1.
