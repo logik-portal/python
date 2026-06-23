@@ -1,22 +1,18 @@
 # Import Camera
 
-**Script Version:** 4.16.0  
-**Flame Version:** 2025  
+**Script Version:** 4.17.0  
+**Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.02.18  
-**Update Date:** 08.27.25  
+**Update Date:** 06.22.26  
 
 ## Description
 
-Creates a new Action node with selected FBX or Alembic file loaded.
-<br><br>
-The Action camera will be automatically switched to the new FBX/Alembic camera.
-<br><br>
-Options to load with simple re-comp or ST map setups.
+Creates a new Action node setup with selected FBX or Alembic file loaded.
 
 ## URL
 
-https://github.com/logik-portal/python/import_camera
+https://logik-portal.com/scripts/#import_camera
 
 ## Menus
 
@@ -31,6 +27,11 @@ https://github.com/logik-portal/python/import_camera
 Copy script into /opt/Autodesk/shared/python/import_camera
 
 ## Updates
+
+### v4.17.0 [06.22.26]
+- Updated to PyFlameLib v5.4.0.
+- Fixed calculator issues in Linux.
+<br>
 
 ### v4.16.0 [08.27.25]
 - Updated to PyFlameLib v5.0.0.

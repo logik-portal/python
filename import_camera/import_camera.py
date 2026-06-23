@@ -1,5 +1,5 @@
 # Import Camera
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 """
 Script Name: Import Camera
-Script Version: 4.16.0
-Flame Version: 2025
+Script Version: 4.17.0
+Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.02.18
-Update Date: 08.27.25
+Update Date: 06.22.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -31,14 +31,11 @@ Custom Action Type: Batch
 
 Description:
 
-    Creates a new Action node with selected FBX or Alembic file loaded.
-
-    The Action camera will be automatically switched to the new FBX/Alembic camera.
-
-    Options to load with simple re-comp or ST map setups.
+    Creates a new Action node setup with selected FBX or Alembic file loaded.
 
 URL:
-    https://github.com/logik-portal/python/import_camera
+
+    https://logik-portal.com/scripts/#import_camera
 
 Menus:
 
@@ -54,6 +51,10 @@ To install:
     Copy script into /opt/Autodesk/shared/python/import_camera
 
 Updates:
+
+    v4.17.0 06.22.26
+        - Updated to PyFlameLib v5.4.0.
+        - Fixed calculator issues in Linux.
 
     v4.16.0 08.27.25
         - Updated to PyFlameLib v5.0.0.
@@ -183,9 +184,9 @@ Updates:
         - Fixed UI in Linux
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -194,12 +195,12 @@ import shutil
 import flame
 from lib.pyflame_lib_import_camera import *
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Import Camera'
-SCRIPT_VERSION = 'v4.16.0'
+SCRIPT_VERSION = 'v4.17.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class ImportCamera():
@@ -518,7 +519,7 @@ class ImportCamera():
 
         return undistort_map, redistort_map
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def create_camera_action(self) -> bool:
         """
@@ -1094,7 +1095,7 @@ class ImportCamera():
             self.window.show()
             return False
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def main_window(self):
 
@@ -1415,7 +1416,7 @@ class ImportCamera():
         self.window.grid_layout.addWidget(self.cancel_button, 7, 3)
         self.window.grid_layout.addWidget(self.load_button, 7, 4)
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def setup(self):
         """
@@ -1575,7 +1576,7 @@ class ImportCamera():
         setup_window.grid_layout.addWidget(self.cancel_button, 3, 4)
         setup_window.grid_layout.addWidget(self.save_button, 3, 5)
 
-#-------------------------------------
+# ==============================================================================
 
 def import_fbx(selection):
 
@@ -1589,9 +1590,9 @@ def setup(selection):
 
     ImportCamera(selection)
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_batch_custom_ui_actions():
 
@@ -1603,13 +1604,13 @@ def get_batch_custom_ui_actions():
                     'name': 'Import FBX Camera',
                     'order': 1,
                     'execute': import_fbx,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Import Alembic Camera',
                     'order': 2,
                     'execute': import_abc,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
@@ -1631,7 +1632,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Import Camera Setup',
                     'execute': setup,
-                    'minimumVersion': '2025'
+                    'minimumVersion': '2025.1'
                }
            ]
         }
