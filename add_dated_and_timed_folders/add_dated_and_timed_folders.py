@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Dated and Timed Folders
-Script Version: 2.6.0
+Script Version: 2.7.0
 Flame Version: 2025.1
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
-Update Date: 06.18.26
+Update Date: 06.25.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -33,7 +33,15 @@ Description:
 
     Create folders with the current date and time, date only, or time only.
 
+Usage:
+
+    Date and time format can be customized in the script setup window.
+
     Examples of date formats include: YY-MM-DD, YYYY-MM-DD, YYMMDD, etc.
+
+URL:
+
+    https://logik-portal.com/scripts/#add_dated_and_timed_folders
 
 Menus:
 
@@ -55,6 +63,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.7.0 06.25.26
+        - Path is now copied to clipboard when creating folders in the MediaHub Files tab.
 
     v2.6.0 06.18.26
         - No longer creates extra dated or timed folders if they already exist in the media panel.
@@ -105,7 +116,7 @@ from lib.pyflame_lib_add_dated_and_timed_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
-SCRIPT_VERSION = 'v2.6.0'
+SCRIPT_VERSION = 'v2.7.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -548,16 +559,15 @@ class AddDatedAndTimedFolders:
         if not os.path.exists(path):
             try:
                 os.makedirs(path, exist_ok=True)
+                pyflame.copy_to_clipboard(path)
                 return True
             except Exception as e:
-                print(f'Python Error:', e, '\n')
                 pyflame.print(f'Error creating folder: {path}', print_type=PrintType.ERROR)
                 return False
         else:
-            pyflame.print(f'Folder already exists: {path}', print_type=PrintType.WARNING)
+            pyflame.print(f'Folder already exists: {path}')
+            pyflame.copy_to_clipboard(path)
             return False
-
-        flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
 
 # ------------------------------------------------------------------------------
 
@@ -629,21 +639,21 @@ def get_media_panel_custom_ui_actions():
                     'order': 1,
                     'isVisible': scope_library_or_folder,
                     'execute': date_time_folders,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add Dated Folder',
                     'order': 2,
                     'isVisible': scope_library_or_folder,
                     'execute': dated_folders,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 },
                 {
                     'name': 'Add Timestamped Folder',
                     'order': 3,
                     'isVisible': scope_library_or_folder,
                     'execute': timed_folders,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }

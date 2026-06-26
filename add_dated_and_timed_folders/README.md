@@ -1,18 +1,26 @@
 # Add Dated And Timed Folders
 
-**Script Version:** 2.6.0  
+**Script Version:** 2.7.0  
 **Flame Version:** 2025.1  
 **Written by:** John Geehreng and Michael Vaglienty  
 **Creation Date:** 07.04.20  
-**Update Date:** 06.18.26  
+**Update Date:** 06.25.26  
 
 **Script Type:** MediaPanel/MediaHub Files
 
 ## Description
 
 Create folders with the current date and time, date only, or time only.
+
+## Usage
+
+Date and time format can be customized in the script setup window.
 <br><br>
 Examples of date formats include: YY-MM-DD, YYYY-MM-DD, YYMMDD, etc.
+
+## URL
+
+https://logik-portal.com/scripts/#add_dated_and_timed_folders
 
 ## Menus
 
@@ -32,6 +40,10 @@ Examples of date formats include: YY-MM-DD, YYYY-MM-DD, YYMMDD, etc.
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.7.0 [06.25.26]
+- Path is now copied to clipboard when creating folders in the MediaHub Files tab.
+<br>
 
 ### v2.6.0 [06.18.26]
 - No longer creates extra dated or timed folders if they already exist in the media panel.
