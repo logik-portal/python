@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: Rename Tools
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025.2
 Written by: Koumei Muraki
 Creation Date: 07.02.26
+Update Date: 07.08.26
 
 Description:
 Rename clips by adding a prefix, suffix, or performing find and replace.
@@ -13,6 +14,14 @@ Includes a preview panel and one-level undo.
 Menus:
 Media Panel -> Right-click -> Rename Tools
 Timeline -> Right-click -> Rename Tools
+
+Updates:
+v1.0.1 07.08.26
+- Improved the Find & Replace interface.
+- Code cleanup and refactoring.
+
+"""
+
 """
 
 # ----------------------------------------------------------------------
@@ -220,6 +229,7 @@ CFG_PATH = os.path.join(CFG_DIR, "config.json")
 CFG_FALLBACK_PATH = "/tmp/flame_rename_config.json"
 DEFAULT_PREFIX = "PRE_"
 DEFAULT_SUFFIX = "_SUF"
+ACTION_LOG = "/tmp/flame_prefix_action.log"
 
 
 def _ensure_cfg_dir():
@@ -333,6 +343,14 @@ def _save_last_repl(s):
     _save_cfg(data)
 
 
+def _log_action(message):
+    try:
+        with open(ACTION_LOG, "a") as f:
+            f.write(f"{datetime.datetime.now().isoformat()} {message}\n")
+    except Exception:
+        pass
+
+
 # ----------------- idempotent (duplicate-prevent) flags in config -----------------
 
 def _load_last_idem(kind):
@@ -353,6 +371,11 @@ def _which(cmd):
     return shutil.which(cmd) is not None
 
 
+def _osascript_string(value):
+    """Return a double-quoted AppleScript string literal."""
+    return json.dumps("" if value is None else str(value), ensure_ascii=False)
+
+
 # ------------- macOS AppleScript Yes/No dialog helper -------------
 
 def _macos_yes_no(title, question, default_yes=True):
@@ -362,7 +385,11 @@ def _macos_yes_no(title, question, default_yes=True):
             return default_yes
         default_btn = "Yes" if default_yes else "No"
         # Show a simple Yes/No dialog; returns True if Yes clicked.
-        script = f'display dialog {question!r} with title {title!r} buttons {{"No","Yes"}} default button {default_btn!r}'
+        script = (
+            f"display dialog {_osascript_string(question)} "
+            f"with title {_osascript_string(title)} "
+            f"buttons {{\"No\",\"Yes\"}} default button {_osascript_string(default_btn)}"
+        )
         p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
         return ("button returned:Yes" in (p.stdout or ""))
     except Exception:
@@ -406,7 +433,7 @@ def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Pre
     """Return (text, idempotent_bool) or (None, None) on cancel.
     If Qt is available, use a custom QDialog.
     Otherwise, on Linux use zenity and on macOS use AppleScript to obtain BOTH text and idempotent flag.
-    Falls back to the stored default if no UI mechanism is available.
+    Returns cancel if no UI mechanism is available.
     """
     # ---- 1) Qt path (styled dialog) ----
     if _has_qt():
@@ -472,7 +499,11 @@ def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Pre
     if sys.platform == "darwin" and _which("osascript"):
         try:
             # Step 1: text input
-            script = f'display dialog {label!r} default answer {str(default_text or "")!r} with title {title!r} buttons {"OK"!r} default button 1'
+            script = (
+                f"display dialog {_osascript_string(label)} "
+                f"default answer {_osascript_string(default_text or '')} "
+                f"with title {_osascript_string(title)} buttons {{\"OK\"}} default button 1"
+            )
             p1 = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
             if p1.returncode != 0:
                 return None, None
@@ -486,8 +517,8 @@ def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Pre
         except Exception:
             pass
 
-    # ---- 4) Fallback: return last stored values (no new input possible) ----
-    return default_text, _load_last_idem(kind)
+    # ---- 4) Fallback: cancel if no input UI is available ----
+    return None, None
 
 
 # ----------------- prompt (prefix input) -----------------
@@ -499,6 +530,7 @@ def _prompt_prefix_opts():
     s, idem = _prompt_text_with_idem("prefix", "Add Prefix", "Prefix:", _load_last_prefix())
     if s is None:
         return None, None
+    s = _sanitize_name(s)
     _save_last_prefix(s)
     _save_last_idem("prefix", idem)
     return s, idem
@@ -508,6 +540,7 @@ def _prompt_suffix_opts():
     s, idem = _prompt_text_with_idem("suffix", "Add Suffix", "Suffix:", _load_last_suffix())
     if s is None:
         return None, None
+    s = _sanitize_name(s)
     _save_last_suffix(s)
     _save_last_idem("suffix", idem)
     return s, idem
@@ -551,7 +584,11 @@ def _prompt_prefix(title="Add Prefix", label="Prefix:"):
     # 3) macOS: AppleScript
     if sys.platform == "darwin" and _which("osascript"):
         try:
-            script = f'display dialog {label!r} default answer {_load_last_prefix()!r} with title {title!r} buttons {"OK"!r} default button 1'
+            script = (
+                f"display dialog {_osascript_string(label)} "
+                f"default answer {_osascript_string(_load_last_prefix())} "
+                f"with title {_osascript_string(title)} buttons {{\"OK\"}} default button 1"
+            )
             p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
             if p.returncode == 0:
                 out = p.stdout or ""
@@ -560,8 +597,8 @@ def _prompt_prefix(title="Add Prefix", label="Prefix:"):
                     return val
         except Exception:
             pass
-    # 4) Fallback: use last or default silently
-    return _load_last_prefix()
+    # 4) Fallback: cancel if no input UI is available
+    return None
 
 
 # Suffix prompt (same fallbacks as prefix)
@@ -600,7 +637,11 @@ def _prompt_suffix(title="Add Suffix", label="Suffix:"):
             pass
     if sys.platform == "darwin" and _which("osascript"):
         try:
-            script = f'display dialog {label!r} default answer {_load_last_suffix()!r} with title {title!r} buttons {"OK"!r} default button 1'
+            script = (
+                f"display dialog {_osascript_string(label)} "
+                f"default answer {_osascript_string(_load_last_suffix())} "
+                f"with title {_osascript_string(title)} buttons {{\"OK\"}} default button 1"
+            )
             p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
             if p.returncode == 0:
                 out = p.stdout or ""
@@ -609,55 +650,60 @@ def _prompt_suffix(title="Add Suffix", label="Suffix:"):
                     return val
         except Exception:
             pass
-    return _load_last_suffix()
+    return None
 
 
 # Find & Replace prompt (two fields). If replace is empty string, treat as delete.
 
-def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl="Replace with (empty = delete):"):
-    # 1) Qt: show two dialogs sequentially, centered
+def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl="Replace:"):
+    # 1) Qt: show both fields in one centered dialog
     if _has_qt():
         try:
             parent = _parent_widget()
-            # First: Find
-            dlg1 = QtWidgets.QInputDialog(parent)
-            _apply_flat_style(dlg1)
-            dlg1.setWindowTitle(title)
-            dlg1.setLabelText(label_find)
-            dlg1.setTextValue(_load_last_find())
-            dlg1.show()
-            if QtWidgets is not None:
-                QtWidgets.QApplication.processEvents()
-            _center_on_screen(dlg1)
+            dlg = QtWidgets.QDialog(parent)
+            dlg.setWindowTitle(title)
+
+            layout = QtWidgets.QVBoxLayout(dlg)
+            form = QtWidgets.QGridLayout()
+            form.setColumnMinimumWidth(0, 90)
+            form.setColumnStretch(1, 1)
+
+            find_edit = QtWidgets.QLineEdit(_load_last_find(), dlg)
+            repl_edit = QtWidgets.QLineEdit(_load_last_repl(), dlg)
+            repl_edit.setPlaceholderText("empty = delete")
+
+            form.addWidget(QtWidgets.QLabel(label_find, dlg), 0, 0, QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            form.addWidget(find_edit, 0, 1)
+            form.addWidget(QtWidgets.QLabel(label_repl, dlg), 1, 0, QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            form.addWidget(repl_edit, 1, 1)
+            layout.addLayout(form)
+
+            btns = QtWidgets.QDialogButtonBox(
+                QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
+                parent=dlg
+            )
+            btns.accepted.connect(dlg.accept)
+            btns.rejected.connect(dlg.reject)
+            layout.addWidget(btns)
+
+            _apply_flat_style(dlg)
             try:
-                dlg1.raise_()
-                dlg1.activateWindow()
+                find_edit.selectAll()
+                find_edit.setFocus()
             except Exception:
                 pass
-            if not _exec_dialog(dlg1):
-                return None, None
-            f = str(dlg1.textValue())
-
-            # Second: Replace
-            dlg2 = QtWidgets.QInputDialog(parent)
-            _apply_flat_style(dlg2)
-            dlg2.setWindowTitle(title)
-            dlg2.setLabelText(label_repl)
-            dlg2.setTextValue(_load_last_repl())
-            dlg2.show()
+            dlg.show()
             if QtWidgets is not None:
                 QtWidgets.QApplication.processEvents()
-            _center_on_screen(dlg2)
+            _center_on_screen(dlg)
             try:
-                dlg2.raise_()
-                dlg2.activateWindow()
+                dlg.raise_()
+                dlg.activateWindow()
             except Exception:
                 pass
-            if not _exec_dialog(dlg2):
+            if not _exec_dialog(dlg):
                 return None, None
-            r = str(dlg2.textValue())
-
-            return f, r
+            return str(find_edit.text()), str(repl_edit.text())
         except Exception:
             pass
     # 2) Linux: zenity (two sequential entries for reliability)
@@ -675,13 +721,21 @@ def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl=
     # 3) macOS: AppleScript two dialogs
     if sys.platform == "darwin" and _which("osascript"):
         try:
-            script1 = f'display dialog {label_find!r} default answer {_load_last_find()!r} with title {title!r} buttons {"OK"!r} default button 1'
+            script1 = (
+                f"display dialog {_osascript_string(label_find)} "
+                f"default answer {_osascript_string(_load_last_find())} "
+                f"with title {_osascript_string(title)} buttons {{\"OK\"}} default button 1"
+            )
             p1 = subprocess.run(["osascript", "-e", script1], capture_output=True, text=True)
             if p1.returncode != 0:
                 return None, None
             out1 = p1.stdout or ""
             fval = _extract_osascript_text(out1)
-            script2 = f'display dialog {label_repl!r} default answer {_load_last_repl()!r} with title {title!r} buttons {"OK"!r} default button 1'
+            script2 = (
+                f"display dialog {_osascript_string(label_repl)} "
+                f"default answer {_osascript_string(_load_last_repl())} "
+                f"with title {_osascript_string(title)} buttons {{\"OK\"}} default button 1"
+            )
             p2 = subprocess.run(["osascript", "-e", script2], capture_output=True, text=True)
             if p2.returncode != 0:
                 return None, None
@@ -690,8 +744,8 @@ def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl=
             return fval, rval
         except Exception:
             pass
-    # 4) Fallback: use last values (could be empty strings)
-    return _load_last_find(), _load_last_repl()
+    # 4) Fallback: cancel if no input UI is available
+    return None, None
 
 
 # ----------------- Flame selection + rename -----------------
@@ -749,13 +803,15 @@ def _safe_set_name(item, new_name):
     try:
         cur = _strip_outer_quotes(getattr(item, 'name', ''))
         if new_name == cur:
-            return
+            return False
     except Exception:
         pass
     try:
         item.name = new_name
+        return True
     except Exception as e:
         print("[Rename Tools] Rename failed:", e)
+        return False
 
 
 def _strip_outer_quotes(s):
@@ -772,6 +828,7 @@ def _strip_outer_quotes(s):
 # ----------------- in-script undo buffer -----------------
 # Stores a single-level undo list of (weakref(item), old_name, new_name)
 _LAST_RENAMES = []
+_OPEN_PANELS = []
 
 
 def _undo_buffer_clear():
@@ -851,115 +908,120 @@ def _as_clip_target(obj):
         return None
 
 
+def _selection_items(selection=None):
+    if selection:
+        try:
+            return list(selection)
+        except TypeError:
+            return [selection]
+        except Exception:
+            pass
+    return _collect_selection()
+
+
+def _clip_targets_from_selection(selection=None):
+    """Resolve selected objects to unique clip targets."""
+    targets = []
+    seen = set()
+    for it in _selection_items(selection):
+        target = _as_clip_target(it)
+        if target is None:
+            continue
+        key = id(target)
+        if key in seen:
+            continue
+        targets.append(target)
+        seen.add(key)
+    return targets
+
+
+def _log_field_name(name, context):
+    return name if context in (None, "") else f"{name}({context})"
+
+
+def _apply_rename_transform(selection, transform, failure_label="Rename"):
+    changed = 0
+    _undo_buffer_clear()
+    for target in _clip_targets_from_selection(selection):
+        try:
+            base = _strip_outer_quotes(getattr(target, 'name', ''))
+            proposed = transform(base)
+            if proposed is None:
+                continue
+            new_name = _sanitize_name(proposed)
+            if new_name == base:
+                continue
+            if _safe_set_name(target, new_name):
+                _undo_buffer_push(target, base, new_name)
+                changed += 1
+        except Exception as e:
+            print(f"[Rename Tools] {failure_label} failed:", e)
+    return changed
+
+
 # ----------------- actions -----------------
 
 # -------- runners used by panel (return changed count) --------
 
-def _run_prefix_with(prefix, idem=True):
-    """Apply prefix to current selection; return number of changed items."""
+def _run_prefix_with(prefix, idem=True, selection=None, log_context="panel"):
+    """Apply prefix to selected clip targets; return number of changed items."""
     if not isinstance(prefix, str):
         return 0
     prefix = _sanitize_name(prefix)
     if prefix == "":
         return 0
-    changed = 0
-    _undo_buffer_clear()
-    items = _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.startswith(prefix):
-                continue
-            new_name = f"{prefix}{base}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Prefix (panel) failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} prefix(panel)='{prefix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
-    # persist last-used
+
+    def transform(base):
+        if idem and base.startswith(prefix):
+            return None
+        return f"{prefix}{base}"
+
+    changed = _apply_rename_transform(selection, transform, "Prefix")
+    _log_action(f"{_log_field_name('prefix', log_context)}='{prefix}' changed={changed} idem={idem}")
     _save_last_prefix(prefix)
     _save_last_idem("prefix", idem)
     return changed
 
 
-def _run_suffix_with(suffix, idem=True):
-    """Apply suffix to current selection; return number of changed items."""
+def _run_suffix_with(suffix, idem=True, selection=None, log_context="panel"):
+    """Apply suffix to selected clip targets; return number of changed items."""
     if not isinstance(suffix, str):
         return 0
     suffix = _sanitize_name(suffix)
     if suffix == "":
         return 0
-    changed = 0
-    _undo_buffer_clear()
-    items = _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.endswith(suffix):
-                continue
-            new_name = f"{base}{suffix}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Suffix (panel) failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} suffix(panel)='{suffix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
+
+    def transform(base):
+        if idem and base.endswith(suffix):
+            return None
+        return f"{base}{suffix}"
+
+    changed = _apply_rename_transform(selection, transform, "Suffix")
+    _log_action(f"{_log_field_name('suffix', log_context)}='{suffix}' changed={changed} idem={idem}")
     _save_last_suffix(suffix)
     _save_last_idem("suffix", idem)
     return changed
 
 
-def _run_findreplace_with(find, repl):
-    """Apply find/replace to current selection; return number of changed items."""
+def _run_findreplace_with(find, repl, selection=None, log_context="panel"):
+    """Apply find/replace to selected clip targets; return number of changed items."""
     find = "" if find is None else str(find)
     repl = "" if repl is None else str(repl)
-    # Empty find → no-op
     if find == "":
         return 0
-    changed = 0
-    _undo_buffer_clear()
-    items = _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            new_name = base.replace(find, repl)
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Find&Replace (panel) failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} find(panel)='{find}' repl(panel)='{repl}' changed={changed}\n")
-    except Exception:
-        pass
+
+    def transform(base):
+        return base.replace(find, repl)
+
+    changed = _apply_rename_transform(selection, transform, "Find&Replace")
+    _log_action(
+        f"{_log_field_name('find', log_context)}='{find}' "
+        f"{_log_field_name('repl', log_context)}='{repl}' changed={changed}"
+    )
     _save_last_find(find)
     _save_last_repl(repl)
     return changed
+
 
 def _action_add_prefix(selection=None):
     prefix, idem = _prompt_prefix_opts()
@@ -967,59 +1029,11 @@ def _action_add_prefix(selection=None):
         return
     if idem is None:
         idem = _load_last_idem("prefix")
-    changed = 0
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.startswith(prefix):
-                continue
-            new_name = f"{prefix}{base}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Rename failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} prefix='{prefix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
+    _run_prefix_with(prefix, idem, selection, log_context="")
 
 
 def _action_add_prefix_last(selection=None):
-    prefix = _load_last_prefix()
-    idem = _load_last_idem("prefix")
-    changed = 0
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.startswith(prefix):
-                continue
-            new_name = f"{prefix}{base}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Rename failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} prefix(last)='{prefix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
+    _run_prefix_with(_load_last_prefix(), _load_last_idem("prefix"), selection, log_context="last")
 
 
 def _action_add_suffix(selection=None):
@@ -1028,138 +1042,36 @@ def _action_add_suffix(selection=None):
         return
     if idem is None:
         idem = _load_last_idem("suffix")
-    changed = 0
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.endswith(suffix):
-                continue
-            new_name = f"{base}{suffix}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Rename failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} suffix='{suffix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
+    _run_suffix_with(suffix, idem, selection, log_context="")
 
 
 def _action_add_suffix_last(selection=None):
-    suffix = _load_last_suffix()
-    idem = _load_last_idem("suffix")
-    changed = 0
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            if idem and base.endswith(suffix):
-                continue
-            new_name = f"{base}{suffix}"
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Rename failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} suffix(last)='{suffix}' changed={changed} idem={idem}\n")
-    except Exception:
-        pass
+    _run_suffix_with(_load_last_suffix(), _load_last_idem("suffix"), selection, log_context="last")
 
 
 def _action_find_replace(selection=None):
     find, repl = _prompt_find_replace()
-    # If user cancelled
     if find is None and repl is None:
         return
     find = "" if find is None else str(find)
     repl = "" if repl is None else str(repl)
-    # Save last values
     _save_last_find(find)
     _save_last_repl(repl)
-    # Empty find string → no-op (avoid replacing everything)
-    if find == "":
-        return
-    changed = 0
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            new_name = base.replace(find, repl)
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Find&Replace failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} find='{find}' repl='{repl}' changed={changed}\n")
-    except Exception:
-        pass
+    _run_findreplace_with(find, repl, selection, log_context="")
 
 
 def _action_find_replace_last(selection=None):
     find = _load_last_find()
-    repl = _load_last_repl()
     if not isinstance(find, str):
         return
-    changed = 0
-    if find == "":
-        return
-    _undo_buffer_clear()
-    items = list(selection) if selection else _collect_selection()
-    for it in items:
-        try:
-            target = _as_clip_target(it)
-            if target is None:
-                continue
-            base = _strip_outer_quotes(getattr(target, 'name', ''))
-            new_name = base.replace(find, repl)
-            if new_name == base:
-                continue
-            _undo_buffer_push(target, base, new_name)
-            _safe_set_name(target, new_name)
-            changed += 1
-        except Exception as e:
-            print("[Rename Tools] Find&Replace failed:", e)
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} find(last)='{find}' repl(last)='{repl}' changed={changed}\n")
-    except Exception:
-        pass
+    _run_findreplace_with(find, _load_last_repl(), selection, log_context="last")
 
 
 # Undo action
 
 def _action_undo_last(selection=None):
     restored = _perform_undo_last()
-    try:
-        with open("/tmp/flame_prefix_action.log", "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} undo_last restored={restored}\n")
-    except Exception:
-        pass
+    _log_action(f"undo_last restored={restored}")
 
 
 # ----------------- unified panel (Qt) -----------------
@@ -1169,11 +1081,24 @@ def show_rename_panel(selection=None):
     if not _has_qt():
         print("[Rename Tools] Qt is not available; panel cannot be shown.")
         return
+    panel_selection = list(selection) if selection else None
     parent = _parent_widget()
     dlg = QtWidgets.QDialog(parent)
     dlg.setWindowTitle("Rename Tools")
     dlg.setModal(False)
     dlg.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+    _OPEN_PANELS.append(dlg)
+
+    def _forget_panel(*args):
+        try:
+            _OPEN_PANELS.remove(dlg)
+        except ValueError:
+            pass
+
+    try:
+        dlg.destroyed.connect(_forget_panel)
+    except Exception:
+        pass
 
     # Root layout
     root = QtWidgets.QVBoxLayout(dlg)
@@ -1287,11 +1212,9 @@ def show_rename_panel(selection=None):
 
     def _first_preview_target():
         try:
-            items = list(selection) if selection else _collect_selection()
-            for it in items:
-                target = _as_clip_target(it)
-                if target is not None:
-                    return target
+            targets = _clip_targets_from_selection(panel_selection)
+            if targets:
+                return targets[0]
         except Exception:
             pass
         return None
@@ -1306,7 +1229,7 @@ def show_rename_panel(selection=None):
                     return base
                 if idem and base.startswith(val):
                     return base
-                return f"{val}{base}"
+                return _sanitize_name(f"{val}{base}")
             if idx == 1:
                 val = _sanitize_name(suf_edit.text())
                 idem = suf_idem.isChecked()
@@ -1314,12 +1237,12 @@ def show_rename_panel(selection=None):
                     return base
                 if idem and base.endswith(val):
                     return base
-                return f"{base}{val}"
+                return _sanitize_name(f"{base}{val}")
             f = find_edit.text()
             r = repl_edit.text()
             if f == "":
                 return base
-            return base.replace(f, r)
+            return _sanitize_name(base.replace(f, r))
         except Exception:
             return base
 
@@ -1341,17 +1264,17 @@ def show_rename_panel(selection=None):
         if idx == 0:
             val = pre_edit.text()
             idem = pre_idem.isChecked()
-            n = _run_prefix_with(val, idem)
+            n = _run_prefix_with(val, idem, panel_selection)
             _append(f"Prefix applied: '{val}' (idempotent={idem}) → changed={n}")
         elif idx == 1:
             val = suf_edit.text()
             idem = suf_idem.isChecked()
-            n = _run_suffix_with(val, idem)
+            n = _run_suffix_with(val, idem, panel_selection)
             _append(f"Suffix applied: '{val}' (idempotent={idem}) → changed={n}")
         else:
             f = find_edit.text()
             r = repl_edit.text()
-            n = _run_findreplace_with(f, r)
+            n = _run_findreplace_with(f, r, panel_selection)
             _append(f"Find/Replace: find='{f}' repl='{r}' → changed={n}")
         update_preview()
 
