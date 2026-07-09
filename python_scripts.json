@@ -766,8 +766,8 @@
     "Maximum Flame Version": "Latest",
     "Author": "Cursor with guidance from John Geehreng",
     "Creation Date": "06.13.26",
-    "Update Date": "Custom Action Type: Media Panel",
-    "Description": "Script Name: MASV Uploader\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Cursor with guidance from John Geehreng\nCreation Date: 06.13.26\nUpdate Date:\n\nCustom Action Type: Media Panel\n\nDescription:\n\nMASV Uploader : Export sequences or clips, upload to MASV, and create a password-protected\ndownload link with a copyable results dialog.\n\nMenu:\nMedia Panel → MASV Uploader → Upload Sequence / Upload Clip\nMain Menu   → MASV Uploader → Edit Config\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/masv_uploader or whereever you keep you scripts\n\nUpdates:\nv1.0 06.13.26\nInitial version"
+    "Update Date": "06.13.26",
+    "Description": "Script Name: MASV Uploader\nScript Version: 1.0.0\nFlame Version: 2025\nWritten by: Cursor with guidance from John Geehreng\nCreation Date: 06.13.26\n\nCustom Action Type: Media Panel\n\nDescription:\n\nMASV Uploader : Export sequences or clips, upload to MASV, and create a password-protected\ndownload link with a copyable results dialog.\n\nMenu:\nMedia Panel → MASV Uploader → Upload Sequence / Upload Clip\nMain Menu   → MASV Uploader → Edit Config\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/masv_uploader or whereever you keep you scripts\n\nUpdates:\nv1.0 06.13.26\nInitial version"
   },
   {
     "Script Name": "multi batch render",
