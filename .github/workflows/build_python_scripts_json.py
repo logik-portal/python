@@ -3,10 +3,10 @@
 
 """
 Script Name: Build Python Scripts JSON
-Script Version: 1.0.0
+Script Version: 1.0.1
 Written by: Michael Vaglienty
 Creation Date: 12.17.25
-Update Date: 12.17.25
+Update Date: 07.08.26
 
 Script Type: GitHub Actions
 
@@ -27,10 +27,23 @@ To install:
 
 Updates:
 
+    v1.0.1 07.08.26
+        - Fixed extract_docstring() to find the module docstring with
+          Python's own ast.parse() instead of regex.
+        - Previously it always looked for a triple-double-quoted (\"\"\")
+          block first, so a script whose real docstring uses triple-single
+          quotes (''') but which also has an unrelated \"\"\" docstring on
+          some other function later in the file (e.g. add_black_frames.py)
+          would silently pull the wrong block, and every field (Script
+          Version, Flame Version, Author, Creation Date, Description)
+          would come back "unknown" even though the real docstring had
+          them all.
+
     v1.0.0 12.17.25
         - Initial release.
 """
 
+import ast
 import json
 import os
 import re
@@ -244,9 +257,22 @@ def get_python_script_content(folder, repo=REPO_NAME, branch=REPO_BRANCH):
 
 def extract_docstring(python_content):
     """
-    Extract the module-level docstring from Python code content.
-    The docstring is typically the first triple-quoted string in the file,
-    after any shebang and encoding declarations.
+    Extract the module-level docstring from Python code content, using
+    Python's own AST parser instead of regex.
+
+    A previous regex-based version tried to match a triple-double-quoted
+    (\"\"\"...\"\"\") block FIRST, unconditionally, and only fell back to
+    triple-single-quoted (''' ... ''') if that search found nothing
+    ANYWHERE in the whole file. That meant a script whose real module
+    docstring uses ''' but which also happens to have an unrelated \"\"\"
+    docstring on some internal function further down the file would
+    silently grab that wrong, unrelated block instead of the real one —
+    every field extracted from it would then come back 'unknown', even
+    though the real docstring at the top of the file had them all (see
+    add_black_frames.py, fixed 2026-07-08). ast.get_docstring() finds the
+    actual module docstring by parsing the file the way Python itself
+    does, so it can't be fooled by quote style or by other triple-quoted
+    strings elsewhere in the file.
 
     Args
     ----
@@ -262,44 +288,25 @@ def extract_docstring(python_content):
     if python_content is None:
         return 'unknown'
 
-    # Remove shebang line if present
-    lines = python_content.split('\n')
-    start_idx = 0
-    if lines and lines[0].startswith('#!'):
-        start_idx = 1
-    # Skip encoding declaration if present
-    if start_idx < len(lines) and lines[start_idx].strip().startswith('#') and 'coding' in lines[start_idx]:
-        start_idx += 1
-    # Skip empty lines
-    while start_idx < len(lines) and not lines[start_idx].strip():
-        start_idx += 1
+    try:
+        module = ast.parse(python_content)
+    except SyntaxError:
+        return 'unknown'
 
-    # Now search for the first docstring in the remaining content
-    remaining_content = '\n'.join(lines[start_idx:])
+    docstring = ast.get_docstring(module, clean=False)
+    if not docstring:
+        return 'unknown'
 
-    # Pattern to match triple-quoted strings (both """ and ''')
-    patterns = [
-        # Match """docstring""" (can span multiple lines)
-        r'"""(.*?)"""',
-        # Match '''docstring''' (can span multiple lines)
-        r"'''(.*?)'''",
-    ]
-
-    for pattern in patterns:
-        # Use DOTALL flag to make . match newlines
-        matches = re.findall(pattern, remaining_content, re.DOTALL)
-        if matches:
-            # Get the first docstring (module-level docstring)
-            docstring = matches[0].strip()
-            # Clean up the docstring - remove leading/trailing whitespace from each line
-            docstring_lines = [line.strip() for line in docstring.split('\n')]
-            # Remove empty lines at the start and end
-            while docstring_lines and not docstring_lines[0]:
-                docstring_lines.pop(0)
-            while docstring_lines and not docstring_lines[-1]:
-                docstring_lines.pop()
-            return '\n'.join(docstring_lines) if docstring_lines else 'unknown'
-    return 'unknown'
+    # Clean up the docstring - remove leading/trailing whitespace from each
+    # line (matches the previous version's behavior exactly, so the
+    # downstream single-line/section field extractors see the same shape
+    # of text as before).
+    docstring_lines = [line.strip() for line in docstring.split('\n')]
+    while docstring_lines and not docstring_lines[0]:
+        docstring_lines.pop(0)
+    while docstring_lines and not docstring_lines[-1]:
+        docstring_lines.pop()
+    return '\n'.join(docstring_lines) if docstring_lines else 'unknown'
 
 
 def extract_field_from_docstring(docstring_content, field_pattern):
