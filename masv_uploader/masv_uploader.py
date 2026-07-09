@@ -4,7 +4,6 @@ Script Version: 1.0.0
 Flame Version: 2025
 Written by: Cursor with guidance from John Geehreng
 Creation Date: 06.13.26
-Update Date: 
 
 Custom Action Type: Media Panel
 
