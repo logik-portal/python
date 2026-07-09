@@ -41,13 +41,13 @@
   },
   {
     "Script Name": "add black frames",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Version": "1.7.5",
+    "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "Return True only for segment types that support reading and writing record_in.\n\nFlame prints its own error to stdout before raising an exception when\nrecord_in is accessed on unsupported types, so we must filter those out\nbefore ever touching the attribute."
+    "Author": "John Geehreng with help from Cursor",
+    "Creation Date": "05.28.26",
+    "Update Date": "05.28.26",
+    "Description": "Script Name: Add Black Frames\nScript Version: 1.7.5\nFlame Version: 2025\nWritten by: John Geehreng with help from Cursor\nCreation Date: 05.28.26\n\nCustom Action Type: Media Panel\n\nDescription:\n\nAdds configurable head and tail black frames to selected sequences in place.\nCreates a new top video track with black gap colour (set_gap_colour) at head\nand tail only. Content tracks are not cut or trimmed. start_time and record_in\nare restored after the top-track edit so content timecode is preserved.\n\nMenus:\n\nRight-click selected sequences -> UC Timelines -> Add Black Frames...\n\nTo install:\n\nCopy add_black_frames.py into /opt/Autodesk/shared/python/add_black_frames/\n\nUpdates:\n\nv1.7.5 06.03.26\n\nSuppress spurious \"no record_in\" errors: exclude Gap and Colour Source\nsegments from both snapshot and restore since they don't support\nrecord_in writes.\n\nv1.7.4 06.03.26\n\nReplace trim_head/trim_tail (confirmed no-ops on Gap segments) with\nopen_seq.padding_start / padding_end to extend the sequence before\ncreate_track(-1). Colour the full extended Gap in one set_gap_colour\ncall, then cut at boundaries, then delete the middle Colour Source.\nColour Sources do not auto-merge when the middle is deleted (unlike Gaps).\n\nv1.7.3 06.03.26\n\nStop deleting the interior Gap segment. Flame merges the surrounding Gap\nsegments back into one when the middle is deleted, leaving only a single\nsegment and triggering the overlap error. A Gap segment on the top track\nis transparent; only set_gap_colour (head and tail only) makes it opaque\nblack. The interior Gap is left in place so content below shows through.\nAlso reverted the incorrect content_end cut; the tail boundary is always\nat original_end regardless of head offset (cuts operate on the already-\nextended timeline so both boundaries are absolute timecodes).\n\nv1.7.2 05.28.26\n\n(superseded; incorrect content_end cut caused wrong tail split position)\n\nv1.7.1 05.28.26\n\nTrim gap before set_gap_colour; set_gap_colour converts Gap and breaks trim.\n\nv1.7.0 05.28.26\n\nUse PySegment.set_gap_colour(0, 0, 0) instead of Colour Correct shortcut.\n\nv1.6.1 05.28.26\n\nSettings window only on first run (no config.json); later runs use saved\nhead/tail values and go straight to confirm.\n\nv1.6.0 05.28.26\n\nTop track only — removed all lower-track cuts and gap insertion.\n\nv1.5.2 05.28.26\n\nStop cutting lower tracks for tail gaps; top track owns tail padding and\nsequence duration. Lower tracks only get head gap cuts.\n\nv1.5.1 05.28.26\n\nPrecompute frozen PyTime cut points before any edits; lower tracks\nextend head then tail using those absolute timecodes.\n\nv1.5.0 05.28.26\n\nTop track: create, Colour Correct, trim_head/trim_tail, cut at snapshotted\nstart_time + duration, delete middle; then extend lower tracks.\n\nv1.4.4 05.28.26\n\nLower tracks extend first (tail then head) using snapshotted start_time\nPyTime + frame offsets; top track is created after. Top track uses\nboundary cuts only (no trim).\n\nv1.4.3 05.28.26\n\nExtend lower-track tail gaps before top-track middle delete so sequence\nduration reaches head + original + tail; fix record_in restore for gaps.\n\nv1.4.2 05.28.26\n\nTop-track and lower-track cuts use snapshotted start_time plus duration\nfrom before trim/extension (trim_head can shift open_seq.start_time).\n\nv1.4.1 05.28.26\n\nFix top-track cut frame offsets (+1) and delete interior padding by\nduration instead of only when three segments exist.\n\nv1.4.0 05.28.26\n\nTop-track padding via boundary cuts at snapshotted start_time (trim\nremoved in v1.4.4 once lower tracks extend first).\n\nv1.3.0 05.28.26\n\nMerged into single script file (no lib/ folder).\n\nv1.2.2 05.28.26\n\nUse segment.slip() for top-track head/tail positioning (superseded).\n\nv1.2.1 05.28.26\n\nUse PyTrack.cut(PyTime) from start_time; remove record_in slipping.\n\nv1.2.0 05.28.26\n\nTop-track split/slip workflow; fix Qt window closing before confirm.\n\nv1.1.0 05.28.26\n\nGap + Colour Correct workflow (removed PNG import).\n\nv1.0.0 05.28.26\n\nInitial release."
   },
   {
     "Script Name": "add dated and timed folders",
@@ -961,13 +961,13 @@
   },
   {
     "Script Name": "rename tools",
-    "Script Version": "1.0.1",
-    "Flame Version": "2025.2",
+    "Script Version": "unknown",
+    "Flame Version": "unknown",
     "Maximum Flame Version": "Latest",
-    "Author": "Koumei Muraki",
-    "Creation Date": "07.02.26",
-    "Update Date": "07.08.26",
-    "Description": "Script Name: Rename Tools\nScript Version: 1.0.1\nFlame Version: 2025.2\nWritten by: Koumei Muraki\nCreation Date: 07.02.26\nUpdate Date: 07.08.26\n\nDescription:\nRename clips by adding a prefix, suffix, or performing find and replace.\nIncludes a preview panel and one-level undo.\n\nMenus:\nMedia Panel -> Right-click -> Rename Tools\nTimeline -> Right-click -> Rename Tools\n\nUpdates:\nv1.0.1 07.08.26\n- Improved the Find & Replace interface.\n- Code cleanup and refactoring."
+    "Author": "unknown",
+    "Creation Date": "unknown",
+    "Update Date": "unknown",
+    "Description": "unknown"
   },
   {
     "Script Name": "renamer ui",
