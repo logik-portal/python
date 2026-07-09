@@ -961,13 +961,13 @@
   },
   {
     "Script Name": "rename tools",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Version": "1.0.0",
+    "Flame Version": "2025.2",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "unknown"
+    "Author": "Koumei Muraki",
+    "Creation Date": "07.02.26",
+    "Update Date": "07.02.26",
+    "Description": "Script Name: Rename Tools\nScript Version: 1.0.0\nFlame Version: 2025.2\nWritten by: Koumei Muraki\nCreation Date: 07.02.26\n\nDescription:\nRename clips by adding a prefix, suffix, or performing find and replace.\nIncludes a preview panel and one-level undo.\n\nMenus:\nMedia Panel -> Right-click -> Rename Tools\nTimeline -> Right-click -> Rename Tools"
   },
   {
     "Script Name": "renamer ui",
