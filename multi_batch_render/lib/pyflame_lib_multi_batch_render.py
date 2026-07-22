@@ -19,10 +19,10 @@
 
 """
 PyFlame Library
-Version: 5.3.1
+Version: 5.5.0
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 05.04.26
+Update Date: 07.22.26
 
 Minimum Flame 2025.1
 
@@ -3884,6 +3884,9 @@ def _load_font():
             Loaded font.
         font_size (int):
             Font size.
+        markdown_font_family (str):
+            Font family name of the Light weight font at its natural, non-condensed
+            glyph widths. Used by `PyFlameTextEdit` to style rendered Markdown text.
     """
 
     # Set font path(s)
@@ -3923,11 +3926,16 @@ def _load_font():
     font.setStretch(88)
 
     font_light = loaded_fonts['MontserratLight']
+
+    # Only the family name is exposed for Markdown use (below), not this QFont
+    # object, so the condensed stretch applied to it here has no effect on
+    # Markdown text - it renders at the family's normal glyph widths.
+    markdown_font_family = font_light.family()
     font_light.setStretch(88)
 
-    return font, font_size
+    return font, font_size, markdown_font_family
 
-FONT, FONT_SIZE = _load_font()
+FONT, FONT_SIZE, MARKDOWN_FONT_FAMILY = _load_font()
 
 # ==============================================================================
 # [Misc Classes]
@@ -9777,6 +9785,15 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             List of items to populate the list widget.
             (Default: `[]`)
 
+        `header` (str, optional):
+            Text for a header shown above the list, styled to match the PyFlameTreeWidget column
+            header. If `None`, no header is displayed.
+            (Default: `None`)
+
+        `header_align` (Align, optional):
+            Alignment of the header text. One of `Align.LEFT`, `Align.CENTER`, or `Align.RIGHT`.
+            (Default: `Align.CENTER`)
+
         `alternating_row_colors` (bool, optional):
             Enable alternating row background colors.
             (Default: `True`)
@@ -9810,6 +9827,15 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         `items` (List[str]):
             Get or set the list of items. Replaces all existing items.
             (Default: `[]`)
+
+        `header` (str | None):
+            Get or set the header text shown above the list. Set to `None` to hide the header.
+            (Default: `None`)
+
+        `header_align` (Align):
+            Get or set the alignment of the header text (`Align.LEFT`, `Align.CENTER`, or
+            `Align.RIGHT`).
+            (Default: `Align.CENTER`)
 
         `selected_items` (List[str]):
             Get the currently selected items.
@@ -9863,6 +9889,31 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         )
         ```
 
+        Create a PyFlameListWidget with a header:
+        ```
+        list_widget = PyFlameListWidget(
+            header='Shots',
+            items=[
+                'item1',
+                'item2',
+                'item3'
+            ]
+        )
+        ```
+
+        Create a PyFlameListWidget with a left-aligned header:
+        ```
+        list_widget = PyFlameListWidget(
+            header='Shots',
+            header_align=Align.LEFT,
+            items=[
+                'item1',
+                'item2',
+                'item3'
+            ]
+        )
+        ```
+
         Set or get Properties
         ```
         # Set property
@@ -9896,6 +9947,8 @@ class PyFlameListWidget(QtWidgets.QListWidget):
     """
     def __init__(self,
                  items: List[str]=[],
+                 header: str | None=None,
+                 header_align: Align=Align.CENTER,
                  alternating_row_colors: bool=True,
                  multi_selection: bool=True,
                  enabled: bool=True,
@@ -9910,11 +9963,35 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         self.setUniformItemSizes(True)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
 
+        # Color of the 1px border drawn around the current (most recently selected) item,
+        # matching the selected-item border in PyFlameTreeWidget (see paintEvent).
+        self._selected_border_color = QtGui.QColor(224, 173, 28)
+
+        # Optional header shown above the list (see the `header` property). It is a child label
+        # placed in a reserved top viewport margin, styled to match the PyFlameTreeWidget column
+        # header (QHeaderView::section) background, text color, and height. Text alignment is
+        # configurable via the `header_align` property.
+        self._header = None
+        self._header_align: Align = header_align
+        self._header_height = pyflame.gui_resize(18)
+        self._header_label = QtWidgets.QLabel(self)
+        self._header_label.setFont(FONT)
+        self._header_label.setStyleSheet(f"""
+            QLabel{{
+                color: {Color.TEXT.value};
+                background-color: rgb(18, 21, 24);
+                border: none;
+            }}
+        """)
+        self._header_label.hide()
+
         # Create Widget Tooltip
         self.tooltip_popup = PyFlameToolTip(parent_widget=self)
 
         # Set Properties
         self.items = items
+        self.header_align = header_align
+        self.header = header
         self.alternating_row_colors = alternating_row_colors
         self.multi_selection = multi_selection
         self.enabled = enabled
@@ -9984,6 +10061,161 @@ class PyFlameListWidget(QtWidgets.QListWidget):
 
         self.clear()
         self.addItems(values)
+
+    @property
+    def header(self) -> str | None:
+        """
+        Header
+        ======
+
+        Get or set the header text shown above the list.
+
+        When set to a string, a header bar is shown above the items using that text, styled to
+        match the PyFlameTreeWidget column header. When set to `None`, no header is shown and the
+        reserved space is removed.
+
+        Returns
+        -------
+            str | None: The current header text, or `None` if no header is shown.
+
+        Set
+        ---
+            `value` (str | None): Header text to display, or `None` to hide the header.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a string or `None`.
+
+        Examples
+        --------
+            ```
+            # Get List Widget header
+            print(list_widget.header)
+
+            # Set List Widget header
+            list_widget.header = 'Shots'
+
+            # Hide List Widget header
+            list_widget.header = None
+            ```
+        """
+
+        return self._header
+
+    @header.setter
+    def header(self, value: str | None) -> None:
+        """
+        Header
+        ======
+
+        Set the header text shown above the list, or `None` to hide it.
+        """
+
+        # Validate argument
+        if value is not None and not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameListWidget', 'header', 'str | None', value)
+
+        self._header = value
+
+        if value is None:
+            # No header: hide the label and reclaim the reserved top margin.
+            self._header_label.hide()
+            self.setViewportMargins(0, 0, 0, 0)
+        else:
+            # Show the header and reserve space above the items for it.
+            self._header_label.setText(value)
+            self._header_label.show()
+            self._header_label.raise_()
+            self.setViewportMargins(0, self._header_height, 0, 0)
+            self._position_header()
+
+    @property
+    def header_align(self) -> Align:
+        """
+        Header Align
+        ============
+
+        Get or set the alignment of the header text.
+
+        Uses the `Align` enum: `Align.LEFT`, `Align.CENTER`, or `Align.RIGHT`. Left and right
+        alignment add a small horizontal padding (matching the PyFlameTreeWidget column header),
+        center alignment has none. Only affects the header when one is shown via `header`.
+
+        Returns
+        -------
+            Align: The current header text alignment.
+
+        Set
+        ---
+            `value` (Align): The alignment to use for the header text.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not an `Align`.
+
+        Examples
+        --------
+            ```
+            # Get header alignment
+            print(list_widget.header_align)
+
+            # Left-align the header
+            list_widget.header_align = Align.LEFT
+            ```
+        """
+
+        return self._header_align
+
+    @header_align.setter
+    def header_align(self, value: Align) -> None:
+        """
+        Header Align
+        ============
+
+        Set the alignment of the header text.
+        """
+
+        # Validate argument
+        if not isinstance(value, Align):
+            pyflame.raise_type_error('PyFlameListWidget', 'header_align', 'Align', value)
+
+        self._header_align = value
+
+        # Map the Align enum to Qt alignment. Left/right get a small padding so the text is not
+        # jammed against the edge (matching the tree column header); center gets none.
+        pad = pyflame.gui_resize(10)
+        if value == Align.LEFT:
+            self._header_label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft)
+            self._header_label.setContentsMargins(pad, 0, 0, 0)
+        elif value == Align.RIGHT:
+            self._header_label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
+            self._header_label.setContentsMargins(0, 0, pad, 0)
+        else:  # Align.CENTER
+            self._header_label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter)
+            self._header_label.setContentsMargins(0, 0, 0, 0)
+
+    def _position_header(self) -> None:
+        """
+        Position Header
+        ===============
+
+        Place the header label in the reserved margin directly above the item area, spanning the
+        viewport width. Positioning relative to the viewport keeps the header aligned with the
+        items regardless of the widget's frame border. Does nothing when no header is set.
+        """
+
+        if self._header is None:
+            return
+
+        viewport = self.viewport()
+        self._header_label.setGeometry(
+            viewport.x(),
+            viewport.y() - self._header_height,
+            viewport.width(),
+            self._header_height,
+            )
 
     @property
     def selected_items(self) -> List[QtWidgets.QListWidgetItem]:
@@ -10563,6 +10795,63 @@ class PyFlameListWidget(QtWidgets.QListWidget):
     #-------------------------------------
     # [Event Handlers]
     #-------------------------------------
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """
+        Resize Event
+        ============
+
+        Keep the header label spanning the width of the list, directly above the item area.
+        """
+
+        super().resizeEvent(event)
+        self._position_header()
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        """
+        Paint Event
+        ===========
+
+        Draw a 1px border around the current item, matching the selected-item border in
+        PyFlameTreeWidget.
+
+        The current item is the most recently selected one, so when multiple items are selected
+        only that last item is outlined - not every selected item. The border is drawn on top of
+        the normal item rendering with four explicit 1px fills (one per edge) so each edge lands
+        on an exact pixel.
+
+        Args
+        -----
+            `event` (QtGui.QPaintEvent):
+                The paint event forwarded from the viewport.
+        """
+
+        super().paintEvent(event)
+
+        item = self.currentItem()
+        if item is None or not item.isSelected():
+            return
+
+        rect = self.visualItemRect(item)
+        if rect.height() <= 0:
+            return
+
+        # Span the full viewport width so the outline matches the full-width selection
+        # background, regardless of the item's own content width.
+        color = self._selected_border_color
+        left = 0
+        right = self.viewport().width() - 1
+        top = rect.top()
+        bottom = rect.bottom()
+        width = right - left + 1
+        height = bottom - top + 1
+
+        painter = QtGui.QPainter(self.viewport())
+        painter.fillRect(QtCore.QRect(left, top, width, 1), color)       # top
+        painter.fillRect(QtCore.QRect(left, bottom, width, 1), color)    # bottom
+        painter.fillRect(QtCore.QRect(left, top, 1, height), color)      # left
+        painter.fillRect(QtCore.QRect(right, top, 1, height), color)     # right
+        painter.end()
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         """
@@ -14868,17 +15157,18 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
+                self._close_check_timer = QtCore.QTimer(self)
+                self._close_check_timer.timeout.connect(self._check_close_on_focus_lost)
+                self._close_check_timer.start(150)
 
             def _check_close_on_focus_lost(self):
                 if not self.isActiveWindow():
                     self._close_check_timer.stop()
                     self.close()
 
-
             def closeEvent(self, event):
                 self._close_check_timer.stop()
                 super().closeEvent(event)
-
 
             def focusOutEvent(self, event):
                 """
@@ -15099,6 +15389,9 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
         calc_window.grid_layout.addWidget(_0_button, 6, 0, 1, 2)
         calc_window.grid_layout.addWidget(dot_button, 6, 2)
+
+        calc_window.activateWindow()
+        calc_entry.setFocus()
 
     def _value_changed(self):
 
@@ -15852,7 +16145,7 @@ class PyFlameTable(QtWidgets.QTableView):
         self.model.clear()
 
         # Read CSV file
-        with open(csv_file_path, "r", encoding="utf-8") as file:
+        with open(csv_file_path, "r", encoding="utf-8", errors='replace') as file:
             reader = csv.reader(file)
             data = list(reader)
 
@@ -17168,7 +17461,12 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             Type of text being input.
             Options:
                 `TextType.PLAIN`: Plain text.
-                `TextType.MARKDOWN`: Markdown text.
+                `TextType.MARKDOWN`: Markdown text. Rendered Markdown is automatically
+                    styled - headers are colored gold, `**bold**` spans are colored
+                    gold-tan, `` `code` `` spans are colored with a dark background
+                    and a thin, mostly-transparent border, body text under a header
+                    is indented, and text uses the Montserrat Light font at normal
+                    (non-condensed) glyph widths. See `_style_markdown_text()`.
                 `TextType.HTML`: HTML text.
             (Default: `TextType.PLAIN`)
 
@@ -17286,6 +17584,12 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         # Widget Settings
         self.setFont(FONT)
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+        # Document positions of rendered Markdown `code` spans, populated by
+        # `_style_markdown_text()` and used by `paintEvent()` to draw a border
+        # around each span. Qt's rich text engine has no CSS `border` support
+        # for inline character formatting, so it's drawn manually.
+        self._markdown_code_ranges = []
 
         # Create Widget Tooltip
         self.tooltip_popup = PyFlameToolTip(parent_widget=self)
@@ -17432,6 +17736,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
             self.setPlainText(value)
         elif self.text_type == TextType.MARKDOWN:
             self.setMarkdown(value)
+            self._style_markdown_text()
         elif self.text_type == TextType.HTML:
             self.setHtml(value)
 
@@ -17894,6 +18199,189 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         """
 
         self.setFocus()
+
+    #-------------------------------------
+    # [Markdown Styling]
+    #-------------------------------------
+
+    def _style_markdown_text(self) -> None:
+        """
+        Style Markdown Text
+        ====================
+
+        Apply PyFlame's Markdown look to the widget's rendered Markdown document.
+        Called automatically by the `text` setter whenever `text_type` is set to
+        `TextType.MARKDOWN`.
+
+        Formatting applied:
+            - The Markdown text uses the Montserrat Light font at normal glyph widths
+              (the condensed stretch applied to the app font is bypassed).
+            - All header levels (h1-h6) are colored gold. Header font sizes set by the
+              Markdown rendering are preserved.
+            - Headers are never indented.
+            - Body text that falls under a header is indented.
+            - `**bold**` spans are colored gold-tan. The bold weight is preserved.
+            - `` `code` `` spans are colored, given a dark background, kept in a
+              fixed-pitch (monospace) font, and outlined with a thin border in the
+              same color as the widget's regular text at 25% opacity. See
+              `paintEvent()`.
+        """
+
+        document = self.document()
+
+        # The Markdown parser leaves **bold** spans at font weight Bold and `code`
+        # spans at a fixed-pitch (monospace) font. Record their ranges now, before
+        # the base font override below resets every run's weight and family, so
+        # they can be restored and recolored afterward. Headers are excluded from
+        # the bold ranges - they're bold by default under Markdown rendering too,
+        # but get their own gold color below and shouldn't be recolored here.
+        bold_ranges = []
+        code_ranges = []
+        block = document.begin()
+        while block.isValid():
+            is_heading = bool(block.blockFormat().headingLevel())
+            it = block.begin()
+            while not it.atEnd():
+                fragment = it.fragment()
+                if fragment.isValid():
+                    char_format = fragment.charFormat()
+                    fragment_range = (fragment.position(), fragment.position() + fragment.length())
+                    if char_format.fontFixedPitch():
+                        code_ranges.append(fragment_range)
+                    elif not is_heading and char_format.fontWeight() > QtGui.QFont.Normal:
+                        bold_ranges.append(fragment_range)
+                it += 1
+            block = block.next()
+
+        # Use the Montserrat Light font at normal glyph widths for the Markdown text.
+        # Only the family and weight are set so the per-heading font sizes set by the
+        # Markdown rendering are preserved.
+        base_format = QtGui.QTextCharFormat()
+        base_format.setFontFamily(MARKDOWN_FONT_FAMILY)
+        base_format.setFontWeight(QtGui.QFont.Light)
+        #base_format.setFontStretch(100)
+        document_cursor = QtGui.QTextCursor(document)
+        document_cursor.select(QtGui.QTextCursor.Document)
+        document_cursor.mergeCharFormat(base_format)
+
+        # Header look (gold). Merging preserves the Markdown heading font sizes.
+        header_format = QtGui.QTextCharFormat()
+        header_format.setForeground(QtGui.QColor(232, 160, 32))
+
+        # Becomes True once the first header is reached so only body text under a
+        # header is indented.
+        in_section = False
+
+        block = document.begin()
+        while block.isValid():
+            heading_level = block.blockFormat().headingLevel()
+            cursor = QtGui.QTextCursor(block)
+
+            if heading_level:  # Any header level (1-6)
+                in_section = True
+                # Select the header text and override color only
+                cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+                cursor.mergeCharFormat(header_format)
+            elif in_section:
+                # Indent body text that falls under a header
+                block_format = block.blockFormat()
+                block_format.setLeftMargin(pyflame.gui_resize(20))
+                cursor.setBlockFormat(block_format)
+
+            block = block.next()
+
+        # Re-apply **bold** styling that the base font override above reset:
+        # restore the bold weight and color the span gold-tan.
+        bold_format = QtGui.QTextCharFormat()
+        bold_format.setFontWeight(QtGui.QFont.Bold)
+        bold_format.setForeground(QtGui.QColor(216, 207, 168))
+        for start, end in bold_ranges:
+            cursor = QtGui.QTextCursor(document)
+            cursor.setPosition(start)
+            cursor.setPosition(end, QtGui.QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(bold_format)
+
+        # Re-apply `code` styling that the base font override above reset: restore
+        # the fixed-pitch (monospace) font and color the text and background.
+        code_format = QtGui.QTextCharFormat()
+        code_format.setFontFixedPitch(True)
+        code_format.setFontFamilies(['monospace'])
+        code_format.setForeground(QtGui.QColor(32, 200, 216))
+        code_format.setBackground(QtGui.QColor(17, 17, 17))
+        for start, end in code_ranges:
+            cursor = QtGui.QTextCursor(document)
+            cursor.setPosition(start)
+            cursor.setPosition(end, QtGui.QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(code_format)
+
+        # Remembered for paintEvent(), which draws the border around each span -
+        # Qt's rich text engine has no CSS `border` support for inline character
+        # formatting, so QTextCharFormat alone can't do this.
+        self._markdown_code_ranges = code_ranges
+
+    def _markdown_code_span_rects(self, start: int, end: int) -> list:
+        """
+        Markdown Code Span Rects
+        =========================
+
+        Return one viewport-space bounding rectangle per line for the document
+        range `start` to `end`, built from cursor rects so scrolling, margins,
+        and line wrapping are handled the same way Qt handles them internally.
+        Used by `paintEvent()` to outline rendered Markdown `code` spans.
+
+        Args
+        ----
+            `start` (int):
+                Document position the range starts at.
+
+            `end` (int):
+                Document position the range ends at.
+
+        Returns
+        -------
+            list[QtCore.QRect]:
+                One bounding rectangle per line the range occupies.
+        """
+
+        cursor = QtGui.QTextCursor(self.document())
+        line_rects = {}
+
+        for position in range(start, end + 1):
+            cursor.setPosition(position)
+            rect = self.cursorRect(cursor)
+            key = rect.top()
+            if key in line_rects:
+                line_rects[key] = line_rects[key].united(rect)
+            else:
+                line_rects[key] = QtCore.QRect(rect)
+
+        return list(line_rects.values())
+
+    def paintEvent(self, event) -> None:
+        """
+        Paint Event
+        ===========
+
+        Draws a thin border, in the same color as the widget's regular text at
+        25% opacity, around each rendered Markdown `code` span after the normal
+        paint pass.
+        """
+
+        super().paintEvent(event)
+
+        if self.text_type != TextType.MARKDOWN or not self._markdown_code_ranges:
+            return
+
+        painter = QtGui.QPainter(self.viewport())
+        pen = QtGui.QPen(QtGui.QColor(154, 154, 154, 64))  # Color.TEXT at 25% opacity.
+        pen.setWidth(1)
+        painter.setPen(pen)
+        for start, end in self._markdown_code_ranges:
+            for rect in self._markdown_code_span_rects(start, end):
+                # Shrink by 1px so the 1px-wide pen stroke lands fully inside
+                # the rect instead of being clipped by it.
+                painter.drawRect(rect.adjusted(0, 0, -1, -1))
+        painter.end()
 
     #-------------------------------------
     # [Stylesheet]
@@ -18842,6 +19330,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             and desktop reels.
             (Default: `None`)
 
+        `top_level_item` (str, optional):
+            Name of the root item that `tree_list` items are placed under. Only used together
+            with `tree_list`.
+            (Default: `None`)
+
         `connect` (callable, optional):
             Function to call when item in tree is clicked on.
             (Default: `None`)
@@ -18849,6 +19342,16 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `update_connect` (callable, optional):
             Function to call when an item is edited, inserted, or deleted.
             (Default: `None`)
+
+        `top_level_editable` (bool, optional):
+            Whether the top-level items can be renamed by double-clicking them. When `False`,
+            top-level items cannot be edited while their child items remain editable.
+            (Default: `False`)
+
+        `top_level_selectable` (bool, optional):
+            Whether the top-level items can be selected. When `False`, top-level items cannot be
+            selected and clicking one leaves the current selection unchanged.
+            (Default: `True`)
 
         `allow_children` (bool, optional):
             Whether to allow children in the tree.
@@ -18861,6 +19364,33 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `alternating_row_colors` (bool, optional):
             Whether to enable alternating row colors.
             (Default: `True`)
+
+        `top_level_collapsible` (bool, optional):
+            Whether top-level items are allowed to be collapsed by the user.
+            When `False`, top-level items are kept expanded (collapsing one re-expands it).
+            When `True`, top-level items can be collapsed, allowing them to be used as
+            collapsible category headers. In this mode top-level items are always drawn with a
+            fixed darker-grey background, and their child rows keep alternating row colors.
+            (Default: `False`)
+
+        `elide_text` (bool, optional):
+            Controls text eliding for item text longer than the column width. When `False`, long
+            text is elided with '...'. When `True`, text is not elided.
+            (Default: `False`)
+
+        `column_resizable` (bool, optional):
+            Whether the user can resize columns by dragging the header dividers. When `False`,
+            columns are sized to their contents and cannot be dragged. In either case column
+            widths stay put when items are expanded or collapsed - they do not shrink to fit the
+            smaller visible text.
+            (Default: `False`)
+
+        `set_column_widths` (Dict[str, int], optional):
+            Dictionary mapping column names to their width in pixels. Only the columns
+            included in the dictionary are given a fixed width; any columns not included
+            keep their default resize-to-contents behavior.
+            If `None`, no column widths are set.
+            (Default: `None`)
 
         `enabled` (bool, optional):
             Set to True to enable the tree widget.
@@ -18921,6 +19451,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `top_level_editable` (bool):
             Whether the top level item is editable.
 
+        `top_level_selectable` (bool):
+            Whether the top level items are selectable. When `False`, top-level items cannot be
+            selected and clicking one leaves the current selection unchanged.
+
         `allow_children` (bool):
             Whether children are allowed to be added to the tree.
 
@@ -18944,6 +19478,15 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         `tooltip_duration` (int):
             Duration in seconds the tooltip is shown.
+
+        `column_resizable` (bool):
+            Whether the user can resize columns by dragging the header dividers. When `False`
+            (the default) columns are sized to their contents and cannot be dragged. In either
+            case column widths stay put when items are expanded or collapsed - they do not shrink
+            to fit the smaller visible text.
+
+        `set_column_widths` (Dict[str, int]):
+            A dictionary mapping column names to their width in pixels.
 
         `all_item_paths` (List[str]):
             Get the recursive paths of all items in the tree.
@@ -19033,9 +19576,54 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             )
         ```
 
+        To create a PyFlameTreeWidget with collapsible category headers that cannot be selected,
+        with user-resizable columns:
+        ```
+        tree_widget = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                'Type',
+                'Size',
+                ],
+            top_level_collapsible=True,
+            top_level_selectable=False,
+            column_resizable=True,
+            )
+        ```
+
+        To create a PyFlameTreeWidget with fixed column widths:
+        ```
+        tree_widget = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                'Notes',
+                ],
+            tree_dict={
+                'Shots': {
+                    'Shot_0010': {},
+                    'Shot_0020': {},
+                    }
+                },
+            set_column_widths={
+                'Name': 200,
+                'Notes': 400,
+                },
+            )
+        ```
+
         Add a new item to the tree:
         ```
         tree_widget.add_item(item_name='New Item')
+        ```
+
+        Prevent the top-level items from being selected:
+        ```
+        tree_widget.top_level_selectable = False
+        ```
+
+        Allow the user to resize columns by dragging the header dividers:
+        ```
+        tree_widget.column_resizable = True
         ```
 
         Delete the selected item in the tree:
@@ -19078,10 +19666,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                  connect: Callable[..., Any] | None=None,
                  update_connect: Callable[..., Any] | None=None,
                  top_level_editable: bool=False,
+                 top_level_selectable: bool=True,
                  allow_children: bool=True,
                  min_items: int=1,
                  alternating_row_colors: bool=True,
+                 top_level_collapsible: bool=False,
                  elide_text: bool=False,
+                 column_resizable: bool=False,
+                 set_column_widths: Dict[str, int] | None=None,
                  enabled: bool=True,
                  width: int | None=None,
                  height: int | None=None,
@@ -19096,31 +19688,79 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.header().setFont(FONT)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
         self.itemCollapsed.connect(self._on_item_collapsed)  # Prevent top-level item from collapsing
+        self.itemExpanded.connect(self._on_item_expanded)  # Animate top-level disclosure triangle
+
+        # Disclosure triangle animation state (only used when top_level_collapsible is True)
+        self._branch_angles = {}  # Maps a top-level item to its current triangle rotation angle
+        self._branch_animations = {}  # Maps a top-level item to its active rotation animation
+
+        # Set before any tree population below. The itemCollapsed/itemExpanded handlers
+        # connected above read `top_level_collapsible`, and populating `tree_dict`/`tree_list`
+        # can fire those signals, so the flag must exist first.
+        self.top_level_collapsible = top_level_collapsible
+
+        # Colors applied directly to items (not just via the stylesheet) when
+        # `top_level_collapsible` is True - see `_style_inserted_rows`. Top-level category
+        # headers get a fixed darker-grey background so they stay consistent while the
+        # stylesheet's colors handle their child rows. Item text color is set explicitly
+        # too: Flame renders item text from the item's foreground role rather than the
+        # stylesheet `color`, so setting it on the items keeps header and child text the
+        # same normal color. Set here so the row-insert handler connected below can run
+        # during the tree population that follows.
+        self._top_level_background_color = QtGui.QColor(46, 46, 46)
+        # self._text_color = self._rgb_to_qcolor(Color.TEXT.value)
+        #self.model().rowsInserted.connect(self._style_inserted_rows)
+
+        # Selection color used to paint the branch gutter of a selected row so it matches the
+        # row's selection background (see `drawBranches`). Without it Qt fills the branch area
+        # with the palette highlight brush, leaving the gutter a different color from the cells.
+        self._selected_background_color = self._rgb_to_qcolor(Color.SELECTED_GRAY.value)
+
+        # 1px border drawn around the currently selected row (see `drawRow`).
+        self._selected_border_color = QtGui.QColor(224, 173, 28)
 
         # Create Widget Tooltip
         self.tooltip_popup = PyFlameToolTip(parent_widget=self)
 
         # Set Properties
+        # column_resizable is set before column_names so the header resize mode is chosen
+        # correctly when the columns are created.
+        self.column_resizable = column_resizable
         self.column_names = column_names
         self.sort = sort
         self.tree_dict = tree_dict
         self.tree_list = tree_list
         self.top_level_editable = top_level_editable
+        self.top_level_selectable = top_level_selectable
         self.alternating_row_colors = alternating_row_colors
         self.min_items = min_items
         self.allow_children = allow_children
-        self.elide_test = elide_text
+        self.elide_text = elide_text
         self.enabled = enabled
         self.width = width
         self.height = height
         self.tooltip = tooltip
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
+        self.set_column_widths = set_column_widths
 
         self.connect_callback = connect
         self.update_connect_callback = update_connect
         self.top_level_item = top_level_item
 
+        # Enable the sliding expand/collapse animation for collapsible category headers
+        if self.top_level_collapsible:
+            self.setAnimated(True)
+
+        # Reclaim the top-level branch gutter when top-level items are not collapsible.
+        # Indentation in a QTreeView is uniform per depth level, so every row reserves a
+        # `indentation()`-wide root-decoration column on the left for a top-level disclosure
+        # triangle. When `top_level_collapsible` is False the top-level items are kept expanded
+        # and never show that triangle (see `drawBranches`), leaving the column as dead space.
+        # Dropping the root decoration shifts every row left by one level while keeping nested
+        # items and their disclosure arrows correctly aligned. Collapsible trees keep the
+        # decoration so the top-level triangle still has a gutter to draw in.
+        self.setRootIsDecorated(self.top_level_collapsible)
 
         # Set the first top-level item as the current item
         self.setCurrentItem(self.topLevelItem(0))
@@ -19182,7 +19822,101 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         """
 
         self.setHeaderLabels(value)
-        self.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self._apply_column_resize_mode()
+
+    @property
+    def column_resizable(self) -> bool:
+        """
+        Column Resizable
+        ================
+
+        Get or set whether the user can resize columns by dragging the header dividers.
+
+        When `True` the header sections use `Interactive` mode, so the dividers can be dragged.
+        When `False` they use `Fixed` mode and cannot be dragged. In both cases columns are
+        sized to their contents when the tree is populated (see `_fit_columns_to_contents`) and
+        keep that size afterwards; they do not auto-resize when items are expanded or collapsed.
+
+        Returns
+        -------
+            bool: `True` if columns are user-resizable, `False` if not.
+
+        Set
+        ---
+            `value` (bool): `True` to allow column resizing, `False` to disallow it.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get column resizable
+            print(tree_widget.column_resizable)
+
+            # Set column resizable
+            tree_widget.column_resizable = True
+            ```
+        """
+
+        return self._column_resizable
+
+    @column_resizable.setter
+    def column_resizable(self, value: bool) -> None:
+        """
+        Column Resizable
+        ================
+
+        Set whether the user can resize columns.
+        """
+
+        # Validate argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'column_resizable', 'bool', value)
+
+        # Set column resizable and apply the matching header resize mode.
+        self._column_resizable = value
+        self._apply_column_resize_mode()
+
+    def _apply_column_resize_mode(self) -> None:
+        """
+        Apply Column Resize Mode
+        ========================
+
+        Set the header resize mode from `column_resizable`: `Interactive` (draggable) when
+        `True`, `Fixed` (not draggable) when `False`. Neither mode auto-resizes columns when
+        rows are shown or hidden, so column widths stay stable across expand/collapse - unlike
+        `ResizeToContents`, which shrinks columns to fit the visible text when children are
+        collapsed. Content sizing is done explicitly in `_fit_columns_to_contents`.
+        """
+
+        if getattr(self, '_column_resizable', False):
+            mode = QtWidgets.QHeaderView.Interactive
+        else:
+            mode = QtWidgets.QHeaderView.Fixed
+        self.header().setSectionResizeMode(mode)
+
+    def _fit_columns_to_contents(self) -> None:
+        """
+        Fit Columns To Contents
+        =======================
+
+        Resize every column to fit its current contents, once. Called after the tree is
+        populated so columns start out sized to their content (the behavior `ResizeToContents`
+        used to provide continuously). Because the header mode is `Fixed`/`Interactive` rather
+        than `ResizeToContents`, the widths then stay put across expand/collapse.
+
+        Skipped when explicit widths were provided via `set_column_widths`, so those are not
+        overwritten.
+        """
+
+        if getattr(self, '_explicit_column_widths', False):
+            return
+
+        for column in range(self.columnCount()):
+            self.resizeColumnToContents(column)
 
     @property
     def sort(self) -> bool:
@@ -19654,6 +20388,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self._alternating_row_colors = value
         self.setAlternatingRowColors(value)
 
+        # Re-apply the stylesheet so the alternate row color is added/removed. Flame honors
+        # the stylesheet over the widget property, so the alternate color must be omitted
+        # from the sheet - not just toggled off via `setAlternatingRowColors` - to disable
+        # striping. Guarded so it is skipped until the first `_set_stylesheet` has run during
+        # construction (the constructor applies the stylesheet once afterward regardless).
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_stylesheet()
+
     @property
     def allow_children(self) -> bool:
         """
@@ -19810,30 +20552,106 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Set top level editable
         self._top_level_editable = value
 
-        # Set the top-level item as uneditable if top_level_editable is False else make all items editable
-        if not self._top_level_editable:
-            # Access the top item using the tree object
-            top_item = self.topLevelItem(0)  # Index 0 gets the first top-level item
-
-            # Check if the top item exists. If it does, set the flags to make it uneditable and all child items editable
-            if top_item:
-                # Make the top_item non-editable
-                top_item.setFlags(top_item.flags() & ~QtCore.Qt.ItemIsEditable)
-                # Ensure all child items remain editable
-                for i in range(top_item.childCount()):
-                    child_item = top_item.child(i)
-                    child_item.setFlags(child_item.flags() | QtCore.Qt.ItemIsEditable)
-        else:
-            # Access the top item
-            top_item = self.topLevelItem(0)
-
-            # Check if the top item exists. If it does, set the flags to make it editable
-            if top_item:
+        # Apply to every top-level item (not just the first) so category headers in a
+        # multi-top-level tree all honor the setting. Add or remove the editable flag on each
+        # top-level item; child items are always kept editable.
+        for i in range(self.topLevelItemCount()):
+            top_item = self.topLevelItem(i)
+            if self._top_level_editable:
                 top_item.setFlags(top_item.flags() | QtCore.Qt.ItemIsEditable)
-                # Optionally ensure child items are editable as well
-                for i in range(top_item.childCount()):
-                    child_item = top_item.child(i)
-                    child_item.setFlags(child_item.flags() | QtCore.Qt.ItemIsEditable)
+            else:
+                top_item.setFlags(top_item.flags() & ~QtCore.Qt.ItemIsEditable)
+            for j in range(top_item.childCount()):
+                child_item = top_item.child(j)
+                child_item.setFlags(child_item.flags() | QtCore.Qt.ItemIsEditable)
+
+    @property
+    def top_level_selectable(self) -> bool:
+        """
+        Top Level Selectable
+        ====================
+
+        Get or set whether the top-level items are selectable.
+
+        When set to `False` the `ItemIsSelectable` flag is removed from every top-level item so
+        they cannot be selected. The `selectionCommand` override additionally keeps a click on
+        an unselectable item from clearing the current selection. Any existing selection is left
+        untouched. Child items are unaffected.
+
+        Returns
+        -------
+            bool: `True` if the top-level items are selectable, `False` if not.
+
+        Set
+        ---
+            `value` (bool): `True` to make the top-level items selectable, `False` to make them unselectable.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get top level selectable
+            print(tree_widget.top_level_selectable)
+
+            # Set top level selectable
+            tree_widget.top_level_selectable = False
+            ```
+        """
+
+        return self._top_level_selectable
+
+    @top_level_selectable.setter
+    def top_level_selectable(self, value: bool) -> None:
+        """
+        Top Level Selectable
+        ====================
+
+        Set whether the top-level items are selectable.
+        """
+
+        # Validate argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'top_level_selectable', 'bool', value)
+
+        # Set top level selectable
+        self._top_level_selectable = value
+
+        # Add or remove the selectable flag on every top-level item. The current selection is
+        # left as-is; disabling only prevents future selection, it does not clear an existing one.
+        for i in range(self.topLevelItemCount()):
+            top_item = self.topLevelItem(i)
+            if self._top_level_selectable:
+                top_item.setFlags(top_item.flags() | QtCore.Qt.ItemIsSelectable)
+            else:
+                top_item.setFlags(top_item.flags() & ~QtCore.Qt.ItemIsSelectable)
+
+    def _reapply_top_level_flags(self) -> None:
+        """
+        Reapply Top Level Flags
+        =======================
+
+        Reapply the `top_level_selectable` and `top_level_editable` settings to the current
+        top-level items.
+
+        The property setters only affect the top-level items that exist when they run. When the
+        tree is populated after construction (for example the tree is created empty and filled
+        later via `fill_tree_dict` or `add_item_with_columns`), the new top-level items are
+        created with Qt's default flags and would not honor the settings. The population methods
+        call this afterwards so those items are brought back in sync.
+
+        The `hasattr` guards let this run safely during construction, where the tree may be
+        populated before the settings are assigned; in that case the property setters run later
+        and apply the flags.
+        """
+
+        if hasattr(self, '_top_level_selectable'):
+            self.top_level_selectable = self._top_level_selectable
+        if hasattr(self, '_top_level_editable'):
+            self.top_level_editable = self._top_level_editable
 
     @property
     def elide_text(self) -> bool:
@@ -19890,6 +20708,97 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Set enabled state
         if self._elide_text:
             self.setTextElideMode(QtCore.Qt.ElideNone)
+
+    @property
+    def set_column_widths(self) -> Dict[str, int]:
+        """
+        Set Column Widths
+        =================
+
+        Get or set the widths of individual tree widget columns.
+
+        Column widths are defined using a dictionary that maps column names to their
+        width in pixels. Only the columns included in the dictionary are given a fixed
+        width; any columns not included keep their default resize-to-contents behavior.
+
+        Returns
+        -------
+            Dict[str, int]:
+                A dictionary mapping column names to their width in pixels.
+
+        Set
+        ---
+            `value` (Dict[str, int] | None):
+                A dictionary mapping column names to their width in pixels.
+                If `None`, no column widths are set and all columns keep their default
+                resize-to-contents behavior.
+
+        Raises
+        ------
+            TypeError:
+                If `value` is not `None` or a dictionary.
+                If any key in `value` is not a string.
+                If any value in `value` is not an integer.
+            ValueError:
+                If any key in `value` is not an existing column name.
+                If any value in `value` is less than 1.
+
+        Examples
+        --------
+            ```
+            # Get the current column widths
+            print(tree_widget.set_column_widths)
+
+            # Set the widths of specific columns
+            tree_widget.set_column_widths = {
+                'Column 1': 200,
+                'Column 2': 100,
+                }
+            ```
+        """
+
+        return self._set_column_widths
+
+    @set_column_widths.setter
+    def set_column_widths(self, value: Dict[str, int] | None) -> None:
+        """
+        Set Column Widths
+        =================
+
+        Set the widths of individual tree widget columns.
+        """
+
+        # If no dictionary is provided, do not set any column widths
+        if value is None:
+            self._set_column_widths = {}
+            self._explicit_column_widths = False
+            return
+
+        # Validate Argument type
+        if not isinstance(value, dict):
+            pyflame.raise_type_error('PyFlameTreeWidget.set_column_widths', 'value', 'None | dict', value)
+
+        # Validate dictionary keys and values
+        column_names = self.column_names
+        for column_name, column_width in value.items():
+            if not isinstance(column_name, str):
+                pyflame.raise_type_error('PyFlameTreeWidget.set_column_widths', 'key', 'str', column_name)
+            if not isinstance(column_width, int):
+                pyflame.raise_type_error('PyFlameTreeWidget.set_column_widths', 'value', 'int', column_width)
+            if column_name not in column_names:
+                pyflame.raise_value_error('PyFlameTreeWidget.set_column_widths', 'key', 'an existing column name', column_name)
+            if column_width < 1:
+                pyflame.raise_value_error('PyFlameTreeWidget.set_column_widths', 'value', 'an integer >= 1', column_width)
+
+        # Store and apply column widths. Mark that explicit widths were provided so
+        # _fit_columns_to_contents leaves these columns alone.
+        self._set_column_widths = value
+        self._explicit_column_widths = True
+        for column_name, column_width in value.items():
+            column_index = column_names.index(column_name)
+            # Allow the column to be given a fixed width instead of auto-sizing to its contents
+            self.header().setSectionResizeMode(column_index, QtWidgets.QHeaderView.Interactive)
+            self.setColumnWidth(column_index, pyflame.gui_resize(column_width))
 
     @property
     def enabled(self) -> bool:
@@ -20464,9 +21373,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 # Set item flags
                 child.setFlags(editable_flags if editable else default_flags)
 
-                # Expand if it has children
+                # Expand if it has children. Use the childless-aware indicator policy so the
+                # disclosure arrow appears while the item has children and disappears once its
+                # last child is removed.
                 if isinstance(val, dict) and val:
-                    child.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.ShowIndicator)
+                    child.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.DontShowIndicatorWhenChildless)
                     child.setExpanded(True)
 
         if self.topLevelItemCount() > 0:
@@ -20474,6 +21385,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         # Fill Tree with Items from Dict
         fill_item(self.invisibleRootItem(), tree_dict)
+
+        # Bring the newly created top-level items in sync with the top-level flag settings.
+        self._reapply_top_level_flags()
+
+        # Size columns to the new contents (widths then stay stable across expand/collapse).
+        self._fit_columns_to_contents()
 
         # Restore sorting state based on the initial setting
         self.setSortingEnabled(self.isSortingEnabled())
@@ -20515,6 +21432,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Fill the tree with items from the list
         for item in tree_list:
             self.addTopLevelItem(QtWidgets.QTreeWidgetItem([item]))
+
+        # Bring the newly created top-level items in sync with the top-level flag settings.
+        self._reapply_top_level_flags()
+
+        # Size columns to the new contents (widths then stay stable across expand/collapse).
+        self._fit_columns_to_contents()
 
     def add_item(self, item_name: str) -> None:
         """
@@ -20596,6 +21519,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Insert the new item at the determined position under the parent
         parent.insertChild(index, new_item)
 
+        # Bring any new top-level item in sync with the top-level flag settings.
+        self._reapply_top_level_flags()
+
+        # Size columns to the new contents (widths then stay stable across expand/collapse).
+        self._fit_columns_to_contents()
+
         # Ensure the parent item is expanded to show the new child
         if parent != self.invisibleRootItem():
             parent.setExpanded(True)
@@ -20611,7 +21540,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         pyflame.print(f'Added item: {item_name}', text_color=TextColor.GREEN)
 
-    def add_item_with_columns(self, item: list[str]) -> QtWidgets.QTreeWidgetItem:
+    def add_item_with_columns(self, item: list[str], parent: QtWidgets.QTreeWidgetItem | None=None) -> QtWidgets.QTreeWidgetItem:
         """
         Add Item With Columns
         =====================
@@ -20623,6 +21552,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             `item` (list):
                 New item to add to tree. The first item in the list is the name of the item.
                 The following items in the list is the data to be added under the item columns.
+
+            `parent` (QtWidgets.QTreeWidgetItem, optional):
+                The item to add the new item under as a child. If `None`, the new item is added
+                as a top-level item. Useful for grouping items under collapsible category headers.
+                (Default: `None`)
 
         Returns
         -------
@@ -20646,8 +21580,15 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         if not isinstance(item, list):
             pyflame.raise_type_error('PyFlameTreeWidget.add_item_with_columns', 'item', 'list', item)
 
-        # Add item with columns to tree
-        tree_item = QtWidgets.QTreeWidgetItem(self, item)
+        # Add item with columns to tree. Attach under parent if provided, otherwise as a top-level item.
+        tree_item = QtWidgets.QTreeWidgetItem(parent if parent is not None else self, item)
+
+        # Bring a new top-level item (parent is None) in sync with the top-level flag settings.
+        if parent is None:
+            self._reapply_top_level_flags()
+
+        # Size columns to the new contents (widths then stay stable across expand/collapse).
+        self._fit_columns_to_contents()
 
         # Trigger the callback function if it is set
         self._trigger_callback()
@@ -20885,19 +21826,460 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         Prevent the top-level item from collapsing.
 
+        When `top_level_collapsible` is `True`, top-level items are allowed to collapse and
+        the disclosure triangle is animated to point right at the item name instead.
+
         Args
         -----
             `item` (PyFlameTreeWidget.QTreeWidgetItem):
                 The item that was collapsed.
         """
 
+        # Allow top-level items to collapse if enabled, animating the disclosure triangle
+        if self.top_level_collapsible:
+            if self.indexOfTopLevelItem(item) != -1:
+                self._animate_branch(item, expanded=False)
+            return
+
         # Check if the item is a top-level item
         if self.indexOfTopLevelItem(item) != -1:
             self.expandItem(item)  # Re-expand the top-level item
 
+    def _on_item_expanded(self, item) -> None:
+        """
+        On Item Expanded
+        ================
+
+        Animate the disclosure triangle of a top-level item to point down when it is expanded.
+        Only active when `top_level_collapsible` is `True`.
+
+        Args
+        -----
+            `item` (PyFlameTreeWidget.QTreeWidgetItem):
+                The item that was expanded.
+        """
+
+        if self.top_level_collapsible and self.indexOfTopLevelItem(item) != -1:
+            self._animate_branch(item, expanded=True)
+
+    def _animate_branch(self, item, expanded: bool) -> None:
+        """
+        Animate Branch
+        ==============
+
+        Animate the rotation of a top-level item's disclosure triangle between its collapsed
+        (pointing right) and expanded (pointing down) states.
+
+        Args
+        -----
+            `item` (PyFlameTreeWidget.QTreeWidgetItem):
+                The top-level item whose triangle should be animated.
+
+            `expanded` (bool):
+                `True` to animate to the expanded (pointing down) state, `False` to animate to
+                the collapsed (pointing right) state.
+        """
+
+        # 0 degrees = pointing right (collapsed), 90 degrees = pointing down (expanded)
+        start = self._branch_angles.get(item, 0.0 if expanded else 90.0)
+        end = 90.0 if expanded else 0.0
+
+        # Stop any in-progress animation for this item before starting a new one
+        existing = self._branch_animations.get(item)
+        if existing is not None:
+            existing.stop()
+
+        animation = QtCore.QVariantAnimation(self)
+        animation.setStartValue(float(start))
+        animation.setEndValue(float(end))
+        animation.setDuration(120)
+        animation.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+
+        def on_value_changed(value) -> None:
+            self._branch_angles[item] = float(value)
+            self.viewport().update()
+
+        def on_finished() -> None:
+            # Drop the stored angle so drawing falls back to the item's expanded state
+            self._branch_angles.pop(item, None)
+            self._branch_animations.pop(item, None)
+            self.viewport().update()
+
+        animation.valueChanged.connect(on_value_changed)
+        animation.finished.connect(on_finished)
+
+        self._branch_animations[item] = animation
+        animation.start()
+
+    def selectionCommand(self, index: QtCore.QModelIndex, event=None) -> QtCore.QItemSelectionModel.SelectionFlag:
+        """
+        Selection Command
+        =================
+
+        Decide how a click/keypress on `index` should change the selection.
+
+        A click on a non-selectable item (one whose flags do not include
+        `Qt.ItemIsSelectable`) would otherwise make Qt clear the current selection. Returning
+        `NoUpdate` for those items leaves the existing selection untouched, so clicking a
+        non-selectable item (for example a top-level item that has been made unselectable)
+        neither selects it nor deselects whatever is already selected. Expanding and collapsing
+        still work, since those are driven separately from the selection command.
+
+        When `top_level_selectable` is `False` this also blocks selection of any top-level item
+        directly, regardless of that item's flags. Top-level items created after construction
+        may still carry Qt's default selectable flag until `_reapply_top_level_flags` runs, so
+        enforcing the rule here as well guarantees the setting is honored no matter when or how
+        the item was added.
+
+        Selectable items fall through to the default behavior.
+
+        Args
+        -----
+            `index` (QtCore.QModelIndex):
+                The model index the selection command is being requested for.
+
+            `event` (QtCore.QEvent, optional):
+                The event that triggered the command, as passed by the view.
+
+        Returns
+        -------
+            `QtCore.QItemSelectionModel.SelectionFlag`:
+                `NoUpdate` for a non-selectable item, otherwise the default command.
+        """
+
+        # Block selection of top-level items when top-level selection is disabled, independent
+        # of the item's own flags (see docstring).
+        if (not getattr(self, '_top_level_selectable', True)
+                and index.isValid() and not index.parent().isValid()):
+            return QtCore.QItemSelectionModel.NoUpdate
+
+        item = self.itemFromIndex(index)
+        if item is not None and not (item.flags() & QtCore.Qt.ItemIsSelectable):
+            return QtCore.QItemSelectionModel.NoUpdate
+
+        return super().selectionCommand(index, event)
+
+    def drawRow(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
+        """
+        Draw Row
+        ========
+
+        Paint a top-level item's fixed background across the full width of its row before the
+        row's contents are drawn. Applies to every top-level item, whether or not the tree is
+        collapsible.
+
+        Without this override the header color only reaches as far as the columns and branch
+        gutter are painted: `drawBranches` fills the gutter behind the disclosure triangle, but
+        the area to the right of the last column has no cell to color and falls back to the
+        stylesheet's `QTreeWidget` background, so the header color stops partway across the row.
+        Filling the whole row rect here - from the left edge to the viewport's right edge -
+        closes that gap regardless of the column widths (columns are sized to their contents, so
+        they rarely fill the view).
+
+        The fill is drawn first, then `super().drawRow()` paints the branch gutter, disclosure
+        triangle, and cell text on top, keeping them visible. A selected header still shows the
+        stylesheet's selection color, which the base implementation paints over this fill.
+
+        Finally, a selected row gets a 1px border drawn around it, spanning the full width of
+        the row. It is stroked last, after the base implementation, so it stays on top of the
+        selection background and cell content.
+
+        Args
+        -----
+            `painter` (QtGui.QPainter):
+                The painter used to draw the row.
+
+            `option` (QtWidgets.QStyleOptionViewItem):
+                The style option for the row being drawn. Its `rect` gives the row's vertical
+                extent.
+
+            `index` (QtCore.QModelIndex):
+                The model index of the row being drawn. An invalid parent means a top-level row.
+        """
+
+        # Every top-level item gets the full-width header background, in both collapsible and
+        # non-collapsible trees. Child rows keep their normal (stylesheet-driven) row
+        # backgrounds. A selected top-level row still shows the stylesheet's selection color,
+        # which the base implementation paints over this fill.
+        if not index.parent().isValid():
+            row_rect = QtCore.QRect(option.rect)
+            row_rect.setLeft(0)
+            row_rect.setRight(self.viewport().width())
+            painter.fillRect(row_rect, self._top_level_background_color)
+
+        super().drawRow(painter, option, index)
+
+        # Outline the currently selected row with a 1px border. Drawn last so it sits on top of
+        # the selection background and text. Four explicit 1px fills are used (instead of a
+        # QPen rectangle) so each edge lands on an exact pixel and the right/bottom edges are
+        # not clipped at the row/viewport boundary.
+        item = self.itemFromIndex(index)
+        if item is not None and item.isSelected():
+            color = self._selected_border_color
+            left = 0
+            width = self.viewport().width()
+            top = option.rect.top()
+            bottom = option.rect.bottom()
+            height = bottom - top + 1
+            painter.fillRect(QtCore.QRect(left, top, width, 1), color)           # top
+            painter.fillRect(QtCore.QRect(left, bottom, width, 1), color)         # bottom
+            painter.fillRect(QtCore.QRect(left, top, 1, height), color)           # left
+            painter.fillRect(QtCore.QRect(width - 1, top, 1, height), color)      # right
+
+    def drawBranches(self, painter: QtGui.QPainter, rect: QtCore.QRect, index: QtCore.QModelIndex) -> None:
+        """
+        Draw Branches
+        =============
+
+        Draw a disclosure triangle in the gutter for any item that has children, so the arrow
+        appears when a child is added and disappears once the last child is removed (the
+        default child-indicator policy reserves the gutter region only while children exist).
+
+        The one exception is a top-level item in a non-collapsible tree (`top_level_collapsible`
+        is `False`): those items are kept expanded and cannot be collapsed, so no arrow is
+        shown even when they have children.
+
+        Collapsible top-level headers keep their fixed header background painted behind the
+        triangle; every other row keeps the row background painted by the view. Items without
+        children (and the excepted top-level items) fall back to the default branch drawing,
+        which the stylesheet renders as an empty gutter.
+
+        A selected row is a special case handled first: Qt paints the branch gutter with the
+        palette highlight brush, which is a different color from the selection background the
+        stylesheet paints on the cells, so the gutter would stand out. Filling the gutter with
+        the selection color here keeps it consistent with the rest of the selected row. The
+        disclosure triangle is still drawn on top when the item has one.
+
+        Args
+        -----
+            `painter` (QtGui.QPainter):
+                The painter used to draw the branch.
+
+            `rect` (QtCore.QRect):
+                The area in which to draw the branch.
+
+            `index` (QtCore.QModelIndex):
+                The model index of the row being drawn.
+        """
+
+        item = self.itemFromIndex(index)
+        is_top_level = not index.parent().isValid()
+
+        # Show a disclosure arrow for any item that currently has children, except top-level
+        # items in a non-collapsible tree (those stay expanded and cannot be collapsed).
+        show_arrow = (
+            item is not None
+            and item.childCount() > 0
+            and not (is_top_level and not self.top_level_collapsible)
+            )
+
+        # Selected rows: paint the gutter with the selection color so it matches the row's
+        # selection background instead of Qt's default highlight brush. Skip super() so that
+        # default branch painting doesn't overwrite it with the highlight color.
+        if item is not None and item.isSelected():
+            painter.fillRect(rect, self._selected_background_color)
+            if show_arrow:
+                self._draw_branch_triangle(painter, rect, item)
+            return
+
+        if show_arrow:
+            # Collapsible top-level headers keep their fixed header background behind the arrow.
+            if is_top_level and self.top_level_collapsible:
+                painter.fillRect(rect, self._top_level_background_color)
+            self._draw_branch_triangle(painter, rect, item)
+            return
+
+        super().drawBranches(painter, rect, index)
+
+    def _items_bottom(self) -> int:
+        """
+        Items Bottom
+        ============
+
+        Return the y coordinate, in viewport space, just below the last visible row.
+
+        Walks from the last top-level item into its last expanded descendant so collapsed
+        subtrees are skipped. Used by `paintEvent` to know where the populated rows end and the
+        empty area begins. Returns 0 for an empty tree.
+
+        Returns
+        -------
+            int:
+                The viewport y directly below the bottom of the last visible item.
+        """
+
+        count = self.topLevelItemCount()
+        if count == 0:
+            return 0
+
+        item = self.topLevelItem(count - 1)
+        while item.isExpanded() and item.childCount() > 0:
+            item = item.child(item.childCount() - 1)
+
+        return self.visualItemRect(item).bottom() + 1
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        """
+        Paint Event
+        ===========
+
+        Extend the column separator lines into the empty area below the last row.
+
+        The vertical lines between columns come from each item cell's `border-right` in the
+        stylesheet, so they only exist where rows have items. Below the last row there are no
+        cells and the columns lose their separators. After the view paints normally, this draws
+        a 1px vertical line at each column's right edge - matching the cell border color and
+        position - from the bottom of the last row down to the bottom of the viewport, so the
+        columns stay delineated all the way down.
+
+        Args
+        -----
+            `event` (QtGui.QPaintEvent):
+                The paint event forwarded from the viewport.
+        """
+
+        super().paintEvent(event)
+
+        top = self._items_bottom()
+        viewport_height = self.viewport().height()
+        viewport_width = self.viewport().width()
+
+        # Nothing to draw if the rows already reach (or extend past) the bottom.
+        if top >= viewport_height:
+            return
+
+        painter = QtGui.QPainter(self.viewport())
+        # Same color as the item cell border-right: rgba(18, 21, 24, 0.75) -> alpha 191.
+        painter.setPen(QtGui.QColor(18, 21, 24, 191))
+        header = self.header()
+        for column in range(self.columnCount()):
+            if self.isColumnHidden(column):
+                continue
+            # Border-right sits one pixel inside the column's right edge.
+            x = header.sectionViewportPosition(column) + header.sectionSize(column) - 1
+            if 0 <= x < viewport_width:
+                painter.drawLine(x, top, x, viewport_height)
+        painter.end()
+
+    def _style_inserted_rows(self, parent: QtCore.QModelIndex | None=None, first: int=0, last: int | None=None, *args) -> None:
+        """
+        Style Inserted Rows
+        ===================
+
+        Apply per-item styling to rows as they are inserted when `top_level_collapsible` is
+        `True`:
+            - Top-level category headers get a fixed darker-grey background so they stay a
+              consistent grey while the stylesheet handles their child rows' backgrounds.
+            - Every inserted item gets its text color set explicitly. Flame draws item text
+              from the item's foreground role rather than the stylesheet `color`, so setting
+              it directly keeps header and child text the same normal color.
+
+        Only the newly inserted rows are styled, so per-item colors applied afterward (for
+        example via `color_item` to grey out an entry) are preserved.
+
+        Connected to the model's `rowsInserted` signal. Does nothing for non-collapsible
+        trees, keeping existing trees unaffected.
+
+        Args
+        -----
+            `parent` (QtCore.QModelIndex, optional):
+                The parent index of the inserted rows, as supplied by `rowsInserted`. An
+                invalid (root) parent means top-level rows were inserted.
+                (Default: `None`)
+
+            `first` (int, optional):
+                The first inserted row index under `parent`.
+                (Default: `0`)
+
+            `last` (int, optional):
+                The last inserted row index under `parent`. If `None`, only `first` is styled.
+                (Default: `None`)
+        """
+
+        if not self.top_level_collapsible:
+            return
+
+        if last is None:
+            last = first
+
+        # An invalid/omitted parent means the inserted rows are top-level items.
+        top_level = parent is None or not parent.isValid()
+        parent_item = None if top_level else self.itemFromIndex(parent)
+
+        for row in range(first, last + 1):
+            item = self.topLevelItem(row) if top_level else (parent_item.child(row) if parent_item is not None else None)
+            if item is None:
+                continue
+            for column in range(self.columnCount()):
+                if top_level:
+                    item.setBackground(column, self._top_level_background_color)
+                item.setForeground(column, self._text_color)
+
+    def _draw_branch_triangle(self, painter: QtGui.QPainter, rect: QtCore.QRect, item) -> None:
+        """
+        Draw Branch Triangle
+        ====================
+
+        Paint an item's disclosure triangle at its current rotation angle. Top-level items in
+        a collapsible tree animate their rotation; all other items draw statically, pointing
+        right when collapsed and down when expanded.
+
+        Args
+        -----
+            `painter` (QtGui.QPainter):
+                The painter used to draw the triangle.
+
+            `rect` (QtCore.QRect):
+                The branch area for the item's row.
+
+            `item` (PyFlameTreeWidget.QTreeWidgetItem):
+                The item the triangle belongs to.
+        """
+
+        # Use the animated angle if one is in progress, otherwise derive it from the item state
+        angle = self._branch_angles.get(item)
+        if angle is None:
+            angle = 90.0 if item.isExpanded() else 0.0
+
+        # Center the triangle within the indentation cell nearest the item name
+        indent = self.indentation()
+        center = QtCore.QPointF(rect.right() - (indent / 2), rect.center().y())
+
+        # Right-pointing triangle centered on its centroid so rotation spins in place
+        r = pyflame.gui_resize(4)
+        triangle = QtGui.QPolygonF([
+            QtCore.QPointF(-r * (2 / 3), -r),
+            QtCore.QPointF(-r * (2 / 3), r),
+            QtCore.QPointF(r * (4 / 3), 0),
+            ])
+
+        painter.save()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        painter.translate(center)
+        painter.rotate(angle)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(QtGui.QColor(150, 150, 150))
+        painter.drawPolygon(triangle)
+        painter.restore()
+
     #-------------------------------------
     # [Stylesheet]
     #-------------------------------------
+
+    @staticmethod
+    def _rgb_to_qcolor(rgb: str) -> QtGui.QColor:
+        """
+        RGB To QColor
+        =============
+
+        Convert a `rgb(r, g, b)` string (as used by the `Color` enum) to a `QColor`.
+        """
+
+        match = re.fullmatch(r'rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', rgb.strip())
+        if not match:
+            pyflame.raise_value_error('PyFlameTreeWidget', 'rgb', 'valid rgb(r, g, b) string', rgb)
+        assert match is not None
+        return QtGui.QColor(int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
     def _set_stylesheet(self) -> None:
         """
@@ -20905,20 +22287,56 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         ==============
         """
 
+        # Item background and alternating row colors. Collapsible trees use the same
+        # stylesheet-driven colors as every other tree, so item text keeps the normal
+        # color. Collapsible category headers are made a consistent darker grey by applying
+        # a per-item background to the top-level items (see `_style_inserted_rows`),
+        # which overrides the row color for those rows only.
+        #
+        # For collapsible trees the child rows use the lighter grey as their base color so
+        # they sit visually below the darker category headers; other trees keep the darker
+        # grey as their base. The `alternate-background-color` line is only emitted when
+        # alternating is enabled. Flame's stylesheet styling honors the stylesheet over the
+        # `alternatingRowColors` property, so leaving the alternate color in the sheet keeps
+        # rows striping even after `setAlternatingRowColors(False)`; omitting it is what
+        # actually disables it.
+
+        # if self.top_level_collapsible:
+        #     base_background_color = Color.ITEM_ALT_BACKGROUND_COLOR.value
+        #     alternate_background_color = Color.ITEM_BACKGROUND_COLOR.value
+        # else:
+        #     base_background_color = Color.ITEM_BACKGROUND_COLOR.value
+        #     alternate_background_color = Color.ITEM_ALT_BACKGROUND_COLOR.value
+
+        # if self._alternating_row_colors:
+        #     tree_background_colors = f"""
+        #         background-color: {base_background_color};
+        #         alternate-background-color: {alternate_background_color};"""
+        # else:
+        #     tree_background_colors = f"""
+        #         background-color: {base_background_color};"""
+
         self.setStyleSheet(f"""
             QTreeWidget{{
                 color: {Color.TEXT.value};
                 background-color: rgb(30, 30, 30);
                 alternate-background-color: rgb(36, 36, 36);
-                border: 1px solid rgba(0, 0, 0, .1);
+                /* Border only on the left and bottom, matching the dark column line
+                   (rgba(18, 21, 24, 0.75)) drawn between/below the rows. */
+                border: none;
+                border-left: 1px solid rgba(18, 21, 24, 0.75);
+                border-bottom: 1px solid rgba(18, 21, 24, 0.75);
                 }}
             QTreeWidget::item{{
                 padding-top: {pyflame.gui_resize(5)}px;  /* Increase top padding */
                 padding-bottom: {pyflame.gui_resize(5)}px;  /* Increase bottom padding */
+                padding-top: ...px;
+                padding-bottom: ...px;
+                border-right: 1px solid rgba(18, 21, 24, 0.75);
             }}
             QHeaderView::section{{
                 color: {Color.TEXT.value};
-                background-color: rgb(57, 57, 57);
+                background-color: rgb(18, 21, 24);
                 border: none;
                 padding-left: {pyflame.gui_resize(10)}px;
                 height: {pyflame.gui_resize(18)}px;
@@ -21006,6 +22424,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 return editor
 
         self.setItemDelegate(CustomItemDelegate(self))
+
+        # Mark the stylesheet as applied so the `alternating_row_colors` setter may re-apply
+        # it on later changes (it is skipped during construction, before this first run).
+        self._stylesheet_initialized = True
 
     #-------------------------------------
     # [Tooltip Event Handlers]
@@ -24324,6 +25746,730 @@ class PyFlameWindow(QtWidgets.QDialog):
 # ==============================================================================
 # [PyFlame Window Classes]
 # ==============================================================================
+
+class PyFlameOptionWindow:
+    """
+    PyFlameOptionWindow
+    ===================
+
+    Custom QT Flame Option Window.
+
+    Displays a message with up to four user-defined buttons along the bottom of the
+    window. The window blocks until the user presses a button (or closes the window),
+    then exposes the text of the pressed button.
+
+    Buttons are positional. Positions are defined using a dictionary keyed by an int
+    from 1 to 4, where each value is a dictionary describing that button. Positions
+    map directly to fixed columns along the bottom of the window, so omitting a
+    position leaves an empty gap in that slot.
+
+    Args
+    ----
+        `parent` (PyFlameWindow | None):
+            This window's parent window. Set to `None` if no parent window.
+
+        `message` (str):
+            Text displayed in the body of the window.
+            (Default: ``)
+
+        `buttons` (dict[int, dict]):
+            Dictionary defining the window's buttons. Required; at least one button must
+            be provided. Keys are button positions (1-4) and values are dictionaries
+            describing each button. Up to four buttons are supported. Omitting a
+            position leaves that slot empty.
+
+            Each button dictionary supports:
+                `text` (str):
+                    Text displayed on the button. Required.
+                `color` (Color, optional):
+                    Button color. Must be `Color.GRAY`, `Color.BLUE`, or `Color.RED`.
+                    (Default: `Color.GRAY`)
+
+            Example
+                ```
+                buttons={
+                    1: {'text': 'Overwrite', 'color': Color.RED},
+                    3: {'text': 'Skip',      'color': Color.GRAY},
+                    4: {'text': 'Cancel',    'color': Color.GRAY},
+                    }
+                ```
+            (Default: `{1: {'text': 'Ok', 'color': Color.BLUE}}`)
+
+        `cancel_button` (int):
+            Position (1-4) of the button that should be treated as a cancel button.
+            Pressing this button causes the window to evaluate as `False`. Set to `0`
+            for no cancel button.
+            (Default: `0`)
+
+        `title` (str, optional):
+            Window title. If empty, `SCRIPT_NAME` is used.
+            (Default: ``)
+
+        `title_style` (Style, optional):
+            Style of title text.
+            (Default: `Style.BACKGROUND_THIN`)
+
+        `title_align` (Align | None, optional):
+            Alignment of title text.
+            (Default: `None`)
+
+        `line_color` (Color | None, optional):
+            Color of bar on left side of window. If `None`, `Color.BLUE` is used.
+            (Default: `None`)
+
+        `message_bar` (bool):
+            Enable message bar at bottom of window.
+            (Default: `False`)
+
+        `duration` (int):
+            Time in seconds to display message in flame message area.
+            (Default: `5`)
+
+    Raises
+    ------
+        TypeError:
+            If an argument has an invalid type.
+
+        ValueError:
+            If `buttons` is empty, if a button position is not between 1 and 4, if a
+            button has no `text`, if button text is duplicated, if a button `color` is
+            invalid, or if `cancel_button` is set to a position not present in `buttons`.
+
+    Properties
+    ----------
+        `message` (str):
+            Get or set the message text in the window.
+
+        `title` (str):
+            Get or set the title of the window.
+
+        `title_style` (Style):
+            Get or set the title style of the window.
+
+        `title_align` (Align | None):
+            Get or set the title alignment of the window.
+
+        `line_color` (Color | None):
+            Get or set the line color of the window.
+
+        `duration` (int):
+            Get or set the amount of time to display the message in the Flame message area.
+
+        `selected` (str):
+            Get the text of the pressed button. Empty string if the window was closed
+            without a button press. Read-only.
+
+        `confirmed` (bool):
+            Get or set the confirmed status of the window.
+
+    Returns
+    -------
+        The text of the pressed button is available through the `selected` property and
+        through `str(window)`. The window evaluates as a bool: `True` if a button other
+        than `cancel_button` was pressed, `False` if `cancel_button` was pressed or the
+        window was closed without a selection.
+
+    Examples
+    --------
+        Show an option window with three buttons:
+        ```
+        window = PyFlameOptionWindow(
+            parent=None,
+            message='A batch group with this name already exists.',
+            buttons={
+                1: {'text': 'Overwrite', 'color': Color.RED},
+                3: {'text': 'Skip',      'color': Color.GRAY},
+                4: {'text': 'Cancel',    'color': Color.GRAY},
+                },
+            cancel_button=4,
+            )
+        ```
+
+        Get the text of the pressed button as a string:
+        ```
+        # Using the selected property
+        choice = window.selected  # e.g. 'Overwrite', 'Skip', or 'Cancel'
+
+        # Using str()
+        choice = str(window)      # e.g. 'Overwrite', 'Skip', or 'Cancel'
+        ```
+
+        Get the bool result of the window (True unless cancel_button was pressed):
+        ```
+        # Using the confirmed property
+        if window.confirmed:
+            print('User confirmed')
+
+        # Evaluating the window directly via bool()
+        if window:
+            print('User confirmed')
+        else:
+            print('User cancelled or closed the window')
+        ```
+
+        Branch on which button was pressed:
+        ```
+        if window:
+            if window.selected == 'Overwrite':
+                overwrite_batch_group()
+            elif window.selected == 'Skip':
+                skip_batch_group()
+        else:
+            # Cancel button pressed or window closed
+            pass
+        ```
+    """
+
+    def __init__(self: 'PyFlameOptionWindow',
+                 parent: PyFlameWindow | None,
+                 message: str='',
+                 buttons: dict[int, dict]={1: {'text': 'Ok', 'color': Color.BLUE}},
+                 cancel_button: int=0,
+                 title: str='',
+                 title_style: Style=Style.BACKGROUND_THIN,
+                 title_align: Align | None=None,
+                 line_color: Color | None=None,
+                 message_bar=False,
+                 duration: int=5,
+                 ) -> None:
+
+        # Validate Arguments
+        if not isinstance(parent, (type(None), PyFlameWindow)):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'parent', 'PyFlameWindow | None', parent)
+        if not isinstance(message, str):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'message', 'str', message)
+        if not isinstance(buttons, dict):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'buttons', 'dict[int, dict]', buttons)
+        if len(buttons) == 0:
+            pyflame.raise_value_error('PyFlameOptionWindow', 'buttons', 'at least one button', buttons)
+        if not isinstance(cancel_button, int) or isinstance(cancel_button, bool):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'cancel_button', 'int', cancel_button)
+        if not isinstance(title, str):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title', 'str', title)
+        if not isinstance(title_style, Style):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title_style', 'Style Enum', title_style)
+        if title_align is not None and not isinstance(title_align, Align):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title_align', 'Align Enum | None', title_align)
+        if line_color is not None and not isinstance(line_color, Color):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'line_color', 'Color Enum | None', line_color)
+        if not isinstance(message_bar, bool):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'message_bar', 'bool', message_bar)
+        if not isinstance(duration, int):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'duration', 'int', duration)
+
+        # Validate button definitions
+        allowed_colors = (Color.GRAY, Color.BLUE, Color.RED)
+        seen_text: list[str] = []
+        for position, button_def in buttons.items():
+            if not isinstance(position, int) or isinstance(position, bool) or position < 1 or position > 4:
+                pyflame.raise_value_error('PyFlameOptionWindow', 'buttons', 'button position int between 1 and 4', position)
+            if not isinstance(button_def, dict):
+                pyflame.raise_type_error('PyFlameOptionWindow', 'buttons', 'dict describing each button', button_def)
+            button_text = button_def.get('text', '')
+            if not isinstance(button_text, str) or button_text == '':
+                pyflame.raise_value_error('PyFlameOptionWindow', 'buttons', "non-empty 'text' string for each button", button_text)
+            if button_text in seen_text:
+                pyflame.raise_value_error('PyFlameOptionWindow', 'buttons', 'unique button text', button_text)
+            seen_text.append(button_text)
+            button_color = button_def.get('color', Color.GRAY)
+            if button_color not in allowed_colors:
+                pyflame.raise_value_error('PyFlameOptionWindow', 'buttons', 'Color.GRAY, Color.BLUE, or Color.RED', button_color)
+
+        # Validate cancel_button references an existing button
+        if cancel_button != 0 and cancel_button not in buttons:
+            pyflame.raise_value_error('PyFlameOptionWindow', 'cancel_button', 'position present in buttons or 0', cancel_button)
+
+        self._cancel_button = cancel_button
+        self.selected = ''
+        self.confirmed = False
+
+        #-------------------------------------
+        # [Build Option Window]
+        #-------------------------------------
+
+        self.option_window = PyFlameWindow(
+            grid_layout_columns=4,
+            grid_layout_rows=6,
+            grid_layout_column_width=110,
+            message_bar=message_bar,
+            parent=parent,
+            )
+
+        self.option_window_text_edit = PyFlameTextEdit(
+            text_style=TextStyle.UNSELECTABLE,
+            )
+
+        # Build buttons from the definitions, keyed by position
+        self.buttons: dict[int, PyFlameButton] = {}
+        for position, button_def in buttons.items():
+            button_text = button_def['text']
+            button_color = button_def.get('color', Color.GRAY)
+            self.buttons[position] = PyFlameButton(
+                text=button_text,
+                connect=partial(self._select, position, button_text),
+                color=button_color,
+                width=110,
+                )
+
+        #-------------------------------------
+        # [Window Layout]
+        #-------------------------------------
+
+        self.option_window.grid_layout.addWidget(self.option_window_text_edit, 0, 0, 6, 4)
+
+        # Add each button to its fixed column so omitted positions leave a gap
+        for position, button in self.buttons.items():
+            self.option_window.grid_layout.addWidget(button, 7, position - 1)
+
+        #-------------------------------------
+        # [Set Window Properties]
+        #-------------------------------------
+
+        self.message = message
+        self.title = title
+        self.title_style = title_style
+        self.title_align = title_align
+        self.line_color = line_color
+        self.duration = duration
+
+        # Print message to terminal and Flame's console area
+        self._message_print(self.message, self.title, self.duration)
+
+        # Show option window and wait for user to select a button
+        self.option_window.exec_()
+
+    def __bool__(self):
+        return self.confirmed
+
+    def __str__(self):
+        return self.selected
+
+    #-------------------------------------
+    # [Properties]
+    #-------------------------------------
+
+    @property
+    def message(self) -> str:
+        """
+        Message
+        =======
+
+        Get or set message text.
+
+        Returns
+        -------
+            `str`:
+                Message text.
+
+        Set
+        ---
+            `value` (str):
+                Message text.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a str.
+
+        Examples
+        --------
+            ```
+            # Get message text
+            print(option_window.message)
+
+            # Set message text
+            option_window.message = 'Option Window'
+            ```
+        """
+
+        return self.option_window_text_edit.text
+
+    @message.setter
+    def message(self, value: str) -> None:
+        """
+        Message
+        =======
+
+        Set the message text.
+        """
+
+        # Validate Argument
+        if not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'message', 'str', value)
+
+        self.option_window_text_edit.text = value
+
+    @property
+    def title(self) -> str:
+        """
+        Title
+        =====
+
+        Get or set Option Window title.
+
+        Returns
+        -------
+            `str`:
+                Option Window title.
+
+        Set
+        ---
+            `value` (str):
+                Option Window title.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a str.
+
+        Examples
+        --------
+            ```
+            # Get title text
+            print(option_window.title)
+
+            # Set title
+            option_window.title = 'Option Window'
+            ```
+        """
+
+        return self.option_window.title
+
+    @title.setter
+    def title(self, value: str) -> None:
+        """
+        Title
+        =====
+
+        Set the option window title.
+        """
+
+        # Validate Argument
+        if not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title', 'str', value)
+
+        # Set default title if empty
+        if value == '':
+            value = SCRIPT_NAME
+
+        self.option_window.title = value
+
+    @property
+    def title_style(self) -> Style:
+        """
+        Title Style
+        ===========
+
+        Get or set the option window title style.
+
+        Returns
+        -------
+            `Style`:
+                Option window title style.
+
+        Set
+        ---
+            `value` (Style):
+                Option window title style.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a Style.
+
+        Examples
+        --------
+            ```
+            # Get title style
+            print(option_window.title_style)
+
+            # Set title style
+            option_window.title_style = Style.UNDERLINE
+            ```
+        """
+
+        return self.option_window.title_style
+
+    @title_style.setter
+    def title_style(self, value: Style) -> None:
+        """
+        Title Style
+        ===========
+
+        Set the option window title style.
+        """
+
+        # Validate Argument
+        if not isinstance(value, Style):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title_style', 'Style Enum', value)
+
+        self.option_window.title_style = value
+
+    @property
+    def title_align(self) -> Align | None:
+        """
+        Title Align
+        ===========
+
+        Get or set the option window title alignment.
+
+        Returns
+        -------
+            `Align`:
+                Option window title alignment.
+
+        Set
+        ---
+            `value` (Align | None):
+                Option window title alignment.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not Align | None.
+
+        Examples
+        --------
+            ```
+            # Get title alignment
+            print(option_window.title_align)
+
+            # Set title alignment
+            option_window.title_align = Align.CENTER
+            ```
+        """
+
+        return self.option_window.title_align
+
+    @title_align.setter
+    def title_align(self, value: Align | None) -> None:
+        """
+        Title Align
+        ===========
+
+        Set the option window title alignment.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, Align):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'title_align', 'Align Enum | None', value)
+
+        if value is not None:
+            self.option_window.title_align = value
+
+    @property
+    def line_color(self) -> Color | None:
+        """
+        Line Color
+        ==========
+
+        Get or set the option window line color as Color Enum.
+
+        If None is passed, `Color.BLUE` will be applied.
+
+        Returns
+        -------
+            `Color | None`:
+                Option window line color.
+
+        Set
+        ---
+            `value` (Color | None):
+                Option window line color.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a Color | None.
+
+        Examples
+        --------
+            ```
+            # Get window line color
+            print(option_window.line_color)
+
+            # Set window line color
+            option_window.line_color = Color.BLUE
+            ```
+        """
+
+        return self.option_window.line_color
+
+    @line_color.setter
+    def line_color(self, value: Color | None) -> None:
+        """
+        Line Color
+        ==========
+
+        Set the option window line color.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, Color):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'line_color', 'Color Enum | None', value)
+
+        # Default to blue when no color is provided
+        self.option_window.line_color = value if value is not None else Color.BLUE
+
+    @property
+    def duration(self) -> int:
+        """
+        Duration
+        ========
+
+        Get or set the duration in seconds the message will show in the Flame Message Area.
+
+        Returns
+        -------
+            `int`:
+                Duration of message in seconds.
+
+        Set
+        ---
+            `value` (int):
+                Duration of message in seconds.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not an `int`.
+
+        Examples
+        --------
+            ```
+            # Get message duration
+            print(option_window.duration)
+
+            # Set message duration
+            option_window.duration = 5
+            ```
+        """
+
+        return self._duration
+
+    @duration.setter
+    def duration(self, value: int) -> None:
+        """
+        Duration
+        ========
+
+        Set the duration of the message in the Flame Message Area.
+        """
+
+        # Validate Argument
+        if not isinstance(value, int):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'duration', 'int', value)
+
+        self._duration = value
+
+    @property
+    def selected(self) -> str:
+        """
+        Selected
+        ========
+
+        Get the text of the pressed button.
+
+        Returns
+        -------
+            `str`:
+                Text of the pressed button. Empty string if no button was pressed.
+        """
+
+        return self._selected
+
+    @selected.setter
+    def selected(self, value: str) -> None:
+        """
+        Selected
+        ========
+
+        Set the text of the pressed button.
+        """
+
+        # Validate Argument
+        if not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'selected', 'str', value)
+
+        self._selected = value
+
+    @property
+    def confirmed(self) -> bool:
+        """
+        Confirmed
+        =========
+
+        Get or set the confirmed status of the window.
+        """
+
+        return self._confirmed
+
+    @confirmed.setter
+    def confirmed(self, value: bool) -> None:
+        """
+        Set the confirmed status of the window.
+        """
+
+        # Validate Argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameOptionWindow', 'confirmed', 'bool', value)
+
+        self._confirmed = value
+
+    #-------------------------------------
+    # [Methods]
+    #-------------------------------------
+
+    def _message_print(self, message: str, title: str, duration: int):
+        """
+        Print
+        =====
+
+        Print message to the terminal/shell and Flame's console area.
+        """
+
+        print(
+            f'{TextColor.BLUE.value}' + # Set text color
+            '=' * 80 + '\n' +
+            f'Info: {TextColor.WHITE.value}{SCRIPT_NAME.upper()}{TextColor.BLUE.value}' + '\n' +
+            '=' * 80 + '\n\n' +
+            f'{TextColor.WHITE.value}' + # Set text color
+            f'{message}\n\n' +
+            f'{TextColor.BLUE.value}' + # Set text color
+            '-' * 80 + '\n'
+            f'{TextColor.RESET.value}'  # Reset text color
+            )
+
+        # Print message to the Flame message area
+        flame.messages.show_in_console(f'{title.upper()}: {message}', 'info', duration)
+
+    def _select(self, position: int, button_text: str) -> None:
+        """
+        Select
+        ======
+
+        Store the pressed button's text, set the confirmed status, and close the window.
+        """
+
+        self.selected = button_text
+        self.confirmed = position != self._cancel_button
+
+        self.option_window.close()
+
+        if self.confirmed:
+            pyflame.print(f'Option Selected: {button_text}', text_color=TextColor.GREEN)
+        else:
+            pyflame.print('Operation Cancelled', text_color=TextColor.RED)
+
+    def close(self) -> None:
+        """
+        Close
+        =====
+
+        Close the option window.
+        """
+
+        self.option_window.close()
 
 class PyFlameInputDialog:
     """

@@ -2,7 +2,88 @@
 
 All notable changes to this project will be documented in this file.
 
-https://logik-portal.com/#pyflame
+https://logik-portal.com/pyflame
+
+## v5.5.0 [07.22.26]
+
+### Updates
+
+- **Widgets**
+    - `PyFlameListWidget`
+        - **Updated Stylesheet**
+        - **New Argument**
+            - `header`
+                - Set the header text of the list widget. (Default: `None`)
+            - `header_alignment`
+                - Alignment of the header text. One of `Align.LEFT`, `Align.CENTER`, or `Align.RIGHT`.
+                  (Default: `Align.CENTER`)
+
+    -`PyFlameTreeWidget`
+        - **Updated Stylesheet**
+        - **New Argument**
+            - `top_level_collapsible`
+                - When set to `True`, top-level items can be collapsed and expanded, allowing them to
+                  be used as collapsible category headers. Each top-level item with children is given an
+                  animated disclosure triangle that points right when collapsed and rotates to point down
+                  when expanded. Top-level headers keep a fixed darker-grey background; child rows under
+                  them use alternating row colors. (Default: `False`)
+            - `set_column_widths`
+                - Dictionary mapping column names to their width in pixels. Only the columns included in
+                  the dictionary are given a fixed width; any columns not included keep their default
+                  resize-to-contents behavior. If `None`, no column widths are set.
+                  (Default: `None`)
+        - **New Property**
+            - `set_column_widths`
+                - Get or set the widths of individual columns using a dictionary that maps column names
+                  to their width in pixels.
+                  (Default: `None`)
+        - **New Method Argument**
+            - `add_item_with_columns()`
+                - `parent`
+                    - Item to add the new item under as a child. If `None`, the item is added as a
+                      top-level item as before. Useful for grouping items under collapsible category
+                      headers.
+                      (Default: `None`)
+        - **New Behavior**
+            - Any item that has children now shows a disclosure arrow in the gutter. The arrow appears
+              when a child is added and disappears once the item's last child is removed. The only
+              exception is a top-level item in a non-collapsible tree (`top_level_collapsible` is
+              `False`): those items stay expanded and cannot be collapsed, so they never show an arrow.
+
+    -`PyFlameTextEdit`
+        - **New Behavior**
+            - Markdown text (`text_type` set to `TextType.MARKDOWN`) is now automatically styled as soon
+              as it's set on the `text` property - no extra call required. Styling applied:
+                - Headers (h1-h6) are colored gold. Header font sizes set by the Markdown rendering are
+                  preserved.
+                - `**bold**` spans are colored gold-tan. The bold weight is preserved.
+                - `` `code` `` spans are colored with a dark background, outlined with a thin border
+                  in the same color as the widget's regular text at 25% opacity, and kept in a
+                  fixed-pitch (monospace) font.
+                - Body text that falls under a header is indented. Headers themselves are never indented.
+                - Text uses the Montserrat Light font at normal, non-condensed glyph widths (the condensed
+                  stretch applied to the rest of the app's font is bypassed).
+
+## v5.4.0 [06.03.26]
+
+### Added
+
+- **PyFlameOptionWindow**
+    - New window class to display a message with up to four user-defined buttons along the bottom of the
+      window. The window blocks until the user presses a button (or closes the window),
+      then exposes the text of the pressed button.
+    - Buttons are positional. Positions are defined using a dictionary keyed by an int from 1 to 4,
+      where each value is a dictionary describing that button. Positions map directly to fixed columns
+      along the bottom of the window, so omitting a position leaves an empty gap in that slot.
+
+## v5.3.2 [05.25.26]
+
+### Updates/Fixes
+
+- **Widgets**
+    -`PyFlameSlider`
+        - **Fixed**
+            - Numbers not being entered in calculator entry field when pressing number keys in linux.
 
 ## v5.3.1 [05.04.26]
 

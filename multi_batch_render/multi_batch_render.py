@@ -19,11 +19,11 @@
 
 """
 Script Name: Multi Batch Render
-Script Version: 4.14.0
+Script Version: 4.15.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 12.12.18
-Update Date: 05.12.26
+Update Date: 07.22.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -47,6 +47,10 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v4.15.0 07.22.26
+        - Updated to PyFlameLib v5.5.0.
+        - Misc UI updates.
 
     v4.14.0 05.12.26
         - Clicking on the screen will now abort the batch render.
@@ -160,7 +164,7 @@ from lib.pyflame_lib_multi_batch_render import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Multi Batch Render'
-SCRIPT_VERSION = 'v4.14.0'
+SCRIPT_VERSION = 'v4.15.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -317,10 +321,6 @@ class MultiBatchRender:
             )
 
         # Labels
-        self.batch_group_label = PyFlameLabel(
-            text='Desktop Batch Groups',
-            style=Style.UNDERLINE,
-            )
         self.render_option_label = PyFlameLabel(
             text='Render',
             style=Style.UNDERLINE,
@@ -332,7 +332,9 @@ class MultiBatchRender:
             )
 
         # Listbox
-        self.batch_group_list = PyFlameListWidget()
+        self.batch_group_list = PyFlameListWidget(
+            header='Desktop Batch Groups',
+            )
         list_batch_groups() # Add batch groups from desktop to listbox
 
         # Push Buttons
@@ -370,15 +372,14 @@ class MultiBatchRender:
         # [Widget Layout]
         #-------------------------------------
 
-        self.window.grid_layout.addWidget(self.batch_group_label, 0, 0, 1, 3)
         self.window.grid_layout.addWidget(self.batch_group_list, 1, 0, 8, 3)
 
-        self.window.grid_layout.addWidget(self.render_option_label, 0, 3)
-        self.window.grid_layout.addWidget(self.render_option_menu, 1, 3)
+        self.window.grid_layout.addWidget(self.render_option_label, 1, 3)
+        self.window.grid_layout.addWidget(self.render_option_menu, 2, 3)
 
-        self.window.grid_layout.addWidget(self.after_render_label, 3, 3)
-        self.window.grid_layout.addWidget(self.close_batch_pushbutton, 4, 3)
-        self.window.grid_layout.addWidget(self.exit_flame, 5, 3)
+        self.window.grid_layout.addWidget(self.after_render_label, 4, 3)
+        self.window.grid_layout.addWidget(self.close_batch_pushbutton, 5, 3)
+        self.window.grid_layout.addWidget(self.exit_flame, 6, 3)
 
         self.window.grid_layout.addWidget(self.cancel_btn, 10, 2)
         self.window.grid_layout.addWidget(self.render_btn, 10, 3)

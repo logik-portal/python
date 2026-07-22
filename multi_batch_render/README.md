@@ -1,10 +1,10 @@
 # Multi Batch Render
 
-**Script Version:** 4.14.0  
+**Script Version:** 4.15.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 12.12.18  
-**Update Date:** 05.12.26  
+**Update Date:** 07.22.26  
 
 **Script Type:** Batch / Media Panel Desktop
 
@@ -26,6 +26,11 @@ https://logik-portal.com/scripts/#multi_batch_render
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v4.15.0 [07.22.26]
+- Updated to PyFlameLib v5.5.0.
+- Misc UI updates.
+<br>
 
 ### v4.14.0 [05.12.26]
 - Clicking on the screen will now abort the batch render.
