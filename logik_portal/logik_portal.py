@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Logik Portal
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@
 
 """
 Script Name: Logik Portal
-Script Version: 7.1.0
+Script Version: 7.2.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 05.04.26
+Update Date: 07.23.26
 
 Script Type: Flame Main Menu
 
@@ -48,6 +48,13 @@ To install:
     Copy script into /opt/Autodesk/shared/python/logik_portal
 
 Updates:
+
+    v7.2.0 07.23.26
+        - Added Pixel Expressions tab. Allows for downloading  of pixel expressions from logik-portal.com.
+        - Added retry to download JSON files from GitHub in case of failure. Retries 5 times with a 2 second delay between attempts.
+        - Updated to PyFlameLib v5.5.0
+        - Small UI enhancements
+        - Added Logik Portal to Batch Menu
 
     v7.1.0 05.04.26
         - Submit buttons now redirect to logik-portal.com for submissions.
@@ -247,12 +254,13 @@ import os
 import re
 import html
 import json
+import time
 import shutil
 import zipfile
 import urllib.request
 import subprocess
 import webbrowser
-from typing import Optional
+#from typing import Optional
 import ast
 import sys
 
@@ -264,7 +272,7 @@ from lib.pyflame_lib_logik_portal import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Logik Portal'
-SCRIPT_VERSION = 'v7.1.0'
+SCRIPT_VERSION = 'v7.2.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -286,6 +294,9 @@ class LogikPortal:
         if not internet_connection_check:
             return
 
+        # Get cursor position in batch
+        self.cursor_pos = flame.batch.cursor_position
+
         # Get version of flame
         self.flame_full_version = flame.get_version()
         self.flame_version = pyflame.get_flame_version()
@@ -301,6 +312,7 @@ class LogikPortal:
         # Define temp folders
         self.temp_folder = os.path.join(SCRIPT_PATH, 'temp')
         self.temp_python_scripts_folder = os.path.join(self.temp_folder, 'python_scripts')
+        self.temp_pixel_expression_folder = os.path.join(self.temp_folder, 'pixel_expressions')
         self.temp_matchbox_folder = os.path.join(self.temp_folder, 'matchbox')
         self.temp_batch_folder = os.path.join(self.temp_folder, 'batch_setups')
         self.temp_inference_node_folder = os.path.join(self.temp_folder, 'inference_nodes')
@@ -318,6 +330,7 @@ class LogikPortal:
 
         # JSON Paths
         self.python_scripts_json_path = os.path.join(self.temp_folder, 'python_scripts.json')
+        self.pixel_expressions_json_path = os.path.join(self.temp_folder, 'pixel_expressions.json')
         self.batch_setups_json_path = os.path.join(self.temp_folder, 'batch_setups.json')
         self.matchbox_json_path = os.path.join(self.temp_folder, 'matchbox_collection.json')
         self.inference_nodes_json_path = os.path.join(self.temp_folder, 'inference.json')
@@ -359,17 +372,15 @@ class LogikPortal:
 
         settings = PyFlameConfig(
             config_values={
-                'python_submit_all_files': False,
                 'matchbox_path': f'/opt/Autodesk/presets/{self.flame_full_version}/matchbox/shaders',
                 'batch_setup_download_path': '/opt/Autodesk',
-                'batch_submit_path': '/opt/Autodesk',
-                'script_submit_path': '/opt/Autodesk',
                 'script_install_local_path': self.autodesk_scripts_path,
                 'script_install_path': '/opt/Autodesk/shared/python',
                 'open_batch': True,
                 'inference_node_download_path': '/opt/Autodesk',
-                'inference_node_submit_path': '/opt/Autodesk',
                 'inference_node_add_to_batch': True,
+                'pixel_expression_download_path': '/opt/Autodesk',
+                'pixel_expression_add_to_batch': True,
                 'last_tab': 'Python Scripts',
                 }
             )
@@ -397,6 +408,7 @@ class LogikPortal:
             os.makedirs(self.temp_inference_node_folder)
             os.makedirs(self.temp_batch_folder)
             os.makedirs(self.temp_python_scripts_folder)
+            os.makedirs(self.temp_pixel_expression_folder)
             return True
         except Exception as exc:
             PyFlameMessageWindow(
@@ -439,26 +451,40 @@ class LogikPortal:
                 True if all JSON files downloaded successfully, False if any failed.
         """
 
-        pyflame.print('Downloading Logik Portal JSON Files...', underline=True)
+        pyflame.print('Downloading Logik Portal JSON Files...', underline=True, new_line=False)
 
         # JSON urls
         python_scripts_url = 'https://raw.githubusercontent.com/logik-portal/python/main/python_scripts.json'
+        pixel_expressions_url = 'https://logik-portal.com/files/pixel_expressions/pixel_expressions.json'
         matchbox_url ='https://raw.githubusercontent.com/logik-portal/matchbox/main/matchbox_collection.json'
         batch_setups_url = 'https://logik-portal.com/files/batch_setups/batch_setups.json'
         inference_url = 'https://logik-portal.com/files/inference/inference.json'
 
-        def download_json(url, path) -> bool:
-            try:
-                urllib.request.urlretrieve(url, path)
-                pyflame.print(f'Downloaded: {url}', text_color=TextColor.GREEN, new_line=False)
-                return True
-            except Exception as exc:
-                pyflame.print(f'Download failed: {url} ({exc})', print_type=PrintType.WARNING, new_line=False)
-                return False
+        def download_json(url, path, max_retries=5, retry_delay=2) -> bool:
+            for attempt in range(1, max_retries + 1):
+                try:
+                    urllib.request.urlretrieve(url, path)
+                    pyflame.print(f'Downloaded: {url}', text_color=TextColor.GREEN, new_line=False)
+                    return True
+                except Exception as exc:
+                    if attempt < max_retries:
+                        pyflame.print(
+                            f'Download failed: {url} ({exc}) - retrying ({attempt}/{max_retries})',
+                            print_type=PrintType.WARNING, new_line=False
+                        )
+                        time.sleep(retry_delay)
+                    else:
+                        pyflame.print(
+                            f'Download failed: {url} ({exc}) - giving up after {max_retries} attempts',
+                            print_type=PrintType.WARNING, new_line=False
+                        )
+                        return False
+            return False
 
         # Track success of each JSON download so caller can react to failures.
         results = [
             download_json(python_scripts_url, self.python_scripts_json_path),
+            download_json(pixel_expressions_url, self.pixel_expressions_json_path),
             download_json(matchbox_url, self.matchbox_json_path),
             download_json(batch_setups_url, self.batch_setups_json_path),
             download_json(inference_url, self.inference_nodes_json_path),
@@ -487,8 +513,6 @@ class LogikPortal:
             with urllib.request.urlopen(latest_scripts_url) as resp:
                 scripts = json.loads(resp.read().decode('utf-8'))
 
-            print('scripts: ', scripts)
-
             lines = ['Latest Updates\n']
             for entry in scripts:
                 name = entry.get('name', '')
@@ -507,10 +531,6 @@ class LogikPortal:
             updates = '\n'.join(lines)
         except Exception as exc:
             updates = f'Unable to retrieve latest scripts:\n{exc}'
-
-        print('updates: ', updates)
-
-        print('last_tab: ', self.settings.last_tab)
 
         # Display in the active tab's description area
         if self.settings.last_tab == 'Python Scripts':
@@ -551,6 +571,7 @@ class LogikPortal:
         self.tabs = PyFlameTabWidget(
             tab_names=[
                 'Python Scripts',
+                'Pixel Expressions',
                 'Matchbox',
                 'Batch Setups',
                 'Inference Nodes',
@@ -564,6 +585,7 @@ class LogikPortal:
 
         # Load Tabs
         self.python_scripts_tab()
+        self.pixel_expressions_tab()
         self.matchbox_tab()
         self.batch_setups_tab()
         self.inference_nodes_tab()
@@ -1383,7 +1405,7 @@ class LogikPortal:
             webbrowser.open('https://logik-portal.com/scripts/#submit')
 
         # ==============================================================================
-        # [Tab 1: Python Scripts Tab]
+        # [Python Scripts Tab]
         # ==============================================================================
 
         # Labels
@@ -1532,6 +1554,656 @@ class LogikPortal:
         self.installed_scripts_search_entry.set_focus()
 
         check_script_flame_version(self.portal_scripts_tree)
+
+    def pixel_expressions_tab(self):
+
+        def get_pixel_expression_description():
+            """
+            Get Pixel Expression Description
+            ================================
+
+            Get selected pixel expression description from json file and display in text edit.
+            Also enables/disables the download button based on the required flame version.
+            """
+
+            # Ignore category header rows (they have no data in the Flame column).
+            selected_items = self.pixel_expression_tree.selectedItems()
+            if selected_items and selected_items[0].parent() is None:
+                return
+
+            self.get_json_description(
+                label=self.pixel_expression_description_label,
+                label_text='Pixel Expression Description',
+                tree=self.pixel_expression_tree,
+                json_path=self.pixel_expressions_json_path,
+                text_edit=self.pixel_expression_description_text_edit,
+                json_list_key='pixel_expressions',
+                download_button=self.pixel_expression_download_button,
+                render_markdown=True,
+                )
+
+            if not self.pixel_expression_download_button.enabled:
+                self.pixel_expression_download_all_button.enabled = False
+                self.pixel_expression_add_to_batch_pushbutton.enabled = False
+            else:
+                self.pixel_expression_download_all_button.enabled = True
+                self.pixel_expression_add_to_batch_pushbutton.enabled = True
+
+        def update_pixel_expressions_tree(search: str='') -> None:
+            """
+            Update Pixel Expressions Tree
+            =============================
+
+            Update pixel expressions tree from json file. Each expression is grouped under a
+            collapsible top-level category header, with the expression name listed underneath.
+            If a search string is present, only add items that match the search string.
+
+            Args
+            ----
+                search (str):
+                    String to search for in pixel expression name. If search string is present,
+                    only add items that match the search string.
+                    (Default: '')
+            """
+
+            def format_file_size(size_bytes) -> str:
+                try:
+                    size_bytes = int(size_bytes)
+                except (TypeError, ValueError):
+                    return ''
+                size_mb = size_bytes // (1024 * 1024)
+                if size_mb >= 1:
+                    return f'{size_mb} MB'
+                size_kb = size_bytes // 1024
+                return f'{size_kb} KB' if size_kb >= 1 else '< 1 KB'
+
+            def add_pixel_expression(expression):
+                category = str(expression.get('category', 'Uncategorized'))
+                name = str(expression.get('name', ''))
+                flame_version = str(expression.get('flame_version', ''))
+                file_size = format_file_size(expression.get('file_size'))
+                author = str(expression.get('submitter_name', '')).title()
+
+                # Create the category header once, reusing it for subsequent expressions.
+                if category not in categories:
+                    category_item = self.pixel_expression_tree.add_item_with_columns([category])
+                    category_item.setExpanded(True)
+                    categories[category] = category_item
+
+                pixel_expression = self.pixel_expression_tree.add_item_with_columns(
+                    [name, flame_version, file_size, author],
+                    parent=categories[category],
+                    )
+
+                # If expression requires a newer version of flame grey out the entry.
+                try:
+                    if float(self.flame_version) < float(flame_version):
+                        self.pixel_expression_tree.color_item(pixel_expression, color='#555555')
+                except ValueError:
+                    pass
+
+            pyflame.print('Updating Pixel Expression List...', underline=True, new_line=False)
+
+            # Clear pixel expression tree.
+            self.pixel_expression_tree.clear()
+
+            # Read in pixel expressions from JSON.
+            with open(self.pixel_expressions_json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            expressions = data.get('pixel_expressions', []) if isinstance(data, dict) else data
+
+            # Track created category header items so expressions of the same category share one.
+            categories = {}
+
+            # Add items from JSON to pixel expression tree. If search string is present, only add items that match the search string.
+            for expression in expressions:
+                if expression.get('hidden'):
+                    continue
+                pixel_expression_name = str(expression.get('name', ''))
+                if search and search.lower() not in pixel_expression_name.lower():
+                    continue
+                add_pixel_expression(expression)
+
+            # Select the first expression (first child of the first category) if present.
+            first_category = self.pixel_expression_tree.topLevelItem(0)
+            if first_category is not None and first_category.childCount() > 0:
+                self.pixel_expression_tree.setCurrentItem(first_category.child(0))
+
+            # Get selected pixel expression description if a pixel expression is selected.
+            try:
+                get_pixel_expression_description()
+            except:
+                print('Unable to get Pixel Expression description. No Pixel Expression selected\n')
+
+            pyflame.print('Pixel Expression List Updated', text_color=TextColor.GREEN)
+
+        def pixel_expression_download() -> None:
+            """
+            Pixel Expression Download
+            ==========================
+
+            Download selected pixel expression from Logik Portal. Uncompress and add to batch if selected.
+            """
+
+            def save_config() -> None:
+                """
+                Save Config
+                ===========
+
+                Save path and add to batch settings to config file.
+                """
+
+                self.settings.save_config(
+                    config_values={
+                            'pixel_expression_download_path': pixel_expression_download_path,
+                            'pixel_expression_add_to_batch': self.pixel_expression_add_to_batch_pushbutton.checked,
+                            }
+                        )
+
+            def download_node() -> None:
+
+                def add_pixel_expression_to_batch() -> None:
+                    """
+                    Add Pixel Expression To Batch
+                    =============================
+
+                    Add downloaded pixel expression to batch. Centers node in batch view.
+                    """
+
+                    pyflame.print('Adding Pixel Expression to Batch...', new_line=False)
+
+                    # Switch to batch tab
+                    flame.set_current_tab('Batch')
+
+                    assert isinstance(pixel_expression_download_path, str)
+
+                    # Get pixel expression node path
+                    pixel_expression_path = os.path.join(pixel_expression_download_path, pixel_expression_name, pixel_expression_name + '.pixel_expression_node')
+                    print('Pixel Expression Path:', pixel_expression_path)
+
+                    # Create pixel expression node
+                    pixel_expression_node = flame.batch.create_node('Pixel Expression')
+                    pixel_expression_node.pos_x = self.cursor_pos[0]
+                    pixel_expression_node.pos_y = self.cursor_pos[1]
+                    pixel_expression_node.load_node_setup(pixel_expression_path)
+
+                    # Generate a unique name for the pixel expression node and set the node name
+                    existing_node_names = [str(node.name)[1:-1] for node in flame.batch.nodes]
+                    unique_node_name = pyflame.generate_unique_node_names([f'{pixel_expression_name}'], existing_node_names)[0]
+                    pixel_expression_node.name = unique_node_name
+
+                    flame.batch.select_nodes([pixel_expression_node])
+                    flame.batch.frame_selected()
+
+                    pyflame.print('Pixel Expression Added to Batch', text_color=TextColor.GREEN)
+
+                pyflame.print('Downloading Pixel Expression...')
+
+                assert isinstance(pixel_expression_download_path, str)
+
+                # Get selected pixel expression name
+                selected_node = self.pixel_expression_tree.selectedItems()
+                selected_node_item = selected_node[0]
+                selected_node_name = selected_node_item.text(0)
+                print('Selected Pixel Expression:', selected_node_name)
+
+                # Look up slug from inference JSON. Display names don't always map
+                # cleanly to slugs (case/punctuation differences), so look it up.
+                pixel_expression_slug = selected_node_name.replace(' ', '_')
+                try:
+                    with open(self.pixel_expressions_json_path, 'r', encoding='utf-8') as f:
+                        pixel_expression_data = json.load(f)
+                    pixel_expressions = pixel_expression_data.get('pixel_expressions', []) if isinstance(pixel_expression_data, dict) else pixel_expression_data
+                    for pixel_expression in pixel_expressions:
+                        if pixel_expression.get('name') == selected_node_name:
+                            pixel_expression_slug = pixel_expression.get('slug', pixel_expression_slug)
+                            break
+                except Exception as exc:
+                    pyflame.print(f'Unable to read pixel expression JSON: {exc}', print_type=PrintType.WARNING)
+
+                # Use slug as the canonical name going forward. The extracted zip
+                # contents are named after the slug, and add_inference_node_to_batch
+                # looks up files by this name.
+                pixel_expression_category = pixel_expression_slug.split('/')[0]
+                pixel_expression_name = pixel_expression_slug.split('/')[1]
+                #print('Pixel Expression Name:', pixel_expression_name)
+                #print('Pixel Expression Category:', pixel_expression_category)
+
+                # Download URL
+                download_url = f'https://logik-portal.com/download_file.php?category=pixel_expressions&group={pixel_expression_category}&file={pixel_expression_name}&source=web'
+
+                # Download dest path
+                zip_path = os.path.join(pixel_expression_download_path, pixel_expression_name + '.zip')
+                #print('Download Path:', zip_path)
+
+                # Download zip file
+                try:
+                    with urllib.request.urlopen(download_url) as resp:
+                        total_bytes = int(resp.headers.get('Content-Length', 0) or 0)
+                        total_kb = max(1, total_bytes // 1024)
+
+                        progress_window = PyFlameProgressWindow(
+                            task=f'Downloading Pixel Expression: {pixel_expression_slug}',
+                            total_tasks=total_kb,
+                            task_progress_message='{task}\n\n[{processing_task}kb of {total_tasks}kb] ({progress:.1f}%)',
+                            title=f'{SCRIPT_NAME}: Downloading',
+                            parent=self.window,
+                            )
+
+                        downloaded = 0
+                        chunk_size = 1024 * 1024 // 10  # 0.1 MB increments for progress window to show progress.
+                        with open(zip_path, 'wb') as out_file:
+                            while True:
+                                chunk = resp.read(chunk_size)
+                                if not chunk:
+                                    break
+                                out_file.write(chunk)
+                                downloaded += len(chunk)
+                                progress_window.current_task = downloaded // 1024
+
+                    progress_window.tasks_completed(
+                        title='Logik Portal: Download Complete',
+                        text_append=f'Download Complete\n\n{zip_path.rsplit('.', 1)[0]}',
+                        )
+                except Exception as exc:
+                    PyFlameMessageWindow(
+                        title='Error',
+                        message=f'Failed to download Pixel Expression:\n{exc}',
+                        parent=self.window,
+                        )
+                    return
+                pyflame.print(f'Downloaded: {zip_path}', text_color=TextColor.GREEN, new_line=False)
+
+                # Uncompress zip file. Use try/finally so the partial zip is always
+                # removed even when extraction fails.
+                pyflame.print(f'Extracting: {zip_path}', new_line=False)
+                try:
+                    extract_dir = os.path.join(pixel_expression_download_path, pixel_expression_name)
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_dir)
+                    pyflame.print('Pixel Expression Extraction Complete', text_color=TextColor.GREEN)
+                except Exception as exc:
+                    PyFlameMessageWindow(
+                        title='Error',
+                        message=f'Failed to extract Pixel Expression archive:\n\n{exc}',
+                        parent=self.window,
+                        )
+                    return
+                finally:
+                    if os.path.exists(zip_path):
+                        os.remove(zip_path)
+
+                if self.pixel_expression_add_to_batch_pushbutton.checked:
+                    #print('\n')
+                    add_pixel_expression_to_batch()
+
+            # Get path to download archive to
+            pixel_expression_download_path = pyflame.file_browser(
+                title='Select Download Path',
+                path=self.settings.pixel_expression_download_path,
+                select_directory=True,
+                window_to_hide=self.window
+                )
+
+            if pixel_expression_download_path:
+                assert isinstance(pixel_expression_download_path, str)
+                save_config()
+                download_node()
+                pyflame.print('Pixel Expression Download Complete', text_color=TextColor.GREEN)
+
+        def pixel_expression_download_all() -> None:
+            """
+            Pixel Expression Download All
+            ==============================
+
+            Download all pixel expressions from Logik Portal.
+            """
+
+            def save_config():
+
+                # Save path to config file
+                self.settings.save_config(
+                    config_values={
+                        'pixel_expression_download_path': pixel_expression_download_path
+                        }
+                    )
+
+            def download(pixel_expression_download_path: str, system_password=''):
+                """
+                Download all pixel expressions from Logik Portal and save to the destination path.
+
+                Args
+                ----
+                    system_password: System password for sudo (if needed)
+                """
+
+                def remove_folder(path: str) -> bool:
+                    """
+                    Remove Folder
+                    =============
+
+                    Remove a folder, using sudo if permission is denied.
+
+                    Args
+                    ----
+                        path (str):
+                            Path to remove
+
+                    Returns
+                    -------
+                        bool:
+                            True if folder was removed successfully, False if errors occurred
+                    """
+
+                    if not os.path.exists(str(path)):
+                        return True
+
+                    try:
+                        # Try normal removal first
+                        if os.path.isdir(str(path)):
+                            shutil.rmtree(str(path))
+                        else:
+                            os.remove(str(path))
+                        print(f'Removed: {path}')
+                        return True
+                    except PermissionError:
+                        # If permission denied, use sudo
+                        print(f'Permission denied. Attempting to remove with sudo...')
+                        try:
+                            remove_cmd = ['sudo', '-S', 'rm', '-rf', str(path)]
+                            process = subprocess.Popen(
+                                remove_cmd,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True
+                            )
+                            stdout, stderr = process.communicate(input=system_password + '\n')
+
+                            if process.returncode != 0:
+                                raise Exception(f'Failed to remove with sudo: {stderr}')
+
+                            print(f'Removed: {path} (using sudo)')
+                            return True
+                        except Exception as e:
+                            print(f'Error removing with sudo: {e}')
+                            raise
+                    except Exception as e:
+                        print(f'Error removing: {e}')
+                        raise
+
+                def move_pixel_expressions(source: str, destination: str) -> bool:
+                    """
+                    Move Folder
+                    ===========
+
+                    Move pixel expressions folder to destination, using sudo if permission is denied.
+
+                    Args
+                    ----
+                        source: Source path to move from
+                        destination: Destination path to move to
+                    """
+
+                    try:
+                        # Try normal move first
+                        shutil.move(str(source), str(destination))
+                        print(f'Moved folder to: {destination}\n')
+                        return True
+                    except PermissionError:
+                        # If permission denied, use sudo
+                        print(f'Permission denied. Attempting to move with sudo...')
+                        try:
+                            # Move with sudo
+                            move_cmd = ['sudo', '-S', 'mv', str(source), str(destination)]
+                            process = subprocess.Popen(
+                                move_cmd,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True
+                                )
+                            stdout, stderr = process.communicate(input=system_password + '\n')
+
+                            if process.returncode != 0:
+                                raise Exception(f'Failed to move with sudo: {stderr}')
+
+                            print(f'Moved folder to: {destination} (using sudo)\n')
+                            return True
+                        except Exception as e:
+                            print(f'Error moving with sudo: {e}')
+                            raise
+                    except Exception as e:
+                        print(f'Error moving folder: {e}')
+                        raise
+
+                # Open download progress window to download pixel expressions
+                progress_window = PyFlameProgressWindow(
+                    title='Logik Portal: Pixel Expressions',
+                    total_tasks=2,
+                    parent=self.window,
+                    )
+
+                # Initialize and display the text by setting processing_task
+                progress_window.current_task = 1
+                progress_window.text_append(f'Downloading Pixel Expressions...')
+
+                pyflame.print('Downloading Pixel Expressions...', new_line=False)
+
+                # Logik Portal Pixel Expressions Download URL
+                zip_url = 'https://logik-portal.com/download_pixel_expressions_all.php?source=app'
+
+                # Temporary download path
+                temp_download_path = os.path.join(self.temp_pixel_expression_folder, 'pixel_expressions_all.zip')
+
+                print('Temp Download Path:', temp_download_path)
+
+                # Download Pixel Expressions to temporary download path
+                with urllib.request.urlopen(zip_url, timeout=600) as resp, open(temp_download_path, 'wb') as out_file:
+                    shutil.copyfileobj(resp, out_file)
+                pyflame.print(f'Pixel Expressions Downloaded To: {temp_download_path}')
+
+                # If file didn't download, give user error message and return
+                if not os.path.exists(temp_download_path):
+                    PyFlameMessageWindow(
+                        title='Error',
+                        message='Failed to download Pixel Expressions',
+                        parent=self.window,
+                        )
+                    return
+
+                progress_window.current_task = 2
+                progress_window.text_append(f'Extracting Pixel Expressions...')
+
+                pyflame.print('Extracting Pixel Expressions...', new_line=False)
+
+                with zipfile.ZipFile(temp_download_path, 'r') as zip_ref:
+                    zip_ref.extractall(self.temp_pixel_expression_folder)
+
+                logik_folder = os.path.join(self.temp_pixel_expression_folder, 'LOGIK_PIXEL_EXPRESSIONS')
+
+                # Delete the zip file
+                os.remove(temp_download_path)
+                pyflame.print(f'Deleted zip file: {temp_download_path}')
+
+                # Logik install path
+                logik_install_path = os.path.join(pixel_expression_download_path, 'LOGIK_PIXEL_EXPRESSIONS')
+
+                # Always remove existing Logik folder in destination to ensure clean overwrite
+                if os.path.exists(pixel_expression_download_path):
+                    print(f'Removing existing Logik folder in destination: {logik_install_path}')
+                    remove_folder(logik_install_path)
+
+                pyflame.print('Moving Logik folder to destination...')
+
+                # Move the Logik folder to destination (will use sudo if needed)
+                move_pixel_expressions(logik_folder, logik_install_path)
+
+                progress_window.tasks_completed()
+                progress_window.text_append(f'Pixel Expressions Installed\n\n{logik_install_path}')
+
+            # Open file browser to select pixel expression install location
+            path = pyflame.file_browser(
+                title='Select Logik Pixel Expression Install Directory',
+                path=self.settings.pixel_expression_download_path,
+                select_directory=True,
+                window_to_hide=self.window
+                )
+            if path:
+                pixel_expression_download_path = str(path)
+            else:
+                return
+
+            # Save downloadpath to config file
+            save_config()
+
+            # Check if password is needed to install to selected location
+            folder_write_permission = os.access(pixel_expression_download_path, os.W_OK)
+
+            # If pixel expression download path is not writeable, get system password and then download and install, otherwise just download and install
+            if not folder_write_permission:
+                print('Pixel Expression download destination write permission: Not Writeable, need system password.')
+                pixel_expression_download_password_window = PyFlamePasswordWindow(
+                    text=f'System password needed to install Logik Pixel Expressions to selected location.',
+                    parent=self.window,
+                    )
+                system_password = pixel_expression_download_password_window.password
+                if system_password:
+                    download(pixel_expression_download_path, system_password)
+                else:
+                    return
+            else:
+                print('Pixel Expression download destination write permission: Writeable')
+                download(pixel_expression_download_path)
+
+        def pixel_expression_submit() -> None:
+            """
+            Pixel Expression Submit
+            ======================
+
+            Submit pixel expression to Logik Portal.
+
+            Redirects to logik-portal.com for submission.
+            """
+
+            pyflame.print('Redirecting to logik-portal.com for submission...')
+            webbrowser.open('https://logik-portal.com/pixel_expressions/#submit')
+
+        def pixel_expression_search() -> None:
+            """
+            Pixel Expression Search
+            =======================
+
+            Search for pixel expressions in the pixel expression tree. Update tree with search results as user types.
+            """
+
+            update_pixel_expressions_tree(search=self.pixel_expression_search_entry.text)
+
+        # ==============================================================================
+        # [Pixel Expressions Tab]
+        # ==============================================================================
+
+        # Labels
+        self.pixel_expressions_label = PyFlameLabel(
+            text='Pixel Expressions',
+            style=Style.UNDERLINE,
+            )
+        self.pixel_expression_description_label = PyFlameLabel(
+            text='Pixel Expression Description',
+            style=Style.UNDERLINE,
+            )
+        self.pixel_expression_search_label = PyFlameLabel(
+            text='Search',
+            align=Align.CENTER,
+            )
+
+        # Entry
+        self.pixel_expression_search_entry = PyFlameEntry(
+            text='',
+            text_changed=pixel_expression_search,
+            )
+
+        # Text Edit
+        self.pixel_expression_description_text_edit = PyFlameTextEdit(
+            text=self.file_description,
+            text_type=TextType.MARKDOWN,
+            text_style=TextStyle.READ_ONLY,
+            height=259,
+            )
+
+        # TreeWidgets
+        self.pixel_expression_tree = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                'Flame',
+                'Size',
+                'Author',
+                ],
+            connect=get_pixel_expression_description,
+            sort=True,
+            elide_text=True,
+            top_level_collapsible=True,
+            top_level_selectable=False,
+            column_resizable=True,
+            height=250,
+            )
+
+        #Push Buttons
+        self.pixel_expression_add_to_batch_pushbutton = PyFlamePushButton(
+            text=' Add to Batch',
+            checked=self.settings.pixel_expression_add_to_batch,
+            tooltip='Add Pixel Expression to Batch Setup When Downloading Single Expression Node',
+            )
+
+        # Buttons
+        self.pixel_expression_submit_button = PyFlameButton(
+            text='Submit',
+            connect=pixel_expression_submit,
+            )
+        self.pixel_expression_download_button = PyFlameButton(
+            text='Download',
+            connect=pixel_expression_download,
+            tooltip='Download Selected Pixel Expression',
+            )
+        self.pixel_expression_download_all_button = PyFlameButton(
+            text='Download All',
+            connect=pixel_expression_download_all,
+            color=Color.BLUE,
+            tooltip='Download All Pixel Expressions',
+            )
+        self.pixel_expression_done_button = PyFlameButton(
+            text='Done',
+            connect=self.done,
+            )
+        self.pixel_expression_logik_portal_button = PyFlameButton(
+            text='logik-portal.com',
+            connect=self.logik_portal,
+            )
+
+        # ==============================================================================
+        # [Pixel Expressions Tab Layout]
+        # ==============================================================================
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expressions_label, 0, 0, 1, 9)
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_tree, 1, 0, 7, 9)
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_submit_button, 8, 0)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_add_to_batch_pushbutton, 8, 6)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_download_button, 8, 7)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_download_all_button, 8, 8)
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_search_label, 9, 5)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_search_entry, 9, 6, 1, 3)
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_description_label, 10, 0, 1, 9)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_description_text_edit, 11, 0, 9, 9)
+
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_logik_portal_button, 20, 0)
+        self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_done_button, 20, 8)
+
+        update_pixel_expressions_tree()
 
     def matchbox_tab(self):
 
@@ -1897,13 +2569,10 @@ class LogikPortal:
 
             def create_matchbox_node(matchbox_file_name, destination_folder):
 
-                # Get cursor position
-                cursor_pos = flame.batch.cursor_position
-
                 # Create matchbox node
                 matchbox_node = flame.batch.create_node('Matchbox', os.path.join(destination_folder, matchbox_file_name))
-                matchbox_node.pos_x = cursor_pos[0]
-                matchbox_node.pos_y = cursor_pos[1]
+                matchbox_node.pos_x = self.cursor_pos[0]
+                matchbox_node.pos_y = self.cursor_pos[1]
 
                 matchbox_node.load_node_setup(os.path.join(destination_folder, selected_matchbox_name))
 
@@ -2026,7 +2695,7 @@ class LogikPortal:
             pyflame.print('Matchbox List Updated', text_color=TextColor.GREEN)
 
         # ==============================================================================
-        # [Tab 3: Matchbox Tab]
+        # [Matchbox Tab]
         # ==============================================================================
 
         # Labels
@@ -2404,7 +3073,7 @@ class LogikPortal:
             update_batch_setups_tree(search=self.batch_setups_search_entry.text)
 
         # ==============================================================================
-        # [Tab 4: Batch Setups Tab]
+        # [Batch Setups Tab]
         # ==============================================================================
 
         # Labels
@@ -2543,7 +3212,10 @@ class LogikPortal:
                 except (TypeError, ValueError):
                     return ''
                 size_mb = size_bytes // (1024 * 1024)
-                return f'{size_mb} MB' if size_mb >= 1 else '< 1 MB'
+                if size_mb >= 1:
+                    return f'{size_mb} MB'
+                size_kb = size_bytes // 1024
+                return f'{size_kb} KB' if size_kb >= 1 else '< 1 KB'
 
             def add_inference_node(node):
                 flame_version = str(node.get('flame_version', ''))
@@ -2640,16 +3312,12 @@ class LogikPortal:
                     if not os.path.isfile(inference_node_path):
                         inference_node_path = os.path.join(inference_node_download_path, inference_node_name + '.inf')
 
-                    # Get cursor position
-                    cursor_pos = flame.batch.cursor_position
-
                     # Create inference node
                     inference_node = flame.batch.create_node('Inference', inference_node_path)
-                    inference_node.pos_x = cursor_pos[0]
-                    inference_node.pos_y = cursor_pos[1]
+                    inference_node.pos_x = self.cursor_pos[0]
+                    inference_node.pos_y = self.cursor_pos[1]
 
                     flame.batch.select_nodes([inference_node])
-
                     flame.batch.frame_selected()
 
                     pyflame.print('Inference Node Added to Batch', text_color=TextColor.GREEN)
@@ -2787,7 +3455,7 @@ class LogikPortal:
             update_inference_nodes_tree(search=self.inference_node_search_entry.text)
 
         # ==============================================================================
-        # [Tab 5: Inference Nodes]
+        # [Inference Nodes Tab]
         # ==============================================================================
 
         # Labels
@@ -2897,6 +3565,7 @@ class LogikPortal:
         download_button=None,
         normalize_name=False,
         decode_unicode_escape=False,
+        render_markdown=False,
         ):
         """
         Get Description
@@ -2945,6 +3614,14 @@ class LogikPortal:
                 on descriptions containing bare backslashes, so leave off unless the
                 source requires it.
                 (Default: False)
+
+            render_markdown (bool):
+                If True, the description is rendered as Markdown using the text edit's
+                own Markdown handling instead of the manual HTML conversion. Use for
+                sources whose descriptions are written in Markdown. The HTML escaping and
+                URL/email linkifying are skipped in this mode, since Markdown handles its
+                own formatting and links.
+                (Default: False)
         """
 
         selected_items = tree.selectedItems()
@@ -2986,6 +3663,15 @@ class LogikPortal:
             else:
                 description = raw_description
 
+            # Render as Markdown using the text edit's own Markdown handling.
+            # PyFlameTextEdit styles the rendered Markdown (headers, indentation,
+            # font) automatically as soon as `text` is set.
+            if render_markdown:
+                text_edit.setReadOnly(True)
+                text_edit.text_type = TextType.MARKDOWN
+                text_edit.text = description
+                break
+
             # Escape HTML characters
             description = html.escape(description)
 
@@ -3026,8 +3712,23 @@ class LogikPortal:
         Open Logik Portal website in web browser.
         """
 
+        print('Tab Name:', self.tabs.get_current_tab_name())
+
+        if self.tabs.get_current_tab_name() == 'Python Scripts':
+            page_name = 'scripts'
+        elif self.tabs.get_current_tab_name() == 'Pixel Expressions':
+            page_name = 'pixel_expressions'
+        elif self.tabs.get_current_tab_name() == 'Matchbox':
+            page_name = 'matchboxes'
+        elif self.tabs.get_current_tab_name() == 'Inference Nodes':
+            page_name = 'inference'
+        elif self.tabs.get_current_tab_name() == 'Batch Setups':
+            page_name = 'batch_setups'
+        else:
+            page_name = ''
+
         pyflame.print('Redirecting to logik-portal.com...')
-        webbrowser.open('https://logik-portal.com')
+        webbrowser.open(f'https://logik-portal.com/{page_name}')
 
     def done(self):
         """
@@ -3076,5 +3777,22 @@ def get_main_menu_custom_ui_actions():
                     'minimumVersion': '2025.1'
                 }
             ]
+        }
+    ]
+
+def get_batch_custom_ui_actions():
+
+    return [
+        {
+           'hierarchy': [],
+           'actions': [
+               {
+                    'name': 'Logik Portal',
+                    'order': 1,
+                    'separator': 'below',
+                    'execute': LogikPortal,
+                    'minimumVersion': '2025.1'
+               }
+           ]
         }
     ]

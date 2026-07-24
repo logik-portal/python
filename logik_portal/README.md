@@ -1,10 +1,10 @@
 # Logik Portal
 
-**Script Version:** 7.1.0  
+**Script Version:** 7.2.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 05.04.26  
+**Update Date:** 07.23.26  
 
 **Script Type:** Flame Main Menu
 
@@ -29,6 +29,14 @@ https://logik-portal.com
 Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.2.0 [07.23.26]
+- Added Pixel Expressions tab. Allows for downloading  of pixel expressions from logik-portal.com.
+- Added retry to download JSON files from GitHub in case of failure. Retries 5 times with a 2 second delay between attempts.
+- Updated to PyFlameLib v5.5.0
+- Small UI enhancements
+- Added Logik Portal to Batch Menu
+<br>
 
 ### v7.1.0 [05.04.26]
 - Submit buttons now redirect to logik-portal.com for submissions.
