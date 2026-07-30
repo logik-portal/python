@@ -771,13 +771,13 @@
   },
   {
     "Script Name": "merge offline",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Version": "1.1",
+    "Flame Version": "2027",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "unknown"
+    "Author": "Bryan Bayley",
+    "Creation Date": "07.29.26",
+    "Update Date": "07.29.26",
+    "Description": "Script Name: Merge Offline\nScript Version: 1.1\nFlame Version: 2027\nWritten by: Bryan Bayley\nHelp from: Fred Warren\nCreation Date: 07.29.26\n\nDescription:\nAutomates merging an offline edit (AAF/XML/EDL) with a reference video for\nonline comparison. Stacks the AAF/XML/EDL edit above the reference, sets\nprimary/secondary tracks for A/B comparison, locks the reference video and\naudio, adds virtual padding and a black top track, and deletes the\nstandalone reference clip from the Media Panel. Padding and the black\nhead/tail are derived from each sequence's own frame rate and start\ntimecode. A 2-pop / slate lead-in (a start inside the last minute before\nthe hour, e.g. 59:58:00) is detected and cut out of both the sequence and\nthe reference so the program starts on the hour before padding is added.\n\nThe reference clip is found on the same reel as the selected sequence using\na layered lookup:\n1. Any clip whose name contains \"offline\", \"reference\" or the word \"ref\"\n(case-insensitive). If several match, the one named most like the\nsequence wins.\n2. Otherwise, the clip whose name is most similar to the sequence name\n(fuzzy match, e.g. \"JOB123_ONLINE\" finds \"JOB123_v12\").\nSequences with no plausible reference are left untouched and listed in a\nsingle dialog after everything else has merged.\n\nPrerequisites:\n- Import the AAF/XML/EDL to a sequence reel.\n- Import the reference video to the same reel, with the same start frame as\nthe offline edit (e.g. don't have the offline edit start on the first\nframe of picture while the reference video has a 2-pop).\n- This script uses flame.execute_shortcut(). The shortcuts used must still\nexist in the Keyboard Shortcut editor (they do by default): Nudge 1 Track\nUp, Nudge 1 Track Down, Overwrite Edit, Timeline Home, Set Focus on\nTopmost Visible Track.\n\nMenus:\nRight-click a sequence in the Media Panel -> Sequence... -> Merge Offline"
   },
   {
     "Script Name": "multi batch render",
