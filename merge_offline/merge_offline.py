@@ -1,6 +1,6 @@
- """
+"""
 Script Name: Merge Offline
-Script Version: 1.0
+Script Version: 1.1
 Flame Version: 2027
 Written by: Bryan Bayley
 Help from: Fred Warren
@@ -13,7 +13,9 @@ primary/secondary tracks for A/B comparison, locks the reference video and
 audio, adds virtual padding and a black top track, and deletes the
 standalone reference clip from the Media Panel. Padding and the black
 head/tail are derived from each sequence's own frame rate and start
-timecode.
+timecode. A 2-pop / slate lead-in (a start inside the last minute before
+the hour, e.g. 59:58:00) is detected and cut out of both the sequence and
+the reference so the program starts on the hour before padding is added.
 
 The reference clip is found on the same reel as the selected sequence using
 a layered lookup:
@@ -110,6 +112,71 @@ def find_reference(clip, selected_names):
     return best
 
 
+def lead_in_before_hour(seq_start, frame_rate):
+    """If the timecode starts inside the last minute before an hour mark
+    (e.g. a 59:58:00 2-pop lead-in before a 1:00:00:00 program start),
+    return (hour mark PyTime, lead-in length in frames). Otherwise None."""
+    # Flame renders PyTime as e.g. '00:59:58+00' - quoted, with "+" (or ";"
+    # for drop-frame) before the frames field.
+    match = re.search(r"(\d+)([:;+.])(\d{2})([:;+.])(\d{2})([:;+.])(\d{2,3})", str(seq_start))
+    if match is None:
+        return None
+    hours, sep1, minutes, sep2, seconds, sep3, frames = match.groups()
+    if minutes != "59":
+        return None
+    one_second = round(float(str(frame_rate).split()[0]))
+    lead_frames = (60 - int(seconds)) * one_second - int(frames)
+    timecode = "%02d%s00%s00%s00" % (int(hours) + 1, sep1, sep2, sep3)
+    try:
+        return flame.PyTime(timecode, frame_rate), lead_frames
+    except Exception:
+        # constructor may not accept the rendered separators - plain SMPTE
+        return flame.PyTime("%02d:00:00:00" % (int(hours) + 1), frame_rate), lead_frames
+
+
+def timecode_of(value):
+    """Timecode string of a PyTime that may arrive wrapped in a PyAttribute."""
+    if hasattr(value, "get_value"):
+        value = value.get_value()
+    return str(value)
+
+
+def remove_lead_in(clip, program_start):
+    """Cut every video track and audio channel at the program start and
+    delete all segments before it - a manual Lift. The head becomes an
+    empty gap and nothing ripples."""
+    program_tc = str(program_start)
+    labelled = [("V%d" % (index + 1), track)
+                for index, track in enumerate(clip.versions[0].tracks)]
+    for index, audio_track in enumerate(clip.audio_tracks):
+        for channel in audio_track.channels:
+            labelled.append(("A%d %s" % (index + 1, str(channel.name)[1:-1]), channel))
+    for label, track in labelled:
+        try:
+            track.cut(program_start)
+        except Exception:
+            # an edit point may already exist at the program start
+            pass
+        # The segment starting exactly at the program start marks the
+        # boundary; everything before it is lead-in. Matching by timecode
+        # string avoids guessing which frame-number space record_in uses.
+        if not any(timecode_of(segment.record_in) == program_tc for segment in track.segments):
+            print("%s: no edit point at %s on %s - lead-in left in place there"
+                  % (SCRIPT_NAME, program_tc.strip("'"), label))
+            continue
+        while True:
+            head = None
+            for segment in track.segments:
+                if timecode_of(segment.record_in) == program_tc:
+                    break
+                if segment.type != "Gap":
+                    head = segment
+                    break
+            if head is None:
+                break
+            flame.delete(head)
+
+
 def merge_clip(clip, ref):
     # Make sure the clip is open as a sequence
     clip.open()
@@ -119,6 +186,20 @@ def merge_clip(clip, ref):
     # a PyAttribute - unwrap it to the PyTime it holds.
     seq_start = clip.start_time.get_value()
     one_second = round(float(str(clip.frame_rate).split()[0]))
+
+    # Detect a 2-pop / slate lead-in. The lift itself happens after the
+    # reference is overwritten, so the reference's own lead-in is removed
+    # in the same pass. All downstream timing (padding, black head) is
+    # based on the program start on the hour.
+    lead_in_start = None
+    lead_in = lead_in_before_hour(seq_start, str(clip.frame_rate))
+    if lead_in is not None:
+        program_start, lead_frames = lead_in
+        if int(clip.duration.frame) > lead_frames:
+            lead_in_start = seq_start
+            seq_start = program_start
+        else:
+            print("%s: lead-in detected but sequence too short - skipping trim" % SCRIPT_NAME)
 
     # Get the number of tracks in the AAF/XML/EDL
     num_tracks = len(clip.versions[0].tracks)
@@ -151,6 +232,13 @@ def merge_clip(clip, ref):
     clip.primary_track = clip.versions[0].tracks[0]
     flame.media_panel.selected_entries = [ref]
     flame.execute_shortcut("Overwrite Edit")
+
+    # Remove the lead-in from every track - sequence and freshly
+    # overwritten reference alike - by cutting at the program start and
+    # deleting the head segments. Nothing ripples, so the remaining
+    # content keeps its timecode.
+    if lead_in_start is not None:
+        remove_lead_in(clip, seq_start)
 
     # Set primary (top) / secondary (bottom) tracks and lock the
     # reference video and audio
@@ -197,16 +285,19 @@ def merge_offline(selection):
 
     for clip in selection:
         clip_name = str(clip.name)[1:-1]
+        print("%s: ----- '%s' -----" % (SCRIPT_NAME, clip_name))
 
         # Find the reference clip before touching the sequence so a missing
         # reference leaves the sequence untouched.
         ref = find_reference(clip, selected_names)
         if ref is None:
+            print("%s: no reference clip found - sequence skipped" % SCRIPT_NAME)
             skipped.append(clip_name)
             continue
 
         try:
             merge_clip(clip, ref)
+            print("%s: merge complete for '%s'" % (SCRIPT_NAME, clip_name))
         except Exception:
             print("%s: ERROR while merging '%s':" % (SCRIPT_NAME, clip_name))
             traceback.print_exc()
