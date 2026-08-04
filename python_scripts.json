@@ -631,13 +631,13 @@
   },
   {
     "Script Name": "frame io",
-    "Script Version": "0.9",
-    "Flame Version": "2024.2",
+    "Script Version": "unknown",
+    "Flame Version": "unknown",
     "Maximum Flame Version": "Latest",
-    "Author": "John Geehreng",
-    "Creation Date": "01.03.23",
-    "Update Date": "01.25.24",
-    "Description": "Script Name: frame io\nScript Version: 0.9\nFlame Version: 2024.2\nWritten by: John Geehreng\nCreation Date: 01.03.23\nUpdate Date: 01.25.24\n\nDescription:\n\nCollection of scripts for Frame.IO integration within Flame.\n\nframe.io conform uploader:\n\nThis script will export h264 .mp4's to a FROM_FLAME folder in your job folder, save it to a FROM_FLAME shared library, and upload them to FrameIO.\nIt will also automatically create or add to version stacks if it can find a matching base name.\nScript assumes a verion of _v## or _V### in order to match file names.\n\nframe.io csv to markers:\n\nImports a CSV file exported from frame.io and adds markers to a clip in flame. There is no need to modify the CSV downloaded from FrameIO.\n\nframe.io get comments:\n\nThis script will fetch comments from FrameIO and make markers according to the selection.\n\nframe.io python packages:\n\nChecks for installed Python Packages when launching Flame.\n\nframe_io shot uploader:\n\nThis script will export h264 .mp4's to a FROM_FLAME folder in your job folder, save it to a FROM_FLAME shared library, and upload them to FrameIO.\nIt will also automatically create or add to version stacks if it can find a matching base name.\nScript assumes a verion of _v## or _V### in order to match file names."
+    "Author": "unknown",
+    "Creation Date": "unknown",
+    "Update Date": "unknown",
+    "Description": "FrameIO Config Editor\nUppercut VFX Pipeline\nAccessible from Main Menu → FrameIO → Edit Config\n\nThis account uses a single shared FrameIO credential (service-client token),\nnot per-artist tokens, so all settings — auth and pipeline — live in one\nconfig file (shared_config.json) and one flat form."
   },
   {
     "Script Name": "gfx sync",
