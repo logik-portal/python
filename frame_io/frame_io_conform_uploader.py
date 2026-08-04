@@ -1,558 +1,465 @@
-'''
-Script Name: frame_io_conform_uploader
-Script Version: 1.1.3
-Flame Version: 2024.2
-Written by: John Geehreng
-Creation Date: 01.03.23
-Update Date: 09.28.24
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+FrameIO Conform Uploader v1.4.0 — Uppercut VFX Pipeline
+- export selection into FROM_FLAME/date/time
+- write files to /Volumes/.../FROM_FLAME/date  (no double time)
+- upload to FrameIO
+- auto-version-up in Flame before export
+v1.3.1 - collapse FROM_FLAME shared library and all child folders before release_exclusive_access
+v1.3.2 - fix double CONFORMS folder: capture folder id on new-project creation so the
+         subsequent find-or-create step is skipped (Frame.io search index is eventually
+         consistent and previously returned no results for the just-created folder)
+v1.4.0 - migrate to Frame.io V4 API: replace frameioclient SDK upload with the
+         local_upload + presigned-S3-PUT flow, and version_asset/resolve_stack_root_id
+         with add_version()
+"""
 
-Script Type: MediaPanel
-
-Description:
-
-    This script will export h264 .mp4's to a FROM_FLAME folder in your job folder, save it to a FROM_FLAME shared library, and upload them to FrameIO.
-    It will also automatically create or add to version stacks if it can find a matching base name.
-    Script assumes a verion of _v## or _V### in order to match file names.
-
-Updates:
-09.28.24 - v1.1.3 Prep for Logik Portal
-09.28.24 - v1.1.2 Simplified the way of searching for the FROM_FLAME shared library and it's subfolders.
-09.24.24 - v1.0.2 Adjusted base name search to work with v## or V##. Splits at the last match.
-09.19.24 - v1.0.1 Fixed a bug where script would fail if there wasn't an existing project
-09.13.24 - v1.0 - Added automatic version upper
-06.13.24 - v0.9.3 - Added Progress window for uploads
-03.20.24 - v0.9.2 - API Updates and Updates for failing searches
-12.04.23 - v0.8 - Updates for PySide6 (Flame 2025)
-10.31.23 - v0.7 - Minor print Adjustments
-09.21.23 - v0.6 - Updated Preset to export mp4's directly from Flame instead of exporting h264 mov's and changing the extension.
-04.27.23 - v0.5 - changes to uppercut staff
-01.11.23 - v04.1- changed pattern from: r'_[vV]\d*' to r'_[vV]\d+'
-01.10.23 - v0.4 - fixed issue where search was finding deleted files.
-01.05.23 - v0.3 - added scope
-
-To install:
-
-    Copy script into /opt/Autodesk/shared/python/frame_io
-'''
-
-try:
-    from PySide6 import QtWidgets
-except ImportError:
-    from PySide2 import QtWidgets
-import xml.etree.ElementTree as ET
+import os
 import flame
 import datetime
-import os
 import re
-import glob
-import requests
-from frameioclient import FrameioClient
-from pyflame_lib_frame_io import PyFlameProgressWindow
-
-SCRIPT_NAME = 'FrameIO Conform Uploader'
-SCRIPT_PATH = '/opt/Autodesk/shared/python/frame_io'
-VERSION = 'v1.0.2'
-
-#-------------------------------------#
-# Main Script
-
-class frame_io_uploader(object):
-
-    def __init__(self, selection):
-
-        print('\n')
-        print('>' * 10, f'{SCRIPT_NAME} {VERSION}', ' Start ', '<' * 10, '\n')
-
-        # Paths
-
-        self.config_path = os.path.join(SCRIPT_PATH, 'config')
-        self.config_xml = os.path.join(self.config_path, 'config.xml')
-
-        # Load config file
-
-        self.config()
-
-        # Search for existing version - if a matching version (with the same exact name) is found the selection will be automatically versioned up before being exported.
-        self.version_upper(selection)
-        # Copy to the FROM_FLAME shared library and export
-        self.export_and_copy_path(selection)
-        # Upload to FrameIO. Find appropriate folder and version stack if a match is found.
-        self.upload_to_frameio()
-
-    def config(self):
-
-        def get_config_values():
-
-            xml_tree = ET.parse(self.config_xml)
-            root = xml_tree.getroot()
-
-            # Get Settings from config XML
-
-            for setting in root.iter('frame_io_settings'):
-                self.token = setting.find('token').text
-                self.account_id = setting.find('account_id').text
-                self.team_id = setting.find('team_id').text
-                self.jobs_folder = setting.find('jobs_folder').text
-                self.preset_path_h264 = setting.find('preset_path_h264').text
+import traceback
+from PySide6 import QtWidgets, QtCore
+from pathlib import Path
+from lib.frame_io_api import (
+    validate_config,
+    get_fio_projects,
+    create_fio_project,
+    find_fio_asset,
+    find_fio_folder,
+    create_fio_folder,
+    add_version,
+    upload_file,
+)
 
 
-            # pyflame_print(SCRIPT_NAME, 'Config loaded.')
+SCRIPT_NAME = "FrameIO Conform Uploader"
+VERSION = "v1.4.0"
 
-        def create_config_file():
-
-            if not os.path.isdir(self.config_path):
-                try:
-                    os.makedirs(self.config_path)
-                except:
-                    flame.messages.show_in_dialog(
-                        title = "f'{SCRIPT_NAME}: Error",
-                        message = f'Unable to create folder: {self.config_path}<br>Check folder permissions',
-                        type = "error",
-                        buttons = ["Ok"],
-                        cancel_button = "Cancel")
-                    # FlameMessageWindow('error', f'{SCRIPT_NAME}: Error', f'Unable to create folder: {self.config_path}<br>Check folder permissions')
-
-            if not os.path.isfile(self.config_xml):
-                # pyflame_print(SCRIPT_NAME, 'Config file does not exist. Creating new config file.')
-
-                config = '''
-<settings>
-    <frame_io_settings>
-        <token>fio-x-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxx</token>
-        <account_id>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</account_id>
-        <team_id>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</team_id>
-        <jobs_folder>/Volumes/vfx/UC_Jobs</jobs_folder>
-        <preset_path_h264>/opt/Autodesk/shared/python/frame_io/presets/UC H264 10Mbits.xml</preset_path_h264>
-    </frame_io_settings>
-</settings>'''
-
-                with open(self.config_xml, 'a') as config_file:
-                    config_file.write(config)
-                    config_file.close()
-
-        if os.path.isfile(self.config_xml):
-            get_config_values()
-        else:
-            create_config_file()
-            if os.path.isfile(self.config_xml):
-                get_config_values()
-    
-    
-    def export_and_copy_path(self, selection):
-
-        # self.project_nickname = flame.project.current_project.nickname
-        dateandtime = datetime.datetime.now()
-        today = (dateandtime.strftime("%Y-%m-%d"))
-        time = (dateandtime.strftime("%H%M"))
-        shared_libs = flame.projects.current_project.shared_libraries
-        
-        #Check for FROM_FLAME Shared Library if missing create one
-        sharedlib = None
-        # Look for a shared library called "FROM_FLAME"
-        for libary in shared_libs:      
-            if libary.name == "FROM_FLAME":
-                sharedlib = libary
-        # If it's found, keep going. Otherwise create a shared library called "FROM FLAME"
-        if sharedlib:
-            pass
-        else:
-            sharedlib = flame.project.current_project.create_shared_library('FROM_FLAME')
-
-        #Define Export Path & Check for Preset
-
-        preset_check = (str(os.path.isfile(self.preset_path_h264)))
-
-        if preset_check == 'True':
-            pass
-            # print ("Export Preset Found")
-        else:
-            # print ('Export Preset Not Found.')
-            flame.messages.show_in_dialog(
-            title = "Error",
-            message = "Cannot find Export Preset.",
-            type = "error",
-            buttons = ["Ok"])
+# ----------------------------------------------------------
+# Toast
+# ----------------------------------------------------------
+def show_toast(message, duration=5, title=SCRIPT_NAME):
+    try:
+        if hasattr(flame, "display_toast"):
+            flame.display_toast(message, duration)
             return
+    except Exception:
+        pass
 
-        export_dir =f"{self.jobs_folder}/{str(self.project_nickname)}/FROM_FLAME/{str(today)}"
+    print(f"[{title}] {message}")
+    msg_box = QtWidgets.QMessageBox()
+    msg_box.setWindowTitle(title)
+    msg_box.setText(message)
+    msg_box.setIcon(QtWidgets.QMessageBox.Information)
+    QtCore.QTimer.singleShot(duration * 1000, msg_box.accept)
+    msg_box.exec_()
 
-        #Define Exporter
+# ----------------------------------------------------------
+# Logging
+# ----------------------------------------------------------
+def log(msg):
+    print(f"[{SCRIPT_NAME}] {msg}")
+
+def attr(x):
+    try:
+        return x.get_value() if hasattr(x, "get_value") else x
+    except Exception:
+        return x
+
+# ----------------------------------------------------------
+# Progress UI
+# ----------------------------------------------------------
+class FrameIOProgressDialog(QtWidgets.QDialog):
+    def __init__(self, total_files, title="FrameIO Upload Progress"):
+        super().__init__()
+        self.setWindowTitle(title)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        self.resize(420, 150)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status_label = QtWidgets.QLabel("Preparing uploads…")
+        self.file_progress = QtWidgets.QProgressBar()
+        self.file_progress.setRange(0, 100)
+        self.total_progress = QtWidgets.QProgressBar()
+        self.total_progress.setRange(0, max(1, total_files))
+
+        layout.addWidget(self.status_label)
+        layout.addWidget(QtWidgets.QLabel("Current File"))
+        layout.addWidget(self.file_progress)
+        layout.addWidget(QtWidgets.QLabel("Overall"))
+        layout.addWidget(self.total_progress)
+
+    def update_total_file(self, idx, total, filename):
+        self.total_progress.setMaximum(max(1, total))
+        self.total_progress.setValue(max(0, idx - 1))
+        self.file_progress.setValue(0)
+        self.status_label.setText(f"Uploading {os.path.basename(filename)} ({idx}/{total})…")
+        QtWidgets.QApplication.processEvents()
+
+    def update_file_percent(self, percent, message=None):
+        clamped = max(0, min(100, int(percent)))
+        self.file_progress.setValue(clamped)
+        if message:
+            self.status_label.setText(message)
+        QtWidgets.QApplication.processEvents()
+
+    def finish(self, message="Upload complete", delay_ms=1500):
+        self.total_progress.setValue(self.total_progress.maximum())
+        self.file_progress.setValue(100)
+        self.status_label.setText(message)
+        QtWidgets.QApplication.processEvents()
+        QtCore.QTimer.singleShot(delay_ms, self.accept)
+
+# ----------------------------------------------------------
+# Shared Library Helpers
+# ----------------------------------------------------------
+def get_or_create_shared_library(name="FROM_FLAME"):
+    project = flame.projects.current_project
+    for lib in project.shared_libraries:
+        if attr(lib.name).strip().lower() == name.lower():
+            return lib
+    new_lib = project.create_shared_library(name)
+    if not new_lib:
+        raise RuntimeError(f"Failed to create Shared Library '{name}'.")
+    return new_lib
+
+def ensure_folder(parent, name):
+    for f in parent.folders:
+        if attr(f.name) == name:
+            return f
+    if hasattr(parent, "create_folder"):
+        return parent.create_folder(name)
+    raise RuntimeError("Flame version does not expose create_folder().")
+
+def collapse_recursive(node):
+    """Collapse *node* and every descendant folder in the media panel."""
+    try:
+        for child in getattr(node, "folders", []):
+            collapse_recursive(child)
+        if hasattr(node, "expanded"):
+            node.expanded = False
+    except Exception as e:
+        log(f"WARNING: Could not collapse node '{getattr(node, 'name', node)}': {e}")
+
+# ----------------------------------------------------------
+# Auto version-up (exact name search style)
+# ----------------------------------------------------------
+def auto_version_up_flame(selection, cfg, project_id):
+    """Auto-version up clips if a matching base asset exists in FrameIO.
+
+    Logic:
+    - Parse v## from the clip name.
+    - Derive a base name by stripping the version.
+    - Look up the base name in FrameIO.
+    - Only rename in Flame when a matching asset exists.
+    """
+    try:
+        for item in selection:
+            # Flame PyObject names sometimes come in as quoted strings, eg "'NAME'"
+            try:
+                raw_name = str(item.name)[1:-1]
+            except Exception:
+                raw_name = str(item.name)
+
+            clip_name = raw_name.strip()
+            log(f"[auto_version_up_flame] Checking '{clip_name}'")
+
+            # Find version token in the name — use the LAST match so names
+            # with an earlier incidental "v##"-looking substring (e.g. a shot
+            # or product code) don't get mistaken for the version token.
+            matches = list(re.finditer(r"([vV])(\d+)", clip_name))
+            if not matches:
+                log(f"WARNING: {clip_name} needs a version number like 'v01'.")
+                continue
+            m = matches[-1]
+
+            # Derive a base name by stripping the version portion
+            base_name = clip_name[:m.start()].rstrip(" _-")
+            version_prefix = m.group(1)
+            current_version = int(m.group(2))
+            padding = len(m.group(2))
+
+            # If we somehow ended up with an empty base_name, fall back to full clip_name
+            search_name = base_name or clip_name
+
+            # Use the same search strategy that the uploader uses (base name search)
+            asset_type, asset_id, parent_id, file_id = find_fio_asset(cfg, project_id, search_name)
+
+            if asset_type is None:
+                # Per-item message instead of a for-else that fires once at the end
+                log(
+                    f"** No existing version found in FrameIO for "
+                    f"'{search_name}' — keeping '{clip_name}'."
+                )
+                continue
+
+            # Bump the version number in the string (preserving zero-padding),
+            # replacing only the last version token found above.
+            new_version = current_version + 1
+            new_name = (
+                clip_name[:m.start()]
+                + f"{version_prefix}{new_version:0{padding}d}"
+                + clip_name[m.end():]
+            )
+
+            try:
+                if hasattr(item, "name") and hasattr(item.name, "set_value"):
+                    item.name.set_value(new_name)
+                else:
+                    item.name = new_name
+                log(f"Renamed {clip_name} → {new_name}")
+            except Exception as e:
+                log(f"WARNING: Could not rename {clip_name}: {e}")
+
+    except Exception as e:
+        log(f"WARNING: Version check skipped: {e}")
+
+# ----------------------------------------------------------
+# Export and collect
+# ----------------------------------------------------------
+def export_and_collect(selection, project_token, jobs_folder, cfg):
+    lib = get_or_create_shared_library("FROM_FLAME")
+    lib.acquire_exclusive_access()
+    try:
+        date_name = datetime.datetime.now().strftime("%Y-%m-%d")
+        time_name = datetime.datetime.now().strftime("%H%M")
+
+        date_folder = ensure_folder(lib, date_name)
+        time_folder = ensure_folder(date_folder, time_name)
+
+        # Get project_id for version checking
+        try:
+            _, project_id = get_fio_projects(cfg, project_token)
+            auto_version_up_flame(selection, cfg, project_id)
+        except Exception:
+            log("WARNING: Could not check for existing versions (project may not exist yet)")
+
+        log("Copying selection into Shared Library folder…")
+        if flame.get_current_tab() == "MediaHub":
+            flame.set_current_tab("Timeline")
+        for item in selection:
+            try:
+                flame.media_panel.copy(item, time_folder)
+            except Exception as e:
+                log(f"WARNING: Failed to copy {getattr(item, 'name', 'item')}: {e}")
+        log("Selection copied.")
+
+        posting_folder = os.path.join(
+            jobs_folder,
+            project_token,
+            "FROM_FLAME",
+            date_name,
+        )
+        os.makedirs(posting_folder, exist_ok=True)
+        log(f"Posting folder: {posting_folder}")
+
+        preset_path = cfg.get("preset_path_h264")
+        if not preset_path or not os.path.exists(preset_path):
+            raise RuntimeError(f"Missing preset: {preset_path}")
+
         exporter = flame.PyExporter()
         exporter.foreground = True
         exporter.export_between_marks = True
         exporter.use_top_video_track = True
+        exporter.export(time_folder, preset_path, posting_folder)
+        log("Export complete.")
 
-        # Look for a Folder with Today's Date
-        todays_match=False
-        for folder in sharedlib.folders:
-            if folder.name == today:
-                todays_match = True
-            # print ("Today's Folder # is: ", today_folder_number)
+        return os.path.join(posting_folder, time_name)
+    finally:
+        collapse_recursive(lib)
+        lib.release_exclusive_access()
+
+# ----------------------------------------------------------
+# Main upload
+# ----------------------------------------------------------
+def start_upload(selection):
+    print(f"\n[{SCRIPT_NAME}] {VERSION} — Start")
+    try:
+        cfg = validate_config()
+        project = flame.projects.current_project
+        project_token = str(attr(project.nickname))
+        jobs_folder = cfg.get("jobs_folder", "/Volumes/vfx/UC_Jobs")
+
+        reply = QtWidgets.QMessageBox.question(
+            None,
+            "Confirm Upload",
+            f"Upload conform for project '{project_token}' to FrameIO?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+        if reply != QtWidgets.QMessageBox.Yes:
+            log("WARNING:  Upload canceled.")
+            return
+
+        posting_folder = export_and_collect(selection, project_token, jobs_folder, cfg)
+
+        files = [
+            os.path.join(root, f)
+            for root, _, fnames in os.walk(posting_folder)
+            for f in fnames
+        ]
+        if not files:
+            raise RuntimeError("No files exported for upload.")
         
-        # If it finds a match, create a timestamped folder
-        if todays_match == True:
-            sharedlib.acquire_exclusive_access()
-            postingfolder = folder.create_folder(time)
-            tab = flame.get_current_tab()
-            if tab == 'MediaHub':
-                flame.set_current_tab("Timeline")
-            for item in selection:
-                flame.media_panel.copy(item, postingfolder)
-            exporter.export(postingfolder, self.preset_path_h264, export_dir)
-            
-            # Collapse everything
-            sharedlib.expanded = False
-            postingfolder.expanded = False
-            folder.expanded = False
-            sharedlib.release_exclusive_access()
-            posted_folder = postingfolder.name
-            self.export_path =f"{export_dir}/{str(posted_folder)[1:-1]}"
-            qt_app_instance = QtWidgets.QApplication.instance()
-            qt_app_instance.clipboard().setText(self.export_path)
+        progress_dialog = FrameIOProgressDialog(len(files), "FrameIO Conform Upload")
+        progress_dialog.show()
+        had_errors = False
 
-        else:
-            # print ("Today's Folder Not Found")
-            sharedlib.acquire_exclusive_access()
-            postingfolder = sharedlib.create_folder(today).create_folder(time)
-            tab = flame.get_current_tab()
-            if tab == 'MediaHub':
-                flame.set_current_tab("Timeline")
-            for item in selection:
-                flame.media_panel.copy(item, postingfolder)
-            exporter.export(postingfolder, self.preset_path_h264, export_dir)
-
-            # Collapse everything
-            sharedlib.expanded = False
-            postingfolder.expanded = False
-            postingfolder.parent.expanded = False
-            folder.expanded = False
-            sharedlib.release_exclusive_access()
-            posted_folder = postingfolder.name
-            self.export_path = f"{str(export_dir)}/{str(posted_folder)[1:-1]}"
-            qt_app_instance = QtWidgets.QApplication.instance()
-            qt_app_instance.clipboard().setText(self.export_path)
-
-
-    def upload_to_frameio(self):
-        print("Starting FrameIO stuff...")
-
-        # Initialize the client library
-        client = FrameioClient(self.token)
-        # self.headers = {
-        # "Content-Type": "application/json",
-        # "Authorization": "Bearer " + str(self.token)
-        # }
-        # print("headers: ", self.headers)
-        print("Project Nickname: ", self.project_nickname)
+        # Get or create FrameIO project
+        conforms_folder_id = None
         try:
-            root_asset_id, project_id = self.get_fio_projects()
-        except:
-            root_asset_id, project_id = self.create_fio_project(self.project_nickname)
-        # print('root_asset_id: ', root_asset_id)
-        # print('project_id: ', project_id)
-        self.root_asset_id = root_asset_id
-        # print(self.export_path)
-                
-        self.export_path = self.export_path + '/**/*'
-        files = glob.glob(self.export_path, recursive=True)
-        
-        # Progress Bar Setup
-        number_of_new_spots = len(files)
-        spot_count = 0
-        self.progress_window = PyFlameProgressWindow( num_to_do=number_of_new_spots,
-                        title='Uploading...',
-                        text=f'Uploading: Spot 1 of {number_of_new_spots}',
-                        enable_done_button=False,
-                        )
-        
-        print ("files", files)
-        for filename in files:
+            root_asset_id, project_id = get_fio_projects(cfg, project_token)
+        except Exception:
+            root_asset_id, project_id = create_fio_project(cfg, project_token)
+            # Create default folders and capture the CONFORMS id so we don't
+            # search for it below — the Frame.io search index is eventually
+            # consistent and may not reflect the folder immediately, which
+            # previously caused a second CONFORMS folder to be created.
+            create_fio_folder(cfg, root_asset_id, "SHOTS")
+            conforms_folder_id = create_fio_folder(cfg, root_asset_id, "CONFORMS")
 
-            print('\n')
-            path, file_name = os.path.split(filename)
-            print("file_path: ", path)
-            # print("file path: ", filename)
-            print ("file name: ", file_name)
-
-            # Check for v## or V##
-            pattern=r'_[vV]\d+'
-            # Find all matches of the pattern in the text
-            matches = list(re.finditer(pattern, file_name))
-
-            # If there are matches, split at the last match
-            if matches:
-                split_index = matches[-1].start()
-                base_name = file_name[:split_index]
-            # If there are no matches, use the file name
-            else:    
-                base_name = file_name
-            print(f"base_name: {base_name}")
-
-            #Update the spot
-            spot_count = spot_count + 1
-            # To update progress bar progress value:
-            self.progress_window.set_progress_value(spot_count)
-            # To update text in window:
-            # self.progress_window.set_text(f'Uploading: Spot {spot_count} of {number_of_new_spots}')
-            # This is a test to see if I want to display the filename.
-            self.progress_window.set_text(f'Uploading: Spot {spot_count} of {number_of_new_spots}<br>\nFilename: {file_name}')
-
-            # find an asset using project and base name
-            search = self.find_a_fio_asset(project_id,base_name)
-            if search != ([], [], []):
-                # print('search: ', search)
-                type, id, parent_id = search
-                # print ("type: ", type)
-                # print("id: ", id)
-                # print("parent_id: ", parent_id)
-                if 'file' in search:
-                    print('Search results for matching base name asset ID: ', id)
-                    try:
-                        asset = client.assets.upload(parent_id, filename)
-                        # print(asset)
-                        next_asset_id = str(asset['id'])
-                        # print('next_asset_id: ', next_asset_id)
-                        self.version_asset(id, next_asset_id)
-                    except:
-                        print("File may have been deleted from FrameIO. Uploding elsewhere...")
-                        
-                if 'version_stack' in search:
-                    print('Version Stack ID: ', id)
-                    asset = client.assets.upload(id, filename)
-
+        # Find or create CONFORMS folder (skipped when we just created it above)
+        if conforms_folder_id is None:
+            search = find_fio_folder(cfg, project_id, "CONFORMS")
+            if search != (None, None, None, None):
+                _, conforms_folder_id, _, _ = search
             else:
-                print("Can't find a match...uploading to the CONFORMS folder.")
-                # Try to upload to the newly created CONFORMS Folder. If that doesn't work, look for one or create it.
-                try:
-                    asset = client.assets.upload(self.new_folder_id, filename)
-                except:
-                    # print ("looking for CONFORMS folder...")
-                    conforms_folder_id = self.find_conforms_folder(project_id)
-                    # print ("conforms_folder_id: ", conforms_folder_id)
-                    
-                    if conforms_folder_id == []:
-                        # print ("CONFORMS FOLDER NOT FOUND. Creating one.")
-                        self.create_fio_folder(self.root_asset_id, "SHOTS")
-                        asset = client.assets.upload(self.new_folder_id, filename)
-                    else:
-                        # print ("CONFORMS FOLDER FOUND.")
-                        asset = client.assets.upload(conforms_folder_id, filename)
+                conforms_folder_id = create_fio_folder(cfg, root_asset_id, "CONFORMS")
 
-        # Enable 'Done' button once uploads have finished then close it
-        self.progress_window.enable_done_button(True)
-        self.progress_window.close()
-
-        print('\n')
-        print('>' * 10, f'{SCRIPT_NAME} {VERSION}', ' End ', '<' * 10, '\n')
-
-    def create_fio_project(self, flame_project_name:str):
-        print("create frameIO project...")
-
-        url = "https://api.frame.io/v2/teams/" + self.team_id + "/projects"
-        # print("url: ", url)
-        payload = {
-            "name": flame_project_name,
-            "private": False
-        }
-        # print("payload: ", payload)
-        response = requests.post(url, json=payload, headers=self.headers)
-
-        data = response.json()
-        # print(data)
-        root_asset_id = data['root_asset_id']
-        # print('root_asset_id: ', root_asset_id)
-        project_id = data['id']
-        # print('project_id: ', project_id)
-        self.create_fio_folder(root_asset_id, "SHOTS")
-        self.create_fio_folder(root_asset_id, "CONFORMS")
-        print  ("New CONFORMS Folder ID: ", self.new_folder_id)
-        return (root_asset_id,project_id)
-
-    def create_fio_folder(self, root_asset_id,name:str):
-        url = "https://api.frame.io/v2/assets/" + root_asset_id + "/children"
-
-        payload = {
-            "name": name,
-            "type": "folder"
-        }
-
-        response = requests.post(url, json=payload, headers=self.headers)
-
-        data = response.json()
-        self.new_folder_id = data['id']
-
-    def version_asset(self, asset_id, next_id):
-        url = "https://api.frame.io/v2/assets/" + asset_id + "/version"
-
-        payload = {
-            "next_asset_id": next_id
-
-        }
-        response = requests.post(url, json=payload, headers=self.headers)
-        data = response.json()
-
-    def get_fio_projects(self):
-        # Get FrameIO Project ID using the Flame Project Name
-        url = "https://api.frame.io/v2/teams/" + self.team_id + "/projects"
-        query = {
-        "filter[archived]": "none",
-        "include_deleted": "false"
-        }
-        response = requests.get(url, headers=self.headers, params=query)
-        data = response.json()
-
-        # print("\n")
-        # print("Frame IO Projects:")
-        for projects in data:
-            # if (projects['_type'] == "project"):
-            #     print(projects['name'])
-            if (projects['_type'] == "project") and (projects['name'] == self.project_nickname):
-                # print(projects['name'], "id: ", projects['id'])
-                root_asset_id = projects['root_asset_id']
-                # print("root_asset_id: ", root_asset_id)
-                project_id = projects['id']
-                # print("project_id: ", project_id)
-                return (root_asset_id, project_id)
-
-        print("\n")
-       
-    def find_a_fio_asset(self, project_id,base_name):
-        url = "https://api.frame.io/v2/search/assets"
-
-        query = {
-            "account_id": self.account_id,
-            # "include": "user_role",
-            # "include_deleted": "true",
-            # "page": "0",
-            # "page_size": "0",
-            "project_id": project_id,
-            "q": base_name,
-            # "query": "string",
-            # "shared_projects": "true",
-            # "sort": "string",
-            "team_id": self.team_id,
-            "type": "file"
-        }
-        # print(query)
-        response = requests.get(url, headers=self.headers, params=query)
-
-        data = response.json()
-        # print(data)
-        type = []
-        id = []
-        parent_id = []
-        for item in data:
-            # print(item['name'])
-            type = item['type']
-            # print(item['type'])
-            id = item['id']
-            # print(item['id'])
-            parent_id = item['parent_id']
-            # print(item['parent_id'))
-            break
-        return(type,id,parent_id)
-
-    def find_conforms_folder(self, project_id):
-        url = "https://api.frame.io/v2/search/assets"
-
-        query = {
-            "account_id": self.account_id,
-            # "include": "user_role",
-            # "include_deleted": "true",
-            # "page": "0",
-            # "page_size": "0",
-            "project_id": project_id,
-            "q": "CONFORMS",
-            # "query": "string",
-            # "shared_projects": "true",
-            # "sort": "string",
-            "team_id": self.team_id,
-            "type": "folder"
-        }
-        # print(query)
-        response = requests.get(url, headers=self.headers, params=query)
-
-        data = response.json()
-        # print('Conform search: ', data)
-        # folder_id = []
-        for item in data:
-            folder_id = item['id']
-            # print(folder_id)
-            return(folder_id)
-        
-    def version_upper(self,selection): 
-
-        # Get Project Nickname
-        self.project_nickname = flame.project.current_project.nickname
-
-        self.headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + str(self.token)
-        }
-
+        log(f"files: {files}")
+        completed = False
         try:
-            root_asset_id, project_id = self.get_fio_projects()
-        except:
-            project_id = False
-            pass
-        # If the script can find a FrameIO project, it then checks to see if the current version is already on FrameIO. If it is, automatically version up.
-        if project_id:
-            for item in selection:
-                clip_name = str(item.name)[(1):-(1)]
-                search = self.find_a_fio_asset(project_id,clip_name)
-                if search != ([], [], []):
-                    if re.search(r'v\d+', clip_name):
-                        version = str(re.findall(r'v\d+', clip_name))[(2):-(2)]
-                        version_number = re.split('v', version)[1]
-                        version_number = '%02d' % (int(version_number)+1)
-                        new_version_name = re.sub('v\d+',"v" + str(version_number),clip_name)
-                        item.name = new_version_name
-                    # This is here for because Steve uses V## insead of v##
-                    elif re.search(r'V\d+', clip_name):
-                        version = str(re.findall(r'V\d+', clip_name))[(2):-(2)]
-                        version_number = re.split('V', version)[1]
-                        version_number = '%02d' % (int(version_number)+1)
-                        new_version_name = re.sub('V\d+',"V" + str(version_number),clip_name)
-                        item.name = new_version_name
-                    
+            for idx, filename in enumerate(files, 1):
+                print("\n")
+                path, file_name = os.path.split(filename)
+                log(f"file_path: {path}")
+                log(f"file name: {file_name}")
+
+                # Check for v## or V##
+                pattern = r"_[vV]\d+"
+                matches = list(re.finditer(pattern, file_name))
+
+                # If there are matches, split at the last match
+                if matches:
+                    split_index = matches[-1].start()
+                    base_name = file_name[:split_index]
+                else:
+                    base_name = file_name
+                log(f"base_name: {base_name}")
+
+                progress_dialog.update_total_file(idx, len(files), file_name)
+                progress_dialog.update_file_percent(
+                    5, f"Preparing upload for {file_name} ({idx}/{len(files)})…"
+                )
+
+                def _on_progress(uploaded, total, _idx=idx, _len=len(files), _name=file_name):
+                    pct = 5 + int((uploaded / total) * 90) if total else 5
+                    progress_dialog.update_file_percent(
+                        pct, f"Uploading {_name} ({_idx}/{_len})…"
+                    )
+
+                # find an asset using project and base name
+                search = find_fio_asset(cfg, project_id, base_name)
+                if search != (None, None, None, None):
+                    asset_type, asset_id, parent_id, existing_file_id = search
+                    if asset_type in ("file", "version_stack"):
+                        log(f"Search results for matching base name asset ID: {asset_id} ({asset_type})")
+                        try:
+                            # Upload into the parent folder, then stack/move it
+                            # alongside the existing file/version_stack.
+                            new_file_id = upload_file(cfg, parent_id, filename, progress_callback=_on_progress)
+                            try:
+                                add_version(cfg, asset_type, asset_id, new_file_id, parent_id)
+                                log(f"Successfully versioned {file_name} with existing asset")
+                            except Exception as version_error:
+                                # Versioning failed, but upload succeeded
+                                # Don't upload again - just log the warning
+                                had_errors = True
+                                log(f"WARNING: Upload succeeded but versioning failed: {version_error}")
+                                log(f"   File uploaded to parent folder but not stacked with existing asset")
+                        except Exception as e:
+                            # Upload itself failed - try CONFORMS folder as fallback
+                            had_errors = True
+                            log(f"WARNING: Upload to parent folder failed: {e}")
+                            log(f"   Attempting fallback upload to CONFORMS folder...")
+                            try:
+                                upload_file(cfg, conforms_folder_id, filename, progress_callback=_on_progress)
+                                log(f"Fallback upload to CONFORMS succeeded")
+                            except Exception as inner:
+                                log(f"WARNING:  Fallback upload also failed: {inner}")
+                                progress_dialog.update_file_percent(
+                                    0, f"WARNING: Failed to upload {file_name}. Continuing…"
+                                )
+                                continue
                     else:
-                        message = clip_name + str(" needs a version number like 'v01' or 'V01.'")
-                        flame.messages.show_in_dialog(
-                            title = "Error",
-                            message = message,
-                            type = "error",
-                            buttons = ["Ok"])
+                        log("Can't find a match...uploading to the CONFORMS folder.")
+                        try:
+                            upload_file(cfg, conforms_folder_id, filename, progress_callback=_on_progress)
+                        except Exception as e:
+                            had_errors = True
+                            log(f"Upload failed: {e}")
+                            progress_dialog.update_file_percent(
+                                0, f"WARNING: Failed to upload {file_name}. Continuing…"
+                            )
+                            continue
+                else:
+                    log("Can't find a match...uploading to the CONFORMS folder.")
+                    try:
+                        upload_file(cfg, conforms_folder_id, filename, progress_callback=_on_progress)
+                    except Exception as e:
+                        had_errors = True
+                        log(f"Upload failed: {e}")
+                        progress_dialog.update_file_percent(
+                            0, f"WARNING: Failed to upload {file_name}. Continuing…"
+                        )
                         continue
-        # If it can't find a project, it moves on
+
+                progress_dialog.update_file_percent(
+                    100, f"Uploaded {file_name} ({idx}/{len(files)})"
+                )
+
+            completed = True
+        finally:
+            if completed and not had_errors:
+                progress_dialog.finish("FrameIO conform upload complete")
+            elif completed:
+                progress_dialog.finish("WARNING: Upload complete with warnings")
+            else:
+                progress_dialog.finish("WARNING: Upload interrupted")
+
+        if had_errors:
+            show_toast("WARNING: FrameIO Conform upload finished with warnings", 5)
+            log("WARNING: Upload finished with warnings.")
         else:
-            pass
+            show_toast("FrameIO Conform upload complete", 5)
+            log("All uploads complete.")
 
-#-------------------------------------#
-# Scope
-def scope_clip(selection):
+    except Exception as e:
+        log(f"WARNING:  Fatal error: {e}\n{traceback.format_exc()}")
+        show_toast(f"FrameIO Conform Uploader Error: {e}", 5)
 
-    for item in selection:
-        if isinstance(item, flame.PyClip):
-            return True
-    return False
+    print(f"[{SCRIPT_NAME}] Done.")
 
-#-------------------------------------#
-# Flame Menus
+# ----------------------------------------------------------
+# Menu
+# ----------------------------------------------------------
+def scope_sequence(selection):
+    return all(isinstance(item, flame.PySequence) for item in selection)
 
 def get_media_panel_custom_ui_actions():
-
     return [
         {
-            'name': 'UC FrameIO',
+            "name": "UC FrameIO",
             "order": 3,
-            'actions': [
+            "actions": [
                 {
-                    'name': 'Conform Uploader',
-                    'order': 0,
-                    'separator': 'below',
-                    'isVisible': scope_clip,
-                    'execute': frame_io_uploader,
-                    'minimumVersion': '2024.2'
+                    "name": "Conform Uploader",
+                    "order": 0,
+                    "separator": "below",
+                    "isVisible": scope_sequence,
+                    "execute": start_upload,
+                    "minimumVersion": "2024.2"
                 }
             ]
         }

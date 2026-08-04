@@ -1,476 +1,366 @@
-'''
-Script Name: frame_io_get_comments
-Script Version: 0.9
-Flame Version: 2023.2
-Written by: John Geehreng
-Creation Date: 01.06.23
-Update Date: 10.03.24
+# FrameIO Get Comments v2.0 — Uppercut VFX Pipeline
+# Fully API-driven version (no XML)
+# Author: John Geehreng
+# Updated: 2025-11-25
 
-Script Type: MediaPanel
-
-Description:
-
-    This script will fetch comments from FrameIO and make markers according to the selection.
-
-To install:
-
-    Copy script into /opt/Autodesk/shared/python/frame_io
-
-Updates:
-10.03.24 - v0.9 - Start using Color Code Labels
-03.21.24 - v0.8 - Misc Optimizations
-12.04.23 - v0.7 - Updates for PySide6 (Flame 2025)
-11.01.23 - v0.6 - Flag Sequences by assigning color
-02.27.23 - v0.5 - Fixed issue for users not signed in, but left comments.
-01.18.23 - v0.4 - Added ability to compensate for In Points set before frame 1.
-01.11.23 - v0.3 - Fixed Error message when there's not FrameIO Project. Added ability to make segment markers. Added warnings and messages if comments can't be found.
-'''
-
-import xml.etree.ElementTree as ET
 import flame
 import math
-import re
-import os
 import requests
-from frameioclient import FrameioClient
+# import re
+# import os
+from lib.frame_io_api import (
+    validate_config,
+    get_fio_projects,
+    find_fio_asset,
+    get_asset_comments,
+    get_comment_owner,
+)
 
 SCRIPT_NAME = 'FrameIO Get Comments'
-SCRIPT_PATH = '/opt/Autodesk/shared/python/frame_io'
-VERSION = 'v0.9'
+VERSION = 'v2.0.2'
 
-#-------------------------------------#
-# Main Script
+DEBUG = False
 
+def log(msg):
+    print(f"[{SCRIPT_NAME}] {msg}")
+
+def debug(msg):
+    if DEBUG:
+        print(f"[{SCRIPT_NAME} DEBUG] {msg}")
+
+def safe_colour_label(obj):
+    try:
+        obj.colour_label = "Address Comments"
+    except Exception:
+        obj.colour = (0.1137, 0.2627, 0.1764)
+
+
+# --- Main Class ---
 class frame_io_get_comments(object):
 
     def __init__(self, selection):
+        # Load system-wide config
+        self.cfg = validate_config()
 
-        #print('\n')
-        #print('>' * 10, f'{SCRIPT_NAME} {VERSION}', ' Start ', '<' * 10, '\n')
+        # Determine frame rate from first relevant item
+        self.frame_rate = self.get_frame_rate(selection)
 
-        # Paths
+        # Get current Flame project name (exact match mode)
+        self.project_name = flame.projects.current_project.nickname
+        log(f"Starting FrameIO Comment Sync for project '{self.project_name}'")
 
-        self.config_path = os.path.join(SCRIPT_PATH, 'config')
-        self.config_xml = os.path.join(self.config_path, 'config.xml')
+        # Resolve FrameIO project
+        self.root_asset_id, self.project_id = get_fio_projects(self.cfg, self.project_name)
 
-        # Load config file
-
-        self.config()
-
-        # Start Script Here
-        self.get_frame_rate(selection)
+        # Process comments
         self.get_comments(selection)
-
-    def config(self):
-
-        def get_config_values():
-
-            xml_tree = ET.parse(self.config_xml)
-            root = xml_tree.getroot()
-
-            # Get Settings from config XML
-
-            for setting in root.iter('frame_io_settings'):
-                self.token = setting.find('token').text
-                self.account_id = setting.find('account_id').text
-                self.team_id = setting.find('team_id').text
-                self.jobs_folder = setting.find('jobs_folder').text
-                self.preset_path_h264 = setting.find('preset_path_h264').text
-
-
-            # pyflame_#print(SCRIPT_NAME, 'Config loaded.')
-
-        def create_config_file():
-
-            if not os.path.isdir(self.config_path):
-                try:
-                    os.makedirs(self.config_path)
-                except:
-                    flame.messages.show_in_dialog(
-                        title = "f'{SCRIPT_NAME}: Error",
-                        message = f'Unable to create folder: {self.config_path}<br>Check folder permissions',
-                        type = "error",
-                        buttons = ["Ok"],
-                        cancel_button = "Cancel")
-                    # FlameMessageWindow('error', f'{SCRIPT_NAME}: Error', f'Unable to create folder: {self.config_path}<br>Check folder permissions')
-
-            if not os.path.isfile(self.config_xml):
-                # pyflame_#print(SCRIPT_NAME, 'Config file does not exist. Creating new config file.')
-
-                config = '''
-<settings>
-    <frame_io_settings>
-        <token>fio-x-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxx</token>
-        <account_id>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</account_id>
-        <team_id>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</team_id>
-        <jobs_folder>/Volumes/vfx/UC_Jobs</jobs_folder>
-        <preset_path_h264>/opt/Autodesk/shared/python/frame_io/presets/UC H264 10Mbits.xml</preset_path_h264>
-    </frame_io_settings>
-</settings>'''
-
-                with open(self.config_xml, 'a') as config_file:
-                    config_file.write(config)
-                    config_file.close()
-
-        if os.path.isfile(self.config_xml):
-            get_config_values()
-        else:
-            create_config_file()
-            if os.path.isfile(self.config_xml):
-                get_config_values()
 
     def get_frame_rate(self, selection):
         for item in selection:
+            fr = None
             if isinstance(item, flame.PySegment):
-                # #print ("I am a segment. Selection name: ", item.name)
-                parent_sequence = item.parent.parent.parent
-                frame_rate = parent_sequence.frame_rate
-                # #print ("frame_rate: ", frame_rate)
-                regex = r'\s[a-zA-Z]*'
-                test_str = str(frame_rate)
-                subst = ""
-                fixed_framerate = float(re.sub(regex, subst, test_str, 0))
-                fixed_framerate =  math.ceil(fixed_framerate)
-                # #print('fixed_framerate: ', str(fixed_framerate))
-                self.frame_rate = fixed_framerate
+                fr = item.parent.parent.parent.frame_rate
             elif isinstance(item, flame.PyClip):
-                # selection_name = item.name
-                # #print ("Selection Name: ", selection_name)
-                frame_rate = item.frame_rate
-                # #print ("frame_rate: ", frame_rate)
-                regex = r'\s[a-zA-Z]*'
-                test_str = str(frame_rate)
-                subst = ""
-                fixed_framerate = float(re.sub(regex, subst, test_str, 0))
-                fixed_framerate =  math.ceil(fixed_framerate)
-                # #print('fixed_framerate: ', str(fixed_framerate))
-                self.frame_rate = fixed_framerate
-            else:
-                # #print('\n')
-                self.frame_rate = 24
-                #print ("I am not a segment. Selection name: ", item.name)
-                # #print('\n')
-                pass
-    
-    def _seconds(self, value):
-        if isinstance(value, str):  # value seems to be a timestamp
-            _zip_ft = zip((3600, 60, 1, 1/self.frame_rate), value.split(':'))
-            return sum(f * float(t) for f,t in _zip_ft)
-        elif isinstance(value, (int, float)):  # frames
-            return value / self.frame_rate
-        else:
-            return 0
+                fr = item.frame_rate
+            if fr:
+                try:
+                    return math.ceil(float(str(fr).split(" ")[0]))
+                except:
+                    return 24
+        return 24
 
-    def _timecode(self, seconds):
-        return '{h:02d}:{m:02d}:{s:02d}:{f:02d}' \
-                .format(h=int(seconds/3600),
-                        m=int(seconds/60%60),
-                        s=int(seconds%60),
-                        f=round((seconds-int(seconds))*self.frame_rate))
+    # ----------------------
+    # Config helper — works for dict OR object, nested or flat
+    # ----------------------
 
-    def _frames(self, seconds):
-        return seconds * self.frame_rate
+    def _cfg_val(self, *keys, default=None):
+        """
+        Safely pull a value from self.cfg, whether it's:
+          - an object with attributes (cfg.account_id), or
+          - a dict, possibly nested (cfg["frame_io"]["account_id"])
+        """
+        cfg = self.cfg
 
-    def timecode_to_frames(self, timecode, start=None):
-        return self._frames(self._seconds(timecode) - self._seconds(start))
+        # Object-style attributes
+        if not isinstance(cfg, dict):
+            for k in keys:
+                if hasattr(cfg, k):
+                    return getattr(cfg, k)
+            return default
 
-    def frames_to_timecode(self, frames, start=None):
-        return self._timecode(self._seconds(frames) + self._seconds(start))
+        # Top-level dict keys
+        for k in keys:
+            if k in cfg:
+                return cfg[k]
+
+        # Common nested keys
+        for container_key in ("frame_io", "frameio", "frame_io_settings", "frameio_config"):
+            sub = cfg.get(container_key)
+            if isinstance(sub, dict):
+                for k in keys:
+                    if k in sub:
+                        return sub[k]
+
+        return default
+
+    # ----------------------
+    # Author Resolution Logic
+    # ----------------------
+
+    def resolve_author(self, info, author_cache):
+
+        # 1) Direct anonymous_user payload
+        anon = info.get("anonymous_user")
+        if anon:
+            name = anon.get("name") or anon.get("email")
+            if name:
+                return name
+
+        anon_id = info.get("anonymous_user_id")
+        rl_id = info.get("review_link_id")
+
+        # 2) Review-link guest users (only if we can safely read cfg)
+        if anon_id and rl_id:
+            cache_key = f"{rl_id}:{anon_id}"
+            if cache_key in author_cache:
+                return author_cache[cache_key]
+
+            account_id = self._cfg_val("account_id")
+            headers = self._cfg_val("headers")
+            session = self._cfg_val("session")
+
+            # If any critical piece is missing, skip this lookup gracefully
+            if account_id and headers and session:
+                url = (
+                    f"https://api.frame.io/v2/accounts/"
+                    f"{account_id}/review-links/{rl_id}/guest-users"
+                )
+
+                try:
+                    resp = session.get(url, headers=headers)
+                    if resp.status_code == 200:
+                        for u in resp.json():
+                            if u.get("id") == anon_id:
+                                name = u.get("name") or u.get("email") or "Unknown"
+                                author_cache[cache_key] = name
+                                return name
+                    else:
+                        if DEBUG:
+                            print(f"[{SCRIPT_NAME} DEBUG] Guest lookup {rl_id}/{anon_id} returned {resp.status_code}")
+                except Exception as e:
+                    if DEBUG:
+                        print(f"[{SCRIPT_NAME} DEBUG] Guest lookup failed: {e}")
+
+        # 3) Standard fields
+        user = info.get("user") or {}
+        creator = info.get("creator") or {}
+        owner = info.get("owner") or {}
+
+        name = (
+            user.get("full_name")
+            or user.get("email")
+            or creator.get("full_name")
+            or creator.get("email")
+            or owner.get("name")
+            or owner.get("email")
+        )
+        if name:
+            return name
+
+        # 4) V4 quirk: nested `replies` come back with no owner/user/creator
+        # field at all (Frame.io's schema only embeds `owner` on the
+        # top-level comment, not on replies). Fall back to a per-reply
+        # lookup via the single "show comment" endpoint, which does return
+        # an owner. Cache by comment id to avoid repeat lookups.
+        comment_id = info.get("id")
+        if comment_id:
+            cache_key = f"comment:{comment_id}"
+            if cache_key in author_cache:
+                return author_cache[cache_key]
+
+            fetched_owner = get_comment_owner(self.cfg, comment_id) or {}
+            name = fetched_owner.get("name") or fetched_owner.get("email")
+            if name:
+                author_cache[cache_key] = name
+                return name
+
+        return "Unknown"
+
+
+    # ----------------------
+    # Main Comment Logic
+    # ----------------------
 
     def get_comments(self, selection):
-        #print("Starting FrameIO stuff...")
-       
-        self.project_nickname = flame.project.current_project.nickname
-        # Initialize the client library
-        # client = FrameioClient(self.token)
-        self.headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + str(self.token)
-        }
-        # #print("headers: ", self.headers)
-        #print("Project Nickname: ", self.project_nickname)
-        try:
-            root_asset_id, project_id = self.get_fio_projects()
-        except:
-            message = ("Can't find " + self.project_nickname + " FrameIO Project.")
-            flame.messages.show_in_dialog(
-            title = "Error",
-            message = message,
-            type = "error",
-            buttons = ["Ok"])
-            #print (message)
-            return
 
-        #print('root_asset_id: ', root_asset_id)
-        #print('project_id: ', project_id)
-        self.root_asset_id = root_asset_id
+        fps = float(self.frame_rate)
+        total_markers = 0
+        comment_cache = {}
+        total_items = 0
 
         for item in selection:
-            offset_value = 0
+
+            # Identify whether clip or segment
             if isinstance(item, flame.PySegment):
-                #print ("I am a segment. Selection name: ", item.name)
-                parent_sequence = item.parent.parent.parent
-                selection_name = parent_sequence.name
-                in_point = parent_sequence.in_mark
-                start_time = parent_sequence.start_time
-                # #print ("Parent Name: ", selection_name)
-                selection_framerate = parent_sequence.frame_rate
+                sequence_obj = item.parent.parent.parent
+                is_segment = True
+                base_name = str(sequence_obj.name)[1:-1]
             elif isinstance(item, flame.PyClip):
-                selection_name = item.name
-                in_point = item.in_mark
-                start_time = item.start_time
-                #print ("Selection Name: ", selection_name)
-                selection_framerate = item.frame_rate
+                sequence_obj = item
+                is_segment = False
+                base_name = str(item.name)[1:-1]
             else:
-                # #print('\n')
-                # #print ("I am not a segment. Selection name: ", item.name)
-                # #print('\n')
-                pass
-                # continue
-            # #print('\n')
-
-            # See where the in point is:
-            if 'NULL' in str(in_point):
-                offset_value = 1
-                #print("No In Point Set. ")
-                
-            else:
-                in_point = str(in_point).replace("+", ":")
-                # #print ("in_point: ", in_point)
-                
-                start_time = str(start_time).replace("+", ":")
-                # #print ("start_time: ", start_time)
-
-                in_point_frames = self.timecode_to_frames(in_point)
-                # #print ("in_point_frames: ", in_point_frames)
-
-                start_time_frames = self.timecode_to_frames(start_time)
-                # #print ("start_time_frames: ", start_time_frames)
-
-                if int(in_point_frames) < int(start_time_frames):
-                    # #print ("In point is before Start Time.")
-                    # offset_value = int(in_point_frames) - int(start_time_frames)
-                    # #print ("In point is at frame: ", offset_value + 1)
-                    offset_value = 0
-
-                if int(in_point_frames) > int(start_time_frames):
-                    # #print ("In point is after Start Time.")
-                    # offset_value = int(in_point_frames) - int(start_time_frames)
-                    # #print ("In point is at frame: ", offset_value + 1)
-                    offset_value = 0
-            #print (f"Offset Value: {offset_value}")
-
-            # find an asset using project and selection name
-            search = self.find_a_fio_asset(project_id,selection_name)
-            if search != ([], [], []):
-                # #print('search: ', search)
-                type, id, parent_id = search
-                # #print ("type: ", type)
-                # #print("id: ", id)
-                # #print("parent_id: ", parent_id)
-                # #print ('\n')
-                comment_data = self.get_selection_comments(id)
-                # #print ("comment_data: ", comment_data)
-                if 'errors:' in comment_data:
-                    message = ("Comment Data: " + comment_data)
-                    #print (message)
-                    flame.messages.show_in_console(message, 'info',6)
-                    flame.messages.show_in_dialog(
-                        title = "Warning",
-                        message = message,
-                        type = "warning",
-                        buttons = ["Ok"])
-                    pass
-
-                #print ('\n')
-                if comment_data:
-                    # if you find comment data, make the sequence red...
-                    if isinstance(item, flame.PyClip):
-                        try:
-                            item.colour_label = "Address Comments"
-                        except:
-                            item.colour = (0.11372549086809158, 0.26274511218070984, 0.1764705926179886)
-                        
-                    # get comments and add them as markers
-                    for info in comment_data:
-                        comment = str(info['text'])
-                        #print ('Comment: ', comment)
-                        try:
-                            name = info.get('owner').get('name')
-                            #print ('Name: ', name)
-                        except:
-                            pass
-                        frame = str(info['frame'])[0:-2]
-                        #print ('Frame: ', frame)
-                        duration = info['duration']
-                        # #print ('Duration: ', duration)
-                        # #print ('Offset Value: ', offset_value)
-
-                        #print ('\n')
-                
-                        try:
-                            marker = item.create_marker(int(frame) + offset_value)
-                            marker.comment = comment
-                            marker.name = "Commenter: " + name
-                            try:
-                                marker.colour_label = "Address Comments"
-                            except:
-                                marker.colour = (0.11372549086809158, 0.26274511218070984, 0.1764705926179886)
-                                # marker.colour = (0.2, 0.0, 0.0)
-                            if duration:
-                                # #print (selection_framerate,duration)
-                                regex = r'\s[a-zA-Z]*'
-                                test_str = str(selection_framerate)
-                                subst = ""
-                                # You can manually specify the number of replacements by changing the 4th argument
-                                fixed_framerate = float(re.sub(regex, subst, test_str, 0))
-                                fixed_framerate =  math.ceil(fixed_framerate)
-                                # #print('fixed_framerate: ', str(fixed_framerate))
-                                duration_calc = fixed_framerate * duration
-                                # #print (str(int(duration_calc)))
-                                marker.duration = int(duration_calc)
-
-                        except:
-                            pass
-                else:
-                    message = "Can't find comments for " + '"' + selection_name + '." \nSequence name must match FrameIO name exactly.'
-                    flame.messages.show_in_console(message, 'info',6)
-                    # flame.messages.show_in_dialog(
-                    #     title = "Warning",
-                    #     message = message,
-                    #     type = "warning",
-                    #     buttons = ["Ok"])
-                    #print (message)
-                    if isinstance(item, flame.PyClip):
-                        continue
-                    else:
-                        return
-            else:
-                message = "Can't find " + selection_name + " in FrameIO."
-                flame.messages.show_in_console(message, 'info',6)
                 continue
 
-        #print('>' * 10, f'{SCRIPT_NAME} {VERSION}', ' End ', '<' * 10, '\n')
+            # Fetch FrameIO asset comments
+            if base_name in comment_cache:
+                comments = comment_cache[base_name]
+            else:
+                _, _, _, file_id = find_fio_asset(self.cfg, self.project_id, base_name)
+                comments = get_asset_comments(self.cfg, file_id) if file_id else []
+                comment_cache[base_name] = comments
+
+            if not comments:
+                log(f"No comments found for '{base_name}'")
+                continue
+
+            total_items += 1
+            markers_for_item = 0
+            combined_texts = []
+            author_cache = {}
+
+            for info in comments:
+                # V4's list endpoint only returns top-level comments; replies
+                # are nested under each comment's "replies" array (fetched via
+                # include=replies), so there's no parent_id to filter on here.
+                base_text = (info.get('text') or '').strip()
+                if not base_text:
+                    continue
+
+                # Author for top-level comment
+                author = self.resolve_author(info, author_cache)
+                if author == "Unknown":
+                    log(
+                        f"NOTE: Could not resolve author for a comment on '{base_name}' — "
+                        "likely a public-share/anonymous commenter, which Frame.io V4 "
+                        "does not expose via the API (not a bug)."
+                    )
+
+                # FrameIO base frame (V4 "timestamp" is already an integer framestamp)
+                raw_frame = info.get('timestamp', 0)
+                try:
+                    base_frame = int(raw_frame) if raw_frame else 0
+                except Exception:
+                    base_frame = 0
+
+                # Replies
+                replies = info.get('replies') or []
+                reply_pairs = []
+                for r in replies:
+                    # print("\n=== RAW REPLY JSON ===")
+                    # print(r)
+                    # print("=== END RAW REPLY ===\n")
+
+                    r_text = (r.get("text") or "").strip()
+                    if not r_text:
+                        continue
+
+                    r_author = self.resolve_author(r, author_cache)
+                    if r_author == "Unknown":
+                        log(
+                            f"NOTE: Could not resolve reply author for a reply on '{base_name}' — "
+                            "likely a public-share/anonymous commenter, which Frame.io V4 "
+                            "does not expose via the API (not a bug)."
+                        )
+
+                    reply_pairs.append((r_author, r_text))
+
+                # --- Marker comment (compact) ---
+                marker_comment = base_text
+                if reply_pairs:
+                    marker_comment += "  " + "  ".join(
+                        f" **Reply by {ra}: {rt}" for ra, rt in reply_pairs
+                    )
+
+                # --- Pretty text for PySegment.comment ---
+                pretty_text = f"{author}: {base_text}"
+                for ra, rt in reply_pairs:
+                    pretty_text += f" **Reply by {ra}: {rt}**"
+
+                # Marker creation
+                target = item if is_segment else sequence_obj
+
+                # Avoid duplicate markers at the same frame on repeated runs
+                if any(getattr(m, "frame", None) == base_frame for m in getattr(target, "markers", [])):
+                    continue
+
+                try:
+                    marker = target.create_marker(int(base_frame))
+                except Exception:
+                    continue
+
+                marker.name = author
+                marker.comment = marker_comment
+                safe_colour_label(marker)
+
+                markers_for_item += 1
+                combined_texts.append(pretty_text)
+
+            # Apply color and summary comments
+            if markers_for_item > 0:
+                safe_colour_label(item)
+                if isinstance(item, flame.PySegment):
+                    try:
+                        # Join all pretty comment strings for the segment
+                        item.comment = "  ".join(combined_texts)
+                    except Exception:
+                        print(f"[{SCRIPT_NAME}] Could not set segment comment for '{base_name}'")
+
+            total_markers += markers_for_item
+            log(f"{markers_for_item} markers added for '{base_name}'")
+
+        log(f"Done. Total markers added: {total_markers}.")
+
+        flame.messages.show_in_dialog(
+            title=f"{SCRIPT_NAME}: Done",
+            message=f"Added {total_markers} marker(s) across {total_items} item(s).",
+            type="info",
+            buttons=["Ok"]
+        )
 
 
-    def get_fio_projects(self):
-        # Get FrameIO Project ID using the Flame Project Name
-        url = "https://api.frame.io/v2/teams/" + self.team_id + "/projects"
-        query = {
-        "filter[archived]": "none",
-        "include_deleted": "false"
-        }
-        response = requests.get(url, headers=self.headers, params=query)
-        data = response.json()
+# ---------------
+# Flame Menus
+# ---------------
 
-        for projects in data:
-            if projects['_type'] == "project" and projects['name'] == self.project_nickname:
-                # #print(projects['name'], "id: ", projects['id'])
-                root_asset_id = projects['root_asset_id']
-                # #print("root_asset_id: ", root_asset_id)
-                project_id = projects['id']
-                # #print("project_id: ", project_id)
-                return (root_asset_id, project_id)
-       
-    def find_a_fio_asset(self, project_id,base_name):
-        url = "https://api.frame.io/v2/search/assets"
-
-        query = {
-            "account_id": self.account_id,
-            # "include": "user_role",
-            # "include_deleted": "true",
-            # "page": "0",
-            # "page_size": "0",
-            "project_id": project_id,
-            "q": base_name,
-            # "query": "string",
-            # "shared_projects": "true",
-            # "sort": "string",
-            "team_id": self.team_id
-        }
-        # #print(query)
-        response = requests.get(url, headers=self.headers, params=query)
-
-        data = response.json()
-        # #print(data)
-        type = []
-        id = []
-        parent_id = []
-        for item in data:
-            # #print(item[('name'))
-            type = item['type']
-            # #print(item['type'])
-            id = item['id']
-            # #print(item['id'])
-            parent_id = item['parent_id']
-            # #print(item['parent_id'])
-            break
-        return(type,id,parent_id)
-
-    def get_selection_comments(self, id):
-
-        url = "https://api.frame.io/v2/assets/" + id + "/comments"
-
-        query = {
-        "include": "replies"
-        }
-
-        response = requests.get(url, headers=self.headers, params=query)
-
-        data = response.json()
-        # #print(data)
-        return(data)
-
-# Scope
 def scope_clip(selection):
-    import flame
-
-    for item in selection:
-        if isinstance(item, flame.PyClip):
-            return True
-    return False
+    return any(isinstance(i, flame.PyClip) for i in selection)
 
 def scope_segment(selection):
-    import flame
-    for item in selection:
-        if isinstance(item, flame.PySegment):
-            return True
-    return False
-#-------------------------------------#
-# Flame Menus
+    return any(isinstance(i, flame.PySegment) for i in selection)
 
 def get_timeline_custom_ui_actions():
-
-    return [
-        {
-            'name': 'UC FrameIO',
-            'actions': [
-                {
-                    'name': 'Get Comments',
-                    'order': 0,
-                    'isVisible': scope_segment,
-                    'separator': 'below',
-                    'execute': frame_io_get_comments,
-                    'minimumVersion': '2023.2'
-                }
-            ]
-        }
-    ]
+    return [{
+        'name': 'UC FrameIO',
+        'actions': [{
+            'name': 'Get Comments',
+            'order': 0,
+            'isVisible': scope_segment,
+            'separator': 'below',
+            'execute': frame_io_get_comments,
+            'minimumVersion': '2023.2'
+        }]
+    }]
 
 def get_media_panel_custom_ui_actions():
-
-    return [
-        {
-            'name': 'UC FrameIO',
-            'actions': [
-                {
-                    'name': 'Get Comments',
-                    'order': 2,
-                    'isVisible': scope_clip,
-                    'separator': 'above',
-                    'execute': frame_io_get_comments,
-                    'minimumVersion': '2023.2'
-                }
-            ]
-        }
-    ]
+    return [{
+        'name': 'UC FrameIO',
+        'actions': [{
+            'name': 'Get Comments',
+            'order': 2,
+            'isVisible': scope_clip,
+            'separator': 'above',
+            'execute': frame_io_get_comments,
+            'minimumVersion': '2023.2'
+        }]
+    }]

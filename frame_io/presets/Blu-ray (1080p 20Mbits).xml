@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<preset version="15">
+ <type>movie</type>
+ <comment>Creates an 8-bit MP4 file (H.264 High 1920x1080 20Mbits 23.98p &amp; 24p).</comment>
+ <movie>
+  <fileType>MP4</fileType>
+  <namePattern>&lt;name&gt;</namePattern>
+  <yuvHeadroom>0</yuvHeadroom>
+  <yuvColourSpace>PCS_UNKNOWN</yuvColourSpace>
+ </movie>
+ <video>
+  <fileType>MP4</fileType>
+  <codec>33622232</codec>
+  <codecProfile>
+   <rootPath>/opt/Autodesk/mediaconverter/</rootPath>
+   <targetVersion>2027.1</targetVersion>
+   <pathSuffix>/profiles/.33622232/High_Blu_Ray_20Mbits.cdxprof</pathSuffix>
+  </codecProfile>
+  <namePattern>&lt;name&gt;</namePattern>
+  <includeAlpha>False</includeAlpha>
+  <overwriteWithVersions>False</overwriteWithVersions>
+  <resize>
+   <resizeType>fit</resizeType>
+   <resizeFilter>lanczos</resizeFilter>
+   <width>1920</width>
+   <height>1080</height>
+   <bitsPerChannel>8</bitsPerChannel>
+   <numChannels>3</numChannels>
+   <pixelRatio>1</pixelRatio>
+   <scanFormat>P</scanFormat>
+   <ResSelectorMode>0</ResSelectorMode>
+  </resize>
+ </video>
+ <audio>
+  <fileType>MP4</fileType>
+  <codec>4027062490</codec>
+  <codecProfile>
+   <rootPath>/opt/Autodesk/mediaconverter/</rootPath>
+   <targetVersion>2027.1</targetVersion>
+   <pathSuffix>/profiles/.4027062490/160 kbps.cdxprof</pathSuffix>
+  </codecProfile>
+  <namePattern>&lt;name&gt;</namePattern>
+  <mixdown>To2</mixdown>
+ </audio>
+</preset>
