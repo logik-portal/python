@@ -1,10 +1,10 @@
 # Logik Portal
 
-**Script Version:** 7.2.0  
+**Script Version:** 7.2.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 07.23.26  
+**Update Date:** 08.05.26  
 
 **Script Type:** Flame Main Menu
 
@@ -29,6 +29,10 @@ https://logik-portal.com
 Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.2.1 [08.05.26]
+- Fixed - python compatibility issues with python 3.11.
+<br>
 
 ### v7.2.0 [07.23.26]
 - Added Pixel Expressions tab. Allows for downloading  of pixel expressions from logik-portal.com.
