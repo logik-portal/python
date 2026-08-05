@@ -850,16 +850,6 @@
     "Description": "Script Name: Open in Photoshop\nScript Version: 1.0\nFlame Version: 2024\nWritten by: Bryan Bayley\nHelp from: Michael Vaglienty\nCreation Date: 08.04.26\n\nDescription:\nIf a clip or timeline segment is a soft-imported still image (PSD, PNG, JPEG,\nTIFF, and other Photoshop-friendly formats), open the source file in Photoshop.\nPhotoshop is targeted by its bundle id, so it does not need to be the default\napp for the file type; if Photoshop is not installed the file opens in the\ndefault app instead. For frame sequences, the frame the playhead is parked on\nopens (Timeline and Media Panel); otherwise the first frame opens.\nWritten for macOS. Replaces the older \"Open PSD in Photoshop\" script.\n\nMenus:\nRight-click a clip in the Timeline -> Open... -> Open in Photoshop\nRight-click a Clip node in Batch -> Open... -> Open in Photoshop\nRight-click a clip in the Media Panel -> Open... -> Open in Photoshop\nRight-click a file in the MediaHub -> Open... -> Open in Photoshop"
   },
   {
-    "Script Name": "open photoshop",
-    "Script Version": "1.0",
-    "Flame Version": "2024",
-    "Maximum Flame Version": "Latest",
-    "Author": "Bryan Bayley",
-    "Creation Date": "07.13.23",
-    "Update Date": "07.13.23",
-    "Description": "Script Name: Open PSD in Photoshop\nScript Version: 1.0\nFlame Version: 2024\nWritten by: Bryan Bayley\nCreation Date: 07.13.23\n\nScript Type: Timeline / Batch / Media Panel / MediaHub\n\nDescription:\n\nIf a clip or timeline segment is a soft-imported PSD file >>> Open the source file in Photoshop.\nThis script was written for macOS and Photoshop must be your default app for PSD files.\n\nMenu:\n\nTimeline:\nRight-click on selected segments -> Open in Photoshop\n\nMedia Panel:\nRight-click on selected clips -> Open in Photoshop\n\nBatch:\nRight-click on selected clips -> Open in Photoshop\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0 07.13.23\n- Initial release."
-  },
-  {
     "Script Name": "path translator",
     "Script Version": "2.1.2",
     "Flame Version": "2025",
