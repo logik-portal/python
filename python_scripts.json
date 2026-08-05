@@ -191,13 +191,13 @@
   },
   {
     "Script Name": "bb tvc timecode checker",
-    "Script Version": "2.0",
+    "Script Version": "2.1",
     "Flame Version": "2026.1",
     "Maximum Flame Version": "Latest",
     "Author": "Bryan Bayley",
     "Creation Date": "12.02.25",
-    "Update Date": "12.02.25",
-    "Description": "Script Name: TVC Timecode Checker\nScript Version: 2.0\nFlame Version: 2026.1\nWritten by: Bryan Bayley\nCreation Date: 12.02.25\n\nDescription:\n\nSelect Clips or Sequences in the Media Panel to check:\n1. Does the Record Timecode start at 01:00:00:00?\n2. Is the duration a standard TVC length (6s, 15s, 30s, 60s, 90s)?\n\nMenu:\n\nRight-click on clips or sequences in the Media Panel -> TVC Checks... -> Check Start Timecode and Duration"
+    "Update Date": "08.04.26",
+    "Description": "Script Name: BB TVC Timecode Checker\nScript Version: 2.1\nFlame Version: 2026.1\nWritten by: Bryan Bayley\nCreation Date: 12.02.25\nUpdate Date: 08.04.26\n\nDescription:\nSelect clips or sequences in the Media Panel to check:\n1. Does the record timecode start at 01:00:00:00 - or at a recognized\nlead-in start: 59:59:00 (1s black head + tail) or 59:50:00 / 59:53:00\n(slate)?\n2. Is the duration a standard TVC length (6s, 15s, 30s, 60s, 90s), after\naccounting for whatever the start timecode implies is around the\nprogram?\n\nLead-in layouts are inferred from the start timecode only - the script\ncannot see whether a slate or black is really there, so the results dialog\nnotes when a layout was assumed so it can be confirmed visually.\n\nMenus:\nRight-click on clips or sequences in the Media Panel -> TVC Checks... ->\nCheck Start Timecode and Duration\n\nUpdates:\nv2.1 08.04.26\n- Recognizes black head/tail and slate lead-in layouts from the start\ntimecode: 59:59:00 assumes 1s of black at head and tail (program + 2s);\n59:50:00 / 59:53:00 assume a 10s / 7s slate lead-in with nothing after\nthe program. The duration check accounts for the assumed layout.\n- Condensed results dialog: when everything passes it reports one line per\nlayout (e.g. \"All 4 timelines have 1s black head + tail and are the\ncorrect length\"); per-item detail appears only for failures and errors.\n- An error while checking one item no longer aborts the remaining items;\nerrored items are listed in the summary dialog instead.\n- Results dialog switched to Qt (PySide6/PySide2 fallback)."
   },
   {
     "Script Name": "black head and tail",
