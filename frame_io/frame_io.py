@@ -21,6 +21,4 @@ Installation:
     Or for a user-specific installation:
 
     ~/flame/python/frame_io
-
-This file is intentionally left blank. Only intended for Logik Portal information.
 """
