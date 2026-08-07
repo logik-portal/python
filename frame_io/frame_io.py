@@ -16,11 +16,11 @@ Installation:
     their own paths relative to their own location, so any of the standard Flame script
     locations work — e.g. for a shared, studio-wide install:
 
-    /opt/Autodesk/shared/python/frame_io/
+    /opt/Autodesk/shared/python/frame_io
 
     Or for a user-specific installation:
 
-    ~/flame/python/frame_io/
+    ~/flame/python/frame_io
 
 This file is intentionally left blank. Only intended for Logik Portal information.
 """
