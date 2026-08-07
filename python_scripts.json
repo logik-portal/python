@@ -641,13 +641,13 @@
   },
   {
     "Script Name": "frame io",
-    "Script Version": "unknown",
-    "Flame Version": "unknown",
+    "Script Version": "4.0.0",
+    "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
-    "Author": "unknown",
-    "Creation Date": "unknown",
-    "Update Date": "unknown",
-    "Description": "FrameIO Config Editor\nUppercut VFX Pipeline\nAccessible from Main Menu → FrameIO → Edit Config\n\nThis account uses a single shared FrameIO credential (service-client token),\nnot per-artist tokens, so all settings — auth and pipeline — live in one\nconfig file (shared_config.json) and one flat form."
+    "Author": "John Geehreng",
+    "Creation Date": "08.03.26",
+    "Update Date": "08.03.26",
+    "Description": "Script Name: Frame IO\nScript Version: 4.0.0\nFlame Version: 2025.1\nWritten by: John Geehreng\nCreation Date: 08.03.26\nUpdate Date: 08.03.26\n\nDescription:\n\nA comprehensive integration suite for connecting Autodesk Flame with FrameIO, enabling seamless uploads, comment synchronization, and project management within the Uppercut VFX Pipeline.\n\nInstallation:\n\nCopy the files** to your Flame Python scripts directory. The scripts resolve all of\ntheir own paths relative to their own location, so any of the standard Flame script\nlocations work — e.g. for a shared, studio-wide install:\n\n/opt/Autodesk/shared/python/frame_io\n\nOr for a user-specific installation:\n\n~/flame/python/frame_io\n\nThis file is intentionally left blank. Only intended for Logik Portal information."
   },
   {
     "Script Name": "gfx sync",
