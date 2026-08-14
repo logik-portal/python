@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: rename_tools
-Script Version: 1.0.2
+Script Version: 1.0.4
 Flame Version: 2025.2
 Written by: Koumei Muraki
 Creation Date: 07.02.26
-Update Date: 07.09.26
+Update Date: 08.15.26
 
 Description:
 Rename clips by adding a prefix, suffix, or performing find and replace.
@@ -16,6 +16,13 @@ Media Panel -> Right-click -> Rename Tools
 Timeline -> Right-click -> Rename Tools
 
 Updates:
+v1.0.4 08.15.26
+- Added real-time Before/After previews to the Prefix, Suffix, and Find & Replace dialogs.
+- Refactored the internal rename and settings handling for improved consistency and maintainability.
+
+v1.0.3 08.04.26
+- Preserved the last undo entry when a rename action makes no changes.
+
 v1.0.2 07.09.26
 - Fixed a syntax error caused by an extra triple-quoted string.
 - Updated Find & Replace to show both fields in a single dialog.
@@ -44,18 +51,15 @@ v1.0.2 07.09.26
 print("[Rename Tools] module loaded")
 print("[Rename Tools] path:", __file__)
 
-import sys, os, json, subprocess, shutil, datetime, traceback, weakref
+import sys, os, json, subprocess, shutil, datetime, weakref
 
 SCRIPT_DISPLAY_NAME = "Rename Tools"
-SCRIPT_VERSION = "1.0.2"
+SCRIPT_VERSION = "1.0.4"
+INDIVIDUAL_DIALOG_SIZE = (640, 400)
 
 
 def _dialog_title(title=None):
-    title = str(title or SCRIPT_DISPLAY_NAME)
-    version_text = f"v{SCRIPT_VERSION}"
-    if version_text in title:
-        return title
-    return f"{title} {version_text}"
+    return str(title or SCRIPT_DISPLAY_NAME)
 
 # ----------------- Qt detection (PySide6 -> PySide2) -----------------
 QtWidgets = None
@@ -95,6 +99,17 @@ elif _QT_BINDING == "PySide2":
 _FLAT_QSS = """
 QDialog { background: #2C3644; }                 /* base blue */
 QLabel  { color: #e6e6e6; font-size: 16px; }
+QLabel#renameVersion {
+    color: #aebdcd;
+    font-size: 13px;
+}
+QLabel#renameFooterName {
+    color: #aebdcd;
+    font-size: 13px;
+}
+QWidget#renameFooter {
+    border-top: 1px solid #405164;
+}
 
 QLineEdit {
     background: #344356;                        /* slightly lighter for contrast */
@@ -145,6 +160,9 @@ QGroupBox {
     font-size: 16px;
     font-weight: 500;
 }
+QGroupBox#renamePreview {
+    background: #344356;                        /* brighter than dialog base */
+}
 """
 
 def _apply_flat_style(widget):
@@ -153,6 +171,34 @@ def _apply_flat_style(widget):
             widget.setStyleSheet(_FLAT_QSS)
     except Exception:
         pass
+
+
+def _add_dialog_footer(layout, parent):
+    """Add a footer that keeps the tool name and version visually separate."""
+    footer = QtWidgets.QWidget(parent)
+    footer.setObjectName("renameFooter")
+    footer_layout = QtWidgets.QHBoxLayout(footer)
+    footer_layout.setContentsMargins(0, 8, 0, 0)
+    footer_layout.setSpacing(8)
+
+    tool_name = QtWidgets.QLabel(SCRIPT_DISPLAY_NAME, footer)
+    tool_name.setObjectName("renameFooterName")
+    version = QtWidgets.QLabel(f"v{SCRIPT_VERSION}", footer)
+    version.setObjectName("renameVersion")
+    footer_layout.addWidget(tool_name)
+    footer_layout.addStretch(1)
+    footer_layout.addWidget(version)
+
+    layout.addStretch(1)
+    layout.addWidget(footer)
+    return footer
+
+
+def _configure_individual_dialog(dlg, layout):
+    """Use one stable size and spacing for the individual rename dialogs."""
+    dlg.setFixedSize(*INDIVIDUAL_DIALOG_SIZE)
+    layout.setContentsMargins(24, 24, 24, 24)
+    layout.setSpacing(14)
 
 
 def _exec_dialog(dlg):
@@ -203,6 +249,7 @@ def _center_on_screen(widget):
     except Exception:
         # As a last resort, do nothing if centering fails silently
         pass
+
 
 # diag
 try:
@@ -313,21 +360,9 @@ def _load_last_prefix():
     return data.get("last_prefix") or DEFAULT_PREFIX
 
 
-def _save_last_prefix(p):
-    data = _load_cfg()
-    data["last_prefix"] = p
-    _save_cfg(data)
-
-
 def _load_last_suffix():
     data = _load_cfg()
     return data.get("last_suffix") or DEFAULT_SUFFIX
-
-
-def _save_last_suffix(s):
-    data = _load_cfg()
-    data["last_suffix"] = s
-    _save_cfg(data)
 
 
 def _load_last_find():
@@ -335,21 +370,15 @@ def _load_last_find():
     return data.get("last_find") or ""
 
 
-def _save_last_find(s):
-    data = _load_cfg()
-    data["last_find"] = s or ""
-    _save_cfg(data)
-
-
 def _load_last_repl():
     data = _load_cfg()
     return data.get("last_repl") or ""
 
 
-
-def _save_last_repl(s):
+def _update_cfg(**values):
+    """Update related settings with one config read and one config write."""
     data = _load_cfg()
-    data["last_repl"] = s or ""
+    data.update(values)
     _save_cfg(data)
 
 
@@ -367,12 +396,6 @@ def _load_last_idem(kind):
     """Load last idempotent flag for a kind ("prefix" or "suffix"). Defaults True."""
     data = _load_cfg()
     return bool(data.get(f"idem_{kind}", True))
-
-
-def _save_last_idem(kind, val):
-    data = _load_cfg()
-    data[f"idem_{kind}"] = bool(val)
-    _save_cfg(data)
 
 
 # ----------------- platform helpers -----------------
@@ -439,7 +462,9 @@ def _parent_widget():
 
 # ----------------- prompt with checkbox (Qt) -----------------
 
-def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Prevent duplicate addition (idempotent)"):
+def _prompt_text_with_idem(kind, title, label, default_text,
+                           checkbox_label="Prevent duplicate addition (idempotent)",
+                           selection=None):
     """Return (text, idempotent_bool) or (None, None) on cancel.
     If Qt is available, use a custom QDialog.
     Otherwise, on Linux use zenity and on macOS use AppleScript to obtain BOTH text and idempotent flag.
@@ -452,18 +477,59 @@ def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Pre
             dlg = QtWidgets.QDialog(parent)
             dlg.setWindowTitle(_dialog_title(title))
             layout = QtWidgets.QVBoxLayout(dlg)
+            _configure_individual_dialog(dlg, layout)
             lbl = QtWidgets.QLabel(label, dlg)
             edit = QtWidgets.QLineEdit(dlg)
             edit.setText(str(default_text or ""))
             chk = QtWidgets.QCheckBox(checkbox_label, dlg)
             chk.setChecked(_load_last_idem(kind))
+
+            preview_group = QtWidgets.QGroupBox("Preview", dlg)
+            preview_group.setObjectName("renamePreview")
+            preview_layout = QtWidgets.QFormLayout(preview_group)
+            preview_layout.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            preview_before = QtWidgets.QLineEdit(preview_group)
+            preview_after = QtWidgets.QLineEdit(preview_group)
+            for preview_field in (preview_before, preview_after):
+                preview_field.setReadOnly(True)
+            preview_before.setPlaceholderText("No valid clip selected")
+            preview_after.setPlaceholderText("No preview available")
+            preview_layout.addRow("Before:", preview_before)
+            preview_layout.addRow("After:", preview_after)
+
+            def update_preview():
+                try:
+                    targets = _clip_targets_from_selection(selection)
+                    if not targets:
+                        preview_before.setText("")
+                        preview_after.setText("")
+                        return
+                    base = _strip_outer_quotes(getattr(targets[0], "name", ""))
+                    value = _sanitize_name(edit.text())
+                    if value == "":
+                        proposed = base
+                    elif kind == "prefix":
+                        proposed = base if chk.isChecked() and base.startswith(value) else f"{value}{base}"
+                    else:
+                        proposed = base if chk.isChecked() and base.endswith(value) else f"{base}{value}"
+                    preview_before.setText(base)
+                    preview_after.setText(_sanitize_name(proposed))
+                except Exception:
+                    preview_before.setText("")
+                    preview_after.setText("")
+
             btns = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel, parent=dlg)
             layout.addWidget(lbl)
             layout.addWidget(edit)
             layout.addWidget(chk)
+            layout.addWidget(preview_group)
             layout.addWidget(btns)
+            _add_dialog_footer(layout, dlg)
             btns.accepted.connect(dlg.accept)
             btns.rejected.connect(dlg.reject)
+            edit.textChanged.connect(update_preview)
+            chk.toggled.connect(update_preview)
+            update_preview()
             _apply_flat_style(dlg)
             dlg.show()
             if QtWidgets is not None:
@@ -534,138 +600,31 @@ def _prompt_text_with_idem(kind, title, label, default_text, checkbox_label="Pre
 # ----------------- prompt (prefix input) -----------------
 
 #
-# Wrappers that also persist the idempotent choice
+# Wrappers that sanitize accepted input; runners persist valid settings.
 
-def _prompt_prefix_opts():
-    s, idem = _prompt_text_with_idem("prefix", "Add Prefix", "Prefix:", _load_last_prefix())
+def _prompt_prefix_opts(selection=None):
+    s, idem = _prompt_text_with_idem(
+        "prefix", "Add Prefix", "Prefix:", _load_last_prefix(), selection=selection
+    )
     if s is None:
         return None, None
     s = _sanitize_name(s)
-    _save_last_prefix(s)
-    _save_last_idem("prefix", idem)
     return s, idem
 
 
-def _prompt_suffix_opts():
-    s, idem = _prompt_text_with_idem("suffix", "Add Suffix", "Suffix:", _load_last_suffix())
+def _prompt_suffix_opts(selection=None):
+    s, idem = _prompt_text_with_idem(
+        "suffix", "Add Suffix", "Suffix:", _load_last_suffix(), selection=selection
+    )
     if s is None:
         return None, None
     s = _sanitize_name(s)
-    _save_last_suffix(s)
-    _save_last_idem("suffix", idem)
     return s, idem
-
-
-def _prompt_prefix(title="Add Prefix", label="Prefix:"):
-    """Return a prefix string or None. Tries Qt, then zenity (Linux), then AppleScript (macOS)."""
-    # 1) Qt
-    if _has_qt():
-        try:
-            parent = _parent_widget()
-            dlg = QtWidgets.QInputDialog(parent)
-            _apply_flat_style(dlg)
-            dlg.setWindowTitle(_dialog_title(title))
-            dlg.setLabelText(label)
-            dlg.setTextValue(_load_last_prefix())
-            dlg.show()
-            if QtWidgets is not None:
-                QtWidgets.QApplication.processEvents()
-            _center_on_screen(dlg)
-            try:
-                dlg.raise_()
-                dlg.activateWindow()
-            except Exception:
-                pass
-            if _exec_dialog(dlg):
-                return str(dlg.textValue())
-        except Exception:
-            pass
-    # 2) Linux: zenity
-    if sys.platform.startswith("linux") and _which("zenity"):
-        try:
-            p = subprocess.run([
-                "zenity", "--entry", "--title", _dialog_title(title), "--text", label,
-                "--entry-text", _load_last_prefix()
-            ], capture_output=True, text=True)
-            if p.returncode == 0:
-                return (p.stdout or "").strip()
-        except Exception:
-            pass
-    # 3) macOS: AppleScript
-    if sys.platform == "darwin" and _which("osascript"):
-        try:
-            script = (
-                f"display dialog {_osascript_string(label)} "
-                f"default answer {_osascript_string(_load_last_prefix())} "
-                f"with title {_osascript_string(_dialog_title(title))} buttons {{\"OK\"}} default button 1"
-            )
-            p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-            if p.returncode == 0:
-                out = p.stdout or ""
-                val = _extract_osascript_text(out)
-                if val != "":
-                    return val
-        except Exception:
-            pass
-    # 4) Fallback: cancel if no input UI is available
-    return None
-
-
-# Suffix prompt (same fallbacks as prefix)
-
-def _prompt_suffix(title="Add Suffix", label="Suffix:"):
-    if _has_qt():
-        try:
-            parent = _parent_widget()
-            dlg = QtWidgets.QInputDialog(parent)
-            _apply_flat_style(dlg)
-            dlg.setWindowTitle(_dialog_title(title))
-            dlg.setLabelText(label)
-            dlg.setTextValue(_load_last_suffix())
-            dlg.show()
-            if QtWidgets is not None:
-                QtWidgets.QApplication.processEvents()
-            _center_on_screen(dlg)
-            try:
-                dlg.raise_()
-                dlg.activateWindow()
-            except Exception:
-                pass
-            if _exec_dialog(dlg):
-                return str(dlg.textValue())
-        except Exception:
-            pass
-    if sys.platform.startswith("linux") and _which("zenity"):
-        try:
-            p = subprocess.run([
-                "zenity", "--entry", "--title", _dialog_title(title), "--text", label,
-                "--entry-text", _load_last_suffix()
-            ], capture_output=True, text=True)
-            if p.returncode == 0:
-                return (p.stdout or "").strip()
-        except Exception:
-            pass
-    if sys.platform == "darwin" and _which("osascript"):
-        try:
-            script = (
-                f"display dialog {_osascript_string(label)} "
-                f"default answer {_osascript_string(_load_last_suffix())} "
-                f"with title {_osascript_string(_dialog_title(title))} buttons {{\"OK\"}} default button 1"
-            )
-            p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-            if p.returncode == 0:
-                out = p.stdout or ""
-                val = _extract_osascript_text(out)
-                if val != "":
-                    return val
-        except Exception:
-            pass
-    return None
 
 
 # Find & Replace prompt (two fields). If replace is empty string, treat as delete.
 
-def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl="Replace:"):
+def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl="Replace:", selection=None):
     # 1) Qt: show both fields in one centered dialog
     if _has_qt():
         try:
@@ -674,6 +633,7 @@ def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl=
             dlg.setWindowTitle(_dialog_title(title))
 
             layout = QtWidgets.QVBoxLayout(dlg)
+            _configure_individual_dialog(dlg, layout)
             form = QtWidgets.QGridLayout()
             form.setColumnMinimumWidth(0, 90)
             form.setColumnStretch(1, 1)
@@ -688,13 +648,48 @@ def _prompt_find_replace(title="Find & Replace", label_find="Find:", label_repl=
             form.addWidget(repl_edit, 1, 1)
             layout.addLayout(form)
 
+            preview_group = QtWidgets.QGroupBox("Preview", dlg)
+            preview_group.setObjectName("renamePreview")
+            preview_layout = QtWidgets.QFormLayout(preview_group)
+            preview_layout.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            preview_before = QtWidgets.QLineEdit(preview_group)
+            preview_after = QtWidgets.QLineEdit(preview_group)
+            for preview_field in (preview_before, preview_after):
+                preview_field.setReadOnly(True)
+            preview_before.setPlaceholderText("No valid clip selected")
+            preview_after.setPlaceholderText("No preview available")
+            preview_layout.addRow("Before:", preview_before)
+            preview_layout.addRow("After:", preview_after)
+
+            def update_preview():
+                try:
+                    targets = _clip_targets_from_selection(selection)
+                    if not targets:
+                        preview_before.setText("")
+                        preview_after.setText("")
+                        return
+                    base = _strip_outer_quotes(getattr(targets[0], "name", ""))
+                    find_text = str(find_edit.text())
+                    repl_text = str(repl_edit.text())
+                    proposed = base if find_text == "" else base.replace(find_text, repl_text)
+                    preview_before.setText(base)
+                    preview_after.setText(_sanitize_name(proposed))
+                except Exception:
+                    preview_before.setText("")
+                    preview_after.setText("")
+
             btns = QtWidgets.QDialogButtonBox(
                 QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
                 parent=dlg
             )
             btns.accepted.connect(dlg.accept)
             btns.rejected.connect(dlg.reject)
+            find_edit.textChanged.connect(update_preview)
+            repl_edit.textChanged.connect(update_preview)
+            update_preview()
+            layout.addWidget(preview_group)
             layout.addWidget(btns)
+            _add_dialog_footer(layout, dlg)
 
             _apply_flat_style(dlg)
             try:
@@ -951,7 +946,6 @@ def _log_field_name(name, context):
 
 def _apply_rename_transform(selection, transform, failure_label="Rename"):
     changed = 0
-    _undo_buffer_clear()
     for target in _clip_targets_from_selection(selection):
         try:
             base = _strip_outer_quotes(getattr(target, 'name', ''))
@@ -962,6 +956,10 @@ def _apply_rename_transform(selection, transform, failure_label="Rename"):
             if new_name == base:
                 continue
             if _safe_set_name(target, new_name):
+                # A no-op run must not discard the previous one-level undo.
+                # Replace it only after this run has made its first change.
+                if changed == 0:
+                    _undo_buffer_clear()
                 _undo_buffer_push(target, base, new_name)
                 changed += 1
         except Exception as e:
@@ -973,7 +971,7 @@ def _apply_rename_transform(selection, transform, failure_label="Rename"):
 
 # -------- runners used by panel (return changed count) --------
 
-def _run_prefix_with(prefix, idem=True, selection=None, log_context="panel"):
+def _run_prefix_with(prefix, idem=True, selection=None, log_context="panel", persist=True):
     """Apply prefix to selected clip targets; return number of changed items."""
     if not isinstance(prefix, str):
         return 0
@@ -988,12 +986,12 @@ def _run_prefix_with(prefix, idem=True, selection=None, log_context="panel"):
 
     changed = _apply_rename_transform(selection, transform, "Prefix")
     _log_action(f"{_log_field_name('prefix', log_context)}='{prefix}' changed={changed} idem={idem}")
-    _save_last_prefix(prefix)
-    _save_last_idem("prefix", idem)
+    if persist:
+        _update_cfg(last_prefix=prefix, idem_prefix=bool(idem))
     return changed
 
 
-def _run_suffix_with(suffix, idem=True, selection=None, log_context="panel"):
+def _run_suffix_with(suffix, idem=True, selection=None, log_context="panel", persist=True):
     """Apply suffix to selected clip targets; return number of changed items."""
     if not isinstance(suffix, str):
         return 0
@@ -1008,12 +1006,12 @@ def _run_suffix_with(suffix, idem=True, selection=None, log_context="panel"):
 
     changed = _apply_rename_transform(selection, transform, "Suffix")
     _log_action(f"{_log_field_name('suffix', log_context)}='{suffix}' changed={changed} idem={idem}")
-    _save_last_suffix(suffix)
-    _save_last_idem("suffix", idem)
+    if persist:
+        _update_cfg(last_suffix=suffix, idem_suffix=bool(idem))
     return changed
 
 
-def _run_findreplace_with(find, repl, selection=None, log_context="panel"):
+def _run_findreplace_with(find, repl, selection=None, log_context="panel", persist=True):
     """Apply find/replace to selected clip targets; return number of changed items."""
     find = "" if find is None else str(find)
     repl = "" if repl is None else str(repl)
@@ -1028,13 +1026,13 @@ def _run_findreplace_with(find, repl, selection=None, log_context="panel"):
         f"{_log_field_name('find', log_context)}='{find}' "
         f"{_log_field_name('repl', log_context)}='{repl}' changed={changed}"
     )
-    _save_last_find(find)
-    _save_last_repl(repl)
+    if persist:
+        _update_cfg(last_find=find, last_repl=repl)
     return changed
 
 
 def _action_add_prefix(selection=None):
-    prefix, idem = _prompt_prefix_opts()
+    prefix, idem = _prompt_prefix_opts(selection)
     if not isinstance(prefix, str):
         return
     if idem is None:
@@ -1043,11 +1041,14 @@ def _action_add_prefix(selection=None):
 
 
 def _action_add_prefix_last(selection=None):
-    _run_prefix_with(_load_last_prefix(), _load_last_idem("prefix"), selection, log_context="last")
+    _run_prefix_with(
+        _load_last_prefix(), _load_last_idem("prefix"), selection,
+        log_context="last", persist=False
+    )
 
 
 def _action_add_suffix(selection=None):
-    suffix, idem = _prompt_suffix_opts()
+    suffix, idem = _prompt_suffix_opts(selection)
     if not isinstance(suffix, str):
         return
     if idem is None:
@@ -1056,17 +1057,18 @@ def _action_add_suffix(selection=None):
 
 
 def _action_add_suffix_last(selection=None):
-    _run_suffix_with(_load_last_suffix(), _load_last_idem("suffix"), selection, log_context="last")
+    _run_suffix_with(
+        _load_last_suffix(), _load_last_idem("suffix"), selection,
+        log_context="last", persist=False
+    )
 
 
 def _action_find_replace(selection=None):
-    find, repl = _prompt_find_replace()
+    find, repl = _prompt_find_replace(selection=selection)
     if find is None and repl is None:
         return
     find = "" if find is None else str(find)
     repl = "" if repl is None else str(repl)
-    _save_last_find(find)
-    _save_last_repl(repl)
     _run_findreplace_with(find, repl, selection, log_context="")
 
 
@@ -1074,7 +1076,9 @@ def _action_find_replace_last(selection=None):
     find = _load_last_find()
     if not isinstance(find, str):
         return
-    _run_findreplace_with(find, _load_last_repl(), selection, log_context="last")
+    _run_findreplace_with(
+        find, _load_last_repl(), selection, log_context="last", persist=False
+    )
 
 
 # Undo action
@@ -1112,8 +1116,8 @@ def show_rename_panel(selection=None):
 
     # Root layout
     root = QtWidgets.QVBoxLayout(dlg)
-    root.setContentsMargins(16, 16, 16, 16)
-    root.setSpacing(12)
+    root.setContentsMargins(24, 24, 24, 24)
+    root.setSpacing(14)
 
     # Tabs
     tabs = QtWidgets.QTabWidget(dlg)
@@ -1165,6 +1169,7 @@ def show_rename_panel(selection=None):
 
     # Preview area
     preview_group = QtWidgets.QGroupBox("Preview", dlg)
+    preview_group.setObjectName("renamePreview")
     preview_layout = QtWidgets.QFormLayout(preview_group)
     preview_layout.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
     preview_before = QtWidgets.QLineEdit(preview_group)
@@ -1213,6 +1218,7 @@ def show_rename_panel(selection=None):
     root.addLayout(row_actions)
     root.addWidget(log)
     root.addLayout(row_close)
+    _add_dialog_footer(root, dlg)
 
     def _append(msg):
         try:
@@ -1361,23 +1367,6 @@ def _is_segment_like(obj):
         return ('PySegment' in cls) or ('Segment' in cls)
     except Exception:
         return False
-
-
-def _scope_clip_or_segment(selection):
-    """Return True when the context selection contains a clip or a segment.
-    Mirrors the common pattern used in community tools (e.g. flameTimewarpML)
-    by relying on the selection passed by Flame at right-click time.
-    """
-    try:
-        if not selection:
-            return False
-        for it in selection:
-            if _is_clip_like(it) or _is_segment_like(it):
-                return True
-        return False
-    except Exception:
-        return False
-
 
 
 # Stricter scopes per area
