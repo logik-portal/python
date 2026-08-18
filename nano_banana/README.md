@@ -1,10 +1,10 @@
 # Nano Banana
 
-**Script Version:** v1.1.2  
+**Script Version:** 1.2.0  
 **Flame Version:** 2025.2  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.13.26  
-**Update Date:** 03.25.26  
+**Update Date:** 08.18.26  
 
 **Script Type:** Media Panel
 
@@ -43,6 +43,19 @@ Clear Prompt Image: Clears the current prompt image from the prompt.
 Copy script into /opt/Autodesk/shared/python/nano_banana
 
 ## Updates
+
+### v1.2.0 [08.18.26]
+- Updated to use Google's current Nano Banana models.
+- Added: Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite).
+- Updated: gemini-3.1-flash-image-preview to gemini-3.1-flash-image (Nano Banana 2).
+- Updated: gemini-3-pro-image-preview to gemini-3-pro-image (Nano Banana Pro).
+- Removed: Gemini 2.5 Flash Image (Nano Banana). Google is retiring this model on 10.02.26.
+- Updated Gemini Chat to use Gemini 3.7 Flash. Gemini 2.5 Flash is being retired on 10.16.26.
+- Nano Banana 2 is now the default model. Models saved in the config by older versions of the
+- script are replaced with the default model on startup.
+- Fixed: aspect ratios 1:4, 4:1, 1:8, and 8:1 were listed for Nano Banana Pro, which does not
+- support them.
+<br>
 
 ### v1.1.2 [03.25.26]
 - Fixed: model resolution menu not updating when a different model is selected.

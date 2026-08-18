@@ -19,11 +19,11 @@
 
 """
 Script Name: Nano Banana
-Script Version: 1.1.2
+Script Version: 1.2.0
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 03.25.26
+Update Date: 08.18.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -37,21 +37,26 @@ Description:
 
     Currently supported models:
 
-        Gemini 2.5 Flash Image (Nano Banana)
-            - Only supports 1K resolution and aspect ratio 1:1.
-
-        Gemini 3.1 Flash Image Preview (Nano Banana 2)
-            - Supports 1K, 2K, and 4K resolutions.
+        Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)
+            - Fastest and lowest cost model. Best for quick iteration.
+            - Only supports 1K resolution.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
+            - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
 
-        Gemini 3 Pro Image Preview (Nano Banana Pro)
+        Gemini 3.1 Flash Image (Nano Banana 2)
+            - General purpose model. Best balance of speed and quality.
             - Supports 1K, 2K, and 4K resolutions.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
             - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
 
+        Gemini 3 Pro Image (Nano Banana Pro)
+            - Highest quality model. Best for complex prompts and rendering text in images.
+            - Supports 1K, 2K, and 4K resolutions.
+            - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
+
     Gemini Chat:
 
-        Send a message to chat with Gemini about creating an image. Great for improving prompts or describing images.
+        Send a message to chat with Gemini 3.7 Flash about creating an image. Great for improving prompts or describing images.
         Enter a message in the prompt field and click the Gemini Chat button. The response will be displayed in the prompt
         text window. Copy and paste any respone into the prompt text field and use the Send Prompt button to send the prompt
         to Nano Banana.
@@ -102,6 +107,18 @@ To install:
 
 Updates:
 
+    v1.2.0 08.18.26
+        - Updated to use Google's current Nano Banana models.
+            - Added: Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite).
+            - Updated: gemini-3.1-flash-image-preview to gemini-3.1-flash-image (Nano Banana 2).
+            - Updated: gemini-3-pro-image-preview to gemini-3-pro-image (Nano Banana Pro).
+            - Removed: Gemini 2.5 Flash Image (Nano Banana). Google is retiring this model on 10.02.26.
+        - Updated Gemini Chat to use Gemini 3.7 Flash. Gemini 2.5 Flash is being retired on 10.16.26.
+        - Nano Banana 2 is now the default model. Models saved in the config by older versions of the
+          script are replaced with the default model on startup.
+        - Fixed: aspect ratios 1:4, 4:1, 1:8, and 8:1 were listed for Nano Banana Pro, which does not
+          support them.
+
     v1.1.2 03.25.26
         - Fixed: model resolution menu not updating when a different model is selected.
 
@@ -140,8 +157,36 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.1.2'
+SCRIPT_VERSION = 'v1.2.0'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
+
+# Aspect ratios supported by all current Nano Banana image models.
+STANDARD_ASPECT_RATIOS = ['1:1', '21:9', '16:9', '4:3', '3:2', '9:16', '3:4', '2:3', '5:4', '4:5']
+
+# Banner and strip aspect ratios. Not supported by Nano Banana Pro.
+EXTENDED_ASPECT_RATIOS = STANDARD_ASPECT_RATIOS + ['1:4', '4:1', '1:8', '8:1']
+
+# Image models shown in the Select Model menu, along with the resolutions and
+# aspect ratios each model accepts. Menu text is 'model_id (Model Name)'.
+IMAGE_MODELS = {
+    'gemini-3.1-flash-lite-image (Nano Banana 2 Lite)': {
+        'resolutions': ['1K'],
+        'aspect_ratios': EXTENDED_ASPECT_RATIOS,
+        },
+    'gemini-3.1-flash-image (Nano Banana 2)': {
+        'resolutions': ['1K', '2K', '4K'],
+        'aspect_ratios': EXTENDED_ASPECT_RATIOS,
+        },
+    'gemini-3-pro-image (Nano Banana Pro)': {
+        'resolutions': ['1K', '2K', '4K'],
+        'aspect_ratios': STANDARD_ASPECT_RATIOS,
+        },
+    }
+
+DEFAULT_IMAGE_MODEL = 'gemini-3.1-flash-image (Nano Banana 2)'
+
+# Text model used by the Gemini Chat button.
+CHAT_MODEL = 'gemini-3.7-flash'
 
 # ==============================================================================
 # [Main Script]
@@ -166,15 +211,22 @@ def load_config() -> PyFlameConfig:
     Loads configuration values from the config file and returns a PyFlameConfig object with the values.
     """
 
-    return PyFlameConfig(
+    settings = PyFlameConfig(
         config_values={
             'api_key': '',
             'images_path': os.path.join(SCRIPT_PATH, 'images'),
-            'model': 'gemini-2.5-flash-image (Nano Banana)',
+            'model': DEFAULT_IMAGE_MODEL,
             'resolution': '1K',
             'aspect_ratio': '1:1',
             },
         )
+
+    # Configs saved by earlier versions of the script can point at models Google
+    # has retired. Fall back to the default model so the request doesn't fail.
+    if settings.model not in IMAGE_MODELS:
+        settings.model = DEFAULT_IMAGE_MODEL
+
+    return settings
 
 def verify_api_key(api_key: str) -> bool:
     """
@@ -415,13 +467,12 @@ class NanoBanana:
                 })
 
             aspect_ratio = self.aspect_ratio_menu.text.strip() or '1:1'
+            image_size = self.image_resolution_menu.text.strip().upper() or '1K'
 
-            # imageSize is only supported by Nano Banana 2 and Pro.
-            # The original gemini-2.5-flash-image ignores it and may error.
-            image_config = {'aspectRatio': aspect_ratio}
-            if selected_model != 'gemini-2.5-flash-image':
-                image_size = self.image_resolution_menu.text.strip().upper() or '1K'
-                image_config['image_size'] = image_size
+            image_config = {
+                'aspectRatio': aspect_ratio,
+                'imageSize': image_size,
+                }
 
             # Bump timeout to 180s to safely accommodate 4K generation on Pro.
             request_timeout = 180
@@ -571,7 +622,7 @@ class NanoBanana:
 
                 text_edit.setTextCursor(cursor)
 
-            model = 'gemini-2.5-flash'
+            model = CHAT_MODEL
 
             # ---- Validate prompt text ----
             prompt_text = self.prompt_text_edit.text_str.strip()
@@ -935,27 +986,16 @@ class NanoBanana:
             ================================
 
             Set image_resolution_menu and aspect_ratio_menu options based on the selected model.
-            gemini-2.5-flash-image: 1K only; aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
-            gemini-3.1-flash-image-preview / gemini-3-pro-image-preview: 1K, 2K, 4K; same ratios plus 1:4, 4:1, 1:8, 8:1.
             """
 
-            # Aspect ratios available for Gemini 2.5 models and Gemini 3.x models.
-            aspect_ratios_2_5 = ['1:1', '21:9', '16:9', '4:3', '3:2', '9:16', '3:4', '2:3', '5:4', '4:5']
-            aspect_ratios_3_X = aspect_ratios_2_5 + ['1:4', '4:1', '1:8', '8:1']
+            model_options = IMAGE_MODELS.get(
+                self.select_model_menu.text.strip(),
+                IMAGE_MODELS[DEFAULT_IMAGE_MODEL],
+                )
 
-            # Set resolution options based on the selected model.
-            model = self.select_model_menu.text.strip()
-            model = model.rsplit(' (', 1)[0]
+            resolution_options = model_options['resolutions']
+            aspect_ratio_options = model_options['aspect_ratios']
 
-            if model == 'gemini-2.5-flash-image':
-                resolution_options = ['1K']
-                aspect_ratio_options = aspect_ratios_2_5
-            elif model in ('gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview'):
-                resolution_options = ['1K', '2K', '4K']
-                aspect_ratio_options = aspect_ratios_3_X
-            else:
-                resolution_options = ['1K']
-                aspect_ratio_options = aspect_ratios_2_5
             self.image_resolution_menu.menu_options = resolution_options
             if self.image_resolution_menu.text.strip() not in resolution_options:
                 self.image_resolution_menu.text = resolution_options[0]
@@ -966,11 +1006,7 @@ class NanoBanana:
         # Menus
         self.select_model_menu = PyFlameMenu(
             text=self.settings.model,
-            menu_options=[
-                'gemini-2.5-flash-image (Nano Banana)',
-                'gemini-3.1-flash-image-preview (Nano Banana 2)',
-                'gemini-3-pro-image-preview (Nano Banana Pro)',
-                ],
+            menu_options=list(IMAGE_MODELS),
             connect=update_resolution_menu_for_model,
             )
         self.image_resolution_menu = PyFlameMenu(
