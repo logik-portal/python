@@ -1,84 +1,36 @@
 # Uber Save
 
-**Script Version:** 4.9.0  
-**Flame Version:** 2023.2  
+**Script Version:** 5.1.0  
+**Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 07.28.19  
-**Update Date:** 04.10.25  
-
-**Script Type:** Batch / Media Panel
+**Update Date:** 08.18.26  
 
 ## Description
 
-Save/Save Iterate batch group iteration and batch setup file to custom path in one click.
+Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop or an
+open batch group in the batch view.
 
 ## Usage
 
-Uber Save Preset Manager Window:
+To save batch groups to a custom path, create a new path in the script setup window(Flame Main Menu -> Logik -> Logik Portal Script Setup ->
+Uber Save Setup) then select it in the dropdown menu and save.
 <br><br>
-- Manage multiple presets for Uber Save. Presets can be set as default for all Flame projects or for the current Flame project.
+If multiple paths have been created, the one selected in the dropdown menu will be used to save batch groups.
 <br><br>
-New:
-Opens Uber Save Main Window to create new preset.
-<br><br>
-Edit:
-Opens Uber Save Main Window to edit selected preset.
-<br><br>
-Duplicate:
-Duplicates the selected preset. The new preset will have the same name as the original preset with COPY added at the end.
-<br><br>
-Delete:
-Deletes the selected preset.
-<br><br>
-Set Default Preset:
-Makes selected preset the default for all Flame projects.
-<br><br>
-Set Project Preset:
-Makes selected preset the preset for the current Flame project. Overrides default preset for current project.
-<br><br>
-Remove Project Preset:
-Removes preset from current project. Default preset will be used for current project. Does not delete the preset.
-<br><br>
-Uber Save Main Window
-<br><br>
-Preset Name:
-Set name for preset.
-<br><br>
-Batch Save Path:
-Use this to define a tokenized folder structure to save batch setups to.
-<br><br>
-Tokens:
-- <ProjectName> - Adds name of current Flame project to path
-- <ProjectNickName> - Adds Flame project nicknick to path
-- <DesktopName> - Adds name of current desktop to path
-- <SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
-- <SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
-- <ShotName> - Adds shot name to path. Will first try getting shot name from render/write node. If not found, will try to guess shot name
-from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
-- <BatchGroupName> - Adds name of batch group to path
-- <YYYY> - Adds current year to path
-- <YY> - Adds current year to path (last two digits)
-- <MM> - Adds current month to path
-- <DD> - Adds current day to path
-<br><br>
-Example:
-- /opt/Autodesk/project/<ProjectName>/batch/flame/<ShotName>
-<br><br>
-Batch Group Shot Name Tagging
-<br><br>
-You can now tag batch groups with a specific shot name using the format:
-ShotName: <shot_name>
-<br><br>
-Example:
-<br><br>
-- Batch Group Name: tracking_fix
-- Batch Group Tag: ShotName: PYT_0100_comp
-- Save Path Template: /JOBS/<ProjectName>/Shots/<ShotName>/Batch
-<br><br>
-- Result: /JOBS/<ProjectName>/Shots/PYT_0100/Batch
-<br><br>
-This allows you to save batch groups to the correct shot folder even when
-the batch group name doesn't contain the shot name.
+The path can be tokenized using the following tokens:
+<ProjectName> - Adds name of current Flame project to path
+<ProjectNickName> - Adds Flame project nicknick to path
+<DesktopName> - Adds name of current desktop to path
+<SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
+<SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
+<ShotName> - Adds shot name to path. Will first try getting shot name from batch group tag, then render/write node, then it will try to
+guess shot name from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
+<BatchGroupName> - Adds name of batch group to path
+<YYYY> - Adds current year to path
+<YY> - Adds current year to path (last two digits)
+<MM> - Adds current month to path
+<DD> - Adds current day to path
 
 ## URL
 
@@ -98,6 +50,16 @@ https://github.com/logik-portal/python/uber_save
 Copy script into /opt/Autodesk/shared/python/uber_save
 
 ## Updates
+
+### v5.1.0 [08.18.26]
+- Simplified/improved the process of creating and saving paths further.
+- Updated to PyFlameLib v5.6.0.
+<br>
+
+### v5.0.0 [06.07.25]
+- Updated to PyFlameLib v5.0.0.
+- Removed Preset Manager for simplicity. Presets are now saved in script setup window.
+<br>
 
 ### v4.9.0 [04.10.25]
 - Updated to PyFlameLib v4.3.0.

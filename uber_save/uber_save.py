@@ -1,5 +1,5 @@
-# Uber Save
-# Copyright (c) 2025 Michael Vaglienty
+# Rename Shots
+# Copyright (c) 2026 Michael Vaglienty
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,89 +19,44 @@
 
 """
 Script Name: Uber Save
-Script Version: 4.9.0
-Flame Version: 2023.2
+Script Version: 5.1.0
+Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 07.28.19
-Update Date: 04.10.25
+Update Date: 08.18.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
-Script Type: Batch / Media Panel
+Custom Action Type: Batch / Media Panel
 
 Description:
 
-    Save/Save Iterate batch group iteration and batch setup file to custom path in one click.
+    Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop or an
+    open batch group in the batch view.
 
 Usage:
 
-    Uber Save Preset Manager Window:
+    To save batch groups to a custom path, create a new path in the script setup window(Flame Main Menu -> Logik -> Logik Portal Script Setup ->
+    Uber Save Setup) then select it in the dropdown menu and save.
 
-    - Manage multiple presets for Uber Save. Presets can be set as default for all Flame projects or for the current Flame project.
+    If multiple paths have been created, the one selected in the dropdown menu will be used to save batch groups.
 
-        New:
-            Opens Uber Save Main Window to create new preset.
-
-        Edit:
-            Opens Uber Save Main Window to edit selected preset.
-
-        Duplicate:
-            Duplicates the selected preset. The new preset will have the same name as the original preset with COPY added at the end.
-
-        Delete:
-            Deletes the selected preset.
-
-        Set Default Preset:
-            Makes selected preset the default for all Flame projects.
-
-        Set Project Preset:
-            Makes selected preset the preset for the current Flame project. Overrides default preset for current project.
-
-        Remove Project Preset:
-            Removes preset from current project. Default preset will be used for current project. Does not delete the preset.
-
-    Uber Save Main Window
-
-        Preset Name:
-            Set name for preset.
-
-        Batch Save Path:
-            Use this to define a tokenized folder structure to save batch setups to.
-
-            Tokens:
-                - <ProjectName> - Adds name of current Flame project to path
-                - <ProjectNickName> - Adds Flame project nicknick to path
-                - <DesktopName> - Adds name of current desktop to path
-                - <SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
-                - <SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
-                - <ShotName> - Adds shot name to path. Will first try getting shot name from render/write node. If not found, will try to guess shot name
-                             from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
-                - <BatchGroupName> - Adds name of batch group to path
-                - <YYYY> - Adds current year to path
-                - <YY> - Adds current year to path (last two digits)
-                - <MM> - Adds current month to path
-                - <DD> - Adds current day to path
-
-            Example:
-                - /opt/Autodesk/project/<ProjectName>/batch/flame/<ShotName>
-
-    Batch Group Shot Name Tagging
-
-        You can now tag batch groups with a specific shot name using the format:
-            ShotName: <shot_name>
-
-        Example:
-
-            - Batch Group Name: tracking_fix
-            - Batch Group Tag: ShotName: PYT_0100_comp
-            - Save Path Template: /JOBS/<ProjectName>/Shots/<ShotName>/Batch
-
-            - Result: /JOBS/<ProjectName>/Shots/PYT_0100/Batch
-
-        This allows you to save batch groups to the correct shot folder even when
-        the batch group name doesn't contain the shot name.
+    The path can be tokenized using the following tokens:
+        <ProjectName> - Adds name of current Flame project to path
+        <ProjectNickName> - Adds Flame project nicknick to path
+        <DesktopName> - Adds name of current desktop to path
+        <SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
+        <SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
+        <ShotName> - Adds shot name to path. Will first try getting shot name from batch group tag, then render/write node, then it will try to
+                     guess shot name from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
+        <BatchGroupName> - Adds name of batch group to path
+        <YYYY> - Adds current year to path
+        <YY> - Adds current year to path (last two digits)
+        <MM> - Adds current month to path
+        <DD> - Adds current day to path
 
 URL:
+
     https://github.com/logik-portal/python/uber_save
 
 Menus:
@@ -121,6 +76,14 @@ To install:
     Copy script into /opt/Autodesk/shared/python/uber_save
 
 Updates:
+
+    v5.1.0 08.18.26
+        - Simplified/improved the process of creating and saving paths further.
+        - Updated to PyFlameLib v5.6.0.
+
+    v5.0.0 06.07.25
+        - Updated to PyFlameLib v5.0.0.
+        - Removed Preset Manager for simplicity. Presets are now saved in script setup window.
 
     v4.9.0 04.10.25
         - Updated to PyFlameLib v4.3.0.
@@ -201,9 +164,9 @@ Updates:
         - Menu now appears as Uber Save in right-click menu.
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
 
 import os
 import re
@@ -211,204 +174,454 @@ import re
 import flame
 from lib.pyflame_lib_uber_save import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Uber Save'
-SCRIPT_VERSION = 'v4.9.0'
+SCRIPT_VERSION = 'v5.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
-PRESETS_PATH = os.path.join(SCRIPT_PATH, 'config', 'presets')
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
-class UberSaveSetup():
+def load_config() -> PyFlameConfig:
+    """
+    Load Config
+    ===========
 
-    def __init__(self, settings=None):
+    Load Preset Manager config values from config file.
+
+    Returns
+    -------
+        settings (PyFlameConfig):
+            PyFlameConfig object with loaded config values
+    """
+
+    settings = PyFlameConfig(
+        config_values={
+                'selected_path_name': '',
+                'paths': {},
+                },
+            )
+
+    return settings
+
+class UberSaveSetup:
+
+    def __init__(self, selection) -> None:
 
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
 
-        # Check script path, if path is incorrect, stop script.
+        # Check script install path
         if not pyflame.verify_script_install():
             return
 
-        # If settings are passed, use them, else load config settings to use default settings
-        if settings is not None:
-            self.settings = settings
-        else:
-            self.settings = self.load_config()
+        self.settings = load_config()
 
         self.setup()
 
-    def load_config(self) -> PyFlameConfig:
-        """
-        Load Config
-        ===========
+    def setup(self) -> None:
 
-        Load Preset Manager config values from config file.
-
-        Returns:
-        --------
-            settings (PyFlameConfig):
-                PyFlameConfig object with loaded config values
-        """
-
-        settings = PyFlameConfig(
-            config_values={
-                'preset_name': 'New Preset',
-                'batch_path': '/opt/Autodesk/project/<ProjectName>/batch/flame/<ShotName>',
-                },
-            script_name='New Preset',
-            )
-
-        return settings
-
-    #-------------------------------------
-
-    def save_preset(self):
-
-        # Check for required fields
-        if not self.preset_name_entry.text():
-            error_message('Preset Name: Enter name for preset.')
-            return
-        elif not self.batch_path_entry.text():
-            error_message('Batch Path: Enter Batch Path.')
-            return
-
-        # Get preset name
-        preset_name_text = self.preset_name_entry.text()
-
-        # If preset already exists, ask user if they want to overwrite
-        if [f for f in os.listdir(PRESETS_PATH) if f[:-4] == preset_name_text]:
-            if not warning_message('A preset with this name already exists. Replace existing?'):
-                return
-
-        # Update settings attributes with new values
-        self.settings={
-            'preset_name': preset_name_text,
-            'batch_path': self.batch_path_entry.text(),
-            }
-
-        # Close setup window
-        self.setup_window.close()
-
-    def setup(self):
-
-        def path_browse() -> None:
+        def paths_window(type: str) -> None:
             """
-            Path Browse
-            ===========
+            New Edit Window
+            ===============
 
-            Browse for custom path and set custom path entry to selected path.
-
-            use_flame_browser=False is intentionally set. Using Flame's files browser causes Flame to crash.
-            Probably an issue with the setup window needing to be hidden.
+            Create new path or edit existing path.
             """
 
-            file_path = pyflame.file_browser(
-                path=self.batch_path_entry.text(),
-                title='Select Directory',
-                select_directory=True,
-                use_flame_browser=False,
+            def save_path() -> None:
+
+                def settings_check() -> bool:
+                    """
+                    Settings Check
+                    ==============
+
+                    Check settings for errors and return True if all is good.
+                    """
+
+                    if path_name_entry.text == '':
+                        PyFlameMessageWindow(
+                            message='Enter path name.',
+                            message_type=MessageType.ERROR,
+                            parent=paths_window,
+                        )
+                        return False
+
+                    if tokenized_path_entry.text == '':
+                        PyFlameMessageWindow(
+                            message='Enter tokenized path.',
+                            message_type=MessageType.ERROR,
+                            parent=paths_window,
+                        )
+                        return False
+
+                    return True
+
+                # Check settings, if not ok, return
+                settings_verify = settings_check()
+                if not settings_verify:
+                    return
+
+                # Get new values
+                path_name = path_name_entry.text
+                tokenized_path = tokenized_path_entry.text
+
+                # Delete old path in config file if path name has changed and we're in edit mode.
+                if type == 'Edit' and original_path_name != path_name:
+                    self.settings.paths.pop(original_path_name)
+
+                    # Move the saved selection to the new name so the config doesn't
+                    # point at a path name that no longer exists.
+                    if self.settings.selected_path_name == original_path_name:
+                        self.settings.selected_path_name = path_name
+
+                    self.settings.save_config()
+
+                # Update settings attributes with new values and save config
+                self.settings.paths[path_name] = {
+                    'path_name': path_name,
+                    'tokenized_path': tokenized_path,
+                    }
+                self.settings.save_config()
+
+                # Update saved paths menu
+                self.saved_paths_menu.update_menu(
+                    text=path_name,
+                    menu_options=list(self.settings.paths.keys()),
+                    connect=update_selected_path_entry,
+                    )
+                self.selected_path_entry.text = tokenized_path
+                pyflame.print(f'New Path Saved: {path_name}')
+
+                # Close window
+                paths_window.close()
+
+            def path_browse() -> None:
+                """
+                Path Browse
+                ===========
+
+                Browse for custom path and set custom path entry to selected path.
+                """
+
+                file_path = pyflame.file_browser(
+                    path=self.selected_path_entry.text,
+                    title='Select Directory',
+                    select_directory=True,
+                    window_to_hide=[self.setup_window, paths_window],
+                    )
+
+                if file_path:
+                    tokenized_path_entry.text = str(file_path)
+
+            def close_window() -> None:
+                """
+                Close Window
+                ============
+                """
+
+                paths_window.close()
+
+            if type == 'New':
+                path_name = ''
+                tokenized_path = ''
+                original_path_name = ''
+            elif type == 'Duplicate':
+                path_name = pyflame.generate_unique_name(value=self.saved_paths_menu.text, existing_names=list(self.settings.paths.keys()))
+                original_path_name = path_name
+                tokenized_path = self.selected_path_entry.text
+            else:
+                path_name = self.saved_paths_menu.text
+                original_path_name = path_name
+                tokenized_path = self.selected_path_entry.text
+
+            # ==============================================================================
+
+            paths_window = PyFlameWindow(
+                title=f'{SCRIPT_NAME} Setup - {type} Path <small>{SCRIPT_VERSION}</small>',
+                return_pressed=save_path,
+                escape_pressed=close_window,
+                grid_layout_columns=6,
+                grid_layout_rows=4,
+                parent=self.setup_window,
                 )
 
-            if file_path:
-                self.batch_path_entry.setText(file_path)
+            # Labels
+            path_name_label = PyFlameLabel(
+                text='Path Name',
+                )
+            tokenized_path_label = PyFlameLabel(
+                text='Tokenized Path',
+                )
 
-        def cancel() -> None:
+            # Entries
+            path_name_entry = PyFlameEntry(
+                text=path_name,
+                )
+            tokenized_path_entry = PyFlameEntry(
+                text=tokenized_path,
+                )
+
+            # Token Menu
+            path_token_menu = PyFlameTokenMenu(
+                token_dict={
+                    'Project Name': '<ProjectName>',
+                    'Project Nick Name': '<ProjectNickName>',
+                    'Sequence Name': '<SeqName>',
+                    'Sequence Name (All Caps)': '<SEQNAME>',
+                    'Shot Name': '<ShotName>',
+                    'Batch Group Name': '<BatchGroupName>',
+                    'Year (YYYY)': '<YYYY>',
+                    'Year (YY)': '<YY>',
+                    'Month (MM)': '<MM>',
+                    'Day (DD)': '<DD>',
+                    },
+                token_dest=tokenized_path_entry,
+                )
+
+            # Buttons
+            browse_button = PyFlameButton(
+                text='Browse',
+                connect=path_browse,
+                )
+
+            save_button = PyFlameButton(
+                text='Save',
+                connect=save_path,
+                color=Color.BLUE,
+                )
+            cancel_button = PyFlameButton(
+                text='Cancel',
+                connect=close_window,
+                )
+
+            # ==============================================================================
+            # [Widget Layout]
+            # ==============================================================================
+
+            paths_window.grid_layout.addWidget(path_name_label, 0, 0)
+            paths_window.grid_layout.addWidget(path_name_entry, 0, 1, 1, 3)
+
+            paths_window.grid_layout.addWidget(tokenized_path_label, 1, 0)
+            paths_window.grid_layout.addWidget(tokenized_path_entry, 1, 1, 1, 3)
+            paths_window.grid_layout.addWidget(path_token_menu, 1, 4)
+            paths_window.grid_layout.addWidget(browse_button, 1, 5)
+
+            paths_window.grid_layout.addWidget(cancel_button, 3, 4)
+            paths_window.grid_layout.addWidget(save_button, 3, 5)
+
+            # ==============================================================================
+
+            path_name_entry.set_focus()
+
+            # Set Tab-key Order
+            paths_window.tab_order = [path_name_entry, tokenized_path_entry]
+
+        def update_selected_path_entry() -> None:
             """
-            Cancel
-            ======
+            Update Selected Path Entry
+            ==========================
 
-            Close setup window and set preset name to None.
+            Update selected path entry with selected path from saved paths menu.
             """
 
-            # Close setup window
+            self.selected_path_entry.text = self.settings.paths.get(self.saved_paths_menu.text, {}).get('tokenized_path', ' ')
+
+        def new_path() -> None:
+            """
+            New Path
+            ========
+
+            Open paths_window to create new path.
+            """
+
+            paths_window(type='New')
+
+        def edit_path() -> None:
+            """
+            Edit Path
+            =========
+
+            Open paths_window to edit selected path.
+            """
+
+            if self.saved_paths_menu.text == '':
+                pyflame.print('No path to edit.')
+            else:
+                paths_window(type='Edit')
+
+        def delete_path() -> None:
+            """
+            Delete Path
+            ===========
+
+            Delete selected path from config file and update saved paths menu. If no path is selected, print error message.
+            """
+
+            if self.saved_paths_menu.text == '':
+                pyflame.print('No path to delete.')
+            else:
+                self.settings.paths.pop(self.saved_paths_menu.text)
+
+                self.saved_paths_menu.update_menu(
+                    text=self.settings.selected_path_name,
+                    menu_options=list(self.settings.paths.keys()),
+                    connect=update_selected_path_entry,
+                    )
+
+                # Menu falls back to a remaining path, or empty when none are left.
+                # Save that so the config doesn't point at a deleted path.
+                self.settings.save_config(
+                    config_values={
+                        'selected_path_name': self.saved_paths_menu.text,
+                        }
+                    )
+
+                self.selected_path_entry.text = self.settings.paths.get(self.saved_paths_menu.text, {}).get('tokenized_path', ' ')
+
+                pyflame.print(f'SelectedPath Deleted: {self.saved_paths_menu.text}')
+
+        def duplicate_path() -> None:
+            """
+            Duplicate Path
+            ==============
+
+            Duplicate selected path and open paths_window.
+            """
+
+            if self.saved_paths_menu.text == '':
+                pyflame.print('No path to duplicate.')
+            else:
+             paths_window(type='Duplicate')
+
+        def save() -> None:
+            """
+            Save
+            ====
+
+            Save selected path to config file.
+            """
+
+            if self.saved_paths_menu.text == '':
+                PyFlameMessageWindow(
+                    message='No path selected. Create a new path and try again.',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                )
+                return
+
+            # Save config file
+            self.settings.save_config(
+                config_values={
+                    'selected_path_name': self.saved_paths_menu.text,
+                    }
+                )
+
+            # Close window
             self.setup_window.close()
 
-            # Set preset name to None
-            self.settings = None
+        def close_window() -> None:
 
-        self.setup_window = PyFlameDialogWindow(
-            title=f'{SCRIPT_NAME}: Setup <small>{SCRIPT_VERSION}',
-            return_pressed=self.save_preset,
+            self.setup_window.close()
+
+        self.setup_window = PyFlameWindow(
+            title=f'{SCRIPT_NAME} Setup <small>{SCRIPT_VERSION}</small>',
+            return_pressed=save,
+            escape_pressed=close_window,
             grid_layout_columns=6,
-            grid_layout_rows=4,
+            grid_layout_rows=5,
+            parent=None,
             )
 
         # Labels
-        self.preset_name_label = PyFlameLabel(
-            text='Preset Name',
+        self.path_type_label = PyFlameLabel(
+            text='Path Type',
             )
-        self.batch_path_label = PyFlameLabel(
-            text='Batch Save Path',
+        self.tokenized_path_label = PyFlameLabel(
+            text='Tokenized Path',
+            style=Style.UNDERLINE
+            )
+        self.saved_paths_label = PyFlameLabel(
+            text='Saved Paths',
+            )
+        self.selected_path_label = PyFlameLabel(
+            text='Selected Path',
             )
 
         # Entries
-        self.preset_name_entry = PyFlameEntry(
-            text=self.settings.preset_name,
-            )
-        self.batch_path_entry = PyFlameEntry(
-            text=self.settings.batch_path,
+        self.selected_path_entry = PyFlameEntry(
+            text=self.settings.paths.get(self.settings.selected_path_name, {}).get('tokenized_path', ' '),
+            read_only=True,
             )
 
-        # Batch Path Token Pushbutton Menu
-        self.batch_token_push_button = PyFlameTokenPushButton(
-            text='Add Token',
-            token_dict={
-                'Project Name': '<ProjectName>',
-                'Project Nick Name': '<ProjectNickName>',
-                'Sequence Name': '<SeqName>',
-                'Sequence Name (All Caps)': '<SEQNAME>',
-                'Shot Name': '<ShotName>',
-                'Batch Group Name': '<BatchGroupName>',
-                'Year (YYYY)': '<YYYY>',
-                'Year (YY)': '<YY>',
-                'Month (MM)': '<MM>',
-                'Day (DD)': '<DD>',
-                },
-            token_dest=self.batch_path_entry,
+        # Menu
+        self.saved_paths_menu = PyFlameMenu(
+            text=self.settings.selected_path_name,
+            menu_options=list(self.settings.paths.keys()),
+            connect=update_selected_path_entry,
             )
 
         # Buttons
-        self.browse_button = PyFlameButton(
-            text='Browse',
-            connect=path_browse,
+        self.new_path_button = PyFlameButton(
+            text='New',
+            connect=new_path,
             )
+        self.edit_path_button = PyFlameButton(
+            text='Edit',
+            connect=edit_path,
+            )
+        self.delete_path_button = PyFlameButton(
+            text='Delete',
+            connect=delete_path,
+            )
+        self.duplicate_path_button = PyFlameButton(
+            text='Duplicate',
+            connect=duplicate_path,
+            )
+
         self.save_button = PyFlameButton(
             text='Save',
-            connect=self.save_preset,
+            connect=save,
             color=Color.BLUE,
             )
         self.cancel_button = PyFlameButton(
             text='Cancel',
-            connect=cancel,
+            connect=close_window,
             )
 
-        #-------------------------------------
+        # ==============================================================================
         # [Widget Layout]
-        #-------------------------------------
+        # ==============================================================================
 
-        self.setup_window.grid_layout.addWidget(self.preset_name_label, 0, 0)
-        self.setup_window.grid_layout.addWidget(self.preset_name_entry, 0, 1, 1, 2)
+        self.setup_window.grid_layout.addWidget(self.saved_paths_label, 0, 0)
+        self.setup_window.grid_layout.addWidget(self.saved_paths_menu, 0, 1, 1, 3)
 
-        self.setup_window.grid_layout.addWidget(self.batch_path_label, 1, 0)
-        self.setup_window.grid_layout.addWidget(self.batch_path_entry, 1, 1, 1, 3)
-        self.setup_window.grid_layout.addWidget(self.batch_token_push_button, 1, 4)
-        self.setup_window.grid_layout.addWidget(self.browse_button, 1, 5)
+        self.setup_window.grid_layout.addWidget(self.new_path_button, 0, 4)
+        self.setup_window.grid_layout.addWidget(self.edit_path_button, 0, 5)
+        self.setup_window.grid_layout.addWidget(self.duplicate_path_button, 1, 4)
+        self.setup_window.grid_layout.addWidget(self.delete_path_button, 1, 5)
 
-        self.setup_window.grid_layout.addWidget(self.cancel_button, 3, 4)
-        self.setup_window.grid_layout.addWidget(self.save_button, 3, 5)
+        self.setup_window.grid_layout.addWidget(self.selected_path_label, 3, 0)
+        self.setup_window.grid_layout.addWidget(self.selected_path_entry, 3, 1, 1, 6)
 
-        self.setup_window.exec()
+        self.setup_window.grid_layout.addWidget(self.cancel_button, 5, 4)
+        self.setup_window.grid_layout.addWidget(self.save_button, 5, 5)
 
-class UberSave():
+        # ==============================================================================
+
+        update_selected_path_entry()
+
+class UberSave:
 
     def __init__(self, selection):
 
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
+
+        # Set False until path is verified - Keep here.
+        self.valid = False
 
         # Check script path, if path is incorrect, stop script.
         if not pyflame.verify_script_install():
@@ -423,51 +636,88 @@ class UberSave():
         self.flame_prj_nickname = flame.projects.current_project.nickname
         print('Flame Project Nickname:', self.flame_prj_nickname)
 
-        print('Loading Preset Settings...\n')
-        # Load preset settings
-        self.settings = PyFlamePresetManager(
-            script_version=SCRIPT_VERSION,
-            setup_script=None,
-            ).load_preset()
+        self.settings = load_config()
 
-    #-------------------------------------
+        try:
+            self.batch_path = self.settings.paths[self.settings.selected_path_name]['tokenized_path']
+            print('Batch save path:', self.batch_path)
+        except KeyError:
+            PyFlameMessageWindow(
+                message='No path selected.\n\nCreate a new path in script setup.\n\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> Uber Save Setup',
+                message_type=MessageType.ERROR,
+                parent=None,
+            )
+            return
+
+        self.valid = True
+
+    # ==============================================================================
 
     def resolve_path(self, batch_group) -> str:
         """
+        Resolve Path
+        ============
+
         Resolve path for batch setups folder.
         Any tokens in the path will be resolved.
 
         Resolves different paths for Flame and Flare.
 
-        Args:
+        Args
+        ----
             batch_group (flame.PyBatch): Batch group to use to resolve path.
 
-        Returns:
+        Returns
+        -------
             resolved_save_path (str): Resolved path for batch setups.
+
+        Raises
+        ------
+            OSError:
+                If the resolved path could not be created.
         """
 
         print('Resolving Batch Save Path...\n')
 
         resolved_save_path = pyflame.resolve_tokens(
-            tokenized_string=self.settings.batch_path,
+            tokenized_string=self.batch_path,
             flame_pyobject=batch_group,)
+
+        os.makedirs(resolved_save_path, exist_ok=True)
 
         return resolved_save_path
 
-    #-------------------------------------
+    # ==============================================================================
 
-    def save_batchgroup(self, save_path: str, batch_group) -> None:
+    def save_batchgroup(self, save_path: str, batch_group, iterate: bool) -> None:
         """
+        Save Batch Group
+        ================
+
         Save batch group to batch setups folder. Iterate up if needed.
 
         If it's the first time a batch group is saved, a new iteration is created for the first iteration.
 
-        Args:
-            save_path (str): Path to save batch setups.
+        Args
+        ----
+            save_path (str):
+                Path to save batch setups.
+
+            batch_group (flame.PyBatch):
+                Batch group to save.
+
+            iterate (bool):
+                Iterate up before saving. Forced True on a batch group's first save.
+
+        Raises
+        ------
+            Exception:
+                If the batch group could not be saved. Handled by save_batch_groups.
         """
 
         selected_batch_name = str(batch_group.name)[1:-1]
-        pyflame.print(f'Saving Batch Group: {selected_batch_name}')
+        pyflame.print(f'Saving Batch Group: {selected_batch_name}', new_line=False, text_color=TextColor.GREEN)
+        print('-' * 80)
 
         # Open batch if closed
         batch_group.open()
@@ -475,201 +725,177 @@ class UberSave():
         # Get current iteration
         iteration_split = (re.split(r'(\d+)', str(batch_group.current_iteration.name)[1:-1]))[1:-1]
         current_iteration = int(iteration_split[-1])
-        print('    Current Iteration:', current_iteration)
+        print('Current Iteration:', current_iteration)
 
         # Get latest iteration if iterations are saved
         if not batch_group.batch_iterations == []:
             latest_iteration = int(((re.split(r'(\d+)', str([i.name for i in batch_group.batch_iterations][-1])[1:-1]))[1:-1])[-1])
         else:
             latest_iteration = current_iteration
-        print('    Latest Iteration:', latest_iteration)
-
-        # Iterate up if iterate up menu selected
-        print('    Iterate Up:', self.iterate, '\n')
+        print('Latest Iteration:', latest_iteration)
 
         # If first save of batch group, create first iteration
         if batch_group.batch_iterations == [] and current_iteration == 1:
-            self.iterate = True
+            iterate = True
 
-        if self.iterate:
+        # Iterate up if iterate up menu selected
+        print('Iterate Up:', iterate)
+
+        if iterate:
             if current_iteration == 1:
                 batch_group.iterate()
             elif current_iteration < latest_iteration:
                 batch_group.iterate(index = (latest_iteration + 1))
             else:
                 batch_group.iterate(index = (current_iteration + 1))
-            print('    --> Iterating Up\n')
+            #print('--> Iterating Up\n')
         else:
             batch_group.iterate(index=current_iteration)
-            print('    --> Overwriting Existing Iteration\n')
+            #print('--> Overwriting Existing Iteration\n')
 
         # Get current iteration
         current_iteration = str(batch_group.current_iteration.name)[1:-1]
-        print('    New iteration:', current_iteration)
+        print('New Iteration:', current_iteration)
 
         # Set batch save path
         shot_save_path = os.path.join(save_path, current_iteration)
-        print('    Shot save path:', shot_save_path)
+        print('Shot Save Path:', shot_save_path)
 
-        # Try to save batch group, if error, give error message
-        try:
-            # Create shot save folder
-            if not os.path.isdir(save_path):
-                os.makedirs(save_path)
+        # Create shot save folder
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
 
-            # Hard save current batch iteration
-            batch_group.save_setup(shot_save_path)
+        # Hard save current batch iteration
+        batch_group.save_setup(shot_save_path)
 
-            print('\n')
-            pyflame.print(f'Batch Uber Saved: {selected_batch_name}')
-        except:
-            error_message(message='Batch Not Saved. Check Path in Setup.')
+        pyflame.print(f'Batch Saved: {selected_batch_name}', new_line=False)
+        print('-' * 80, '\n')
 
-    #-------------------------------------
+    # ==============================================================================
+
+    def save_batch_groups(self, batch_groups, iterate: bool, complete_message: str) -> None:
+        """
+        Save Batch Groups
+        =================
+
+        Save each batch group. Failures are collected and reported once after all
+        batch groups have been processed so a bad path does not open one message
+        window per batch group.
+
+        Args
+        ----
+            batch_groups (list[flame.PyBatch]):
+                Batch groups to save.
+
+            iterate (bool):
+                Iterate up before saving.
+
+            complete_message (str):
+                Message printed when every batch group saved without error.
+        """
+
+        errors = []
+
+        for batch_group in batch_groups:
+            batch_group_name = str(batch_group.name)[1:-1]
+
+            try:
+                resolved_path = self.resolve_path(
+                    batch_group=batch_group,
+                    )
+
+                self.save_batchgroup(
+                    save_path=resolved_path,
+                    batch_group=batch_group,
+                    iterate=iterate,
+                    )
+            except Exception as e:
+                pyflame.print(f'Batch Not Saved: {batch_group_name} - {e}', print_type=PrintType.ERROR)
+                errors.append(f'{batch_group_name}: {e}')
+
+        if errors:
+            PyFlameMessageWindow(
+                message='Batch groups not saved. Check path in setup.\n\n' + '\n\n'.join(errors),
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return
+
+        pyflame.print(complete_message, text_color=TextColor.GREEN)
+
+    # ==============================================================================
 
     def batch_group_save(self) -> None:
         """
+        Batch Group Save
+        ================
+
         Save current batch from batch.
         """
 
-        # If no preset/settings are loaded, return to exit script
-        if not self.settings:
-            return
-
-        #print('Flame Batch:', flame.batch)
-
-        self.iterate = False
-        resolved_path = self.resolve_path(
-            batch_group=flame.batch,
+        self.save_batch_groups(
+            batch_groups=[flame.batch],
+            iterate=False,
+            complete_message='Saving Batch Group Complete',
             )
-        self.save_batchgroup(
-            save_path=resolved_path,
-            batch_group=flame.batch,
-            )
-
-        pyflame.print('Saving Batch Group Complete', text_color=TextColor.GREEN)
 
     def batch_group_iterate_save(self) -> None:
         """
+        Iterate and Save Batch Group
+        ============================
+
         Iterate and save current batch from batch.
         """
 
-        # If no preset/settings are loaded, return to exit script
-        if not self.settings:
-            return
-
-        self.iterate = True
-        resolved_path = self.resolve_path(
-            batch_group=flame.batch,
+        self.save_batch_groups(
+            batch_groups=[flame.batch],
+            iterate=True,
+            complete_message='Saving and Iterating Batch Group Complete',
             )
-        self.save_batchgroup(
-            save_path=resolved_path,
-            batch_group=flame.batch,
-            )
-
-        pyflame.print('Saving and Iterating Batch Group Complete', text_color=TextColor.GREEN)
 
     def batch_group_save_all(self) -> None:
         """
+        Batch Group Save All
+        ====================
+
         Save all batchgroups in desktop.
         """
 
-        # If no preset/settings are loaded, return to exit script
-        if not self.settings:
-            return
-
-        self.iterate = False
-        batch_groups = flame.project.current_project.current_workspace.desktop.batch_groups
-
-        for batch_group in batch_groups:
-            resolved_path = self.resolve_path(
-                batch_group=batch_group,
-                )
-            self.save_batchgroup(
-                save_path=resolved_path,
-                batch_group=batch_group,
-                )
-
-        pyflame.print('Saving all batch groups complete', text_color=TextColor.GREEN)
+        self.save_batch_groups(
+            batch_groups=flame.project.current_project.current_workspace.desktop.batch_groups,
+            iterate=False,
+            complete_message='Saving all batch groups complete',
+            )
 
     def batch_group_save_selected(self) -> None:
         """
+        Batch Group Save Selected
+        =========================
+
         Save selected batchgroups in desktop.
         """
 
-        # If no preset/settings are loaded, return to exit script
-        if not self.settings:
-            return
-
-        self.iterate = False
-
-        for batch_group in self.selection:
-            resolved_path = self.resolve_path(
-                batch_group=batch_group,
-                )
-            self.save_batchgroup(
-                save_path=resolved_path,
-                batch_group=batch_group,
-                )
-
-        pyflame.print('Saving selected batch groups complete', text_color=TextColor.GREEN)
+        self.save_batch_groups(
+            batch_groups=self.selection,
+            iterate=False,
+            complete_message='Saving selected batch groups complete',
+            )
 
     def batch_group_iterate_save_selected(self) -> None:
         """
+        Batch Group Iterate and Save Selected
+        =====================================
+
         Iterate and save selected batchgroups in desktop.
         """
 
-        # If no preset/settings are loaded, return to exit script
-        if not self.settings:
-            return
+        self.save_batch_groups(
+            batch_groups=self.selection,
+            iterate=True,
+            complete_message='Saving and iterating selected batch groups complete',
+            )
 
-        self.iterate = True
-
-        for batch_group in self.selection:
-            resolved_path = self.resolve_path(
-                batch_group=batch_group,
-                )
-            self.save_batchgroup(
-                save_path=resolved_path,
-                batch_group=batch_group,
-                )
-
-        pyflame.print('Saving and iterating selected batch groups complete', text_color=TextColor.GREEN)
-
-#-------------------------------------
-
-def error_message(message: str) -> None:
-    """
-    Open error message window using PyFlameMessageWindow.
-
-    Args:
-        message (str): The message to display.
-    """
-
-    PyFlameMessageWindow(
-        message=message,
-        type=MessageType.ERROR,
-        )
-
-def warning_message(message:str) -> bool:
-    """
-    Open warning message window using PyFlameMessageWindow.
-
-    Args:
-        message (str): The message to display.
-
-    Returns:
-        confirm (bool): User confirmation to proceed.
-    """
-
-    confirm = PyFlameMessageWindow(
-        message=message,
-        type=MessageType.WARNING,
-        )
-
-    return confirm
-
-#-------------------------------------
+# ==============================================================================
 
 def uber_batch_group_save(selection) -> None:
     """
@@ -677,7 +903,8 @@ def uber_batch_group_save(selection) -> None:
     """
 
     uber_save = UberSave(selection)
-    uber_save.batch_group_save()
+    if uber_save.valid:
+        uber_save.batch_group_save()
 
 def uber_batch_group_iterate_save(selection) -> None:
     """
@@ -685,7 +912,8 @@ def uber_batch_group_iterate_save(selection) -> None:
     """
 
     uber_save = UberSave(selection)
-    uber_save.batch_group_iterate_save()
+    if uber_save.valid:
+        uber_save.batch_group_iterate_save()
 
 def uber_batch_group_save_all(selection) -> None:
     """
@@ -693,7 +921,8 @@ def uber_batch_group_save_all(selection) -> None:
     """
 
     uber_save = UberSave(selection)
-    uber_save.batch_group_save_all()
+    if uber_save.valid:
+        uber_save.batch_group_save_all()
 
 def uber_batch_group_save_selected(selection) -> None:
     """
@@ -701,7 +930,8 @@ def uber_batch_group_save_selected(selection) -> None:
     """
 
     uber_save = UberSave(selection)
-    uber_save.batch_group_save_selected()
+    if uber_save.valid:
+        uber_save.batch_group_save_selected()
 
 def uber_batch_group_iterate_save_selected(selection) -> None:
     """
@@ -709,23 +939,12 @@ def uber_batch_group_iterate_save_selected(selection) -> None:
     """
 
     uber_save = UberSave(selection)
-    uber_save.batch_group_iterate_save_selected()
+    if uber_save.valid:
+        uber_save.batch_group_iterate_save_selected()
 
-#-------------------------------------
-
-def open_preset_manager(selection) -> None:
-    """
-    Open preset manager to edit Uber Save presets.
-    """
-
-    PyFlamePresetManager(
-        script_version=SCRIPT_VERSION,
-        setup_script=UberSaveSetup,
-        )
-
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_batch(selection) -> bool:
 
@@ -742,9 +961,9 @@ def scope_desktop(selection) -> bool:
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 
@@ -761,8 +980,8 @@ def get_main_menu_custom_ui_actions():
             'actions': [
                 {
                     'name': 'Uber Save Setup',
-                    'execute': open_preset_manager,
-                    'minimumVersion': '2023.2'
+                    'execute': UberSaveSetup,
+                    'minimumVersion': '2025'
                 }
             ]
         }
@@ -778,19 +997,19 @@ def get_media_panel_custom_ui_actions():
                     'name': 'Save All Batch Groups',
                     'isVisible': scope_desktop,
                     'execute': uber_batch_group_save_all,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                 },
                 {
                     'name': 'Save Selected Batch Groups',
                     'isVisible': scope_batch,
                     'execute': uber_batch_group_save_selected,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                 },
                 {
                     'name': 'Iterate and Save Selected Batch Groups',
                     'isVisible': scope_batch,
                     'execute': uber_batch_group_iterate_save_selected,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                 }
             ]
         }
@@ -805,12 +1024,12 @@ def get_batch_custom_ui_actions():
                 {
                     'name': 'Save Current Batch Group',
                     'execute': uber_batch_group_save,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                 },
                 {
                     'name': 'Iterate and Save Current Batch Group',
                     'execute': uber_batch_group_iterate_save,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025'
                 }
             ]
         }
