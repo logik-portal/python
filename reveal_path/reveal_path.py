@@ -19,11 +19,11 @@
 
 """
 Script Name: Reveal Path
-Script Version: 2.10.0
+Script Version: 2.11.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.16.19
-Update Date: 05.05.26
+Update Date: 08.19.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -59,19 +59,26 @@ Menus:
     Script Setup:
         Flame Main Menu -> Logik Portal Script Setup -> Reveal Path Setup
 
-    Right-click on clip in timeline -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
-    Right-click on clip in media panel -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
-    Right-click on clip in batch -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
-    Right-click on clip in media hub -> Reveal... -> Reveal Clip in Finder
-    Right-click on Write File node in batch -> Reveal... -> Reveal in Finder
-    Right-click on Write File node in batch -> Reveal... -> Reveal in MediaHub
-    Right-click on batch group in media panel -> Reveal... -> Reveal Shot Folder in Finder / Reveal Shot Folder in MediaHub
+    Right-click on clip in Timeline -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
+    Right-click on clip in Media Panel -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
+    Right-click on clip in Batch -> Reveal... -> Reveal Clip in Finder / Reveal Clip in MediaHub
+    Right-click on clip in Media Hub -> Reveal... -> Reveal Clip in Finder
+    Right-click on Write File node in Batch -> Reveal... -> Reveal in Finder
+    Right-click on Write File node in Batch -> Reveal... -> Reveal in MediaHub
+    Right-click on Batch Group in Media Panel -> Reveal... -> Reveal Shot Folder in Finder / Reveal Shot Folder in MediaHub
+    Right-click in Media Panel -> Reveal... -> Reveal Clipboard Path in MediaHub
+    Right-click in Batch -> Reveal... -> Reveal Clipboard Path in MediaHub
+    Right-click in Media Hub -> Reveal... -> Reveal Clipboard Path
+    Right-click in Timeline -> Reveal... -> Reveal Clipboard Path in MediaHub
 
 To install:
 
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.11.0 08.19.26
+        - Added ability to reveal clipboard path in MediaHub.
 
     v2.10.0 05.05.26
         - Added ability to reveal shot folder for batch group in Finder and MediaHub.
@@ -154,7 +161,7 @@ from lib.pyflame_lib_reveal_path import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Reveal Path'
-SCRIPT_VERSION = 'v2.10.0'
+SCRIPT_VERSION = 'v2.11.0'
 
 # ==============================================================================
 
@@ -177,6 +184,42 @@ def load_config() -> PyFlameConfig:
             'tokenized_shot_folder_path': '',
             },
         )
+
+def get_clipboard_path():
+    """
+    Get Clipboard Path
+    ==================
+
+    Get the path from the clipboard if it exists.
+
+    Returns:
+    --------
+        str: Path from the clipboard if it exists and is a valid path, otherwise None.
+    """
+
+    from PySide6.QtWidgets import QApplication
+
+    mime = QApplication.clipboard().mimeData()
+
+    # File copied from a file manager
+    if mime.hasUrls():
+        for url in mime.urls():
+            if url.isLocalFile():
+                path = url.toLocalFile()  # plain path, not a URL
+                if os.path.exists(path):
+                    if os.path.isfile(path):
+                        path = path.rsplit('/', 1)[0]
+                    return path
+
+    # Path copied as plain text
+    if mime.hasText():
+        text = mime.text().strip().strip('"')
+        if os.path.exists(text):
+            if os.path.isfile(text):
+                text = text.rsplit('/', 1)[0]
+            return text
+
+    return None
 
 # ==============================================================================
 # [Reveal in Finder]
@@ -269,6 +312,16 @@ def reveal_write_file_node_path_mediahub(selection):
         open_media_hub(resolved_path)
     else:
         pyflame.print('Write File node path not found. May not exist until rendered.', print_type=PrintType.ERROR)
+
+def reveal_clipboard_path_mediahub(selection):
+
+    pyflame.print_title(f'{SCRIPT_NAME} - Clipboard Path {SCRIPT_VERSION}')
+
+    clipboard_path = get_clipboard_path()
+    if clipboard_path:
+        open_media_hub(clipboard_path)
+    else:
+        pyflame.print('Clipboard path not found.', print_type=PrintType.ERROR)
 
 def open_media_hub(path):
     """
@@ -555,6 +608,13 @@ def scope_batch_group(selection):
             return True
     return False
 
+def scope_clipboard(selection):
+
+    clipboard_path = get_clipboard_path()
+    if clipboard_path:
+        return True
+    return False
+
 # ==============================================================================
 # [Flame Menus]
 # ==============================================================================
@@ -598,7 +658,13 @@ def get_timeline_custom_ui_actions():
                     'isVisible': scope_timeline_clip,
                     'execute': reveal_timeline_mediahub,
                     'minimumVersion': '2023.2'
-                }
+                },
+                {
+                    'name': 'Reveal Clipboard Path in MediaHub',
+                    'isVisible': scope_clipboard,
+                    'execute': reveal_clipboard_path_mediahub,
+                    'minimumVersion': '2025.1'
+                },
             ]
         }
     ]
@@ -631,6 +697,12 @@ def get_media_panel_custom_ui_actions():
                     'name': 'Reveal Shot Folder in MediaHub',
                     'isVisible': scope_batch_group,
                     'execute': reveal_batch_group_shot_folder_mediahub,
+                    'minimumVersion': '2025.1'
+                },
+                {
+                    'name': 'Reveal Clipboard Path in MediaHub',
+                    'isVisible': scope_clipboard,
+                    'execute': reveal_clipboard_path_mediahub,
                     'minimumVersion': '2025.1'
                 },
             ]
@@ -685,6 +757,12 @@ def get_batch_custom_ui_actions():
                     'execute': reveal_batch_group_shot_folder_mediahub,
                     'minimumVersion': '2025.1'
                 },
+                {
+                    'name': 'Reveal Clipboard Path in MediaHub',
+                    'isVisible': scope_clipboard,
+                    'execute': reveal_clipboard_path_mediahub,
+                    'minimumVersion': '2025.1'
+                },
             ]
         }
     ]
@@ -699,6 +777,12 @@ def get_mediahub_files_custom_ui_actions():
                     'name': 'Reveal Clip in Finder',
                     'isVisible': scope_file,
                     'execute': reveal_mediahub_clip_finder,
+                    'minimumVersion': '2025.1'
+                },
+                {
+                    'name': 'Reveal Clipboard Path',
+                    'isVisible': scope_clipboard,
+                    'execute': reveal_clipboard_path_mediahub,
                     'minimumVersion': '2025.1'
                 },
             ]

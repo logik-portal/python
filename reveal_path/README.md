@@ -1,10 +1,10 @@
 # Reveal Path
 
-**Script Version:** 2.10.0  
+**Script Version:** 2.11.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.16.19  
-**Update Date:** 05.05.26  
+**Update Date:** 08.19.26  
 
 **Script Type:** Timeline / Media Panel / MediaHub / Batch
 
@@ -37,19 +37,27 @@ https://logik-portal.com/scripts/#reveal_path
 
 ### Script Setup
 - Flame Main Menu → Logik Portal Script Setup → Reveal Path Setup
-- Right-click on clip in timeline → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
-- Right-click on clip in media panel → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
-- Right-click on clip in batch → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
-- Right-click on clip in media hub → Reveal... → Reveal Clip in Finder
-- Right-click on Write File node in batch → Reveal... → Reveal in Finder
-- Right-click on Write File node in batch → Reveal... → Reveal in MediaHub
-- Right-click on batch group in media panel → Reveal... → Reveal Shot Folder in Finder / Reveal Shot Folder in MediaHub
+- Right-click on clip in Timeline → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
+- Right-click on clip in Media Panel → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
+- Right-click on clip in Batch → Reveal... → Reveal Clip in Finder / Reveal Clip in MediaHub
+- Right-click on clip in Media Hub → Reveal... → Reveal Clip in Finder
+- Right-click on Write File node in Batch → Reveal... → Reveal in Finder
+- Right-click on Write File node in Batch → Reveal... → Reveal in MediaHub
+- Right-click on Batch Group in Media Panel → Reveal... → Reveal Shot Folder in Finder / Reveal Shot Folder in MediaHub
+- Right-click in Media Panel → Reveal... → Reveal Clipboard Path in MediaHub
+- Right-click in Batch → Reveal... → Reveal Clipboard Path in MediaHub
+- Right-click in Media Hub → Reveal... → Reveal Clipboard Path
+- Right-click in Timeline → Reveal... → Reveal Clipboard Path in MediaHub
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.11.0 [08.19.26]
+- Added ability to reveal clipboard path in MediaHub.
+<br>
 
 ### v2.10.0 [05.05.26]
 - Added ability to reveal shot folder for batch group in Finder and MediaHub.
