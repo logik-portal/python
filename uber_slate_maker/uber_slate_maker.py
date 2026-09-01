@@ -20,12 +20,12 @@
 
 """
 Script Name: Uber Slate Maker
-Script Version: v2.6.0
+Script Version: v2.6.1
 Flame Version: 2027
 Written by: Michael Vaglienty
 Extended by: Bryan Bayley (v2.0.0 and later)
 Creation Date: 12.29.18
-Update Date: 08.06.26
+Update Date: 08.31.26
 
 Derived from: Slate Maker v1.0.0 / Uber Slate Maker v1.3.1
 
@@ -119,6 +119,10 @@ Usage:
         - Sequences without a v2 slate segment are reported and skipped.
 
 Updates:
+
+    v2.6.1 08.31.26
+        - Reverted to older version of pyflame library for resolve
+          compability issues that could cause script not to work.
 
     v2.6.0 08.06.26
         - Facility-agnostic update fields: the Update <Field> menu
@@ -251,7 +255,7 @@ from lib.pyflame_lib_uber_slate_maker import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Uber Slate Maker'
-SCRIPT_VERSION = 'v2.6.0'
+SCRIPT_VERSION = 'v2.6.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # Shared config schema - all modes load the same config/config.json.

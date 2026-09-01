@@ -1,10 +1,10 @@
 # Uber Slate Maker
 
-**Script Version:** v2.6.0  
+**Script Version:** v2.6.1  
 **Flame Version:** 2027  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 12.29.18  
-**Update Date:** 08.06.26  
+**Update Date:** 08.31.26  
 
 **Script Type:** MediaPanel
 
@@ -104,6 +104,11 @@ https://logik-portal.com/scripts/#uber_slate_maker
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.6.1 [08.31.26]
+- Reverted to older version of pyflame library for resolve
+- compability issues that could cause script not to work.
+<br>
 
 ### v2.6.0 [08.06.26]
 - Facility-agnostic update fields: the Update <Field> menu
