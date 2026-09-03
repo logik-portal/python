@@ -1,0 +1,13 @@
+{
+    "silhouette_app": "/opt/BorisFX/Silhouette-2026/silhouette",
+    "export_preset_path": "/opt/Autodesk/shared/python/silhouette_roundtrip/presets/OpenEXR_16-bit_fp_DWAA.xml",
+    "project_path_template": "/Volumes/vfx/UC_Jobs/{project_name}/SHOTS/{batch_name}/2D/Roto/Silhouette/{clip_name}_ml_matte_v01",
+    "render_path_template": "/Volumes/vfx/UC_Jobs/{project_name}/SHOTS/{batch_name}/2D/Roto/Silhouette/{clip_name}/render/{clip_name}_ml_matte_v01",
+    "result_reel_name": "Elements",
+    "file_wait_timeout": 120,
+    "path_history": [
+        "/Volumes/vfx/UC_Jobs/{project_name}/SHOTS/{batch_name}/2D/Roto/Silhouette/{clip_name}_ml_matte_v01",
+        "/Volumes/vfx/UC_Jobs/{project_name}/SHOTS/{batch_name}/2D/Roto/Silhouette/{clip_name}",
+        "/Volumes/vfx/UC_Jobs/{project_name}/SHOTS/{batch_name}/2D/Rotos_Silhouette/{clip_name}"
+    ]
+}

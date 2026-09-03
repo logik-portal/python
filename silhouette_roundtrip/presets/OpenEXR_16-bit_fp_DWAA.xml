@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<preset version="15">
+   <type>image</type>
+   <comment>silhouette_roundtrip fallback export: 16-bit fp OpenEXR (DWAA), numbered from clip start.</comment>
+   <video>
+      <fileType>OpenEXR</fileType>
+      <codec>1120376</codec>
+      <codecProfile></codecProfile>
+      <namePattern>&lt;name&gt;.</namePattern>
+      <compressionQuality>100</compressionQuality>
+      <includeAlpha>False</includeAlpha>
+      <overwriteWithVersions>False</overwriteWithVersions>
+      <resize>
+         <resizeType>fit</resizeType>
+         <resizeFilter>lanczos</resizeFilter>
+         <width>0</width>
+         <height>0</height>
+         <bitsPerChannel>16</bitsPerChannel>
+         <numChannels>3</numChannels>
+         <floatingPoint>True</floatingPoint>
+         <bigEndian>False</bigEndian>
+         <pixelRatio>1</pixelRatio>
+         <scanFormat>P</scanFormat>
+      </resize>
+   </video>
+   <name>
+      <framePadding>4</framePadding>
+      <startFrame>1001</startFrame>
+      <frameIndex>0</frameIndex>
+   </name>
+</preset>
