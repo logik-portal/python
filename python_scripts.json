@@ -1301,8 +1301,8 @@
   },
   {
     "Script Name": "uber slate maker",
-    "Script Version": "2.6.1",
-    "Flame Version": "2027.1",
+    "Script Version": "v2.6.1",
+    "Flame Version": "2027",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "12.29.18",
@@ -1351,7 +1351,7 @@
   },
   {
     "Script Name": "versions from csv",
-    "Script Version": "1.0.0",
+    "Script Version": "v1.0.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Quinn Richardson + Claude",
@@ -1361,7 +1361,7 @@
   },
   {
     "Script Name": "versions from csv advanced-ui",
-    "Script Version": "1.1.0",
+    "Script Version": "v1.1.0",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Quinn Richardson + Claude",
