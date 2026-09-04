@@ -4,7 +4,6 @@ Script Version: 1.0.0
 Flame Version: 2025
 Written by: John Geehreng and Cursor
 Creation Date: 09.03.26
-Update Date: 
 
 Custom Action Type: Batch / MediaHub Files / Main Menu
 
