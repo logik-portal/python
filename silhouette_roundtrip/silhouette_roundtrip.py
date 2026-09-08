@@ -1,10 +1,10 @@
 """
 Script Name: silhouette_roundtrip
-Script Version: 1.0.0
+Script Version: 1.1.0
 Flame Version: 2025
 Written by: John Geehreng and Cursor
 Creation Date: 09.03.26
-Update Date: 
+Update Date: 09.08.26
 
 Custom Action Type: Batch / MediaHub Files / Main Menu
 
@@ -22,9 +22,11 @@ Right-click Clip Node in Batch -> Silhouette RoundTrip... -> Import Results
 Right-click Clip Node in Batch -> Silhouette RoundTrip... -> Setup
 Right-click file in MediaHub -> Silhouette RoundTrip... -> (same)
 Flame Main Menu -> Silhouette RoundTrip Setup
+
+Updates:
+09.08.26 - v1.1.0 - MediaHub Fix. Fix Mac crashing.
 """
 
-# Imports
 import datetime
 import json
 import os
@@ -356,14 +358,32 @@ def sequence_base_name(path):
     return name or 'unnamed_clip'
 
 
+def _is_mediahub_item(item):
+    """True for MediaHub file/folder selections (not Batch clips)."""
+    if isinstance(item, flame.PyClipNode):
+        return False
+    if isinstance(item, (flame.PyClip, flame.PySequence)):
+        return False
+    return hasattr(item, 'path')
+
+
 def _media_path_from_item(item):
-    """Return the original disk path for Batch clips or MediaHub files."""
-    if hasattr(item, 'path') and not hasattr(item, 'media_path'):
-        path = str(item.path)
+    """Return the original disk path for Batch clips or MediaHub files.
+
+    MediaHub selections always use item.path. Batch selections use media_path
+    / segment file_path and may fall through to export when nothing is on disk.
+    """
+    # MediaHub: use path directly — never probe Batch media_path.
+    if _is_mediahub_item(item):
+        try:
+            path = _strip_quotes(item.path)
+        except Exception:
+            path = str(getattr(item, 'path', '') or '').strip().strip("'\"")
         if path:
             return path
+        return ''
 
-    if hasattr(item, "media_path"):
+    if hasattr(item, 'media_path'):
         try:
             path = _strip_quotes(item.media_path)
             if path:
@@ -574,6 +594,49 @@ def _silhouette_binary(app_path):
     return app_path
 
 
+def _scrub_launch_env(env):
+    """Remove Flame/Qt/Python vars that crash Silhouette when inherited.
+
+    Launching Silhouette from Flame on macOS with a copied environ is a common
+    cause of 'opens briefly then dies' — Flame's DYLD_*/QT_*/PYTHON* paths make
+    Silhouette load the wrong libraries.
+    """
+    toxic = [
+        'DYLD_LIBRARY_PATH',
+        'DYLD_FRAMEWORK_PATH',
+        'DYLD_FALLBACK_LIBRARY_PATH',
+        'DYLD_INSERT_LIBRARIES',
+        'DYLD_IMAGE_SUFFIX',
+        'DYLD_ROOT_PATH',
+        'LD_LIBRARY_PATH',
+        'LD_PRELOAD',
+        'QT_PLUGIN_PATH',
+        'QT_QPA_PLATFORM_PLUGIN_PATH',
+        'QTDIR',
+        'QTLIB',
+        'QT_MAC_WANTS_LAYER',
+        'PYTHONHOME',
+        'PYTHONPATH',
+        'PYTHONSTARTUP',
+        '__PYVENV_LAUNCHER__',
+        'OCIO_ACTIVE_DISPLAYS',
+        'OCIO_ACTIVE_VIEWS',
+    ]
+    removed = []
+    for key in toxic:
+        if key in env:
+            removed.append(key)
+            del env[key]
+    # Also drop any Autodesk/Flame library path injectors that slip through.
+    for key in list(env.keys()):
+        if key.startswith('DYLD_') or key.startswith('QT_'):
+            removed.append(key)
+            del env[key]
+    if removed:
+        log('Scrubbed launch env vars: %s' % ', '.join(sorted(set(removed))))
+    return env
+
+
 def launch_silhouette(config, job_path=None, project_path=None):
     app_path = config.get('silhouette_app', '')
     binary = _silhouette_binary(app_path)
@@ -584,7 +647,7 @@ def launch_silhouette(config, job_path=None, project_path=None):
         )
         return False
 
-    env = os.environ.copy()
+    env = _scrub_launch_env(os.environ.copy())
     args = [binary, '-no_launcher']
     if job_path:
         env[JOB_ENV] = job_path
@@ -654,21 +717,22 @@ def launch_silhouette(config, job_path=None, project_path=None):
         popen_kwargs = {
             'env': env,
             'start_new_session': True,
+            # Keep Silhouette out of Flame's cwd (can hold locked project files).
+            'cwd': os.path.expanduser('~') if platform.system() == 'Darwin' else None,
         }
-        if platform.system() == 'Darwin':
-            popen_kwargs['stdout'] = None
-            popen_kwargs['stderr'] = None
-        else:
-            # Write Silhouette output to a log file so setup errors are visible.
-            log_path = '/tmp/silhouette_roundtrip.log'
-            log(f'Silhouette output log: {log_path}')
-            try:
-                _log_fh = open(log_path, 'w', buffering=1)
-                popen_kwargs['stdout'] = _log_fh
-                popen_kwargs['stderr'] = _log_fh
-            except Exception:
-                popen_kwargs['stdout'] = subprocess.DEVNULL
-                popen_kwargs['stderr'] = subprocess.DEVNULL
+        if popen_kwargs['cwd'] is None:
+            del popen_kwargs['cwd']
+
+        # Always capture Silhouette output so Mac crashes are diagnosable too.
+        log_path = '/tmp/silhouette_roundtrip.log'
+        log(f'Silhouette output log: {log_path}')
+        try:
+            _log_fh = open(log_path, 'w', buffering=1)
+            popen_kwargs['stdout'] = _log_fh
+            popen_kwargs['stderr'] = _log_fh
+        except Exception:
+            popen_kwargs['stdout'] = subprocess.DEVNULL
+            popen_kwargs['stderr'] = subprocess.DEVNULL
         subprocess.Popen(args, **popen_kwargs)
         if platform.system() == 'Darwin':
             try:
@@ -688,18 +752,28 @@ def launch_silhouette(config, job_path=None, project_path=None):
 
 def open_in_silhouette(selection):
     try:
-        _open_in_silhouette(selection)
+        _open_in_silhouette(selection, from_mediahub=False)
     except Exception:
         _show_error(f'Open in Silhouette failed:\n{traceback.format_exc()}')
 
 
-def _open_in_silhouette(selection):
+def open_in_silhouette_mediahub(selection):
+    try:
+        _open_in_silhouette(selection, from_mediahub=True)
+    except Exception:
+        _show_error(f'Open in Silhouette failed:\n{traceback.format_exc()}')
+
+
+def _open_in_silhouette(selection, from_mediahub=False):
     config = load_config()
     if not selection:
         _show_error('Select a clip in Batch or a file in MediaHub first.')
         return
 
     item = selection[0]
+    if from_mediahub and not _is_mediahub_item(item):
+        # Belts-and-suspenders: still treat as MediaHub if it has .path
+        from_mediahub = hasattr(item, 'path')
     job = resolve_job_paths(item, config)
     if not job:
         _show_error('Could not resolve paths for the selection.')
@@ -741,6 +815,12 @@ def _open_in_silhouette(selection):
 
 
     if not job['source_path']:
+        if from_mediahub:
+            _show_error(
+                'Selected MediaHub file path does not exist on disk.\n'
+                'MediaHub Open uses the file path directly (no Batch export).'
+            )
+            return
         exported = export_clip_for_silhouette(item, job, config)
         if not exported:
             return
@@ -898,7 +978,7 @@ def get_main_menu_custom_ui_actions():
         'actions': [{
             'name': 'Setup',
             'execute': setup_window,
-            'minimumVersion': '2025',
+            'minimumVersion': '2022',
         }],
     }]
 
@@ -910,20 +990,20 @@ def get_mediahub_files_custom_ui_actions():
         'actions': [
             {
                 'name': 'Open in Silhouette',
-                'execute': open_in_silhouette,
+                'execute': open_in_silhouette_mediahub,
                 'isVisible': scope_mediahub_file,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
             {
                 'name': 'Import Results',
                 'execute': import_results,
                 'isVisible': scope_mediahub_file,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
             {
                 'name': 'Setup',
                 'execute': setup_window,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
         ],
     }]
@@ -937,23 +1017,23 @@ def get_batch_custom_ui_actions():
                 'name': 'Open in Silhouette',
                 'execute': open_in_silhouette,
                 'isVisible': scope_batch_clip,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
             {
                 'name': 'Import Results',
                 'execute': import_results,
                 'isVisible': scope_batch_clip,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
             {
                 'name': 'Setup',
                 'execute': setup_window,
-                'minimumVersion': '2025',
+                'minimumVersion': '2022',
             },
         ],
     }]
 
 
-get_mediahub_files_custom_ui_actions.minimum_version = '2025'
-get_batch_custom_ui_actions.minimum_version = '2025'
-get_main_menu_custom_ui_actions.minimum_version = '2025'
+get_mediahub_files_custom_ui_actions.minimum_version = '2022'
+get_batch_custom_ui_actions.minimum_version = '2022'
+get_main_menu_custom_ui_actions.minimum_version = '2022'
