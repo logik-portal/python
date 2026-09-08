@@ -262,7 +262,7 @@ def build_session(job):
         _using_flame_ocio = True
         _active_display   = _FLAME_OCIO_DISPLAY
         _active_view      = _FLAME_OCIO_VIEW
-        _log('Using Flame project OCIO config: %s' % _ocio_cfg_path)
+        _log('Using Flame OCIO template: %s' % _ocio_cfg_path)
     else:
         _using_flame_ocio = False
         _active_display   = 'default'
@@ -511,7 +511,7 @@ def apply_display_only(job):
         _using_flame_ocio = True
         _active_display   = _FLAME_OCIO_DISPLAY
         _active_view      = _FLAME_OCIO_VIEW
-        _log('Using Flame project OCIO config: %s' % _ocio_cfg_path)
+        _log('Using Flame OCIO template: %s' % _ocio_cfg_path)
     else:
         _using_flame_ocio = False
         _active_display   = 'default'

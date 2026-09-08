@@ -1,6 +1,6 @@
 """
 Script Name: silhouette_roundtrip
-Script Version: 1.1.0
+Script Version: 1.2.0
 Flame Version: 2025
 Written by: John Geehreng and Cursor
 Creation Date: 09.03.26
@@ -25,6 +25,7 @@ Flame Main Menu -> Silhouette RoundTrip Setup
 
 Updates:
 09.08.26 - v1.1.0 - MediaHub Fix. Fix Mac crashing.
+09.08.26 - v1.2.0 - Adjuted OCIO Config to be more flexible.
 """
 
 import datetime
@@ -172,19 +173,76 @@ def get_current_project_info():
         return 'Unknown_Project', 'No_Nickname'
 
 
-def get_flame_ocio_config_path():
-    """Return the per-project Flame OCIO config path, or empty string if not found."""
-    try:
-        proj = flame.project.current_project
-        project_folder = str(proj.project_folder).strip("'\"")
-        path = os.path.join(project_folder, 'setups', 'colour_mgmt', 'config.ocio')
+def _find_aces20_ocio_config():
+    """Locate the shipped Flame ACES 2.0 config.ocio (versioned under flame_configs)."""
+    root = '/opt/Autodesk/colour_mgmt/configs/flame_configs'
+    if not os.path.isdir(root):
+        return ''
+    # Prefer highest versioned folder that has aces2.0_config/config.ocio
+    versions = sorted(
+        [d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d))],
+        reverse=True,
+    )
+    for ver in versions:
+        path = os.path.join(root, ver, 'aces2.0_config', 'config.ocio')
         if os.path.isfile(path):
-            log(f'Flame OCIO config: {path}')
             return path
-        log(f'Flame project OCIO config not found at: {path}')
-    except Exception as exc:
-        log(f'Could not get Flame OCIO config path: {exc}')
     return ''
+
+
+def _find_rec709_ocio_config():
+    """Locate the shipped Flame Rec.709 (SynColor Legacy) config with CTFs."""
+    candidates = [
+        '/opt/Autodesk/colour_mgmt/configs/legacy_configs/syncolor_legacy_config/config.ocio',
+        '/opt/Autodesk/colour_mgmt/configs/legacy_configs/syncolor_simple_linear_workflow_config/config.ocio',
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return ''
+
+
+def _colour_space_wants_aces(colour_space):
+    """True when the clip colour_space belongs on the ACES 2.0 template."""
+    cs = str(colour_space or '').strip().lower()
+    if not cs or cs in ('unknown', 'none'):
+        return False
+    if any(k in cs for k in ('acescg', 'acescct', 'acescc', 'aces2065', 'ap0', 'ap1')):
+        return True
+    # ACES 2.0 display-referred names (not classic SynColor "Rec.709 video")
+    if 'rec.1886' in cs or 'rec 1886' in cs:
+        return True
+    if re.search(r'\baces\b', cs):
+        return True
+    return False
+
+
+def get_silhouette_ocio_config_path(colour_space=''):
+    """Return a shipped Flame OCIO template path for Silhouette (never the project copy).
+
+    Studio policy: only two templates —
+      - ACES 2.0  (ACEScg / Rec.1886 Rec.709 - Display / etc.)
+      - Rec.709   (SynColor Legacy — Rec.709 video, etc.)
+
+    Project colour_mgmt/config.ocio is NOT used: on Mac those copies often miss
+    syncolor_ctfs and crash Silhouette (missing HD-video_to_CIE-XYZ.ctf).
+    """
+    if _colour_space_wants_aces(colour_space):
+        path = _find_aces20_ocio_config()
+        label = 'ACES 2.0'
+    else:
+        path = _find_rec709_ocio_config()
+        label = 'Rec.709 (Legacy)'
+    if path:
+        log(f'Silhouette OCIO template [{label}]: {path}  (colour_space={colour_space!r})')
+        return path
+    log(f'No shipped {label} OCIO template found; Silhouette will use its default.')
+    return ''
+
+
+# Back-compat alias (unused by callers after this patch, kept for safety)
+def get_flame_ocio_config_path():
+    return get_silhouette_ocio_config_path()
 
 
 
@@ -550,7 +608,7 @@ def resolve_job_paths(item, config):
         'render_path': render_stem,
         'render_dir': render_dir,
         'colour_space': colour_space,
-        'ocio_config_path': get_flame_ocio_config_path(),
+        'ocio_config_path': get_silhouette_ocio_config_path(colour_space),
     }
 
 
@@ -651,7 +709,7 @@ def launch_silhouette(config, job_path=None, project_path=None):
     args = [binary, '-no_launcher']
     if job_path:
         env[JOB_ENV] = job_path
-        # Set OCIO to the Flame project config so Silhouette uses the same colorspaces.
+        # Set OCIO to a shipped Flame Rec.709 or ACES 2.0 template (not the project copy).
         try:
             with open(job_path) as _jf:
                 import json as _json
@@ -661,7 +719,7 @@ def launch_silhouette(config, job_path=None, project_path=None):
                 env['OCIO'] = _ocio
                 log(f'OCIO env var -> {_ocio}')
             else:
-                log('No Flame project OCIO config found; Silhouette uses its default.')
+                log('No shipped Flame OCIO template found; Silhouette uses its default.')
         except Exception as _exc:
             log(f'Could not read OCIO config path from job: {_exc}')
         # -script only runs after a project is loaded; we launch with no project,
@@ -734,16 +792,6 @@ def launch_silhouette(config, job_path=None, project_path=None):
             popen_kwargs['stdout'] = subprocess.DEVNULL
             popen_kwargs['stderr'] = subprocess.DEVNULL
         subprocess.Popen(args, **popen_kwargs)
-        if platform.system() == 'Darwin':
-            try:
-                flame.messages.show_in_dialog(
-                    title='Silhouette',
-                    message='Silhouette is starting. Use Command-H if you need to hide Flame.',
-                    type='info',
-                    buttons=['Ok'],
-                )
-            except Exception:
-                pass
         return True
     except Exception as exc:
         _show_error(f'Failed to launch Silhouette:\n{exc}')
@@ -978,7 +1026,7 @@ def get_main_menu_custom_ui_actions():
         'actions': [{
             'name': 'Setup',
             'execute': setup_window,
-            'minimumVersion': '2022',
+            'minimumVersion': '2025',
         }],
     }]
 
@@ -992,18 +1040,18 @@ def get_mediahub_files_custom_ui_actions():
                 'name': 'Open in Silhouette',
                 'execute': open_in_silhouette_mediahub,
                 'isVisible': scope_mediahub_file,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
             {
                 'name': 'Import Results',
                 'execute': import_results,
                 'isVisible': scope_mediahub_file,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
             {
                 'name': 'Setup',
                 'execute': setup_window,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
         ],
     }]
@@ -1017,23 +1065,23 @@ def get_batch_custom_ui_actions():
                 'name': 'Open in Silhouette',
                 'execute': open_in_silhouette,
                 'isVisible': scope_batch_clip,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
             {
                 'name': 'Import Results',
                 'execute': import_results,
                 'isVisible': scope_batch_clip,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
             {
                 'name': 'Setup',
                 'execute': setup_window,
-                'minimumVersion': '2022',
+                'minimumVersion': '2025',
             },
         ],
     }]
 
 
-get_mediahub_files_custom_ui_actions.minimum_version = '2022'
-get_batch_custom_ui_actions.minimum_version = '2022'
-get_main_menu_custom_ui_actions.minimum_version = '2022'
+get_mediahub_files_custom_ui_actions.minimum_version = '2025'
+get_batch_custom_ui_actions.minimum_version = '2025'
+get_main_menu_custom_ui_actions.minimum_version = '2025'
