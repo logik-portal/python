@@ -1281,13 +1281,13 @@
   },
   {
     "Script Name": "test script",
-    "Script Version": "1.0.0",
+    "Script Version": "1.0.1",
     "Flame Version": "2027",
     "Maximum Flame Version": "Latest",
     "Author": "Michael Vaglienty",
     "Creation Date": "09.10.26",
     "Update Date": "09.10.26",
-    "Description": "Script Name: Test Script\nScript Version: 1.0.0\nFlame Version: 2027\nWritten by: Michael Vaglienty\nCreation Date: 09.10.26\nUpdate Date: 09.10.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nThis is a test. This does nothing.\n\nMenus:\n\nNone\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/test_script\n\nUpdates:\n\nv1.0.0 09.10.26\n- Blah"
+    "Description": "Script Name: Test Script\nScript Version: 1.0.1\nFlame Version: 2027\nWritten by: Michael Vaglienty\nCreation Date: 09.10.26\nUpdate Date: 09.10.26\n\nLicense: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nThis is a test. This does nothing.\n\nMenus:\n\nNone\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/test_script\n\nUpdates:\n\nv1.0.1 09.10.26\n- Blah\n\nv1.0.0 09.10.26\n- Blah"
   },
   {
     "Script Name": "tidy nodes",
