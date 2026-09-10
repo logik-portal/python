@@ -1,6 +1,6 @@
 """
 Script Name: Test Script
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2027
 Written by: Michael Vaglienty
 Creation Date: 09.10.26
@@ -23,6 +23,9 @@ To install:
     Copy script into /opt/Autodesk/shared/python/test_script
 
 Updates:
+
+    v1.0.1 09.10.26
+        - Blah
 
     v1.0.0 09.10.26
         - Blah
