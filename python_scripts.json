@@ -1280,6 +1280,16 @@
     "Description": "Script Name:    Tag Tools\nScript Version: 1.5.1\nFlame Version:  2025.1\nWritten by:     Kyle Obley\nCreation Date:  03.12.26\nUpdate Date:    09.12.26\n\nLicense:        GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details\n\nScript Type:    Media Panel, Media Hub\n\nDescription:\n\nManages tags on sequences to be used later in QTs with the objective\nof being able to track original sequence name from Flame vs client name\nas well as audio.\n\nSee:\nhttps://forum.logik.tv/t/python-tag-tools-internal-name-client-name-management/\nhttps://github.com/kmatchbox/PythonHooks/tree/main/tag_tools\n\nVery much a work in progress.\n\nMenus:\n\nFlame Media Panel -> Right-click -> Tag Tools\nFlame Media Hub -> Right-click -> Tag Tools\n\nTo install:\n\nCopy script into /opt/Autodesk/shared/python/tag_tools\n\nUpdates:\n\nv1.5.1 09.12.26\n- Adjusted formating to adhear to Logik-Portal requirements.\n\nv1.5 07.01.26\n- Added ability to use the selected sequences and try to match those to QTs at a choosen location.\nIf a match is found, the tags are copied from the sequence to the QT. This allows you to bypass\nthe exporter all together so long as the sequence name matches the file name exactly.\n\nv1.4.2 07.01.26\n- Added export between marks option.\n\nv1.4.1 03.20.26\n- Fixed object has no attribute 'set_focus' error.\n\nv1.4 03.19.26\n- Updated qt_metadata library to be more strict. Files were failing to open on MacOS 26\nwithin QuickTime player & Preview.\n\nv1.3 03.16.26\n- CSV import/export support.\n- PyFlame config now working.\n\nv1.2 03.14.26\n- Added ability to rename files on the filesystem to internal/external name.\n\nv1.1 03.13.26\n- Added ability to read/set tags from imported QT.\n- Added ability to dump the contents of selected QT fiels within the media panel\nto the terminal.\n- Added UI via PyFlameUI Builder\n- Added ability to export from Flame and set the metadata afterwards. Current\nthis is only working in the foreground. Need to figure out Backburner.\n\nv1.0 03.12.26\n- Initial release."
   },
   {
+    "Script Name": "test script",
+    "Script Version": "unknown",
+    "Flame Version": "unknown",
+    "Maximum Flame Version": "Latest",
+    "Author": "unknown",
+    "Creation Date": "unknown",
+    "Update Date": "unknown",
+    "Description": "unknown"
+  },
+  {
     "Script Name": "tidy nodes",
     "Script Version": "2.0.1",
     "Flame Version": "2025",
