@@ -6,7 +6,7 @@
     "full_y_res": 2160,
     "online_x_res": 1920,
     "online_y_res": 1080,
-    "scale_calc": true,
+    "scale_calc": false,
     "xml_res": true,
     "sanatize_names": true,
     "fix_durations": true

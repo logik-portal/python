@@ -1,26 +1,55 @@
 """
 Script Name: fix premiere xmls
-Script Version: 3.0.1
-Flame Version: 2025
+Script Version: 3.5.7
+Flame Version: 2025.1
 Written by: Ted Stanley, John Geehreng, and Michael Vaglienty
 Creation Date: 03.03.21
-Update Date: 04.13.26
+Update Date: 09.13.26
 
-Custom Action Type: MediaHub
+Custom Action Type: MediaHub, MediaPanel, Timeline
 
 Description:
 
-    Fix and/or Resize Adobe Premiere XML's.
+    Fix and/or Resize Adobe Premiere XML's. Stamps each clip's media
+    resolution (WIDTHxHEIGHT) into clip comments. After conform and link,
+    Auto Scale reads that comment, compares it to the linked clip
+    resolution, strips XML Action junk, and scales the Action when they differ
+    (Fit or Scale to Frame Size). Auto Scale Undo restores the previous Action.
+    Prep fills FCP start/end -1 from neighboring transition items so dissolves
+    keep the right overlap and later clips do not slide. Speed-changed clips
+    get their source in-point from Premiere's pproTicksIn so Flame's Timewarp
+    does not start late.
 
 Menus:
 
     MediaHub -> XML Prep -> Fix Premiere XML's
+    Media Panel / Timeline -> XML Prep -> Auto Scale
+    Media Panel / Timeline -> XML Prep -> Auto Scale Undo
 
 To install:
 
     Copy script into /opt/Autodesk/shared/python/fix_premiere_xmls or put it wherever you keep your scripts
 
 Updates:
+    09.13.26 - v3.5.7 - Speed-changed in-points from pproTicksIn during prep. Removed Apply Premiere Motion as a separate step.
+    09.13.26 - v3.5.6 - Apply Premiere Motion / Timewarp (XML2Action 1.23) after import. Does not replace 3.5.4 duration math.
+    09.13.26 - v3.5.5 - Retag still clipitem + file + samplecharacteristics to the sequence rate. Leave real off-rate video out points alone.
+    09.12.26 - v3.5.4 - Hold a last fade-to-black still through the last sequence frame (88 rounded frames vs 89 to duration).
+    09.12.26 - v3.5.3 - Flame uses in/out as still length; match that to timeline frames and set clip rate to the sequence.
+    09.12.26 - v3.5.2 - Convert still/fade in/out length from clip fps to sequence fps (30fps graphic on a 24fps timeline).
+    09.12.26 - v3.5.1 - Fade to/from black keeps in/out length so stills are not stretched to a distant fade.
+    09.12.26 - v3.5.0 - Resolve dissolve/fade start/end -1 from transition items so later clips do not slide.
+    09.11.26 - v3.4.1 - Auto Scale saves originals to undo first so a later Scale to Frame Size is not applied on leftover Fit data.
+    09.11.26 - v3.4.0 - Renamed Apply Online Scale to Auto Scale. Added Auto Scale Undo.
+    09.10.26 - v3.3.5 - Apply Online Scale: Scale to Frame Size (width-only) option.
+    09.09.26 - v3.3.4 - Updated PyFlame lib to 5.5.1 (from silhouette_roundtrip).
+    09.09.26 - v3.3.3 - Label stamped res as "Offline Resolution: WIDTHxHEIGHT".
+    09.09.26 - v3.3.2 - Prepend offline res to lognote so Flame's segment comment actually carries it.
+    09.09.26 - v3.3.1 - Stamp offline res only on clipitem <comment>; leave lognote and clip comments alone.
+    09.09.26 - v3.3.0 - Apply Online Scale uses stamped clip comments; no XML file picker.
+    09.09.26 - v3.2.1 - Renamed Apply Offline Scale to Apply Online Scale.
+    09.09.26 - v3.2.0 - Apply Online Scale rewrites Motion (anchor, keys, bake) and Timewarp from the XML.
+    09.09.26 - v3.1.0 - Stamp per-clip offline WIDTHxHEIGHT comments. Apply Online Scale after link.
     04.13.26 - v3.0.1 - Fixed the issue with the scale factor calculation.
     03.01.26 - v3.0.0 - Updated for pyflame lib v5.2.3
     02.13.25 - v2.1.2  Update to latest pyflame lib and SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -47,16 +76,23 @@ Updates:
 # ---------------------------------------- #
 # Imports
 
+import math
 import os
+import re
+import sys
 import flame
+
+SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+if SCRIPT_PATH not in sys.path:
+    sys.path.insert(0, SCRIPT_PATH)
+
 from lib.pyflame_lib_fix_premiere_xmls import *
 
 #-------------------------------------#
 # Main Script
 
 SCRIPT_NAME = "Fix Premiere XMLs"
-SCRIPT_VERSION = 'v3.0.1'
-SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+SCRIPT_VERSION = 'v3.5.7'
 
 class fix_premiere_xmls():
 
@@ -172,28 +208,480 @@ class fix_premiere_xmls():
                     keyframe[1][0].text = str(newxmlhoriz)
                     keyframe[1][1].text = str(newxmlvert)
 
-    def fixduration(self):
+    def _direct_child(self, parent, tag):
+        for child in list(parent):
+            if child.tag == tag:
+                return child
+        return None
+
+    def _clipitem_comment(self, clip):
+        """Direct-child <comment> only. clip.find('comment') can hit logginginfo/comment."""
+        comment = self._direct_child(clip, 'comment')
+        if comment is None:
+            comment = ET.SubElement(clip, 'comment')
+        return comment
+
+    def _prepend_res_to_lognote(self, clip, res):
+        """Flame's segment comment is lognote + master comments + Comment A/B, not clipitem <comment>."""
+        label = f"Offline Resolution: {res}"
+        logginginfo = self._direct_child(clip, 'logginginfo')
+        if logginginfo is None:
+            logginginfo = ET.SubElement(clip, 'logginginfo')
+        lognote = self._direct_child(logginginfo, 'lognote')
+        if lognote is None:
+            lognote = ET.SubElement(logginginfo, 'lognote')
+        existing = (lognote.text or "").strip()
+        if re.search(r'Offline Resolution:\s*\d+\s*x\s*\d+', existing, re.IGNORECASE):
+            return
+        if existing:
+            lognote.text = f"{label} | {existing}"
+        else:
+            lognote.text = label
+
+    def stamp_offline_comments(self):
+        """Write each clipitem's media size as 'Offline Resolution: WIDTHxHEIGHT'.
+
+        clipitem <comment> is set for the XML. The same label is prepended to
+        logginginfo/lognote once, because that is what Flame puts on segment.comment.
+        Camera metadata in master comments / Comment A/B is left alone.
+        """
         clips = self.root.findall(".//sequence/media/video/*/clipitem")
-        status = 1
+        stamped = 0
+        print("Stamping offline resolution comments...")
+        for clip in clips:
+            file = clip.find('file')
+            if file is None:
+                continue
+            try:
+                search = ".//*[@id='{}']".format(list((file.attrib).items())[0][1])
+            except (IndexError, KeyError):
+                continue
+            master = self.root.find(search)
+            if master is None:
+                continue
+            try:
+                cliphoriz = master.find(".//media/video/samplecharacteristics/width").text
+                clipvert = master.find(".//media/video/samplecharacteristics/height").text
+                res = f"{int(cliphoriz)}x{int(clipvert)}"
+            except (AttributeError, TypeError, ValueError):
+                continue
+
+            self._clipitem_comment(clip).text = f"Offline Resolution: {res}"
+            self._prepend_res_to_lognote(clip, res)
+
+            stamped += 1
+            name = clip.find('name')
+            clip_name = name.text if name is not None else "unnamed"
+            print(f"  {clip_name}: {res}")
+
+        print(f"Stamped offline res on {stamped} clip(s).")
+
+    def _element_int(self, parent, tag):
+        element = self._direct_child(parent, tag)
+        if element is None or element.text is None:
+            return None
+        try:
+            return int(element.text)
+        except (TypeError, ValueError):
+            try:
+                return int(round(float(element.text)))
+            except (TypeError, ValueError):
+                return None
+
+    def _element_number(self, parent, tag):
+        element = self._direct_child(parent, tag)
+        if element is None or element.text is None:
+            return None
+        try:
+            return float(element.text)
+        except (TypeError, ValueError):
+            return None
+
+    def _format_frame_number(self, value):
+        if abs(value - round(value)) < 1e-6:
+            return str(int(round(value)))
+        return ("%.10f" % value).rstrip('0').rstrip('.')
+
+    def _set_element_int(self, parent, tag, value):
+        element = self._direct_child(parent, tag)
+        if element is None:
+            return False
+        element.text = str(int(value))
+        return True
+
+    def _set_element_number(self, parent, tag, value):
+        element = self._direct_child(parent, tag)
+        if element is None:
+            return False
+        element.text = self._format_frame_number(value)
+        return True
+
+    def _sequence_element(self):
+        if self.root.tag == 'sequence':
+            return self.root
+        return self.root.find('sequence')
+
+    def _fps(self, node):
+        if node is None:
+            return None
+        rate = self._direct_child(node, 'rate')
+        if rate is None:
+            return None
+        timebase = self._element_int(rate, 'timebase')
+        if not timebase:
+            return None
+        ntsc = self._direct_child(rate, 'ntsc')
+        if ntsc is not None and (ntsc.text or '').strip().upper() == 'TRUE':
+            return timebase * 1000.0 / 1001.0
+        return float(timebase)
+
+    def _sequence_duration(self):
+        seq = self._sequence_element()
+        return self._element_int(seq, 'duration') if seq is not None else None
+
+    def _sequence_fps(self):
+        return self._fps(self._sequence_element())
+
+    def _clip_fps(self, clip):
+        return self._fps(clip) or self._sequence_fps()
+
+    def _rates_match(self, clip) -> bool:
+        clip_fps = self._clip_fps(clip)
+        seq_fps = self._sequence_fps()
+        if clip_fps is None or seq_fps is None:
+            return True
+        return abs(clip_fps - seq_fps) < 0.05
+
+    def _to_sequence_frames(self, frames, clip) -> int:
+        clip_fps = self._clip_fps(clip)
+        seq_fps = self._sequence_fps()
+        if frames is None or clip_fps is None or seq_fps is None:
+            return frames
+        if abs(clip_fps - seq_fps) < 0.05:
+            return frames
+        return int(round(frames * seq_fps / clip_fps))
+
+    def _hold_through_sequence_end(self, new_end):
+        """FCP end is exclusive. 110×24/30 rounds to 88, one frame short of sequence duration."""
+        seq_dur = self._sequence_duration()
+        if seq_dur is None or new_end is None:
+            return new_end
+        if new_end == seq_dur - 1:
+            return seq_dur
+        return new_end
+
+    def _copy_sequence_rate(self, node):
+        seq = self._sequence_element()
+        seq_rate = self._direct_child(seq, 'rate') if seq is not None else None
+        if seq_rate is None or node is None:
+            return
+        node_rate = self._direct_child(node, 'rate')
+        if node_rate is None:
+            node_rate = ET.SubElement(node, 'rate')
+        for tag in ('timebase', 'ntsc'):
+            src = self._direct_child(seq_rate, tag)
+            if src is None:
+                continue
+            dst = self._direct_child(node_rate, tag)
+            if dst is None:
+                dst = ET.SubElement(node_rate, tag)
+            dst.text = src.text
+
+    STILL_EXTS = (
+        '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.psd', '.tga',
+        '.bmp', '.gif', '.exr', '.dpx', '.ai', '.eps', '.webp', '.heic',
+    )
+    PPRO_TICKS_PER_SECOND = 254016000000
+
+    def _file_element(self, clip):
+        file_el = self._direct_child(clip, 'file')
+        if file_el is None:
+            return None
+        file_id = file_el.get('id')
+        if file_id:
+            found = self.root.find(".//*[@id='%s']" % file_id)
+            if found is not None:
+                return found
+        return file_el
+
+    def _is_still(self, file_el):
+        if file_el is None:
+            return False
+        pathurl = self._direct_child(file_el, 'pathurl')
+        url = (pathurl.text or '') if pathurl is not None else ''
+        if not url:
+            name = self._direct_child(file_el, 'name')
+            url = (name.text or '') if name is not None else ''
+        url = url.lower()
+        if '?' in url:
+            url = url.split('?', 1)[0]
+        return url.endswith(self.STILL_EXTS)
+
+    def _remap_still_keyframes(self, clip, src_fps, seq_fps):
+        if not src_fps or not seq_fps or abs(src_fps - seq_fps) < 0.05:
+            return 0
+        clip_in = self._element_int(clip, 'in')
+        if clip_in is None:
+            return 0
+        origin = clip_in
+        ticks = self._direct_child(clip, 'pproTicksIn')
+        if ticks is not None and ticks.text and ticks.text.lstrip('-').isdigit():
+            tick_origin = math.floor(
+                int(ticks.text) / float(self.PPRO_TICKS_PER_SECOND) * src_fps + 1e-9
+            )
+            if tick_origin in (clip_in - 1, clip_in):
+                origin = tick_origin
+        ratio = seq_fps / src_fps
+        moved = 0
+        for keyframe in clip.iter('keyframe'):
+            when = self._direct_child(keyframe, 'when')
+            if when is None or not when.text:
+                continue
+            try:
+                old = float(when.text)
+            except (TypeError, ValueError):
+                continue
+            new = clip_in + int(round((old - origin) * ratio))
+            if new != int(round(old)):
+                moved += 1
+            when.text = str(new)
+        return moved
+
+    def retag_still_rates(self):
+        """Pull still clipitem/file rates to the sequence. Do not retag real off-rate video."""
+        retagged = 0
+        keys_moved = 0
+        print("Retagging still frame rates...")
+        seq_fps = self._sequence_fps()
+        for track in self._iter_media_tracks():
+            for clip in list(track):
+                if clip.tag != 'clipitem':
+                    continue
+                file_el = self._file_element(clip)
+                if not self._is_still(file_el):
+                    continue
+                src_fps = self._fps(clip) or self._fps(file_el)
+                keys_moved += self._remap_still_keyframes(clip, src_fps, seq_fps)
+                self._copy_sequence_rate(clip)
+                self._copy_sequence_rate(file_el)
+                if file_el is not None:
+                    sample = file_el.find('media/video/samplecharacteristics')
+                    if sample is not None:
+                        self._copy_sequence_rate(sample)
+                    timecode = self._direct_child(file_el, 'timecode')
+                    if timecode is not None:
+                        self._copy_sequence_rate(timecode)
+                start = self._element_int(clip, 'start')
+                end = self._element_int(clip, 'end')
+                clip_in = self._element_int(clip, 'in')
+                if None not in (start, end, clip_in) and start >= 0 and end >= 0:
+                    self._set_element_int(clip, 'out', clip_in + (end - start))
+                retagged += 1
+        print(f"Retagged {retagged} still(s); remapped {keys_moved} keyframe(s).")
+
+    def _effect_id(self, effect):
+        element = self._direct_child(effect, 'effectid')
+        if element is None or element.text is None:
+            return ''
+        return element.text.strip().lower()
+
+    def _param_value(self, effect, parameter_id):
+        for parameter in effect.findall('parameter'):
+            pid = self._direct_child(parameter, 'parameterid')
+            if pid is None or (pid.text or '').strip().lower() != parameter_id:
+                continue
+            value = self._direct_child(parameter, 'value')
+            if value is None or value.text is None:
+                return None
+            return value.text.strip()
+        return None
+
+    def _time_remap_info(self, clip):
+        for filt in clip.findall('filter'):
+            effect = self._direct_child(filt, 'effect')
+            if effect is None or self._effect_id(effect) != 'timeremap':
+                continue
+            speed_text = self._param_value(effect, 'speed')
+            if speed_text is None:
+                return None
+            try:
+                speed = float(speed_text)
+            except (TypeError, ValueError):
+                return None
+            variable = (self._param_value(effect, 'variablespeed') or '0').upper() in ('1', 'TRUE')
+            reverse = (self._param_value(effect, 'reverse') or 'FALSE').upper() in ('1', 'TRUE')
+            return speed, variable, reverse
+        return None
+
+    def fix_timewarp_inpoints(self):
+        """Set speed-changed <in> from pproTicksIn so Flame's in * speed matches Premiere.
+
+        Premiere stores the true source position in ticks and writes <in> rounded up.
+        Flame uses in * (speed/100), so it starts late by up to speed/100 frames.
+        Variable-speed and reverse Time Remap are left alone.
+        """
+        seq_fps = self._sequence_fps()
+        if not seq_fps:
+            print("Timewarp in-points: no sequence fps, skipped.")
+            return
+        rewritten = 0
+        skipped = 0
+        print("Fixing Timewarp in-points...")
+        for track in self.root.findall('.//media/video/track'):
+            for clip in list(track):
+                if clip.tag != 'clipitem':
+                    continue
+                info = self._time_remap_info(clip)
+                if info is None:
+                    continue
+                speed, variable, reverse = info
+                if abs(speed) < 1e-9 or abs(speed - 100.0) < 1e-9:
+                    continue
+                name = self._direct_child(clip, 'name')
+                clip_name = name.text if name is not None and name.text else 'unnamed'
+                if variable or reverse:
+                    skipped += 1
+                    why = 'variable-speed' if variable else 'reverse'
+                    print(f"  skip {clip_name}: {why} Time Remap")
+                    continue
+                ticks = self._element_int(clip, 'pproTicksIn')
+                clip_in = self._element_number(clip, 'in')
+                if ticks is None or clip_in is None:
+                    skipped += 1
+                    continue
+                ratio = speed / 100.0
+                truth = ticks / float(self.PPRO_TICKS_PER_SECOND) * seq_fps
+                new_in = truth / ratio
+                if abs(new_in - clip_in) < 1e-6:
+                    continue
+                if not self._set_element_number(clip, 'in', new_in):
+                    continue
+                rewritten += 1
+                print(
+                    f"  {clip_name}: in {self._format_frame_number(clip_in)} -> "
+                    f"{self._format_frame_number(new_in)} ({speed:g}%, "
+                    f"was {clip_in * ratio:.3f} source, Premiere {truth:.3f})"
+                )
+        print(f"Rewrote {rewritten} speed-changed in-point(s).")
+        if skipped:
+            print(f"Left {skipped} Time Remap clip(s) untouched.")
+
+    def _iter_media_tracks(self):
+        for path in ('.//media/video/track', './/media/audio/track'):
+            yield from self.root.findall(path)
+
+    def _track_edit_items(self, track):
+        return [child for child in list(track) if child.tag in ('clipitem', 'transitionitem')]
+
+    def _alignment(self, transition):
+        element = self._direct_child(transition, 'alignment')
+        if element is None or element.text is None:
+            return ''
+        return element.text.strip().lower()
+
+    def _source_duration(self, clip):
+        clip_in = self._element_int(clip, 'in')
+        clip_out = self._element_int(clip, 'out')
+        if clip_in is None or clip_out is None:
+            return None
+        return clip_out - clip_in
+
+    def _snap_fade(self, transition, clip_edge, alignment, clip=None):
+        fade_start = self._element_int(transition, 'start')
+        fade_end = self._element_int(transition, 'end')
+        if fade_start is None or fade_end is None:
+            return
+        fade = max(0, fade_end - fade_start)
+        fade = self._to_sequence_frames(fade, transition if transition is not None else clip)
+        if alignment == 'end-black':
+            self._set_element_int(transition, 'end', clip_edge)
+            self._set_element_int(transition, 'start', clip_edge - fade)
+        elif alignment == 'start-black':
+            self._set_element_int(transition, 'start', clip_edge)
+            self._set_element_int(transition, 'end', clip_edge + fade)
+        if not self._rates_match(transition):
+            self._copy_sequence_rate(transition)
+
+    def resolve_transition_times(self):
+        """Replace FCP start/end -1 using neighboring transitionitem times.
+
+        Clip-to-clip dissolves use the transition range so the shots overlap.
+        Fade to/from black uses the clip's in/out length and parks the fade on
+        the head or tail. Premiere stills often have a fade far from in/out;
+        stretching the still to that fade is what made graphics run long.
+        """
+        filled_start = 0
+        filled_end = 0
+        skipped = 0
+        print("Resolving transition start/end...")
+        for track in self._iter_media_tracks():
+            items = self._track_edit_items(track)
+            for index, item in enumerate(items):
+                if item.tag != 'clipitem':
+                    continue
+                start = self._element_int(item, 'start')
+                end = self._element_int(item, 'end')
+                source_duration = self._source_duration(item)
+                if start is not None and start < 0:
+                    previous_item = items[index - 1] if index > 0 else None
+                    if previous_item is not None and previous_item.tag == 'transitionitem':
+                        alignment = self._alignment(previous_item)
+                        if alignment == 'start-black' and end is not None and source_duration is not None:
+                            new_start = end - self._to_sequence_frames(source_duration, item)
+                            if self._set_element_int(item, 'start', new_start):
+                                filled_start += 1
+                                self._snap_fade(previous_item, new_start, alignment, item)
+                        else:
+                            transition_start = self._element_int(previous_item, 'start')
+                            if transition_start is not None and self._set_element_int(item, 'start', transition_start):
+                                filled_start += 1
+                    else:
+                        skipped += 1
+                if end is not None and end < 0:
+                    next_item = items[index + 1] if index + 1 < len(items) else None
+                    if next_item is not None and next_item.tag == 'transitionitem':
+                        alignment = self._alignment(next_item)
+                        start = self._element_int(item, 'start')
+                        if alignment == 'end-black' and start is not None and source_duration is not None:
+                            new_end = self._hold_through_sequence_end(
+                                start + self._to_sequence_frames(source_duration, item)
+                            )
+                            if self._set_element_int(item, 'end', new_end):
+                                filled_end += 1
+                                self._snap_fade(next_item, new_end, alignment, item)
+                        else:
+                            transition_end = self._element_int(next_item, 'end')
+                            if transition_end is not None and self._set_element_int(item, 'end', transition_end):
+                                filled_end += 1
+                    else:
+                        skipped += 1
+        print(f"Filled {filled_start} start(s) and {filled_end} end(s) from transitions.")
+        if skipped:
+            print(f"Left {skipped} start/end -1 value(s) with no adjacent transition.")
+
+    def fixduration(self):
+        clips = []
+        for track in self._iter_media_tracks():
+            clips.extend([child for child in list(track) if child.tag == 'clipitem'])
+        rewritten = 0
         print("Fixing Durations...")
         for clip in clips:
-            # clipname = clip.find('name').text
-            # print("Clip " + str(status) + ": " + clipname)
+            clipstart = self._element_int(clip, 'start')
+            clipend = self._element_int(clip, 'end')
+            clipin = self._element_number(clip, 'in')
+            clipoutxml = self._element_number(clip, 'out')
+            if None in (clipstart, clipend, clipin, clipoutxml):
+                continue
 
-            status += 1
-
-            clipstart = int(clip.find('start').text)
-            clipend = int(clip.find('end').text)
-            clipin = int(clip.find('in').text)
-            clipoutxml = int(clip.find('out').text)
-
-            if (clipend - clipstart) == (clipoutxml - clipin): continue
-            if (clipstart < 0) or (clipend < 0): continue
-
-            # print("[Fixing Clip Out]")
-
-            clipout = clip.find('out')
-            clipout.text = str(clipin + (clipend - clipstart))
+            if (clipstart < 0) or (clipend < 0):
+                continue
+            if not self._rates_match(clip):
+                continue
+            timeline_len = clipend - clipstart
+            if abs((clipoutxml - clipin) - timeline_len) > 1e-6:
+                if self._set_element_number(clip, 'out', clipin + timeline_len):
+                    rewritten += 1
+        print(f"Rewrote {rewritten} clip out point(s).")
 
     def fixdurmismatch(self):
         clips = self.root.findall(".//sequence/media/video/*/clipitem")
@@ -205,10 +693,11 @@ class fix_premiere_xmls():
             # print("Clip " + str(status) + ": " + clipname)
             status += 1
 
-            clipinint = int(clip.find('in').text)
-            clipoutint = int(clip.find('out').text)
-            if (clipoutint - clipinint) > clipoutint:
-                clipoutint = (clipoutint - clipinint)
+            clipinval = self._element_number(clip, 'in')
+            clipoutval = self._element_number(clip, 'out')
+            if clipinval is None or clipoutval is None:
+                continue
+            clipoutint = int(math.ceil(clipoutval - 1e-9))
             clipduration = clip.find('file/duration')
 
             if clipduration is None:
@@ -403,6 +892,10 @@ class fix_premiere_xmls():
                         print(f"Error: Could not sanatize '{seq_name}' sequence names.")
                         pass
 
+            self.resolve_transition_times()
+            self.retag_still_rates()
+            self.fix_timewarp_inpoints()
+
             #Fix Stills Duration
             if self.fix_durations_btn.checked:
                 #This function fixes any difference between the clip 'start to end' duration vs. the clip 'in to out' duration
@@ -411,6 +904,8 @@ class fix_premiere_xmls():
                 self.fixdurmismatch()
             else:
                 print('Fix Durations was not checked')
+
+            self.stamp_offline_comments()
             
             # Kick out the XMLs
             outname = f'{outname}.xml'
@@ -595,7 +1090,7 @@ def get_mediahub_files_custom_ui_actions():
                     'name': "Fix Premiere XML's",
                     'execute': fix_premiere_xmls,
                     'isVisible': scope_all_xmls,
-                    'minimumVersion': '2023.2'
+                    'minimumVersion': '2025.1'
                 }
             ]
         }
