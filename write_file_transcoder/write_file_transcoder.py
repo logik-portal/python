@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: Write File Transcoder
-Script Version: 1.0.0
+Script Version: 1.1.0
 Flame Version: 2026.2
 Written by: Huseyin Pasaoglu
 Creation Date: 09.15.26
-Update Date: 09.16.26
+Update Date: 10.09.26
 
 Description:
 
@@ -43,6 +43,11 @@ Description:
     Presets are exportable, so a look can be handed to another artist without
     carrying machine settings such as the ffmpeg path.
 
+    Only the source formats ticked in Settings, General tab start a review
+    automatically; the manual action ignores that list. Sources are also checked
+    for an EXR compression ffmpeg decodes badly (PIZ), which would otherwise
+    show up as unexplained horizontal bands.
+
     Installation: copy this file to /opt/Autodesk/shared/python/ and refresh
     python hooks, or restart Flame. Nothing else to install.
 
@@ -67,6 +72,21 @@ Menus:
     Right-click a Write File node in Batch -> Write File Transcoder -> Create review...
 
 Updates:
+
+    v1.1.0 10.09.26
+    - Added a format filter: the automatic trigger now only fires for the
+      source formats ticked in Settings, General tab. OpenEXR, DPX and TIFF
+      are on by default; PNG and JPEG are off. Right-click -> Create review...
+      still works on anything.
+    - Horizontal black bands in the output are now explained instead of shipped
+      silently. ffmpeg's EXR decoder fails on dense PIZ blocks, leaves those
+      32-line blocks black and still exits 0. The source compression is checked
+      up front and the job says so, naming the fix: set the Write File node to
+      ZIP. The EXR files themselves are fine - OpenImageIO and Flame read them
+      without trouble.
+    - The decoder's stderr is captured and its exit code checked. Any decoder
+      complaint is logged and flagged on the finished job, so a damaged render
+      can no longer be reported as a success.
 
     v1.0.0 09.16.26
     - Initial release.
@@ -104,7 +124,7 @@ except Exception:                      # must stay importable outside Flame
 
 
 SCRIPT_NAME = "Write File Transcoder"
-SCRIPT_VERSION = "1.0.0"
+SCRIPT_VERSION = "1.1.0"
 VERSION = SCRIPT_VERSION          # kept for the settings window title
 
 # Credit shown in the settings window footer.
@@ -177,6 +197,7 @@ preview = _self
 queue = _self
 reformat = _self
 sequence = _self
+sequence_module = _self
 settings = _self
 settings_window = _self
 wc_colour = _self
@@ -497,6 +518,76 @@ def scan_for_job(resolved_path: str) -> Sequence:
     # Frames outside the range reported by the hook are ignored.
     seq.frames = sorted(have & expected) or seq.frames
     return seq
+
+
+# ---------------------------------------------------------------------------
+#  EXR compression
+# ---------------------------------------------------------------------------
+# ffmpeg's EXR decoder gives up on dense PIZ blocks ("decode_block() failed"),
+# still exits 0, and leaves those 32-line blocks black. The result is horizontal
+# black bands through the picture. Measured on real 4096x3024 Flame renders: the
+# blocks it fails on are the LARGEST ones in the file, so it is a decoder limit
+# with high-entropy data, not damage - the same files read back perfectly in
+# OpenImageIO and in Flame.
+#
+# Nothing can be done about it inside this tool, so the source is inspected and
+# the user is told to set the Write File node to ZIP.
+EXR_COMPRESSION = {0: "NONE", 1: "RLE", 2: "ZIPS", 3: "ZIP16", 4: "PIZ",
+                   5: "PXR24", 6: "B44", 7: "B44A", 8: "DWAA", 9: "DWAB"}
+
+# Compressions ffmpeg decodes reliably.
+EXR_SAFE_COMPRESSION = {"NONE", "RLE", "ZIPS", "ZIP16"}
+
+EXR_MAGIC = b"\x76\x2f\x31\x01"
+
+
+def exr_compression(path: str) -> str:
+    """Read the compression out of an EXR header. "" when it cannot be read.
+
+    A small hand-rolled parse: the header is a list of
+    name\\0type\\0<int32 size><value> entries, and only one attribute is needed.
+    """
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(8192)
+    except OSError:
+        return ""
+    if not head.startswith(EXR_MAGIC):
+        return ""
+
+    i = 8
+    try:
+        while i < len(head):
+            end = head.index(b"\x00", i)
+            name = head[i:end].decode("latin1")
+            i = end + 1
+            if not name:
+                break
+            end = head.index(b"\x00", i)
+            i = end + 1                                  # type, not needed
+            size = int.from_bytes(head[i:i + 4], "little", signed=True)
+            i += 4
+            value = head[i:i + size]
+            i += size
+            if name == "compression" and value:
+                return EXR_COMPRESSION.get(value[0], str(value[0]))
+    except (ValueError, IndexError):
+        return ""
+    return ""
+
+
+def compression_warning(path: str) -> str:
+    """A warning for the log when the source uses a compression ffmpeg mishandles."""
+    if not path.lower().endswith(".exr"):
+        return ""
+    found = exr_compression(path)
+    if not found or found in EXR_SAFE_COMPRESSION:
+        return ""
+    return ("This sequence is %s compressed. ffmpeg's EXR decoder fails on dense "
+            "%s blocks and leaves them black, which shows up as horizontal bands "
+            "through the picture. The files themselves are fine. Set the Write "
+            "File node's compression to ZIP and re-render to avoid it."
+            % (found, found))
 
 # ==========================================================================
 #  output
@@ -1458,6 +1549,26 @@ class Preset:
             raise ValueError("CRF must be between 1 and 51, got: %r" % self.crf)
 
 
+# Source formats the automatic trigger will act on. Flame renders plenty of
+# things that are not worth a review copy, so this is a deliberate opt-in list.
+# Scene-referred formats are on by default; stills and compressed formats are
+# not. The manual "Create review..." action ignores this list.
+TRIGGER_FORMATS = [("exr", "OpenEXR", True), ("dpx", "DPX", True),
+                   ("tif", "TIFF", True), ("png", "PNG", False),
+                   ("jpg", "JPEG", False)]
+
+DEFAULT_TRIGGER_FORMATS = [ext for ext, _label, on in TRIGGER_FORMATS if on]
+
+# Extensions that mean the same format.
+FORMAT_ALIASES = {"tiff": "tif", "jpeg": "jpg", "exrs": "exr"}
+
+
+def normalise_format(extension: str) -> str:
+    """'.TIFF' -> 'tif'. Returns '' for anything unrecognised."""
+    ext = (extension or "").lower().lstrip(".")
+    return FORMAT_ALIASES.get(ext, ext)
+
+
 @dataclass
 class MachineSettings:
     """Machine-specific settings, NEVER exported with a preset."""
@@ -1467,6 +1578,18 @@ class MachineSettings:
     default_preset: str = "Review HD"
     auto_trigger: bool = True
     ocio_threads: int = 0                 # 0 -> min(16, cpu count)
+    trigger_formats: list = field(
+        default_factory=lambda: list(DEFAULT_TRIGGER_FORMATS))
+
+    def triggers_on(self, path_or_extension: str) -> bool:
+        """Should a finished render of this file start a review?"""
+        import os as _os
+        text = path_or_extension or ""
+        ext = _os.path.splitext(text)[1] if "." in _os.path.basename(text) else text
+        ext = normalise_format(ext)
+        if not ext:
+            return False
+        return ext in {normalise_format(f) for f in (self.trigger_formats or [])}
 
 # ==========================================================================
 #  encoder
@@ -1845,6 +1968,7 @@ class Result:
     canvas: tuple
     source: tuple
     path: str = ""
+    warnings: list = field(default_factory=list)
 
     @property
     def fps(self) -> float:
@@ -1890,13 +2014,22 @@ def contiguous_runs(numbers: list) -> list:
 
 
 class _Decoders:
-    """Walks the contiguous runs, spawning one decoder per run."""
+    """Walks the contiguous runs, spawning one decoder per run.
+
+    The decoder's stderr is captured and its exit code checked. Without that a
+    decode problem is invisible: ffmpeg writes a complaint per frame, still
+    produces the expected number of bytes, exits however it likes, and the job
+    is reported as a success while the picture is wrong.
+    """
 
     def __init__(self, sequence: Sequence, ffmpeg: str):
         self.sequence = sequence
         self.ffmpeg = ffmpeg
+        self.warnings = []
         self._runs = iter(contiguous_runs(sequence.frames))
         self._current = None
+        self._errors = None
+        self._drainer = None
         self._left = 0
 
     def read_into(self, buffer: frames.FrameBuffer) -> None:
@@ -1906,28 +2039,52 @@ class _Decoders:
             self._current = subprocess.Popen(
                 encoder.decode_run_command(self.sequence.ffmpeg_pattern,
                                            start, count, self.ffmpeg),
-                stdout=subprocess.PIPE)
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._errors = []
+            # Drained on a thread: a decoder that complains about every frame
+            # would otherwise fill the stderr pipe and stall.
+            self._drainer = threading.Thread(
+                target=lambda proc=self._current, sink=self._errors:
+                    sink.append((proc.stderr.read() or b"").decode("utf-8", "replace")),
+                daemon=True)
+            self._drainer.start()
             self._left = count
 
         read = buffer.read_from(self._current.stdout)
         if read != buffer.nbytes:
-            raise PipelineError("A frame arrived short (%d/%d bytes). The file "
-                                "may be corrupt." % (read, buffer.nbytes))
+            self._close()
+            raise PipelineError(
+                "A frame arrived short (%d/%d bytes). The file may be corrupt.%s"
+                % (read, buffer.nbytes, self._last_error_text()))
         self._left -= 1
+
+    def _last_error_text(self) -> str:
+        text = "".join(self._errors or []).strip()
+        return "\n\nffmpeg said:\n%s" % text if text else ""
 
     def _close(self) -> None:
         if self._current is None:
             return
+        proc, errors, drainer = self._current, self._errors, self._drainer
+        self._current = None
+
         try:
-            self._current.stdout.close()
+            proc.stdout.close()
         except OSError:
             pass
         try:
-            self._current.wait(timeout=5)
+            proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            self._current.kill()
-            self._current.wait()
-        self._current = None
+            proc.kill()
+            proc.wait()
+        if drainer is not None:
+            drainer.join(timeout=5)
+
+        text = "".join(errors or []).strip()
+        if text:
+            # With -loglevel error any output at all means a real problem, even
+            # when ffmpeg goes on to produce frames.
+            self.warnings.append(text)
 
     def close(self) -> None:
         self._close()
@@ -1964,6 +2121,13 @@ def run(job: Job, machine: MachineSettings = None, progress=None) -> Result:
         final_path, _ = output.prepare(preset.output_template, seq.directory,
                                        seq.clip_name, preset.extension)
     partial = output.partial_path(final_path)
+
+    # Warn before any work: a PIZ source will come out banded and there is
+    # nothing the pipeline can do about it.
+    early_warnings = []
+    compression_note = sequence_module.compression_warning(seq.path_for(seq.first))
+    if compression_note:
+        early_warnings.append(compression_note)
 
     overlays = OverlayStream(preset.burnin, job.context, seq.missing)
     missing = set(seq.missing)
@@ -2072,7 +2236,8 @@ def run(job: Job, machine: MachineSettings = None, progress=None) -> Result:
     return Result(output_path=written, frames=done, missing=sorted(missing),
                   elapsed=time.time() - t0, grey_measurement=grey,
                   canvas=(cw, ch), source=(src_w, src_h),
-                  path=frames.describe_path())
+                  path=frames.describe_path(),
+                  warnings=early_warnings + list(decoders.warnings))
 
 # ==========================================================================
 #  queue
@@ -2226,7 +2391,16 @@ class JobQueue:
                 entry.result.frames, entry.result.elapsed)
             if missing:
                 message += "  WARNING: %d missing frames replaced with slates" % missing
-            self.notify("warning" if missing else "success", message)
+
+            decode_warnings = getattr(entry.result, "warnings", [])
+            if decode_warnings:
+                message += ("  WARNING: the decoder reported problems, the "
+                            "picture may be wrong")
+            self.notify("warning" if (missing or decode_warnings) else "success",
+                        message)
+            for text in decode_warnings:
+                self.notify("error", "Decoder output for %s:\n%s"
+                            % (entry.label, text))
         except Exception as exc:                          # noqa: BLE001
             if entry.job.cancelled.is_set():
                 entry.status = CANCELLED
@@ -3466,6 +3640,19 @@ class SettingsWindow(QtWidgets.QWidget):
         self.auto_check.toggled.connect(lambda _: self._commit_general())
         form.addRow("", self.auto_check)
 
+        # Which source formats the automatic trigger acts on. Flame renders
+        # plenty that is not worth a review copy.
+        formats = QtWidgets.QWidget()
+        grid = QtWidgets.QGridLayout(formats)
+        grid.setContentsMargins(0, 0, 0, 0)
+        self.format_checks = {}
+        for index, (ext, label, _default) in enumerate(TRIGGER_FORMATS):
+            box = QtWidgets.QCheckBox(label)
+            box.toggled.connect(lambda _: self._commit_general())
+            self.format_checks[ext] = box
+            grid.addWidget(box, index // 3, index % 3)
+        form.addRow("Convert these formats", formats)
+
         self.ffmpeg_edit = self._line(self._commit_general)
         self.ffprobe_edit = self._line(self._commit_general)
         form.addRow("ffmpeg path", self.ffmpeg_edit)
@@ -3488,8 +3675,10 @@ class SettingsWindow(QtWidgets.QWidget):
         self.general_status = self._note("")
         form.addRow("Status", self.general_status)
         form.addRow(self._note(
-            "The settings on this tab are machine-specific and are NEVER included "
-            "in a preset export."))
+            "Only renders in the ticked formats start a review automatically. "
+            "Right-click -> Create review... always runs, whatever the format.\n"
+            "The settings on this tab are machine-specific and are NEVER "
+            "included in a preset export."))
         return page
 
     def _commit_general(self):
@@ -3501,6 +3690,8 @@ class SettingsWindow(QtWidgets.QWidget):
         machine.ffprobe = self.ffprobe_edit.text().strip() or "ffprobe"
         machine.log_dir = self.logdir_edit.text().strip() or wc_platform.default_log_dir()
         machine.ocio_threads = self.threads_spin.value()
+        machine.trigger_formats = [ext for ext, box in self.format_checks.items()
+                                   if box.isChecked()]
         self._touch()
 
     def _find_tools(self):
@@ -3525,6 +3716,9 @@ class SettingsWindow(QtWidgets.QWidget):
         self.ffprobe_edit.setText(machine.ffprobe)
         self.logdir_edit.setText(machine.log_dir)
         self.threads_spin.setValue(machine.ocio_threads)
+        chosen = {str(f).lower() for f in (machine.trigger_formats or [])}
+        for ext, box in self.format_checks.items():
+            box.setChecked(ext in chosen)
         self._loading = False
         self._load_general_status()
 
@@ -3733,6 +3927,14 @@ def batch_export_end(info, userData, *args, **kwargs):
     try:
         eng = engine()
         if not eng.settings.machine.auto_trigger:
+            return
+
+        resolved = info.get("resolvedPath") or ""
+        if not eng.settings.machine.triggers_on(resolved):
+            # Not every render deserves a review copy; the General tab decides
+            # which source formats count. Manual "Create review..." ignores this.
+            eng.notifier("debug", "Skipped, format not selected for automatic "
+                                  "conversion: %s" % os.path.basename(resolved))
             return
 
         if is_aborted(info):

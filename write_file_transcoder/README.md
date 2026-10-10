@@ -1,10 +1,10 @@
 # Write File Transcoder
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.1.0  
 **Flame Version:** 2026.2  
 **Written by:** Huseyin Pasaoglu  
 **Creation Date:** 09.15.26  
-**Update Date:** 09.16.26  
+**Update Date:** 10.09.26  
 
 ## Description
 
@@ -42,6 +42,11 @@ overwritten - a colliding name gets _repeat, _repeat2 and so on.
 Presets are exportable, so a look can be handed to another artist without
 carrying machine settings such as the ffmpeg path.
 <br><br>
+Only the source formats ticked in Settings, General tab start a review
+automatically; the manual action ignores that list. Sources are also checked
+for an EXR compression ffmpeg decodes badly (PIZ), which would otherwise
+show up as unexplained horizontal bands.
+<br><br>
 Installation: copy this file to /opt/Autodesk/shared/python/ and refresh
 python hooks, or restart Flame. Nothing else to install.
 <br><br>
@@ -66,6 +71,22 @@ yet tested there.
 - Right-click a Write File node in Batch → Write File Transcoder → Create review...
 
 ## Updates
+
+### v1.1.0 [10.09.26]
+- Added a format filter: the automatic trigger now only fires for the
+- source formats ticked in Settings, General tab. OpenEXR, DPX and TIFF
+- are on by default; PNG and JPEG are off. Right-click -> Create review...
+- still works on anything.
+- Horizontal black bands in the output are now explained instead of shipped
+- silently. ffmpeg's EXR decoder fails on dense PIZ blocks, leaves those
+- 32-line blocks black and still exits 0. The source compression is checked
+- up front and the job says so, naming the fix: set the Write File node to
+- ZIP. The EXR files themselves are fine - OpenImageIO and Flame read them
+- without trouble.
+- The decoder's stderr is captured and its exit code checked. Any decoder
+- complaint is logged and flagged on the finished job, so a damaged render
+- can no longer be reported as a success.
+<br>
 
 ### v1.0.0 [09.16.26]
 - Initial release.
