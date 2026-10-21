@@ -1,10 +1,10 @@
 """
 Script Name: Version Upper
-Script Version: 3.0.0
+Script Version: 3.0.1
 Flame Version: 2022
 Written by: John Geehreng
 Creation Date: 06.06.20
-Update Date: 10.20.26
+Update Date: 10.21.26
 
 Description:
 
@@ -50,6 +50,9 @@ Config:
 
 Updates:
 
+    v3.0.1 10.21.26
+        - Dialogs show the normal cursor instead of Flame's wait cursor, the fish.
+
     v3.0.0 10.20.26
         - Added a Preferences window. The version prefix is now a setting instead of a hard
           coded letter.
@@ -91,7 +94,7 @@ import re
 # -------------------------------------
 
 SCRIPT_NAME = "Version Upper"
-SCRIPT_VERSION = "v3.0.0"
+SCRIPT_VERSION = "v3.0.1"
 
 # Flame right-click menu folder this script appears under. Changing it needs a Python hooks
 # reload to show up, so it lives here as a one line edit rather than in Preferences.
@@ -1243,6 +1246,8 @@ def scope_not_desktop(selection):
 
 def get_media_panel_custom_ui_actions():
 
+    # Flame shows its wait cursor, the fish, for as long as a hook runs. These actions can open
+    # a dialog and wait for the user, so each one asks Flame for the normal cursor instead.
     return [
         {
             'name': folder_name,
@@ -1251,12 +1256,14 @@ def get_media_panel_custom_ui_actions():
                     'name': action_name,
                     'isVisible': scope_not_desktop,
                     'execute': version_upper,
-                    'minimumVersion': '2022'
+                    'minimumVersion': '2022',
+                    'waitCursor': False
                 },
                 {
                     'name': '%s Preferences' % action_name,
                     'execute': preferences_from_menu,
-                    'minimumVersion': '2022'
+                    'minimumVersion': '2022',
+                    'waitCursor': False
                 }
             ]
         }
@@ -1272,7 +1279,8 @@ def get_main_menu_custom_ui_actions():
                 {
                     'name': 'Preferences',
                     'execute': preferences_from_menu,
-                    'minimumVersion': '2022'
+                    'minimumVersion': '2022',
+                    'waitCursor': False
                 }
             ]
         }

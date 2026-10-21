@@ -1,10 +1,10 @@
 # Version Upper
 
-**Script Version:** 3.0.0
+**Script Version:** 3.0.1
 **Flame Version:** 2022
 **Written by:** John Geehreng
 **Creation Date:** 06.06.20
-**Update Date:** 10.20.26
+**Update Date:** 10.21.26
 
 ## Description
 
@@ -108,6 +108,9 @@ version_upper/config/config.json
 - A missing or damaged config falls back to defaults rather than breaking the Flame menu.
 
 ## Updates
+
+### v3.0.1 [10.21.26]
+- Dialogs show the normal cursor instead of Flame's wait cursor, the fish.
 
 ### v3.0.0 [10.20.26]
 - Added a Preferences window. The version prefix is now a setting, not a hard coded letter.
