@@ -1,10 +1,10 @@
 """
 Script Name: sequence renamer
-Script Version: 2.1.0
+Script Version: 2.1.1
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 06.08.22
-Update Date: 02.28.26
+Update Date: 10.22.26
 
 Custom Action Type: MediaHub
 
@@ -15,6 +15,7 @@ Description: Renames files based on user input for start frame and padding.
 To install: Copy script into /opt/Autodesk/shared/python/sequence_renamer or wherever you wish.
 
 Updates:
+10.22.26 - v2.1.1 - Fixed: screenGeometry error with Flame 2027.2.
 02.28.26 - v2.1.0 - Updated for PyFlameLib v5.2.3. Added sequence mode to mediahub after renaming.
 10.06.25 - v2.0.0  Updated for Flame 2025 and PyFlameLib v4.3.0.
 12.13.23 - v0.2  Updated for pyflame lib v2. Start updates for Flame 2025.
@@ -34,7 +35,7 @@ from lib.pyflame_lib_sequence_renamer import *
 
 FOLDER_NAME = 'UC Renamers'
 SCRIPT_NAME = 'Sequence Renamer'
-SCRIPT_VERSION = 'v2.1.0'
+SCRIPT_VERSION = 'v2.1.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
