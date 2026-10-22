@@ -1,10 +1,10 @@
 """
 Script Name: BB Archiver UI
-Script Version: 1.8.0
+Script Version: 1.8.1
 Flame Version: 2023.2
 Written by: John Geehreng
 Creation Date: 11.17.22
-Update Date: 02.05.24
+Update Date: 10.22.26
 
 Script Type: Main Menu
 
@@ -17,6 +17,7 @@ To install:
     Copy script into /opt/Autodesk/shared/python/bb_archiver_ui
 
 Updates:
+10.22.26 - v1.8.1 - Fixed: screenGeometry error with Flame 2027.2.
 02.05.24 - v1.8 - Prep for Distribution
 10.14.23 - v1.7 - Turned off emailing
 05.22.23 - v1.4 - Fixed typo
@@ -43,7 +44,7 @@ import platform
 
 SCRIPT_NAME = 'BB Archiver UI'
 SCRIPT_PATH = '/opt/Autodesk/shared/python/bb_archiver_ui'
-SCRIPT_VERSION = '1.8.0'
+SCRIPT_VERSION = '1.8.1'
 
 #-------------------------------------#
 # Main Script
