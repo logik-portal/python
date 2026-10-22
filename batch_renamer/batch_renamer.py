@@ -1,10 +1,10 @@
 """
 Script Name: batch renamer
-Script Version: 2.0.1
+Script Version: 2.0.2
 Flame Version: 2024.2
 Written by: John Geehreng
 Creation Date: 10.01.21
-Update Date: 01.28.26
+Update Date: 10.22.26
 
 Custom Action Type: Media Panel
 
@@ -15,6 +15,7 @@ Description: Renames a bunch of clips or sequences based on text input and token
 To install: Copy script into /opt/Autodesk/shared/python/batch_renamer
 
 Updates:
+    10.22.26 - v2.0.2 - Fixed: screenGeometry error with Flame 2027.2.
     01.28.26 - v2.0.1 - Changed SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
     01.28.26 - v2.0.0 - Updated for Flame 2024.2 and above. Updated UI for pyflame lib v5.1.1
     02.28.25 - v1.9   - Added YYMMDD token
@@ -34,7 +35,7 @@ import re
 import datetime
 from lib.pyflame_lib_batch_renamer import *
 
-SCRIPT_VERSION = 'v2.0.1'
+SCRIPT_VERSION = 'v2.0.2'
 SCRIPT_NAME = 'Batch Renamer'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 

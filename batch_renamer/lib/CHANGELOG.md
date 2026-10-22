@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 https://github.com/logik-portal/pyflame
 
+## v5.1.1.1 [10.22.26]
+
+### Updates/Fixes
+
+- Fixed: screenGeometry error with Flame 2027.2.
+- Patched copy of PyFlame 5.1.1 - not the latest PyFlame release. Current release is 5.5.3.
+
 ## v5.1.1 [12.16.25]
 
 ### Updates/Fixes
