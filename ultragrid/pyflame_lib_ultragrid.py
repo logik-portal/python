@@ -1,6 +1,6 @@
 """
 Script Name: PyFlame Custom Library
-Version: 2.2.0
+Version: 2.2.0.1
 Written by: Michael Vaglienty
 With contributions from: Kieran Hanrahan
 Creation Date: 10.31.20
@@ -29,6 +29,11 @@ Usage:
         ...
 
 Updates:
+
+    v2.2.0.1 10.22.26
+
+        Fixed: screenGeometry error with Flame 2027.2.
+        Patched copy of PyFlame 2.2.0 - not the latest PyFlame release. Current release is 5.5.3.
 
     v2.2.0 04.30.24
 
@@ -920,7 +925,7 @@ class PyFlameFunctions():
         base_screen_height = 3190
 
         # Get current screen resolution
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -4659,7 +4664,7 @@ class PyFlameMessageWindow(QtWidgets.QDialog):
             background-color: rgb(36, 36, 36);
         """)
 
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -4896,7 +4901,7 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
             background-color: rgb(36, 36, 36);
         """)
 
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -5201,7 +5206,7 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
             background-color: rgb(36, 36, 36)
             """)
 
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -5315,7 +5320,7 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         parent = self.parent()
         if parent:
             # Center the window on the screen
-            screen_geometry =  QtWidgets.QDesktopWidget().screenGeometry()
+            screen_geometry = main_window_res.geometry()
             x = (screen_geometry.width() - self.width()) / 2
             y = (screen_geometry.height() - self.height()) / 2
             x = x/2
@@ -5489,7 +5494,7 @@ class PyFlameDialogWindow(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         # Center window in linux
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -5700,7 +5705,7 @@ class PyFlameWindow(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         # Center window in linux
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 

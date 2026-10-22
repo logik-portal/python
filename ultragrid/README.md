@@ -1,10 +1,10 @@
 # Ultragrid
 
-**Script Version:** 0.0.2  
+**Script Version:** 0.0.3  
 **Flame Version:** 2023.2  
 **Written by:** John Geehreng  
 **Creation Date:** 05.30.24  
-**Update Date:** 06.10.24  
+**Update Date:** 10.22.26  
 
 **Script Type:** Main Menu
 
@@ -21,6 +21,10 @@ A simple script for starting and stopping UltraGrid quickly.
 Copy script into /opt/Autodesk/shared/python/ultragrid
 
 ## Updates
+
+### v0.0.3 [10.22.26]
+- Fixed: screenGeometry error with Flame 2027.2.
+<br>
 
 ### v0.0.2 [06.10.24]
 - Minor code cleanup and added some error windows and console messages.
