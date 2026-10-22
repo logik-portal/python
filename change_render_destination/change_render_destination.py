@@ -1,10 +1,10 @@
 """
 Script Name: Change Render Destination
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025.1
 Written by: Gaspar
 Creation Date: 05.06.26
-Update Date: 05.06.26
+Update Date: 10.22.26
 
 Script Type: Media Panel
 
@@ -31,6 +31,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.0.1 10.22.26
+        - Fixed: screenGeometry error with Flame 2027.2.
 
     v1.0.0 05.06.26
         - Initial release.
