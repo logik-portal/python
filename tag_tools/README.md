@@ -1,10 +1,10 @@
 # Tag Tools
 
-**Script Version:** 1.5.1  
+**Script Version:** 1.5.2  
 **Flame Version:** 2025.1  
 **Written by:** Kyle Obley  
 **Creation Date:** 03.12.26  
-**Update Date:** 09.12.26  
+**Update Date:** 10.22.26  
 
 **Script Type:** Media Panel, Media Hub
 
@@ -30,6 +30,10 @@ Very much a work in progress.
 Copy script into /opt/Autodesk/shared/python/tag_tools
 
 ## Updates
+
+### v1.5.2 [10.22.26]
+- Fixed: screenGeometry error with Flame 2027.2.
+<br>
 
 ### v1.5.1 [09.12.26]
 - Adjusted formating to adhear to Logik-Portal requirements.
