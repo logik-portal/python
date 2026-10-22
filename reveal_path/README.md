@@ -1,16 +1,21 @@
 # Reveal Path
 
-**Script Version:** 2.11.0  
+**Script Version:** 2.12.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.16.19  
-**Update Date:** 08.19.26  
+**Update Date:** 10.21.26  
 
 **Script Type:** Timeline / Media Panel / MediaHub / Batch
 
 ## Description
 
 Reveal the path of a clip, open clip, write node, or batch group shot folder in the finder or Media Hub.
+<br><br>
+Works with both video and audio clips/segments.
+<br><br>
+When revealing a clip in Finder, the source file is selected in the Finder window.
+For image sequences, the first frame of the sequence is selected.
 
 ## Usage
 
@@ -31,7 +36,7 @@ Path is copied to clipboard.
 
 ## URL
 
-https://logik-portal.com/scripts/#reveal_path
+https://logik-portal.com/scripts/reveal_path
 
 ## Menus
 
@@ -54,6 +59,14 @@ https://logik-portal.com/scripts/#reveal_path
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.12.0 [10.21.26]
+- Reveal in Finder now selects the source file in the Finder window. Image sequences select the first frame.
+- Audio clips and audio segments can now be revealed in Finder and MediaHub.
+- MediaHub files with 4 or 5 letter extensions (.aiff, .flac, .tiff, ...) can now be revealed.
+- Removed duplicate 'Reveal Shot Folder in Finder' Batch menu entry.
+- Fixed Bug: PyFlameLib used QScreen.screenGeometry(), which doesn't exist in PySide6. Now uses QScreen.geometry().
+<br>
 
 ### v2.11.0 [08.19.26]
 - Added ability to reveal clipboard path in MediaHub.
@@ -103,18 +116,7 @@ Copy script folder into /opt/Autodesk/shared/python
 ### v2.1 [10.21.21]
 - Path that the MediaHub is currently open to can be revealed in Finder
 - Write File node render path can be revealed in the MediaHub or in Finder
-- Only the following tokens are currently supported with the write file node:
-- project
-- project nickname
-- batch iteration
-- batch name
-- ext
-- name
-- shot name
-- version padding
-- version
-- user
-- user nickname
+- Only the following tokens are currently supported with the write file node: project project nickname batch iteration batch name ext name shot name version padding version user user nickname
 <br>
 
 ### v2.0 [05.19.21]

@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus
-Script Version: 5.5.0
+Script Version: 5.6.0
 Flame Version: 2026
 Written by: Michael Vaglienty
 Creation Date: 03.29.20
-Update Date: 05.25.26
+Update Date: 10.09.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -35,7 +35,7 @@ Description:
 
 URL:
 
-    https://logik-portal.com/scripts/#create_export_menus
+    https://logik-portal.com/scripts/create_export_menus
 
 Menus:
 
@@ -51,6 +51,16 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+ 
+    v5.6.0 10.09.26
+        - Updated to PyFlameLib v5.5.2 to fix "screenGeometry" error when loading script.
+        - Added Delete Original button. When checked, original clip will be deleted after exported clip is imported back
+          into Flame. Only enabled when Import Export is checked.
+        - Added Use Pattern Browse button and pattern entry. When checked, exported clip will be imported back into Flame
+          using pattern browsing. Files matching the pattern are imported as versions of one clip. Only enabled when
+          Import Export is checked.
+        - Export menus can no longer be saved with the same name as an existing project or shared export menu. This causes 
+          a conflict and prevents the new menu from being loaded into Flame. 
 
     v5.5.0 05.25.26
         - Added Import Export button. When checked, exported clip will be imported back into Flame.
@@ -182,6 +192,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -196,7 +208,7 @@ from lib.pyflame_lib_create_export_menus import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Create Export Menus'
-SCRIPT_VERSION = 'v5.5.0'
+SCRIPT_VERSION = 'v5.6.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # Widget keys for preset tab dicts (self.create_tab_widgets / self.edit_tab_widgets).
@@ -210,6 +222,9 @@ _TW_TOGGLEABLE = (
     'foreground_pushbutton',
     'between_marks_pushbutton',
     'import_export_pushbutton',
+    'delete_original_pushbutton',
+    'use_pattern_browse_pushbutton',
+    'pattern_browse_entry',
     'token_pushbutton',
     'preset_type_menu',
     'path_browse_button',
@@ -229,6 +244,9 @@ _TW_TAB0_NO_PRESETS = (
     'foreground_pushbutton',
     'between_marks_pushbutton',
     'import_export_pushbutton',
+    'delete_original_pushbutton',
+    'use_pattern_browse_pushbutton',
+    'pattern_browse_entry',
     'token_pushbutton',
     'preset_type_menu',
     'path_browse_button',
@@ -347,6 +365,9 @@ class ExportMenuSetup:
                 'export_in_foreground': True,
                 'export_between_marks': False,
                 'import_export': False,
+                'delete_original': False,
+                'use_pattern_browse': False,
+                'pattern_browse': '{name}_v{version}.{extension}',
                 'reveal_in_mediahub': False,
                 'reveal_in_finder': False,
                 'include_subtitles': False,
@@ -545,6 +566,9 @@ class ExportMenuSetup:
             export_foreground,
             export_between_marks,
             import_export,
+            delete_original,
+            use_pattern_browse,
+            pattern_browse,
             include_subtitles,
             subtitles_export_mode,
             subtitles_tracks,
@@ -571,6 +595,12 @@ class ExportMenuSetup:
                     Set state of export between marks pushbutton.
                 import_export (bool):
                     Set state of import export pushbutton.
+                delete_original (bool):
+                    Set state of delete original pushbutton.
+                use_pattern_browse (bool):
+                    Set state of use pattern browse pushbutton.
+                pattern_browse (str):
+                    Pattern browse entry text.
                 include_subtitles (bool):
                     Set state of include_subtitles pushbutton.
                 subtitles_export_mode (str):
@@ -625,6 +655,7 @@ class ExportMenuSetup:
                 if not switch:
                     import_export_pushbutton.enabled = False
                     import_export_pushbutton.checked = False
+                    update_import_export_options_state()
                 else:
                     update_import_export_state()
 
@@ -652,12 +683,46 @@ class ExportMenuSetup:
                 if enable_preset_pushbutton is not None and not enable_preset_pushbutton.checked:
                     import_export_pushbutton.enabled = False
                     import_export_pushbutton.checked = False
+                    update_import_export_options_state()
                     return
                 if saved_preset_type_menu.text in ('Project: Movie', 'Shared: Movie'):
                     import_export_pushbutton.enabled = True
                 else:
                     import_export_pushbutton.enabled = False
                     import_export_pushbutton.checked = False
+                update_import_export_options_state()
+
+            def update_import_export_options_state() -> None:
+                """
+                Update Import Export Options State
+                ==================================
+
+                Enable or disable the Delete Original and Use Pattern Browse pushbuttons based on the
+                Import Export pushbutton state. They are only enabled when Import Export is enabled
+                and checked, otherwise they are disabled and their checked states are cleared.
+                Then update the Pattern Browse entry state.
+                """
+
+                if import_export_pushbutton.enabled and import_export_pushbutton.checked:
+                    delete_original_pushbutton.enabled = True
+                    use_pattern_browse_pushbutton.enabled = True
+                else:
+                    delete_original_pushbutton.enabled = False
+                    delete_original_pushbutton.checked = False
+                    use_pattern_browse_pushbutton.enabled = False
+                    use_pattern_browse_pushbutton.checked = False
+                update_pattern_browse_entry_state()
+
+            def update_pattern_browse_entry_state() -> None:
+                """
+                Update Pattern Browse Entry State
+                =================================
+
+                Enable or disable the Pattern Browse entry based on the Use Pattern Browse pushbutton state.
+                The entry is only enabled when Use Pattern Browse is enabled and checked.
+                """
+
+                pattern_browse_entry.enabled = use_pattern_browse_pushbutton.enabled and use_pattern_browse_pushbutton.checked
 
             # Labels
             saved_preset_type_label = PyFlameLabel(
@@ -677,6 +742,10 @@ class ExportMenuSetup:
             # Entries
             export_path_entry = PyFlameEntry(
                 text=export_path,
+                )
+            pattern_browse_entry = PyFlameEntry(
+                text=pattern_browse,
+                tooltip='Pattern used to import exported clip back into Flame. Example: {name}_v{version}.{extension}',
                 )
 
             # Pushbuttons
@@ -704,7 +773,19 @@ class ExportMenuSetup:
             import_export_pushbutton = PyFlamePushButton(
                 text='Import Export',
                 checked=import_export,
+                connect=update_import_export_options_state,
                 tooltip='Import exported clip back into Flame - Only works with Movie preset types.',
+                )
+            delete_original_pushbutton = PyFlamePushButton(
+                text='Delete Original',
+                checked=delete_original,
+                tooltip='Delete original clip after exported clip is imported back into Flame - Only enabled when Import Export is checked.',
+                )
+            use_pattern_browse_pushbutton = PyFlamePushButton(
+                text='Use Pattern Browse',
+                checked=use_pattern_browse,
+                connect=update_pattern_browse_entry_state,
+                tooltip='Import exported clip back into Flame using the pattern browse entry. Files matching the pattern are imported as versions of one clip - Only enabled when Import Export is checked.',
                 )
             include_subtitles_pushbutton = PyFlamePushButton(
                 text='Include Subtitles',
@@ -828,7 +909,10 @@ class ExportMenuSetup:
             tab.grid_layout.addWidget(top_layer_pushbutton, 1, 7)
             tab.grid_layout.addWidget(foreground_pushbutton, 2, 7)
             tab.grid_layout.addWidget(between_marks_pushbutton, 3, 7)
-            tab.grid_layout.addWidget(import_export_pushbutton, 4, 7)
+            tab.grid_layout.addWidget(import_export_pushbutton, 5, 7)
+            tab.grid_layout.addWidget(delete_original_pushbutton, 5, 8)
+            tab.grid_layout.addWidget(use_pattern_browse_pushbutton, 6, 8)
+            tab.grid_layout.addWidget(pattern_browse_entry, 7, 7, 1, 2)
 
             tab.grid_layout.addWidget(subtitles_label, 0, 8)
             tab.grid_layout.addWidget(include_subtitles_pushbutton, 1, 8)
@@ -844,6 +928,9 @@ class ExportMenuSetup:
                 'foreground_pushbutton':        foreground_pushbutton,
                 'between_marks_pushbutton':     between_marks_pushbutton,
                 'import_export_pushbutton':     import_export_pushbutton,
+                'delete_original_pushbutton':   delete_original_pushbutton,
+                'use_pattern_browse_pushbutton': use_pattern_browse_pushbutton,
+                'pattern_browse_entry':         pattern_browse_entry,
                 'preset_type_label':            saved_preset_type_label,
                 'presets_label':                saved_presets_label,
                 'export_path_label':            export_path_label,
@@ -893,6 +980,9 @@ class ExportMenuSetup:
                         export_foreground=self.settings.export_in_foreground,
                         export_between_marks=self.settings.export_between_marks,
                         import_export=self.settings.import_export,
+                        delete_original=self.settings.delete_original,
+                        use_pattern_browse=self.settings.use_pattern_browse,
+                        pattern_browse=self.settings.pattern_browse,
                         include_subtitles=self.settings.include_subtitles,
                         subtitles_export_mode=self.settings.subtitles_export_mode,
                         subtitles_tracks=self.settings.subtitles_tracks,
@@ -906,6 +996,9 @@ class ExportMenuSetup:
                         export_foreground=False,
                         export_between_marks=False,
                         import_export=False,
+                        delete_original=False,
+                        use_pattern_browse=False,
+                        pattern_browse='{name}_v{version}.{extension}',
                         include_subtitles=False,
                         subtitles_export_mode='Burn in Image',
                         subtitles_tracks='Current Subtitles Track',
@@ -987,7 +1080,7 @@ class ExportMenuSetup:
                     'Export Preset Five',
                     ],
                 grid_layout_columns=9,
-                grid_layout_rows=5,
+                grid_layout_rows=8,
                 )
 
             self.create_tab_widgets = build_export_preset_tabs(self.create_preset_tabs)
@@ -1164,7 +1257,7 @@ class ExportMenuSetup:
                     'Export Preset Five',
                     ],
                 grid_layout_columns=9,
-                grid_layout_rows=5,
+                grid_layout_rows=8,
                 )
 
             self.edit_tab_widgets = build_export_preset_tabs(self.edit_preset_tabs)
@@ -1364,6 +1457,13 @@ class ExportMenuSetup:
             # Default import_export to False before parsing; stays False if line is absent (older presets)
             tab_widgets['import_export_pushbutton'].checked = False
 
+            # Default delete_original to False before parsing; stays False if line is absent (older presets)
+            tab_widgets['delete_original_pushbutton'].checked = False
+
+            # Default use_pattern_browse to False and pattern_browse to default pattern before parsing; stay default if lines are absent (older presets)
+            tab_widgets['use_pattern_browse_pushbutton'].checked = False
+            tab_widgets['pattern_browse_entry'].text = '{name}_v{version}.{extension}'
+
             print(f'Preset: {preset_num}')
             for line in preset_lines:
                 if line == '        clip_output.use_top_video_track = True':
@@ -1421,6 +1521,22 @@ class ExportMenuSetup:
                 elif line == '        import_export = False':
                     tab_widgets['import_export_pushbutton'].checked = False
                     print('Import Export: False')
+                elif line == '        delete_original = True':
+                    tab_widgets['delete_original_pushbutton'].checked = True
+                    print('Delete Original: True')
+                elif line == '        delete_original = False':
+                    tab_widgets['delete_original_pushbutton'].checked = False
+                    print('Delete Original: False')
+                elif line == '        use_pattern_browse = True':
+                    tab_widgets['use_pattern_browse_pushbutton'].checked = True
+                    print('Use Pattern Browse: True')
+                elif line == '        use_pattern_browse = False':
+                    tab_widgets['use_pattern_browse_pushbutton'].checked = False
+                    print('Use Pattern Browse: False')
+                elif line.startswith('        pattern_browse = '):
+                    pattern = line.split("'", 2)[1]
+                    tab_widgets['pattern_browse_entry'].text = pattern
+                    print('Pattern Browse:', pattern)
 
                 if 'clip_output.export' in line:
                     if 'project' in line:
@@ -1445,6 +1561,21 @@ class ExportMenuSetup:
                 tab_widgets['import_export_pushbutton'].enabled = False
                 tab_widgets['import_export_pushbutton'].checked = False
                 print('Import Export: disabled (File Sequence preset)')
+
+            # Enable Delete Original and Use Pattern Browse only when Import Export is enabled and checked; clear checked otherwise
+            if tab_widgets['import_export_pushbutton'].enabled and tab_widgets['import_export_pushbutton'].checked:
+                tab_widgets['delete_original_pushbutton'].enabled = True
+                tab_widgets['use_pattern_browse_pushbutton'].enabled = True
+            else:
+                tab_widgets['delete_original_pushbutton'].enabled = False
+                tab_widgets['delete_original_pushbutton'].checked = False
+                tab_widgets['use_pattern_browse_pushbutton'].enabled = False
+                tab_widgets['use_pattern_browse_pushbutton'].checked = False
+
+            # Enable Pattern Browse entry only when Use Pattern Browse is enabled and checked
+            tab_widgets['pattern_browse_entry'].enabled = (
+                tab_widgets['use_pattern_browse_pushbutton'].enabled and tab_widgets['use_pattern_browse_pushbutton'].checked
+                )
 
         def disable_ui_elements(tab_widgets: dict) -> None:
             """
@@ -1595,6 +1726,9 @@ class ExportMenuSetup:
                     'Foreground Export':     tw['foreground_pushbutton'].checked,
                     'Export Between Marks':  tw['between_marks_pushbutton'].checked,
                     'Import Export':         tw['import_export_pushbutton'].checked,
+                    'Delete Original':       tw['delete_original_pushbutton'].checked,
+                    'Use Pattern Browse':    tw['use_pattern_browse_pushbutton'].checked,
+                    'Pattern Browse':        tw['pattern_browse_entry'].text,
                     'Include Subtitles':     tw['include_subtitles_pushbutton'].checked,
                     'Subtitles Export Mode': tw['subtitles_export_mode_menu'].text,
                     'Subtitles Tracks':      tw['subtitles_tracks_menu'].text,
@@ -1645,6 +1779,9 @@ class ExportMenuSetup:
 
                         if not value['Export Path']:
                             return f'Preset {tab_number}: Enter export path.'
+
+                        if value['Use Pattern Browse'] and not value['Pattern Browse']:
+                            return f'Preset {tab_number}: Enter pattern browse pattern.'
 
         def get_menu_save_path() -> tuple:
             """
@@ -1734,6 +1871,9 @@ class ExportMenuSetup:
                           foreground_export: str,
                           export_between_marks: str,
                           import_export_value: bool,
+                          delete_original_value: bool,
+                          use_pattern_browse_value: bool,
+                          pattern_browse_value: str,
                           include_subtitles: str,
                           subtitles_export_mode: str,
                           subtitles_tracks: str,
@@ -1796,6 +1936,9 @@ class ExportMenuSetup:
                 menu_lines.append("                return")
                 menu_lines.append("")
                 menu_lines.append(f"        import_export = {import_export_value}")
+                menu_lines.append(f"        delete_original = {delete_original_value}")
+                menu_lines.append(f"        use_pattern_browse = {use_pattern_browse_value}")
+                menu_lines.append(f"        pattern_browse = '{pattern_browse_value}'")
                 menu_lines.append("")
                 menu_lines.append(f"        if import_export:")
                 menu_lines.append(f"            # Drop a marker file in the export directory to capture the server's clock")
@@ -1817,9 +1960,27 @@ class ExportMenuSetup:
                 menu_lines.append(f"                        full_path = os.path.join(dirpath, f)")
                 menu_lines.append(f"                        if os.path.getmtime(full_path) >= export_start_time:")
                 menu_lines.append(f"                            exported_files.append(full_path)")
-                menu_lines.append(f"            for path in sorted(exported_files):")
-                menu_lines.append(f"                flame.import_clips(path, clip.parent)")
-                menu_lines.append(f"                pyflame.print('Imported clip back into Flame.')")
+                menu_lines.append(f"            imported_clips = []")
+                menu_lines.append(f"            if use_pattern_browse:")
+                menu_lines.append(f"                # Import each folder holding exported files using pattern browse. Files matching the pattern are imported as versions of one clip")
+                menu_lines.append(f"                for export_dir in sorted(set(os.path.dirname(path) for path in exported_files)):")
+                menu_lines.append(f"                    pattern_path = os.path.join(export_dir, pattern_browse)")
+                menu_lines.append(f"                    pattern_clips = flame.import_clips(pattern_path, clip.parent)")
+                menu_lines.append("                    # Flame names clips imported with a pattern '{name=}_v{version}', rename them using the {name} token")
+                menu_lines.append(f"                    for pattern_clip in pattern_clips:")
+                menu_lines.append(f"                        pattern_clip.name = get_pattern_clip_name(pattern_clip.versions[0].tracks[0].segments[0].file_path, pattern_browse)")
+                menu_lines.append(f"                    if pattern_clips:")
+                menu_lines.append(f"                        pyflame.print('Imported clip back into Flame using pattern browse.')")
+                menu_lines.append(f"                    else:")
+                menu_lines.append(f"                        pyflame.print(f'No files found matching pattern browse: {{pattern_path}}')")
+                menu_lines.append(f"                    imported_clips.extend(pattern_clips)")
+                menu_lines.append(f"            else:")
+                menu_lines.append(f"                for path in sorted(exported_files):")
+                menu_lines.append(f"                    imported_clips.extend(flame.import_clips(path, clip.parent))")
+                menu_lines.append(f"                    pyflame.print('Imported clip back into Flame.')")
+                menu_lines.append(f"            # Add original clip to delete list. Clips are deleted after all export presets are done")
+                menu_lines.append(f"            if delete_original and imported_clips and clip not in delete_original_clips:")
+                menu_lines.append(f"                delete_original_clips.append(clip)")
                 menu_lines.append("")
 
                 menu_lines.append(f"        # Export preset {tab_number} END")
@@ -1840,6 +2001,9 @@ class ExportMenuSetup:
                             value['Foreground Export'],
                             value['Export Between Marks'],
                             value['Import Export'],
+                            value['Delete Original'],
+                            value['Use Pattern Browse'],
+                            value['Pattern Browse'],
                             value['Include Subtitles'],
                             value['Subtitles Export Mode'],
                             value['Subtitles Tracks'],
@@ -1865,6 +2029,9 @@ class ExportMenuSetup:
                     'export_in_foreground':  tw['foreground_pushbutton'].checked,
                     'export_between_marks':  tw['between_marks_pushbutton'].checked,
                     'import_export':         tw['import_export_pushbutton'].checked,
+                    'delete_original':       tw['delete_original_pushbutton'].checked,
+                    'use_pattern_browse':    tw['use_pattern_browse_pushbutton'].checked,
+                    'pattern_browse':        tw['pattern_browse_entry'].text,
                     'reveal_in_mediahub':    self.reveal_in_mediahub_pushbutton.checked,
                     'reveal_in_finder':      self.reveal_in_finder_pushbutton.checked,
                     }
@@ -1972,6 +2139,37 @@ class ExportMenuSetup:
                 except Exception:
                     pass
 
+        def get_existing_menu_paths() -> list:
+            """
+            Get Existing Menu Paths
+            =======================
+
+            Search all project menu folders and the shared menu folder for menu files with the same
+            name as the menu being saved. Menu names are compared case-insensitively. The original
+            menu file is skipped when editing an existing menu.
+
+            Returns:
+            --------
+                list:
+                    Paths of existing menu files with the same name. Empty list if none are found.
+            """
+
+            menu_file_name = menu_name.replace('.', '_') + '.py'
+
+            existing_menu_paths = []
+
+            for menus_dir in [self.project_menus_dir, self.shared_menus_dir]:
+                for root, dirs, files in os.walk(menus_dir):
+                    for file in files:
+                        if file.lower() == menu_file_name.lower():
+                            file_path = os.path.join(root, file)
+                            # Skip original menu file when editing, it gets replaced by the new menu file
+                            if original_menu_file_path and os.path.normpath(file_path) == os.path.normpath(original_menu_file_path):
+                                continue
+                            existing_menu_paths.append(file_path)
+
+            return existing_menu_paths
+
         def get_main_tab_values(tab_options_dict: dict) -> tuple:
             """
             Get Main Tab Values
@@ -2016,6 +2214,18 @@ class ExportMenuSetup:
             PyFlameMessageWindow(
                 message=f'{preset_error}',
                 message_type=MessageType.ERROR,
+                parent=None,
+            )
+            return
+
+        # Check all project and shared menu folders for existing menus with the same name
+        existing_menu_paths = get_existing_menu_paths()
+        if existing_menu_paths:
+            existing_menus = '\n'.join(os.path.relpath(path, SCRIPT_PATH) for path in existing_menu_paths)
+            PyFlameMessageWindow(
+                message=f'Export menu already exists: {menu_name}\n\n{existing_menus}\n\nChange the menu name or delete the existing export menu.',
+                message_type=MessageType.ERROR,
+                title='Export Menu Error',
                 parent=None,
             )
             return

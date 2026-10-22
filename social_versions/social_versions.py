@@ -2,7 +2,7 @@
 Script Name: Social Versions
 Script Version: 0.3.3
 Flame Version: 2023
-Author: Kyle Obley (info@kyleobley.com)
+Written by: Kyle Obley (info@kyleobley.com)
 Creation Date: 02.05.25
 Modified Date: 02.28.25
 

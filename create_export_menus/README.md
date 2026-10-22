@@ -1,10 +1,10 @@
 # Create Export Menus
 
-**Script Version:** 5.5.0  
+**Script Version:** 5.6.0  
 **Flame Version:** 2026  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.20  
-**Update Date:** 05.25.26  
+**Update Date:** 10.09.26  
 
 **Script Type:** MediaPanel
 
@@ -14,7 +14,7 @@ Create custom right-click export menu's from saved export presets
 
 ## URL
 
-https://logik-portal.com/scripts/#create_export_menus
+https://logik-portal.com/scripts/create_export_menus
 
 ## Menus
 
@@ -29,6 +29,17 @@ https://logik-portal.com/scripts/#create_export_menus
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v5.6.0 [10.09.26]
+- Updated to PyFlameLib v5.5.2 to fix "screenGeometry" error when loading script.
+- Added Delete Original button. When checked, original clip will be deleted after exported clip is imported back
+- into Flame. Only enabled when Import Export is checked.
+- Added Use Pattern Browse button and pattern entry. When checked, exported clip will be imported back into Flame
+- using pattern browsing. Files matching the pattern are imported as versions of one clip. Only enabled when
+- Import Export is checked.
+- Export menus can no longer be saved with the same name as an existing project or shared export menu. This causes
+- a conflict and prevents the new menu from being loaded into Flame.
+<br>
 
 ### v5.5.0 [05.25.26]
 - Added Import Export button. When checked, exported clip will be imported back into Flame.

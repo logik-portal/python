@@ -19,12 +19,12 @@
 
 """
 PyFlame Library
-Version: 5.5.1
+Version: 5.5.2
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 08.11.26
+Update Date: 10.08.26
 
-Minimum Flame 2025.1
+Minimum Flame 2025.2
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -72,6 +72,8 @@ See README.md and CHANGELOG.md for more details.
 # ==============================================================================
 # [Imports]
 # ==============================================================================
+
+from __future__ import annotations
 
 import csv
 import datetime
@@ -2912,7 +2914,7 @@ class _PyFlame:
 
         # Get current screen resolution
         main_window_res = pyflame.window_resolution()
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -25662,7 +25664,7 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         # Get Current Screen Resolution
         main_window_res = pyflame.window_resolution()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Get window size
         window_size = self.size()

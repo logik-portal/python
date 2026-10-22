@@ -19,11 +19,11 @@
 
 """
 Script Name: Create Export Menus - Export Menu: <PresetName>
-Script Version: 5.5.0
+Script Version: 5.6.0
 Flame Version: <FlameMinMaxVersion>
 Written by: Michael Vaglienty
 Creation Date: 04.27.20
-Update Date: 05.25.26
+Update Date: 10.08.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -130,6 +130,29 @@ def export_clips(selection):
 
         return translated_export_path
 
+    def get_pattern_clip_name(file_path, pattern):
+
+        # Return {name} token value from file name using pattern browse pattern.
+        # If file name does not match pattern, return file name without extension.
+
+        regex = ''
+        for part in re.split(r'(\{\w+\})', pattern):
+            if part == '{name}':
+                regex += '(?P<name>.+)'
+            elif part in ('{version}', '{frame}'):
+                regex += r'\d+'
+            elif re.fullmatch(r'\{\w+\}', part):
+                regex += '.+?'
+            else:
+                regex += re.escape(part)
+
+        file_name = os.path.basename(file_path)
+        match = re.fullmatch(regex, file_name)
+
+        if match and 'name' in match.groupdict():
+            return match.group('name')
+        return os.path.splitext(file_name)[0]
+
     pyflame.print_title('Create Export Menu - Clip Export v5.3.0')
 
     pyflame.print(f'Exporting: <PresetName>')
@@ -151,9 +174,18 @@ def export_clips(selection):
     # Initialize Exporter
     clip_output = flame.PyExporter()
 
+    # Original clips to delete after export. Filled by export presets with Delete Original enabled.
+    delete_original_clips = []
+
     # Export selected clips
     for clip in selection:
         pyflame.print (f'Exported: {str(clip.name)[1:-1]}\n', text_color=TextColor.GREEN)
+
+    # Delete original clips after exported clips have been imported back into Flame
+    for clip in delete_original_clips:
+        clip_name = str(clip.name)[1:-1]
+        flame.delete(clip, confirm=False)
+        pyflame.print(f'Deleted original clip: {clip_name}')
 
     # Open export path in MediaHub after export
     reveal_in_mediahub = <RevealInMediaHub>

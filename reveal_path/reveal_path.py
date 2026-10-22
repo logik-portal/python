@@ -1,37 +1,32 @@
 # Reveal Path
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License. 
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Reveal Path
-Script Version: 2.11.0
+Script Version: 2.12.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.16.19
-Update Date: 08.19.26
+Update Date: 10.21.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Timeline / Media Panel / MediaHub / Batch
 
 Description:
 
     Reveal the path of a clip, open clip, write node, or batch group shot folder in the finder or Media Hub.
+
+    Works with both video and audio clips/segments.
+
+    When revealing a clip in Finder, the source file is selected in the Finder window.
+    For image sequences, the first frame of the sequence is selected.
 
 Usage:
 
@@ -52,7 +47,7 @@ Usage:
 
 URL:
 
-    https://logik-portal.com/scripts/#reveal_path
+    https://logik-portal.com/scripts/reveal_path
 
 Menus:
 
@@ -76,6 +71,15 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.12.0 10.21.26
+        - Reveal in Finder now selects the source file in the Finder window.
+          Image sequences select the first frame.
+        - Audio clips and audio segments can now be revealed in Finder and MediaHub.
+        - MediaHub files with 4 or 5 letter extensions (.aiff, .flac, .tiff, ...) can now be revealed.
+        - Removed duplicate 'Reveal Shot Folder in Finder' Batch menu entry.
+        - Fixed Bug: PyFlameLib used QScreen.screenGeometry(), which doesn't exist in PySide6.
+          Now uses QScreen.geometry().
 
     v2.11.0 08.19.26
         - Added ability to reveal clipboard path in MediaHub.
@@ -150,8 +154,11 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+import glob
 import os
+import platform
 import re
+import subprocess
 
 import flame
 from lib.pyflame_lib_reveal_path import *
@@ -161,7 +168,7 @@ from lib.pyflame_lib_reveal_path import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Reveal Path'
-SCRIPT_VERSION = 'v2.11.0'
+SCRIPT_VERSION = 'v2.12.0'
 
 # ==============================================================================
 
@@ -222,6 +229,70 @@ def get_clipboard_path():
     return None
 
 # ==============================================================================
+# [Media Paths]
+# ==============================================================================
+
+def get_segment_file_path(selection):
+    """
+    Get Segment File Path
+    =====================
+
+    Get the file path of the first selected timeline segment (video or audio) that has one.
+
+    Args:
+    -----
+        selection (list):
+            Flame timeline selection.
+
+    Returns:
+    --------
+        str:
+            File path, or empty string if no segment has a file path.
+    """
+
+    for item in selection:
+        if isinstance(item, flame.PySegment) and item.file_path != '':
+            return str(item.file_path)
+    return ''
+
+def get_clip_file_path(clip):
+    """
+    Get Clip File Path
+    ==================
+
+    Get the file path of the first segment in a clip that has one. Video tracks are
+    searched first, then audio tracks, so audio-only clips are supported.
+
+    Args:
+    -----
+        clip (flame.PyClip):
+            Clip to get the file path from.
+
+    Returns:
+    --------
+        str:
+            File path, or empty string if no segment has a file path.
+    """
+
+    video_tracks = [track for version in clip.versions for track in version.tracks]
+    audio_tracks = [channel for audio_track in clip.audio_tracks for channel in audio_track.channels]
+
+    for track in video_tracks + audio_tracks:
+        for segment in track.segments:
+            if segment.file_path != '':
+                return str(segment.file_path)
+    return ''
+
+def get_selected_clip_file_path(selection):
+
+    for item in selection:
+        if isinstance(item, flame.PyClip):
+            file_path = get_clip_file_path(item)
+            if file_path != '':
+                return file_path
+    return ''
+
+# ==============================================================================
 # [Reveal in Finder]
 # ==============================================================================
 
@@ -229,55 +300,109 @@ def reveal_timeline_finder(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Timeline Clip {SCRIPT_VERSION}')
 
-    open_finder(selection[0].file_path.rsplit('/', 1)[0])
+    open_finder(get_segment_file_path(selection))
 
 def reveal_mediapanel_finder(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Media Panel Clip {SCRIPT_VERSION}')
 
-    open_finder(selection[0].versions[0].tracks[0].segments[0].file_path.rsplit('/', 1)[0])
+    open_finder(get_selected_clip_file_path(selection))
 
 def reveal_batch_clip_finder(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Batch Clip {SCRIPT_VERSION}')
 
-    open_finder(str(selection[0].media_path)[1:-1].rsplit('/', 1)[0])
+    open_finder(str(selection[0].media_path)[1:-1])
 
 def reveal_mediahub_clip_finder(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Media Hub Clip {SCRIPT_VERSION}')
 
-    open_finder(selection[0].path.rsplit('/', 1)[0])
+    open_finder(selection[0].path)
 
 def reveal_write_file_node_path_finder(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Write File Node {SCRIPT_VERSION}')
 
-    resolved_path = selection[0].get_resolved_media_path().rsplit('/', 1)[0]
+    resolved_path = selection[0].get_resolved_media_path()
 
-    if os.path.isdir(resolved_path):
+    if os.path.isdir(resolved_path.rsplit('/', 1)[0]):
         open_finder(resolved_path)
     else:
         pyflame.print('Write File node path not found. May not exist until rendered.', print_type=PrintType.ERROR)
+
+def find_source_file(path: str):
+    """
+    Find Source File
+    ================
+
+    Find the file on disk for a Flame media path. Image sequence paths such as
+    /path/shot.[1001-1100].exr resolve to the first frame of the sequence that exists.
+
+    Args:
+    -----
+        path (str):
+            File path from Flame. May be a single file or an image sequence pattern.
+
+    Returns:
+    --------
+        str or None:
+            Path to an existing file, or None if no file could be found.
+    """
+
+    if os.path.isfile(path):
+        return path
+
+    # Image sequence: replace frame range with the first frame number
+    frame_range = re.search(r'\[(\d+)[^\]]*\]', path)
+    if frame_range:
+        first_frame = path[:frame_range.start()] + frame_range.group(1) + path[frame_range.end():]
+        if os.path.isfile(first_frame):
+            return first_frame
+        frame_files = sorted(glob.glob(glob.escape(path[:frame_range.start()]) + '*' + glob.escape(path[frame_range.end():])))
+        if frame_files:
+            return frame_files[0]
+
+    return None
 
 def open_finder(path: str):
     """
     Open Finder
     ===========
 
-    Open the path in Finder and copy the path to the clipboard.
+    Open the path in Finder and copy the folder path to the clipboard.
+
+    If path is a file (or image sequence), its folder is opened with the file selected.
+    If the file can't be found on disk, the folder is opened without a selection.
+    If path is a folder, the folder is opened.
 
     Args:
     -----
         path (str):
-            Path to open in Finder.
+            Path of the file or folder to reveal in Finder.
     """
 
-    # Open path in Finder
-    pyflame.open_in_finder(path)
+    # Folder: open it directly
+    if os.path.isdir(path):
+        pyflame.open_in_finder(path)
+        pyflame.copy_to_clipboard(path)
+        return
+
+    folder_path = path.rsplit('/', 1)[0]
+    source_file = find_source_file(path)
+
+    if source_file and platform.system() == 'Darwin':
+        # Open folder in Finder with file selected
+        subprocess.Popen(['open', '-R', source_file])
+        pyflame.print(f'Revealing file in Finder: {source_file}')
+    else:
+        # Open folder in Finder
+        if not source_file:
+            pyflame.print(f'Source file not found, opening folder instead: {path}')
+        pyflame.open_in_finder(folder_path)
 
     # Copy path to clipboard
-    pyflame.copy_to_clipboard(path)
+    pyflame.copy_to_clipboard(folder_path)
 
 # ==============================================================================
 # [Reveal in MediaHub]
@@ -287,14 +412,13 @@ def reveal_timeline_mediahub(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Timeline Clip {SCRIPT_VERSION}')
 
-    if selection[0].type == 'Video Segment':
-        open_media_hub(str(selection[0].file_path).rsplit('/', 1)[0])
+    open_media_hub(get_segment_file_path(selection).rsplit('/', 1)[0])
 
 def reveal_mediapanel_mediahub(selection):
 
     pyflame.print_title(f'{SCRIPT_NAME} - Media Panel Clip {SCRIPT_VERSION}')
 
-    open_media_hub(str(selection[0].versions[0].tracks[0].segments[0].file_path).rsplit('/', 1)[0])
+    open_media_hub(get_selected_clip_file_path(selection).rsplit('/', 1)[0])
 
 def reveal_batch_clip_mediahub(selection):
 
@@ -562,11 +686,7 @@ class RevealPathSetup:
 
 def scope_timeline_clip(selection):
 
-    for item in selection:
-        if isinstance(item, flame.PySegment):
-            if item.file_path != '':
-                return True
-    return False
+    return get_segment_file_path(selection) != ''
 
 def scope_batch_clip(selection):
 
@@ -579,17 +699,13 @@ def scope_batch_clip(selection):
 
 def scope_clip(selection):
 
-    for item in selection:
-        if isinstance(item, flame.PyClip):
-            if item.versions[0].tracks[0].segments[0].file_path != '':
-                return True
-    return False
+    return get_selected_clip_file_path(selection) != ''
 
 def scope_file(selection):
 
     for item in selection:
         item_path = str(item.path)
-        item_ext = re.search(r'\.\w{3}$', item_path, re.I)
+        item_ext = re.search(r'\.\w{2,5}$', item_path, re.I)
         if item_ext != (None):
             return True
     return False
@@ -737,12 +853,6 @@ def get_batch_custom_ui_actions():
                     'name': 'Reveal Write File Path in MediaHub',
                     'isVisible': scope_write_file_node,
                     'execute': reveal_write_file_node_path_mediahub,
-                    'minimumVersion': '2025.1'
-                },
-                {
-                    'name': 'Reveal Shot Folder in Finder',
-                    'isVisible': scope_batch_group,
-                    'execute': reveal_batch_group_shot_folder_finder,
                     'minimumVersion': '2025.1'
                 },
                 {

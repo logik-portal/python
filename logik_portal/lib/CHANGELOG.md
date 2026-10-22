@@ -1,8 +1,32 @@
 # PyFlame Library Changelog
 
 All notable changes to this project will be documented in this file.
-
+ 
 https://logik-portal.com/pyflame
+
+## v5.5.3 [10.16.26]
+
+### Updates
+
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+
+## v5.5.2 [10.08.26]
+
+### Updates
+
+- Fixed "screenGeometry" error for Flame 2027.2
+
+## v5.5.1 [08.11.26]
+
+### Updates
+
+- **Widgets**
+    - `PyFlameMenu`
+        - Updated stylesheet - menu bar now changes to grey when disabled.
+
+- **PyFlameConfig**
+    - Now neatly prints lists and dictionaries to the console.
+
 
 ## v5.5.0 [07.22.26]
 

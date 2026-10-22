@@ -1,8 +1,14 @@
 # PyFlame Library Changelog
 
 All notable changes to this project will be documented in this file.
-
+ 
 https://logik-portal.com/pyflame
+
+## v5.5.2 [10.08.26]
+
+### Updates
+
+- Fixed "screenGeometry" error for Flame 2027.2
 
 ## v5.5.1 [08.11.26]
 

@@ -2,39 +2,39 @@
 # Logik Portal
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License. See the LICENSE file
+# for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Logik Portal
-Script Version: 7.2.1
+Script Version: 7.3.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 08.05.26
+Update Date: 10.16.26
 
 Script Type: Flame Main Menu
-
+ 
 Description:
 
     Install python scripts, batch setups, inference nodes, and matchboxes from logik-portal.com
 
 Notes:
 
-    Installing the Logik Matchbox Collection may be slow when installing over a network due to large numbder of small files.
+    Installing the Logik Matchbox Collection may be slow when installing over a network due to large number of small
+    files.
+
+    Installing or updating a python script that is already installed:
+        - Same major version (for example, v2.6.1 to v2.7.0): choose Update or Erase.
+            - Update copies the new files over the existing script. Saved settings and any extra files are kept.
+            - Erase deletes the existing script folder, including saved settings and extra files, then installs fresh.
+        - Different major version (for example, v1.4.0 to v2.0.0): the existing script folder is always erased,
+          including saved settings and extra files, then the new version is installed fresh.
+        - If the installed or Portal version can't be read, the script is treated as a different major version.
+        - The existing script is backed up before installing and restored if the install fails.
 
 URL:
     https://logik-portal.com
@@ -49,12 +49,33 @@ To install:
 
 Updates:
 
+    v7.3.0 10.16.26
+        - Added Open in Finder button to Tools tab. When checked, the download folder opens when a download is complete.
+        - Moved Tools tab next to Python Scripts tab.
+        - Fixed - Tools tab listed source code zips that shouldn't be downloaded. The Files menu now only shows the
+          downloads listed on the Logik Portal.
+        - Fixed - Headings in Tools and Pixel Expressions descriptions looked squished.
+        - Added Update button to Python Scripts tab. Opens a list of installed scripts with newer versions on the Logik
+          Portal. Update the selected scripts (multiple selection allowed) or Update All. The button is only enabled
+          when installed scripts have updates.
+        - Installed python scripts with a newer version that works with the current version of Flame available on the
+          Logik Portal are now highlighted in yellow. 
+        - Added ability to preserve existing settings when updating a python script. When installing the new version a
+          prompt will ask to update or erase the existing script. Updating will only work when a script is the same
+          major version. For example, v1.0.0 can be updated to v1.1.0, but v1.0.0 cannot be updated to v2.0.0. Updating
+          to a new major version will erase the existing script and all saved settings and extra files.
+        - Added Tools tab. Download tools and GitHub releases from logik-portal.com/misc.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Fixed - Can't connect to internet error in Flame 2027.2. 
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+  
     v7.2.1 08.05.26
         - Fixed - python compatibility issues with python 3.11.
 
     v7.2.0 07.23.26
         - Added Pixel Expressions tab. Allows for downloading  of pixel expressions from logik-portal.com.
-        - Added retry to download JSON files from GitHub in case of failure. Retries 5 times with a 2 second delay between attempts.
+        - Added retry to download JSON files from GitHub in case of failure. Retries 5 times with a 2 second delay
+          between attempts.
         - Updated to PyFlameLib v5.5.0
         - Small UI enhancements
         - Added Logik Portal to Batch Menu
@@ -74,7 +95,8 @@ Updates:
         - Removed PySide2 support.
         - Matchboxes are now pulled from GitHub repository instead of FTP server.
         - Python scripts are now pulled from GitHub repository instead of FTP server.
-        - Fixed issue with python scripts not showing up in locally installed scripts list if they did not have a properly formatted header docstring.
+        - Fixed issue with python scripts not showing up in locally installed scripts list if they did not have a
+          properly formatted header docstring.
 
     v6.5.1 10.20.25
         - Fixed issues with inference copyright window.
@@ -85,7 +107,8 @@ Updates:
     v6.4.0 01.09.25
         - Added ability to select where python scripts are installed. Default path is /opt/Autodesk/shared/python.
           *** When selecting a path, make sure its a path Flame will look for python scripts in and is writeable ***
-        - Fixed: Adding a matchbox to batch would sometimes load the wrong matchbox if it had a similar name to another matchbox.
+        - Fixed: Adding a matchbox to batch would sometimes load the wrong matchbox if it had a similar name to another
+          matchbox.
 
     v6.3.0 01.07.25
         - Updated to PyFlameLib v4.0.0.
@@ -94,12 +117,14 @@ Updates:
 
     v6.2.0 08.31.24
         - Added disclaimer message when downloading inference nodes.
-        - Added notice to users uploading inference nodes that they should include links to the original source of the model and that the model should be open source.
+        - Added notice to users uploading inference nodes that they should include links to the original source of the
+          model and that the model should be open source.
         - Fixed misc bugs.
 
     v6.1.0 08.16.24
         - Added search fields to python scripts, batch setups, and inference nodes tabs.
-        - User is given message to save work before installing the Logik Portal from within the Logik Portal. Flame will crash but will be fine after restarting Flame.
+        - User is given message to save work before installing the Logik Portal from within the Logik Portal. Flame will
+          crash but will be fine after restarting Flame.
 
     v6.0.0 08.03.24
         - Added Inference Nodes tab. Allows for downloading and submitting Inference nodes.
@@ -112,8 +137,8 @@ Updates:
         - Fixed: Install button not properly working for python scripts. Thanks for catching Mottizle!
 
     v5.9.0 03.05.24
-        - Added column to python script tab to show minimum and maximum flame versions required to run script.
-          Scripts that require a newer or older version of flame will be greyed out in the list and not installable.
+        - Added column to python script tab to show minimum and maximum flame versions required to run script. Scripts
+          that require a newer or older version of flame will be greyed out in the list and not installable.
 
     v5.8.2 02.08.24
         - Python scripts can now sorted by year when clicking on year header.
@@ -158,8 +183,9 @@ Updates:
 
     v5.3 01.25.23
         - Matchboxes will now install into a directory called LOGIK in the selected directory.
-        - Reverted menu for Flame 2023.2+ to Flame Main Menu -> Logik -> Logik Portal. Scripts downloaded from the Portal that have a setup menu
-          in the future will have their menu added under Flame Main Menu -> Logik -> Logik Portal Setup -> Script Name for clarity.
+        - Reverted menu for Flame 2023.2+ to Flame Main Menu -> Logik -> Logik Portal. Scripts downloaded from the
+          Portal that have a setup menu in the future will have their menu added under Flame Main Menu -> Logik -> Logik
+          Portal Setup -> Script Name for clarity.
         - Updated config file loading/saving.
 
     v5.2 01.08.23
@@ -200,10 +226,12 @@ Updates:
     v2.7 10.16.21
         - Install Local button added to python tab to install python scripts from local drive.
         - Improved Flame version detection.
-        - Script will now attempt to download matchbox collection from website. If website is down, it will download from portal ftp.
+        - Script will now attempt to download matchbox collection from website. If website is down, it will download
+          from portal ftp.
 
     v2.6 09.06.21
-        - Misc bug fixes / fixed problem with not being able to enter system password to load matchboxes to write protected folder.
+        - Misc bug fixes / fixed problem with not being able to enter system password to load matchboxes to write
+          protected folder.
 
     v2.5 07.30.21
         - Added ability to upload/download archives - Archive size limit is 200MB.
@@ -214,7 +242,8 @@ Updates:
         - Fixed bug - files starting with . sometimes caused script to not work.
 
     v2.3 07.06.21
-        - Added Logik Matchbox archive to Portal FTP. Matchbox archive now stored on FTP instead of pulling directly from logik-matchbook.org.
+        - Added Logik Matchbox archive to Portal FTP. Matchbox archive now stored on FTP instead of pulling directly
+          from logik-matchbook.org.
 
     v2.2 06.03.21
         - Updated to be compatible with Flame 2022/Python 3.7.
@@ -223,7 +252,8 @@ Updates:
     v1.6 03.14.21
         - UI improvements/updates - UI elements to classes.
         - Added contextual menus to python tab to install and delete scripts and to batch tab to download batch setups.
-        - User will be prompted for system password when trying to download matchboxes to protected folders such as /opt/Autodesk/presets/2021.1/matchbox/shaders.
+        - User will be prompted for system password when trying to download matchboxes to protected folders such as
+          /opt/Autodesk/presets/2021.1/matchbox/shaders.
         - If newer version of installed script is available on portal it will be highlighted in portal list.
         - If newer version of flame is required for a script, script entry will be greyed out.
         - If newer version of flame is required for a batch setup, batch setup entry will be greyed out.
@@ -252,6 +282,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import io
 import os
 import re
@@ -260,11 +292,14 @@ import json
 import time
 import shutil
 import zipfile
+import urllib.parse
 import urllib.request
 import subprocess
 import webbrowser
 import ast
 import sys
+import ssl
+import platform
 
 import flame
 from lib.pyflame_lib_logik_portal import *
@@ -274,8 +309,189 @@ from lib.pyflame_lib_logik_portal import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Logik Portal'
-SCRIPT_VERSION = 'v7.2.1'
+SCRIPT_VERSION = 'v7.3.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+
+# ==============================================================================
+# [Utilities]
+# ==============================================================================
+
+class TextEditLinkOpener(QtCore.QObject):
+    """
+    Text Edit Link Opener
+    =====================
+
+    Open links clicked in a read-only PyFlameTextEdit in the web browser.
+    PyFlameTextEdit shows links but doesn't open them, so this watches mouse events on its viewport.
+
+    Args
+    ----
+        text_edit (PyFlameTextEdit):
+            Text edit whose links should open when clicked.
+    """
+
+    def __init__(self, text_edit) -> None:
+
+        super().__init__(text_edit)
+
+        self.text_edit = text_edit
+        self.default_cursor = text_edit.viewport().cursor()
+        text_edit.viewport().setMouseTracking(True)
+        text_edit.viewport().installEventFilter(self)
+
+    def eventFilter(self, watched, event) -> bool:
+        """
+        Event Filter
+        ============
+
+        Show a pointing hand over links and open web links when clicked.
+        """
+
+        if event.type() == QtCore.QEvent.MouseMove:
+            if self.text_edit.anchorAt(event.position().toPoint()):
+                watched.setCursor(QtCore.Qt.PointingHandCursor)
+            else:
+                watched.setCursor(self.default_cursor)
+        elif event.type() == QtCore.QEvent.MouseButtonRelease and event.button() == QtCore.Qt.LeftButton:
+            link = self.text_edit.anchorAt(event.position().toPoint())
+            # Skip when the click ends a text selection
+            if link.startswith(('http://', 'https://', 'mailto:')) and not self.text_edit.textCursor().hasSelection():
+                webbrowser.open(link)
+                return True
+
+        return False
+
+class ItemBackgroundDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    Item Background Delegate
+    ========================
+
+    Paint each item's background color in a PyFlameTreeWidget.
+    The PyFlameTreeWidget stylesheet hides colors set with item.setBackground, so this fills the background before the item is drawn.
+    Items with a background color keep it when selected instead of turning grey.
+
+    Args
+    ----
+        tree (PyFlameTreeWidget):
+            Tree to paint item backgrounds in. Its existing delegate is still used for editing items.
+    """
+
+    def __init__(self, tree) -> None:
+
+        super().__init__(tree)
+        self.original_delegate = tree.itemDelegate()
+
+    def paint(self, painter, option, index) -> None:
+
+        background = index.data(QtCore.Qt.BackgroundRole)
+        if background is not None:
+            painter.fillRect(option.rect, background)
+
+            # Draw item as unselected so the stylesheet's grey selection color doesn't cover the background
+            option = QtWidgets.QStyleOptionViewItem(option)
+            option.state &= ~QtWidgets.QStyle.State_Selected
+        super().paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+
+        return self.original_delegate.createEditor(parent, option, index)
+
+def unsqueeze_markdown_headings(text_edit) -> None:
+    """
+    Unsqueeze Markdown Headings
+    ===========================
+
+    Show Markdown headings at the font's normal width. PyFlameTextEdit draws text at the app font's condensed
+    width, which makes large headings look squished. Body text is left as is.
+
+    Args
+    ----
+        text_edit (PyFlameTextEdit):
+            Text edit showing Markdown text.
+    """
+
+    heading_format = QtGui.QTextCharFormat()
+    heading_format.setFontStretch(100)
+
+    block = text_edit.document().begin()
+    while block.isValid():
+        if block.blockFormat().headingLevel():
+            cursor = QtGui.QTextCursor(block)
+            cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(heading_format)
+        block = block.next()
+
+class PortalRequestHandler(urllib.request.BaseHandler):
+    """
+    Portal Request Handler
+    ======================
+
+    Add the request header to requests sent to logik-portal.com only.
+
+    Args
+    ----
+        user_agent (str):
+            Header value.
+    """
+
+    handler_order = 400 # Run before urllib adds its default headers
+
+    def __init__(self, user_agent: str) -> None:
+
+        self.user_agent = user_agent
+
+    def http_request(self, request):
+
+        host = request.host.split(':')[0].lower()
+        if host == 'logik-portal.com' or host.endswith('.logik-portal.com'):
+            request.add_unredirected_header('User-Agent', self.user_agent)
+
+        return request
+
+    https_request = http_request
+
+def install_url_opener() -> None:
+    """
+    Install URL Opener
+    ==================
+
+    Install one global urllib opener for web requests. Adds the request header for logik-portal.com and fixes SSL
+    certificates in Flame 2027.2.
+    """
+
+    def clean(value) -> str:
+        """
+        Clean
+        =====
+
+        ASCII only, no spaces, 40 characters max. Returns unknown if empty.
+        """
+
+        value = str(value or 'unknown').strip().replace(' ', '_')
+        return value.encode('ascii', 'ignore').decode()[:40] or 'unknown'
+
+    # Build request header
+    try:
+        flame_version = flame.get_version()
+    except Exception:
+        flame_version = 'unknown'
+    os_name = {'Darwin': 'mac', 'Linux': 'linux'}.get(platform.system(), 'other')
+    user_agent = (
+        f'LogikPortal/{clean(SCRIPT_VERSION.lstrip("vV"))} Flame/{clean(flame_version)} '
+        f'OS/{os_name} Python/{clean(platform.python_version())}'
+        )
+
+    handlers: list[urllib.request.BaseHandler] = [PortalRequestHandler(user_agent)]
+
+    # Use certifi's CA bundle for HTTPS when Flame's python can't find any system certificates (Flame 2027.2)
+    try:
+        if not ssl.create_default_context().cert_store_stats()['x509_ca']:
+            import certifi
+            handlers.append(urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
+    except Exception:
+        pass
+
+    urllib.request.install_opener(urllib.request.build_opener(*handlers))
 
 # ==============================================================================
 # [Main Script]
@@ -290,6 +506,9 @@ class LogikPortal:
         # Check script path, if path is incorrect, stop script.
         if not pyflame.verify_script_install():
             return
+
+        # Set up web requests: request header and SSL certificates
+        install_url_opener()
 
         # Check internet connection
         internet_connection_check = self.check_internet_connection()
@@ -327,6 +546,13 @@ class LogikPortal:
 
         #  Init variables
         self.installed_script_dict = {}
+        self.tools_dict = {}
+        self.update_scripts_window: Any = None
+        self.update_scripts_label: Any = None
+        self.update_scripts_tree: Any = None
+        self.update_scripts_cancel_button: Any = None
+        self.update_scripts_update_button: Any = None
+        self.update_scripts_update_all_button: Any = None
         self.file_description = ''
         self.batch_group: Any = None
 
@@ -336,6 +562,7 @@ class LogikPortal:
         self.batch_setups_json_path = os.path.join(self.temp_folder, 'batch_setups.json')
         self.matchbox_json_path = os.path.join(self.temp_folder, 'matchbox_collection.json')
         self.inference_nodes_json_path = os.path.join(self.temp_folder, 'inference.json')
+        self.misc_json_path = os.path.join(self.temp_folder, 'misc.json')
 
         # Download JSON files
         json_downloaded = self.download_jsons()
@@ -383,6 +610,8 @@ class LogikPortal:
                 'inference_node_add_to_batch': True,
                 'pixel_expression_download_path': '/opt/Autodesk',
                 'pixel_expression_add_to_batch': True,
+                'tools_download_path': os.path.expanduser('~/Downloads'),
+                'tools_open_in_finder': True,
                 'last_tab': 'Python Scripts',
                 }
             )
@@ -461,6 +690,7 @@ class LogikPortal:
         matchbox_url ='https://raw.githubusercontent.com/logik-portal/matchbox/main/matchbox_collection.json'
         batch_setups_url = 'https://logik-portal.com/files/batch_setups/batch_setups.json'
         inference_url = 'https://logik-portal.com/files/inference/inference.json'
+        misc_url = 'https://logik-portal.com/files/misc/misc.json'
 
         def download_json(url, path, max_retries=5, retry_delay=2) -> bool:
             for attempt in range(1, max_retries + 1):
@@ -490,6 +720,7 @@ class LogikPortal:
             download_json(matchbox_url, self.matchbox_json_path),
             download_json(batch_setups_url, self.batch_setups_json_path),
             download_json(inference_url, self.inference_nodes_json_path),
+            download_json(misc_url, self.misc_json_path),
         ]
 
         print('\n', end='')
@@ -537,6 +768,8 @@ class LogikPortal:
         # Display in the active tab's description area
         if self.settings.last_tab == 'Python Scripts':
             apply_update(self.script_description_label, self.script_description_text_edit)
+        elif self.settings.last_tab == 'Tools':
+            apply_update(self.tools_description_label, self.tools_description_text_edit)
         elif self.settings.last_tab == 'Matchbox':
             apply_update(self.matchbox_desciption_label, self.matchbox_text_edit)
         elif self.settings.last_tab == 'Batch Setups':
@@ -573,6 +806,7 @@ class LogikPortal:
         self.tabs = PyFlameTabWidget(
             tab_names=[
                 'Python Scripts',
+                'Tools',
                 'Pixel Expressions',
                 'Matchbox',
                 'Batch Setups',
@@ -587,6 +821,7 @@ class LogikPortal:
 
         # Load Tabs
         self.python_scripts_tab()
+        self.tools_tab()
         self.pixel_expressions_tab()
         self.matchbox_tab()
         self.batch_setups_tab()
@@ -783,6 +1018,76 @@ class LogikPortal:
 
             pyflame.print('Python Scripts List Updated', text_color=TextColor.GREEN)
 
+        def get_script_updates() -> list:
+            """
+            Get Script Updates
+            ==================
+
+            Get installed scripts that have a newer version on the Logik Portal that works with this version of Flame.
+
+            Returns
+            -------
+                script_updates (list): Dict for each script with an update: name, installed_version, portal_version, flame_version, author.
+            """
+
+            def parse_version(version) -> tuple | None:
+                """
+                Parse Version
+                =============
+
+                Convert a version string like v1.2 to (1, 2, 0). Returns None if it isn't a version.
+                """
+
+                try:
+                    parts = tuple(int(x) for x in str(version).strip().lstrip('vV').split('.'))
+                except ValueError:
+                    return None
+                return parts + (0,) * (3 - len(parts))
+
+            # Read in JSON
+            try:
+                with open(self.python_scripts_json_path, 'r', encoding='utf-8') as f:
+                    python_scripts = json.load(f)
+            except Exception:
+                return []
+
+            current_flame_version = parse_version(self.flame_version)[:2] # pyright: ignore[reportOptionalSubscript]
+
+            script_updates = []
+            for python_script in python_scripts:
+                script_name = python_script.get('Script Name')
+                installed_version = self.installed_script_dict.get(script_name)
+
+                # Skip scripts that aren't installed. installed_script_dict isn't cleared when a script is deleted, so check the folder too.
+                if installed_version is None or not os.path.isdir(os.path.join(self.settings.script_install_path, script_name.replace(' ', '_'))):
+                    continue
+
+                # Skip scripts without a newer version
+                installed_ver = parse_version(installed_version)
+                portal_ver = parse_version(python_script.get('Script Version'))
+                if not installed_ver or not portal_ver or portal_ver <= installed_ver:
+                    continue
+
+                # Skip scripts that don't work with this version of Flame
+                flame_min_version = parse_version(str(python_script.get('Flame Version') or '')[:6])
+                if flame_min_version and current_flame_version < flame_min_version[:2]:
+                    continue
+                flame_max_version = python_script.get('Maximum Flame Version')
+                if flame_max_version and flame_max_version != 'Latest':
+                    flame_max_version = parse_version(str(flame_max_version)[:6])
+                    if flame_max_version and current_flame_version > flame_max_version[:2]:
+                        continue
+
+                script_updates.append({
+                    'name': script_name,
+                    'installed_version': installed_version,
+                    'portal_version': python_script.get('Script Version'),
+                    'flame_version': str(python_script.get('Flame Version') or '')[:6],
+                    'author': python_script.get('Author'),
+                    })
+
+            return script_updates
+
         def update_installed_scripts_tree(search: str=''):
             """
             Update Installed Scripts Tree
@@ -966,6 +1271,25 @@ class LogikPortal:
                 # Add script to dict of installed scripts
                 self.installed_script_dict.update({script_name : script_version})
 
+            def highlight_updated_scripts() -> None:
+                """
+                Highlight Updated Scripts
+                =========================
+
+                Color the background of installed scripts yellow if a newer version that works with this version of Flame is available on the Logik Portal.
+                """
+
+                script_updates = [script_update['name'] for script_update in get_script_updates()]
+                self.installed_script_updates = script_updates
+
+                root = self.installed_scripts_tree.invisibleRootItem()
+                for i in range(root.childCount()):
+                    item = root.child(i)
+                    if item.text(0) in script_updates:
+                        for column in range(self.installed_scripts_tree.columnCount()):
+                            item.setBackground(column, QtGui.QColor(224, 173, 28, 64)) # Same yellow as the selected item border at 25% opacity
+                            item.setForeground(column, QtGui.QColor(255, 255, 255)) # White text
+
             pyflame.print('Updating Installed Scripts List...', underline=True, new_line=False)
 
             # Clear installed scripts tree
@@ -988,6 +1312,9 @@ class LogikPortal:
                                 else:
                                     add_script()
 
+            # Highlight installed scripts that have a newer version on the Logik Portal
+            highlight_updated_scripts()
+
             # Set width of tree headers
             self.installed_scripts_tree.resizeColumnToContents(0)
             self.installed_scripts_tree.resizeColumnToContents(4)
@@ -996,6 +1323,8 @@ class LogikPortal:
 
             # Select first item in tree
             self.installed_scripts_tree.setCurrentItem(self.installed_scripts_tree.topLevelItem(0))
+            # Enable Update button only when installed scripts have updates
+            self.update_scripts_button.setEnabled(bool(self.installed_script_updates))
 
             pyflame.print('Installed Scripts List Updated', text_color=TextColor.GREEN)
 
@@ -1087,28 +1416,187 @@ class LogikPortal:
                         )
                     return
 
-        def install_script() -> None:
+        def install_portal_script(display_name: str, script_version: str, script_flame_version: str, script_author: str, parent, refresh: bool=True) -> bool:
             """
-            Install Script
-            ==============
+            Install Portal Script
+            =====================
 
-            Get selected script info from selection and install script to script install path.
+            Download a script from the Logik Portal and install it to the script install path.
+
+            If the script folder already exists:
+                - Same major version: prompt to update (overwrite files, keep extras) or erase the folder.
+                - Different major version: warn that settings and extra files will be erased, then replace the folder.
+
+            A config folder included in the download is never installed.
+
+            Args
+            ----
+                display_name (str):
+                    Script name as shown in the Logik Portal, with spaces.
+
+                script_version (str):
+                    Script version on the Logik Portal.
+
+                script_flame_version (str):
+                    Minimum Flame version of the script.
+
+                script_author (str):
+                    Script author.
+
+                parent (PyFlameWindow):
+                    Window to open messages and progress windows over.
+
+                refresh (bool, optional):
+                    Rescan python hooks and refresh the installed scripts list after installing.
+                    (Default: True)
+
+            Returns
+            -------
+                bool: True if the script was installed.
             """
+
+            def parse_script_version(version: str):
+                if not version:
+                    return None
+                version = str(version).strip()
+                if version[:1] in ('v', 'V'):
+                    version = version[1:]
+                try:
+                    parts = tuple(int(part) for part in version.split('.') if part != '')
+                except ValueError:
+                    return None
+                return parts or None
+
+            def strip_packaged_config(root: str) -> None:
+                config_dir = os.path.join(root, 'config')
+                if os.path.isdir(config_dir):
+                    shutil.rmtree(config_dir)
+                    pyflame.print(f'Ignored packaged config folder: {config_dir}')
+
+            # On a NAS (SMB) share a file that Flame has open, like a loaded font, can't really be deleted.
+            # It's renamed to a hidden .smbdelete file until Flame lets go of it, and its folder can't be
+            # removed until then. Folder listings on these shares also don't report symlinks, so symlinks
+            # are checked with os.path.islink instead of relying on shutil.copytree/rmtree.
+
+            def copy_tree(source: str, destination: str) -> None:
+                # Copy source into destination, merging with anything already there.
+                # Existing files are deleted before writing so symlinks are replaced, never written through,
+                # and files Flame has open aren't written over in place. Symlinks in source are copied as links.
+
+                def copy_link(link_path: str, target_path: str) -> None:
+
+                    if os.path.lexists(target_path):
+                        remove_tree(target_path)
+                    os.symlink(os.readlink(link_path), target_path)
+
+                for root, dirs, files in os.walk(source):
+                    relative = os.path.relpath(root, source)
+                    target_root = destination if relative == '.' else os.path.join(destination, relative)
+                    if os.path.islink(target_root):
+                        os.unlink(target_root)
+                    os.makedirs(target_root, exist_ok=True)
+                    for dir_name in list(dirs):
+                        dir_path = os.path.join(root, dir_name)
+                        if os.path.islink(dir_path):
+                            dirs.remove(dir_name)
+                            copy_link(dir_path, os.path.join(target_root, dir_name))
+                    for file_name in files:
+                        if file_name.startswith('.smbdelete'):
+                            continue
+                        file_path = os.path.join(root, file_name)
+                        target_file = os.path.join(target_root, file_name)
+                        if os.path.islink(file_path):
+                            copy_link(file_path, target_file)
+                            continue
+                        if os.path.lexists(target_file):
+                            os.unlink(target_file)
+                        shutil.copy2(file_path, target_file)
+
+            def remove_tree(path: str) -> None:
+                # Delete a file, symlink, or folder. Symlinks are removed, never followed.
+                # Folders left holding only .smbdelete files are left in place, they go away when Flame lets go of them.
+                # Raises if anything else can't be removed.
+                if os.path.islink(path) or os.path.isfile(path):
+                    os.unlink(path)
+                    return
+                if not os.path.isdir(path):
+                    return
+
+                for root, dirs, files in os.walk(path, topdown=False):
+                    for file_name in files:
+                        if not file_name.startswith('.smbdelete'):
+                            os.unlink(os.path.join(root, file_name))
+                    for dir_name in dirs:
+                        dir_path = os.path.join(root, dir_name)
+                        if os.path.islink(dir_path):
+                            os.unlink(dir_path)
+                    try:
+                        os.rmdir(root)
+                    except OSError:
+                        leftovers = [
+                            os.path.join(leftover_root, name)
+                            for leftover_root, _, leftover_files in os.walk(root)
+                            for name in leftover_files
+                            ]
+                        if not leftovers or any(not os.path.basename(leftover).startswith('.smbdelete') for leftover in leftovers):
+                            raise
 
             pyflame.print('Installing Python Script...', underline=True, new_line=False)
 
-            # Get selected script info from selection
-            selected_script = self.portal_scripts_tree.selectedItems()
-            script_item = selected_script[0]
-            script_name = script_item.text(0).strip()
-            script_name = script_name.replace(' ', '_')
-            script_flame_version = script_item.text(2)
-            script_author = script_item.text(5)
+            script_name = display_name.replace(' ', '_')
+            install_path = os.path.join(self.settings.script_install_path, script_name)
 
             print('Script Info:')
             print('    Script name:', script_name)
+            print('    Script version:', script_version)
             print('    Script Flame version:', script_flame_version)
             print('    Script Author:', script_author, '\n')
+            print('Install Path: ', install_path)
+
+            # Decide how to handle an existing install before downloading.
+            erase_existing = True
+            if os.path.exists(install_path):
+                installed_version = self.installed_script_dict.get(display_name, '')
+                installed_parsed = parse_script_version(installed_version)
+                new_parsed = parse_script_version(script_version)
+                same_major = (
+                    installed_parsed is not None
+                    and new_parsed is not None
+                    and installed_parsed[0] == new_parsed[0]
+                    )
+
+                if same_major:
+                    choice = PyFlameOptionWindow(
+                        parent=parent,
+                        message=(
+                            f'{display_name} {installed_version} is already installed.\n\n'
+                            f'Update to {script_version} (overwrites existing files, keeps extra files and saved settings), '
+                            f'or erase the folder and install fresh?'
+                            ),
+                        buttons={
+                            2: {'text': 'Erase', 'color': Color.RED},
+                            3: {'text': 'Update', 'color': Color.BLUE},
+                            4: {'text': 'Cancel', 'color': Color.GRAY},
+                            },
+                        cancel_button=4,
+                        )
+                    if not choice:
+                        pyflame.print('Python Script Install Cancelled')
+                        return False
+                    erase_existing = choice.selected == 'Erase'
+                else:
+                    installed_label = installed_version if installed_version else 'unknown version'
+                    new_label = script_version if script_version else 'new version'
+                    if not PyFlameMessageWindow(
+                        message=(
+                            f'{display_name} {installed_label} → {new_label} is a major update.\n\n'
+                            'The existing script folder will be erased, including saved settings and any extra files. Continue?'
+                            ),
+                        message_type=MessageType.WARNING,
+                        parent=parent,
+                        ):
+                        pyflame.print('Python Script Install Cancelled')
+                        return False
 
             # Download python script zip from Logik Portal, extract, and move to script install path.
             # Build the endpoint that returns a zip for the selected script.
@@ -1134,7 +1622,7 @@ class LogikPortal:
                         total_tasks=total_kb,
                         task_progress_message='{task}\n\n[{processing_task}kb of {total_tasks}kb] ({progress:.1f}%)',
                         title=f'{SCRIPT_NAME}: Downloading',
-                        parent=self.window,
+                        parent=parent,
                         )
 
                     downloaded = 0
@@ -1157,18 +1645,18 @@ class LogikPortal:
                 PyFlameMessageWindow(
                     title='Error',
                     message=f'Failed to download Python Script\n\n{exc}',
-                    parent=self.window,
+                    parent=parent,
                     )
-                return
+                return False
 
             if not os.path.isfile(zip_path) or os.path.getsize(zip_path) == 0:
                 shutil.rmtree(work_dir, ignore_errors=True)
                 PyFlameMessageWindow(
                     title='Error',
                     message='Failed to download Python Script.\n\nThe Python script is missing or empty.',
-                    parent=self.window,
+                    parent=parent,
                     )
-                return
+                return False
 
             pyflame.print(f'Downloaded: {zip_path}', text_color=TextColor.GREEN)
 
@@ -1182,15 +1670,12 @@ class LogikPortal:
                 PyFlameMessageWindow(
                     title='Error',
                     message=f'Failed to extract Python Script archive\n\n{exc}',
-                    parent=self.window,
+                    parent=parent,
                     )
-                return
+                return False
             finally:
                 if os.path.exists(zip_path):
                     os.remove(zip_path)
-
-            install_path = os.path.join(self.settings.script_install_path, script_name)
-            print('Install Path: ', install_path)
 
             # Inspect extracted root to determine how archive is structured.
             entries = os.listdir(work_dir)
@@ -1199,25 +1684,68 @@ class LogikPortal:
                 PyFlameMessageWindow(
                     title='Error',
                     message='Failed to install Python Script.\n\nThe extracted archive was empty.',
-                    parent=self.window,
+                    parent=parent,
                     )
-                return
+                return False
 
             entry_paths = [os.path.join(work_dir, entry) for entry in entries]
 
             # Archive may contain one top-level folder or loose files.
             if len(entries) == 1 and os.path.isdir(entry_paths[0]):
-                # Typical package: archive contains one folder named after script.
                 source_path = entry_paths[0]
-                if os.path.exists(install_path):
-                    shutil.rmtree(install_path)
-                shutil.move(source_path, install_path)
-                shutil.rmtree(work_dir, ignore_errors=True)
             else:
-                # Fallback: archive has loose files at root; install that root folder.
-                if os.path.exists(install_path):
-                    shutil.rmtree(install_path)
-                shutil.move(work_dir, install_path)
+                source_path = work_dir
+
+            strip_packaged_config(source_path)
+
+            # Back up the existing script folder so it can be restored if the install fails.
+            backup_path = os.path.join(self.temp_python_scripts_folder, f'{script_name}_previous')
+            had_existing = os.path.lexists(install_path)
+            backup_made = False
+            try:
+                if os.path.lexists(backup_path):
+                    remove_tree(backup_path)
+                if had_existing:
+                    copy_tree(install_path, backup_path)
+                    backup_made = True
+                    if erase_existing:
+                        remove_tree(install_path)
+                copy_tree(source_path, install_path)
+            except Exception as exc:
+                message = f'Failed to install Python Script\n\n{exc}'
+                if backup_made:
+                    try:
+                        # Clear what can be cleared from the failed install, then copy the backup back over it
+                        try:
+                            remove_tree(install_path)
+                        except OSError:
+                            pass
+                        copy_tree(backup_path, install_path)
+                        message += '\n\nThe previous version was restored.'
+                    except Exception as restore_exc:
+                        message += (
+                            f'\n\nCould not restore the previous version:\n{restore_exc}\n\n'
+                            f'A copy is in:\n{backup_path}\n\n'
+                            'Copy it somewhere safe before closing the Logik Portal.'
+                            )
+                elif had_existing:
+                    shutil.rmtree(backup_path, ignore_errors=True)
+                else:
+                    try:
+                        remove_tree(install_path)
+                    except Exception:
+                        pass
+                shutil.rmtree(work_dir, ignore_errors=True)
+                PyFlameMessageWindow(
+                    message=message,
+                    message_type=MessageType.ERROR,
+                    parent=parent,
+                    )
+                return False
+            shutil.rmtree(backup_path, ignore_errors=True)
+
+            if os.path.isdir(work_dir) and os.path.abspath(work_dir) != os.path.abspath(install_path):
+                shutil.rmtree(work_dir, ignore_errors=True)
 
             script_installed = os.path.exists(install_path)
             print('Script Installed: ', script_installed)
@@ -1225,24 +1753,217 @@ class LogikPortal:
             # Check if script is in correct path, if so install is complete, if not, install failed.
             if script_installed:
 
-                # Refresh python hooks
-                flame.execute_shortcut('Rescan Python Hooks')
+                if refresh:
 
-                # Refresh installed scripts tree list
-                update_installed_scripts_tree()
+                    # Refresh python hooks
+                    flame.execute_shortcut('Rescan Python Hooks')
 
-                # Set color of selected script in portal tree to normal color
-                self.portal_scripts_tree.color_item(script_item, color='#9A9A9A')
+                    # Refresh installed scripts tree list
+                    update_installed_scripts_tree()
 
                 pyflame.print(f'Script Installed: {script_name.replace("_", " ")}', text_color=TextColor.GREEN)
-                return
+                return True
             else:
                 PyFlameMessageWindow(
                     message='Python Script Install Aborted.',
                     message_type=MessageType.ERROR,
+                    parent=parent,
+                    )
+                return False
+
+        def install_script() -> None:
+            """
+            Install Script
+            ==============
+
+            Install the script selected in the Portal Python Scripts tree.
+            """
+
+            # Get selected script info from selection
+            selected_script = self.portal_scripts_tree.selectedItems()
+            script_item = selected_script[0]
+
+            if install_portal_script(
+                display_name=script_item.text(0).strip(),
+                script_version=script_item.text(1),
+                script_flame_version=script_item.text(2),
+                script_author=script_item.text(5),
+                parent=self.window,
+                ):
+
+                # Set color of selected script in portal tree to normal color
+                self.portal_scripts_tree.color_item(script_item, color='#9A9A9A')
+
+        def update_scripts() -> None:
+            """
+            Update Scripts
+            ==============
+
+            Open a window listing the installed scripts that have a newer version on the Logik Portal.
+            Update the selected scripts or all scripts in the list. Each update uses the same Erase/Update prompts as Install.
+            """
+
+            def install_updates(script_updates: list) -> None:
+                """
+                Install Updates
+                ===============
+
+                Install each script update, then rescan python hooks and refresh the installed scripts and update lists once.
+                """
+
+                scripts_installed = False
+                for script_update in script_updates:
+                    if install_portal_script(
+                        display_name=script_update['name'],
+                        script_version=script_update['portal_version'],
+                        script_flame_version=script_update['flame_version'],
+                        script_author=script_update['author'],
+                        parent=self.update_scripts_window,
+                        refresh=False,
+                        ):
+                        scripts_installed = True
+
+                # Rescan python hooks and refresh installed scripts once after all updates
+                if scripts_installed:
+                    flame.execute_shortcut('Rescan Python Hooks')
+                    update_installed_scripts_tree()
+
+                update_list()
+
+            def update_list() -> None:
+                """
+                Update List
+                ===========
+
+                Fill the update tree with the scripts that have updates. Close the window when none are left.
+                """
+
+                self.update_scripts_tree.clear()
+                for script_update in get_script_updates():
+                    self.update_scripts_tree.add_item_with_columns([
+                        script_update['name'],
+                        script_update['installed_version'],
+                        script_update['portal_version'],
+                        script_update['author'],
+                        ])
+                self.update_scripts_tree.resizeColumnToContents(0)
+                self.update_scripts_tree.setCurrentItem(self.update_scripts_tree.topLevelItem(0))
+
+                if not self.update_scripts_tree.topLevelItemCount():
+                    close_window()
+
+            def update_selected() -> None:
+                """
+                Update Selected
+                ===============
+
+                Update the selected scripts.
+                """
+
+                selected_script_names = [item.text(0) for item in self.update_scripts_tree.selectedItems()]
+                if not selected_script_names:
+                    return
+
+                install_updates([script_update for script_update in get_script_updates() if script_update['name'] in selected_script_names])
+
+            def update_all() -> None:
+                """
+                Update All
+                ==========
+
+                Confirm, then update every script in the list.
+                """
+
+                script_updates = get_script_updates()
+                if not script_updates:
+                    return
+
+                script_names = '\n'.join(script_update['name'] for script_update in script_updates)
+                if not PyFlameMessageWindow(
+                    message=f'Update all python scripts in the list?\n\n{script_names}',
+                    message_type=MessageType.CONFIRM,
+                    parent=self.update_scripts_window,
+                    ):
+                    return
+
+                install_updates(script_updates)
+
+            def close_window() -> None:
+                """
+                Close Window
+                ============
+
+                Close window.
+                """
+
+                self.update_scripts_window.close()
+
+            # Let the user know if there's nothing to update
+            if not get_script_updates():
+                PyFlameMessageWindow(
+                    message='All installed python scripts are up to date.',
+                    message_type=MessageType.INFO,
                     parent=self.window,
                     )
                 return
+
+            # ------------------------------------------------------------------------------
+            # [Window Elements]
+            # ------------------------------------------------------------------------------
+
+            # Window
+            self.update_scripts_window = PyFlameWindow(
+                title=f'{SCRIPT_NAME}: Update Python Scripts <small>{SCRIPT_VERSION}',
+                escape_pressed=close_window,
+                grid_layout_columns=4,
+                grid_layout_rows=10,
+                parent=self.window,
+                )
+
+            # Labels
+            self.update_scripts_label = PyFlameLabel(
+                text='Python Scripts With Updates',
+                style=Style.UNDERLINE,
+                )
+
+            # TreeWidget
+            self.update_scripts_tree = PyFlameTreeWidget(
+                column_names=[
+                    'Name',
+                    'Installed',
+                    'Portal',
+                    'Author',
+                    ],
+                sort=True,
+                )
+            self.update_scripts_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection) # Allow multiple scripts to be selected for Update
+
+            # Buttons
+            self.update_scripts_cancel_button = PyFlameButton(
+                text='Cancel',
+                connect=close_window,
+                )
+            self.update_scripts_update_button = PyFlameButton(
+                text='Update',
+                connect=update_selected,
+                )
+            self.update_scripts_update_all_button = PyFlameButton(
+                text='Update All',
+                connect=update_all,
+                color=Color.BLUE,
+                )
+
+            # ------------------------------------------------------------------------------
+            # [Widget Layout]
+            # ------------------------------------------------------------------------------
+
+            self.update_scripts_window.grid_layout.addWidget(self.update_scripts_label, 0, 0, 1, 4)
+            self.update_scripts_window.grid_layout.addWidget(self.update_scripts_tree, 1, 0, 8, 4)
+            self.update_scripts_window.grid_layout.addWidget(self.update_scripts_cancel_button, 9, 1)
+            self.update_scripts_window.grid_layout.addWidget(self.update_scripts_update_button, 9, 2)
+            self.update_scripts_window.grid_layout.addWidget(self.update_scripts_update_all_button, 9, 3)
+
+            update_list()
 
         def delete_script() -> None:
             """
@@ -1474,6 +2195,8 @@ class LogikPortal:
             sort=True,
             height=250,
             )
+        self.installed_scripts_tree.setItemDelegate(ItemBackgroundDelegate(self.installed_scripts_tree)) # Show yellow background on scripts with updates
+        self.installed_script_updates = []
 
         # Portal Scripts TreeWidget
         self.portal_scripts_tree = PyFlameTreeWidget(
@@ -1500,6 +2223,11 @@ class LogikPortal:
             text='Install Local',
             connect=install_local_script,
             tooltip='Install a script saved locally to your computer, for example, a script you downloaded from the internet.',
+            )
+        self.update_scripts_button = PyFlameButton(
+            text='Update',
+            connect=update_scripts,
+            tooltip='Update installed scripts that have a newer version on the Logik Portal. Scripts with updates are highlighted in yellow. Only enabled when installed scripts have updates.',
             )
         self.delete_script_button = PyFlameButton(
             text='Delete',
@@ -1532,7 +2260,8 @@ class LogikPortal:
         self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_label, 0, 0, 1, 4)
         self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_tree, 1, 0, 7, 4)
         self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.delete_script_button, 8, 0)
-        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.install_local_script_button, 8, 3)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.install_local_script_button, 8, 2)
+        self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.update_scripts_button, 8, 3)
         self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_search_label, 9, 0)
         self.tabs.tab_pages['Python Scripts'].grid_layout.addWidget(self.installed_scripts_search_entry, 9, 1, 1, 3)
 
@@ -2206,6 +2935,425 @@ class LogikPortal:
         self.tabs.tab_pages['Pixel Expressions'].grid_layout.addWidget(self.pixel_expression_done_button, 20, 8)
 
         update_pixel_expressions_tree()
+
+    def tools_tab(self):
+
+        def get_tools() -> list:
+            """
+            Get Tools
+            =========
+
+            Read tools from the misc JSON. The site lists each tool's downloads in its downloads block:
+
+                - If it has items, all items are offered. The source zip isn't.
+                - If it has no items and source_is_primary is set, the source zip is the one download.
+
+            Tools with nothing to download, including link-only tools, are skipped.
+
+            Returns
+            -------
+                tools (list): Tool dicts with name, version, date, repo, description and downloadable files.
+            """
+
+            with open(self.misc_json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            items = data.get('misc', []) if isinstance(data, dict) else data
+
+            tools = []
+            for item in items:
+                if item.get('hidden') or item.get('link_only'):
+                    continue
+
+                slug = str(item.get('slug') or '')
+                github_url = str(item.get('github_url') or '').rstrip('/').removesuffix('.git')
+
+                release = item.get('pinned') or {}
+                version = str(item.get('release_ref') or release.get('ref') or '') if item.get('is_repo') else ''
+
+                # Get downloads. Each file is a dict with name and url.
+                downloads = item.get('downloads') or {}
+                files = list(downloads.get('items') or [])
+                if not files and downloads.get('source_is_primary') and downloads.get('source'):
+                    files = [downloads['source']]
+                files = [{'name': str(file['name']), 'url': str(file['url'])} for file in files if file.get('name') and file.get('url')]
+
+                if not slug or not files:
+                    continue
+
+                # Date column shows the release date, or the portal approval date if there's no release date.
+                # yy.mm.dd so the column sorts by date.
+                date = str((item.get('pinned') or {}).get('published_at') or item.get('approved_at') or '')
+                if len(date) >= 10:
+                    date = f'{date[2:4]}.{date[5:7]}.{date[8:10]}'
+
+                # Repo column shows owner/repo from the GitHub URL
+                repo = ''
+                if github_url:
+                    repo = '/'.join(urllib.parse.urlparse(github_url).path.strip('/').split('/')[:2])
+
+                tools.append({
+                    'name': str(item.get('name') or ''),
+                    'slug': slug,
+                    'version': version,
+                    'date': date,
+                    'repo': repo,
+                    'github_url': github_url,
+                    'branch': str(item.get('repo_branch') or 'main'),
+                    'description': str(item.get('description') or ''),
+                    'files': files,
+                    })
+
+            return tools
+
+        def prepare_tool_description(description: str, github_url: str, branch: str) -> str:
+            """
+            Prepare Tool Description
+            ========================
+
+            Prepare a tool README for display. The text edit can't load images, so each image is replaced
+            with its alt text. Relative links point into the GitHub repo, so they're changed to full GitHub URLs.
+
+            Args
+            ----
+                description (str):
+                    README markdown text.
+
+                github_url (str):
+                    GitHub repo URL. If empty, relative links are left as they are.
+
+                branch (str):
+                    Repo branch used to build GitHub file URLs.
+
+            Returns
+            -------
+                description (str): Description ready to display.
+            """
+
+            def make_link_absolute(match) -> str:
+
+                link_text = match.group(1)
+                target = match.group(2)
+                if github_url and not target.startswith(('http://', 'https://', 'mailto:', '#')):
+                    target = urllib.parse.urljoin(f'{github_url}/blob/{branch}/', target)
+
+                return f'[{link_text}]({target})'
+
+            # Replace markdown and html images with their alt text
+            description = re.sub(r'!\[([^\]]*)\]\([^)]*\)', r'\1', description)
+            description = re.sub(r'<img\b[^>]*?\balt=["\']([^"\']*)["\'][^>]*>', r'\1', description, flags=re.IGNORECASE)
+            description = re.sub(r'<img\b[^>]*>', '', description, flags=re.IGNORECASE)
+
+            # Change relative links to full GitHub URLs
+            description = re.sub(r'\[([^\]]*)\]\(([^)\s]+)\)', make_link_absolute, description)
+
+            return description
+
+        def get_tool_description() -> None:
+            """
+            Get Tool Description
+            ====================
+
+            Show the selected tool's description in the text edit and list its files in the file menu.
+            """
+
+            selected_items = self.tools_tree.selectedItems()
+            if not selected_items:
+                return
+
+            tool = self.tools_dict.get(selected_items[0].text(0))
+            if not tool:
+                return
+
+            # Switch text edit label. This is named 'Logik Portal Updates' when the script first loads.
+            self.tools_description_label.text = 'Tool Description'
+            self.tools_description_text_edit.text = prepare_tool_description(tool['description'], tool['github_url'], tool['branch'])
+            unsqueeze_markdown_headings(self.tools_description_text_edit)
+
+            file_names = [file['name'] for file in tool['files']]
+            self.tools_file_menu.update_menu(
+                text=file_names[0],
+                menu_options=file_names,
+                )
+
+        def update_tools_tree(search: str='') -> None:
+            """
+            Update Tools Tree
+            =================
+
+            Add tools to the tools tree from the misc JSON. If search string is present, only add tools that match the search string.
+
+            Args
+            ----
+                search (str):
+                    String to search for in tool name. If search string is present, only add tools that match the search string.
+                    (Default: '')
+            """
+
+            pyflame.print('Updating Tools List...', underline=True, new_line=False)
+
+            # Clear tools tree
+            self.tools_tree.clear()
+            self.tools_dict = {}
+
+            # Add tools to tree. If search string is present, only add tools that match the search string.
+            for tool in get_tools():
+                if search and search.lower() not in tool['name'].lower():
+                    continue
+                self.tools_tree.add_item_with_columns([tool['name'], tool['version'], tool['date'], tool['repo']])
+                self.tools_dict[tool['name']] = tool
+
+            # Select top item in tools tree
+            self.tools_tree.setCurrentItem(self.tools_tree.topLevelItem(0))
+
+            # Get selected tool description
+            get_tool_description()
+
+            pyflame.print('Tools List Updated', text_color=TextColor.GREEN)
+
+        def tool_download() -> None:
+            """
+            Tool Download
+            =============
+
+            Download the file selected in the file menu for the selected tool. Files are saved as downloaded, not uncompressed.
+            If Open in Finder is checked, the download folder is opened when the download is complete.
+            """
+
+            selected_items = self.tools_tree.selectedItems()
+            if not selected_items:
+                return
+
+            tool = self.tools_dict.get(selected_items[0].text(0))
+            file_name = self.tools_file_menu.text
+            if not tool:
+                return
+            download_url = next((file['url'] for file in tool['files'] if file['name'] == file_name), None)
+            if not download_url:
+                return
+
+            # Select download folder
+            download_path = pyflame.file_browser(
+                title='Select Tool Download Folder',
+                path=self.settings.tools_download_path,
+                select_directory=True,
+                window_to_hide=self.window,
+                )
+            if not download_path:
+                return
+            download_path = str(download_path)
+
+            # Save download path to config file
+            self.settings.save_config(
+                config_values={
+                    'tools_download_path': download_path,
+                    }
+                )
+
+            # Make sure download folder is writeable
+            if not os.access(download_path, os.W_OK):
+                PyFlameMessageWindow(
+                    message='Selected folder is not writeable.\n\nCheck permissions or select a different folder.',
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
+                    )
+                return
+
+            # If file already exists prompt to overwrite or cancel
+            file_path = os.path.join(download_path, file_name)
+            if os.path.exists(file_path):
+                if not PyFlameMessageWindow(
+                    message=f'{file_name} already exists. Overwrite?',
+                    message_type=MessageType.CONFIRM,
+                    parent=self.window,
+                    ):
+                    pyflame.print('Tool Download Cancelled')
+                    return
+
+            # Download to a temp file first so a failed download never replaces an existing file
+            temp_path = file_path + '.download'
+            progress_window = None
+            pyflame.print(f'Downloading: {download_url}')
+            try:
+                with urllib.request.urlopen(download_url, timeout=600) as resp:
+                    total_bytes = int(resp.headers.get('Content-Length', 0) or 0)
+                    total_kb = max(1, total_bytes // 1024)
+
+                    progress_window = PyFlameProgressWindow(
+                        task=f'Downloading Tool: {file_name}',
+                        total_tasks=total_kb,
+                        task_progress_message='{task}\n\n[{processing_task}kb of {total_tasks}kb] ({progress:.1f}%)',
+                        title=f'{SCRIPT_NAME}: Downloading',
+                        parent=self.window,
+                        )
+
+                    downloaded = 0
+                    chunk_size = 1024 * 1024  # 1 MB increments for progress window to show progress.
+                    with open(temp_path, 'wb') as out_file:
+                        while True:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            out_file.write(chunk)
+                            downloaded += len(chunk)
+                            progress_window.current_task = downloaded // 1024
+
+                os.replace(temp_path, file_path)
+            except Exception as exc:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                if progress_window is not None:
+                    progress_window.close()
+                PyFlameMessageWindow(
+                    message=f'Failed to download {file_name}\n\n{exc}',
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
+                    )
+                return
+
+            progress_window.tasks_completed(
+                title='Logik Portal: Download Complete',
+                text_append=f'Download Complete\n\n{file_path}',
+                )
+            pyflame.print(f'Downloaded: {file_path}', text_color=TextColor.GREEN)
+
+            # Open download folder
+            if self.tools_open_in_finder_pushbutton.checked:
+                pyflame.open_in_finder(download_path)
+
+        def tool_submit() -> None:
+            """
+            Tool Submit
+            ===========
+
+            Submit tool to Logik Portal.
+
+            Redirects to logik-portal.com for submission.
+            """
+
+            pyflame.print('Redirecting to logik-portal.com for submission...')
+            webbrowser.open('https://logik-portal.com/misc/#submit')
+
+        def tool_search() -> None:
+            """
+            Tool Search
+            ===========
+
+            Search for tools in the tools tree. Update tree with search results as user types.
+            """
+
+            update_tools_tree(search=self.tools_search_entry.text)
+
+        # ==============================================================================
+        # [Tools Tab]
+        # ==============================================================================
+
+        # Labels
+        self.tools_label = PyFlameLabel(
+            text='Tools',
+            style=Style.UNDERLINE,
+            )
+        self.tools_description_label = PyFlameLabel(
+            text='Tool Description',
+            style=Style.UNDERLINE,
+            )
+        self.tools_search_label = PyFlameLabel(
+            text='Search',
+            align=Align.CENTER,
+            )
+        self.tools_files_label = PyFlameLabel(
+            text='Files:',
+            align=Align.CENTER,
+            )
+
+        # Entry
+        self.tools_search_entry = PyFlameEntry(
+            text='',
+            text_changed=tool_search,
+            )
+
+        # Text Edit
+        self.tools_description_text_edit = PyFlameTextEdit(
+            text=self.file_description,
+            text_type=TextType.MARKDOWN,
+            text_style=TextStyle.READ_ONLY,
+            height=259,
+            )
+        self.tools_link_opener = TextEditLinkOpener(self.tools_description_text_edit)
+
+        # TreeWidgets
+        self.tools_tree = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                'Version',
+                'Date',
+                'Repo',
+                ],
+            connect=get_tool_description,
+            sort=True,
+            elide_text=True,
+            column_resizable=True,
+            height=250,
+            )
+
+        # Menus
+        self.tools_file_menu = PyFlameMenu(
+            text='',
+            menu_options=[],
+            tooltip='File to download from the selected tool',
+            )
+
+        # Push Buttons
+        self.tools_open_in_finder_pushbutton = PyFlamePushButton(
+            text='Open in Finder',
+            checked=self.settings.tools_open_in_finder,
+            tooltip='Open the download folder in Finder when the download is complete',
+            )
+
+        # Buttons
+        self.tools_submit_button = PyFlameButton(
+            text='Submit',
+            connect=tool_submit,
+            )
+        self.tools_download_button = PyFlameButton(
+            text='Download',
+            connect=tool_download,
+            color=Color.BLUE,
+            tooltip='Download Selected File',
+            )
+        self.tools_done_button = PyFlameButton(
+            text='Done',
+            connect=self.done,
+            )
+        self.tools_logik_portal_button = PyFlameButton(
+            text='logik-portal.com',
+            connect=self.logik_portal,
+            )
+
+        # ==============================================================================
+        # [Tools Tab Layout]
+        # ==============================================================================
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_label, 0, 0, 1, 9)
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_tree, 1, 0, 7, 9)
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_submit_button, 8, 0)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_files_label, 8, 4)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_file_menu, 8, 5, 1, 2)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_open_in_finder_pushbutton, 8, 7)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_download_button, 8, 8)
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_search_label, 9, 5)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_search_entry, 9, 6, 1, 3)
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_description_label, 10, 0, 1, 9)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_description_text_edit, 11, 0, 9, 9)
+
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_logik_portal_button, 20, 0)
+        self.tabs.tab_pages['Tools'].grid_layout.addWidget(self.tools_done_button, 20, 8)
+
+        update_tools_tree()
 
     def matchbox_tab(self):
 
@@ -3672,6 +4820,7 @@ class LogikPortal:
                 text_edit.setReadOnly(True)
                 text_edit.text_type = TextType.MARKDOWN
                 text_edit.text = description
+                unsqueeze_markdown_headings(text_edit)
                 break
 
             # Escape HTML characters
@@ -3720,6 +4869,8 @@ class LogikPortal:
             page_name = 'scripts'
         elif self.tabs.get_current_tab_name() == 'Pixel Expressions':
             page_name = 'pixel_expressions'
+        elif self.tabs.get_current_tab_name() == 'Tools':
+            page_name = 'misc'
         elif self.tabs.get_current_tab_name() == 'Matchbox':
             page_name = 'matchboxes'
         elif self.tabs.get_current_tab_name() == 'Inference Nodes':
@@ -3743,11 +4894,12 @@ class LogikPortal:
         # Get current tab name
         current_tab_name = self.tabs.get_current_tab_name()
 
-        # Save current tab to config
+        # Save current tab and Tools Open in Finder state to config
         self.settings.save_config(
             config_values={
                 'last_tab': current_tab_name,
-                'script_install_path': self.script_install_path_browse.path
+                'script_install_path': self.script_install_path_browse.path,
+                'tools_open_in_finder': self.tools_open_in_finder_pushbutton.checked,
                 }
             )
 

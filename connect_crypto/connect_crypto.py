@@ -6,7 +6,7 @@ Flame Version: 2021
 Creation date: 07.05.23
 Modified date: 02.26.24
 
-Author: Kyle Obley (info@kyleobley.com)
+Written By: Kyle Obley (info@kyleobley.com)
 
 Description:
 

@@ -1,10 +1,10 @@
 # Logik Portal
 
-**Script Version:** 7.2.1  
+**Script Version:** 7.3.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.31.20  
-**Update Date:** 08.05.26  
+**Update Date:** 10.16.26  
 
 **Script Type:** Flame Main Menu
 
@@ -14,7 +14,15 @@ Install python scripts, batch setups, inference nodes, and matchboxes from logik
 
 ## Notes
 
-Installing the Logik Matchbox Collection may be slow when installing over a network due to large numbder of small files.
+Installing the Logik Matchbox Collection may be slow when installing over a network due to large number of small files.
+<br><br>
+Installing or updating a python script that is already installed:
+- Same major version (for example, v2.6.1 to v2.7.0): choose Update or Erase.
+- Update copies the new files over the existing script. Saved settings and any extra files are kept.
+- Erase deletes the existing script folder, including saved settings and extra files, then installs fresh.
+- Different major version (for example, v1.4.0 to v2.0.0): the existing script folder is always erased, including saved settings and extra files, then the new version is installed fresh.
+- If the installed or Portal version can't be read, the script is treated as a different major version.
+- The existing script is backed up before installing and restored if the install fails.
 
 ## URL
 
@@ -29,6 +37,20 @@ https://logik-portal.com
 Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ## Updates
+
+### v7.3.0 [10.16.26]
+- Added Open in Finder button to Tools tab. When checked, the download folder opens when a download is complete.
+- Moved Tools tab next to Python Scripts tab.
+- Fixed - Tools tab listed source code zips that shouldn't be downloaded. The Files menu now only shows the downloads listed on the Logik Portal.
+- Fixed - Headings in Tools and Pixel Expressions descriptions looked squished.
+- Added Update button to Python Scripts tab. Opens a list of installed scripts with newer versions on the Logik Portal. Update the selected scripts (multiple selection allowed) or Update All. The button is only enabled when installed scripts have updates.
+- Installed python scripts with a newer version that works with the current version of Flame available on the Logik Portal are now highlighted in yellow.
+- Added ability to preserve existing settings when updating a python script. When installing the new version a prompt will ask to update or erase the existing script. Updating will only work when a script is the same major version. For example, v1.0.0 can be updated to v1.1.0, but v1.0.0 cannot be updated to v2.0.0. Updating to a new major version will erase the existing script and all saved settings and extra files.
+- Added Tools tab. Download tools and GitHub releases from logik-portal.com/misc.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Fixed - Can't connect to internet error in Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v7.2.1 [08.05.26]
 - Fixed - python compatibility issues with python 3.11.
@@ -71,8 +93,7 @@ Copy script into /opt/Autodesk/shared/python/logik_portal
 <br>
 
 ### v6.4.0 [01.09.25]
-- Added ability to select where python scripts are installed. Default path is /opt/Autodesk/shared/python.
-- *** When selecting a path, make sure its a path Flame will look for python scripts in and is writeable ***
+- Added ability to select where python scripts are installed. Default path is /opt/Autodesk/shared/python. *** When selecting a path, make sure its a path Flame will look for python scripts in and is writeable ***
 - Fixed: Adding a matchbox to batch would sometimes load the wrong matchbox if it had a similar name to another matchbox.
 <br>
 
@@ -106,8 +127,7 @@ Copy script into /opt/Autodesk/shared/python/logik_portal
 <br>
 
 ### v5.9.0 [03.05.24]
-- Added column to python script tab to show minimum and maximum flame versions required to run script.
-- Scripts that require a newer or older version of flame will be greyed out in the list and not installable.
+- Added column to python script tab to show minimum and maximum flame versions required to run script. Scripts that require a newer or older version of flame will be greyed out in the list and not installable.
 <br>
 
 ### v5.8.2 [02.08.24]
@@ -162,8 +182,7 @@ Copy script into /opt/Autodesk/shared/python/logik_portal
 
 ### v5.3 [01.25.23]
 - Matchboxes will now install into a directory called LOGIK in the selected directory.
-- Reverted menu for Flame 2023.2+ to Flame Main Menu -> Logik -> Logik Portal. Scripts downloaded from the Portal that have a setup menu
-- in the future will have their menu added under Flame Main Menu -> Logik -> Logik Portal Setup -> Script Name for clarity.
+- Reverted menu for Flame 2023.2+ to Flame Main Menu -> Logik -> Logik Portal. Scripts downloaded from the Portal that have a setup menu in the future will have their menu added under Flame Main Menu -> Logik -> Logik Portal Setup -> Script Name for clarity.
 - Updated config file loading/saving.
 <br>
 
@@ -182,8 +201,7 @@ Copy script into /opt/Autodesk/shared/python/logik_portal
 <br>
 
 ### v4.2 [09.06.22]
-- Updated menu for Flame 2023.2+:
-- Flame Main Menu -> Logik Portal
+- Updated menu for Flame 2023.2+: Flame Main Menu -> Logik Portal
 <br>
 
 ### v4.1 [07.22.22]
