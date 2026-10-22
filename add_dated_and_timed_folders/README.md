@@ -1,10 +1,10 @@
 # Add Dated And Timed Folders
 
-**Script Version:** 2.7.0  
+**Script Version:** 2.7.1  
 **Flame Version:** 2025.1  
 **Written by:** John Geehreng and Michael Vaglienty  
 **Creation Date:** 07.04.20  
-**Update Date:** 06.25.26  
+**Update Date:** 10.22.26  
 
 **Script Type:** MediaPanel/MediaHub Files
 
@@ -40,6 +40,10 @@ https://logik-portal.com/scripts/#add_dated_and_timed_folders
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.7.1 [10.22.26]
+- Fixed: screenGeometry error with Flame 2027.2.
+<br>
 
 ### v2.7.0 [06.25.26]
 - Path is now copied to clipboard when creating folders in the MediaHub Files tab.

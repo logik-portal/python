@@ -19,11 +19,11 @@
 
 """
 Script Name: Add Dated and Timed Folders
-Script Version: 2.7.0
+Script Version: 2.7.1
 Flame Version: 2025.1
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
-Update Date: 06.25.26
+Update Date: 10.22.26
 
 License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
 
@@ -63,6 +63,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.7.1 10.22.26
+        - Fixed: screenGeometry error with Flame 2027.2.
 
     v2.7.0 06.25.26
         - Path is now copied to clipboard when creating folders in the MediaHub Files tab.
@@ -116,7 +119,7 @@ from lib.pyflame_lib_add_dated_and_timed_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
-SCRIPT_VERSION = 'v2.7.0'
+SCRIPT_VERSION = 'v2.7.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
