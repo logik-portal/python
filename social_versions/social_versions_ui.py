@@ -1,10 +1,10 @@
 """
 Script Name: social versions ui
-Script Version: 1.0.3
+Script Version: 1.0.4
 Flame Version: 2023.2
 Written by: Kyle Obley (info@kyleobley.com), UI by John Geehreng
 Creation Date: 02.08.25
-Update Date: 02.28.26
+Update Date: 10.22.26
 
 Custom Action Type: Media Panel
 
@@ -21,6 +21,7 @@ To install:
     Copy script into /opt/Autodesk/shared/python/social_versions or wherever you keep your scripts
 
 Updates:
+10.22.26 - v1.0.4 - Fixed: screenGeometry error with Flame 2027.2.
 02.28.26 - v1.0.3 - Updated version for pyflame lib v5.2.3
 02.13.25 - v1.0.2 - Reversed width and height
 02.10.25 - v1.0.1 - Tweaked Labels
@@ -42,7 +43,7 @@ from social_versions import create_timeline
 #-------------------------------------
 
 SCRIPT_NAME = 'Social Versions UI'
-SCRIPT_VERSION = 'v1.0.3'
+SCRIPT_VERSION = 'v1.0.4'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 FOLDER_NAME = 'Social Versions'
 

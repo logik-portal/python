@@ -1,16 +1,17 @@
 """
 Script Name: Social Versions
-Script Version: 0.3.3
+Script Version: 0.3.4
 Flame Version: 2023
 Written by: Kyle Obley (info@kyleobley.com)
 Creation Date: 02.05.25
-Modified Date: 02.28.25
+Update Date: 10.22.26
 
 Description:
 
 Creates social timelines based on other, selected timelines.
 
-Change Log:
+Updates:
+v0.3.4  Fixed: screenGeometry error with Flame 2027.2.
 v0.3.3  added in_point and out_point to new sequence. fixed a color thing.
 v0.3.2  check for original sequence colour before setting new sequence colour.
 v0.3.1  Added 'colour = sequence.colour' so new sequences match the color of the original.
