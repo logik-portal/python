@@ -746,8 +746,8 @@
     "Maximum Flame Version": "Latest",
     "Author": "Ted Stanley, with help from Claude",
     "Creation Date": "04.17.26",
-    "Update Date": "04.17.26",
-    "Description": "Script Name: insert_scale_axis\nScript Version: 0.1.1\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.17.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected segments with Actions, creates a new top level Axis node with a user-supplied scale value\n\nMenus:\nRight-click on a segment or timeline --> Action Tools -> Scale Action with Axis\n\nUpdates:\nv0.1.1 - 10.22.26\n- Fixed: screenGeometry error with Flame 2027.2.\nv0.1 - 04.17.26\n- Initial Release"
+    "Update Date": "10.22.26",
+    "Description": "Script Name: insert_scale_axis\nScript Version: 0.1.1\nFlame Version: 2025\nWritten by: Ted Stanley, with help from Claude\nCreation Date: 04.17.26\nUpdate Date: 10.22.26\n\nCustom Action Type: MediaPanel, Timeline\n\nDescription:\nFor all selected segments with Actions, creates a new top level Axis node with a user-supplied scale value\n\nMenus:\nRight-click on a segment or timeline --> Action Tools -> Scale Action with Axis\n\nUpdates:\nv0.1.1 - 10.22.26\n- Fixed: screenGeometry error with Flame 2027.2.\nv0.1 - 04.17.26\n- Initial Release"
   },
   {
     "Script Name": "invert axis",
