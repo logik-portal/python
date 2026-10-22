@@ -1,10 +1,10 @@
 """
 Script Name: scale xmls with resolution list
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 12.06.24
-Update Date: 12.25.24
+Update Date: 10.22.26
 
 Script Type: MediaHub
 
@@ -21,6 +21,10 @@ To install:
     Copy script into your python folder, typically /opt/Autodesk/shared/python/auto_scale_xmls or put it wherever you keep your scripts
 
 Updates:
+
+    v1.0.1   10.22.26
+
+        Fixed: screenGeometry error with Flame 2027.2.
 
     v1.0.0   10.22.25
 
@@ -60,7 +64,7 @@ from pyflame_lib_auto_scale_xmls import *
 
 FOLDER_NAME = "XML Prep"
 SCRIPT_NAME = "Scale XML's with Resolution List"
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class fix_premiere_xmls():

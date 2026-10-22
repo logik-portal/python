@@ -1,10 +1,10 @@
 # Auto Scale XMLs
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.0.1  
 **Flame Version:** 2025  
 **Written by:** John Geehreng  
 **Creation Date:** 12.06.24  
-**Update Date:** 10.22.25  
+**Update Date:** 10.22.26  
 
 **Script Type:** MediaPanel
 
@@ -21,6 +21,11 @@ The goal is to be able to select multiple xmls that have been run through the fi
 Copy script into your python folder, typically /opt/Autodesk/shared/python/auto_scale_xmls or wherever you keep your scripts
 
 ## Updates
+
+### v1.0.1 [10.22.26]
+<br>
+- Fixed: screenGeometry error with Flame 2027.2.
+<br>
 
 ### v1.0.0 [10.22.25]
 <br>
