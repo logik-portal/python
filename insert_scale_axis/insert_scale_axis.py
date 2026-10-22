@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script Name: insert_scale_axis
-Script Version: 0.1
+Script Version: 0.1.1
 Flame Version: 2025
 Written by: Ted Stanley, with help from Claude
 Creation Date: 04.17.26
@@ -15,6 +15,8 @@ Menus:
     Right-click on a segment or timeline --> Action Tools -> Scale Action with Axis
 
 Updates:
+    v.1.1 - 10.22.26
+    - Fixed: screenGeometry error with Flame 2027.2.
     v.1 - 04.17.26
     - Initial Release
 """
@@ -28,7 +30,7 @@ from pyflame_lib_action_tools import *
 
 FOLDER_NAME = 'Action Tools'
 SCRIPT_NAME = 'Scale Action with Axis'
-SCRIPT_VERSION = 'v.1'
+SCRIPT_VERSION = 'v.1.1'
 
 def scope_sequence(selection):
     return any(isinstance(item, flame.PySequence) for item in selection)
