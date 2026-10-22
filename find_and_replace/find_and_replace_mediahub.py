@@ -1,10 +1,10 @@
 """
 Script Name: find and replace mediahub
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2026
 Written by: John Geehreng
 Creation Date: 06.07.22
-Update Date: 10.06.25
+Update Date: 10.22.26
 
 Custom Action Type: Media Panel
 
@@ -15,6 +15,7 @@ Description: Find and Replaces characters in a bunch of clips or sequences.
 To install: Copy script into /opt/Autodesk/shared/python/find_and_replace_mediahub or wherever you wish.
 
 Updates:
+10.22.26 - v1.0.1  Fixed: screenGeometry error with Flame 2027.2.
 10.06.25 - v1.0.0  Updated for Flame 2026 and pyflame lib v4.
 12.13.23 - v0.3  Updated for pyflame lib v2. Start updates for Flame 2025.
 
@@ -36,7 +37,7 @@ from lib.pyflame_lib_find_and_replace_mediahub import *
 
 FOLDER_NAME = 'UC Renamers'
 SCRIPT_NAME = 'Find and Replace MediaHub'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
