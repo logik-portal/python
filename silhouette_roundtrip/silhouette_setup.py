@@ -7,18 +7,31 @@ Creates a new project + session from the source media, wires:
     SourceNode -> MaskMLNode -> MLMaskTrackerNode -> MLMatteRefineNode -> OutputNode
 configures the Output as DWAA OpenEXR alpha-only and saves the .sfx project,
 then leaves the UI open for the artist. Does not render automatically.
+
+After each completed render, a post_render hook sends the new frames to Flame
+through Logik Backdoor (import_image_to_batch) onto the result reel. Without
+Logik Backdoor installed this is skipped and Import Results is used instead.
 """
 
 from __future__ import print_function
 
+import glob
 import json
 import os
+import re
+import subprocess
 import sys
+import tempfile
+import time
 import traceback
 
 JOB_ENV = 'SILHOUETTE_FLAME_JOB'
 DEFAULT_JOB = '/tmp/silhouette_flame_job.json'
 SETUP_LOG = '/tmp/silhouette_roundtrip.log'
+
+DEFAULT_RESULT_REEL = 'Elements'
+
+LOGIK_BACKDOOR_CLIENT = '/opt/Autodesk/shared/python/logik_backdoor/logik_backdoor_client.py'
 
 CHANNELS_ALPHA = 0x02
 
@@ -663,9 +676,235 @@ def apply_display_only(job):
     except Exception:
         pass
 
+# ---------------------------------------------------------------------------
+# Auto-import renders into Flame via Logik Backdoor
+# ---------------------------------------------------------------------------
+
+_SEQ_FRAME_RE = re.compile(r'^(.*?)(\d+)(\.[A-Za-z0-9]+)$')
+_IMAGE_EXTENSIONS = ('.exr', '.dpx', '.tif', '.tiff', '.png', '.jpg', '.jpeg')
+
+_render_job = {}
+_render_start = [0.0]
+
+
+def _find_active_renderer():
+    """Return the Renderer that called post_render, or None.
+
+    post_render is called without arguments, so walk up the stack to the
+    Renderer.render() frame to read its outputs and cancel state.
+    """
+    try:
+        frame = sys._getframe(1)
+    except Exception:
+        return None
+    depth = 0
+    while frame is not None and depth < 15:
+        obj = frame.f_locals.get('self')
+        if obj is not None and hasattr(obj, 'canceled') and hasattr(obj, 'outputs'):
+            return obj
+        frame = frame.f_back
+        depth += 1
+    return None
+
+
+def _render_dirs(renderer):
+    dirs = []
+    if renderer is not None:
+        for output in getattr(renderer, 'outputs', []) or []:
+            try:
+                path = output.buildPath(0)
+            except Exception:
+                path = getattr(output, 'path', '')
+            directory = os.path.dirname(str(path or ''))
+            if directory and directory not in dirs:
+                dirs.append(directory)
+    if not dirs:
+        fallback = os.path.dirname(_render_job.get('render_path', ''))
+        if fallback:
+            dirs.append(fallback)
+    return dirs
+
+
+def _new_sequences(directory, since):
+    """Group frames written since `since` into Flame bracket patterns."""
+    groups = {}
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    for name in names:
+        if name.startswith('.') or not name.lower().endswith(_IMAGE_EXTENSIONS):
+            continue
+        full = os.path.join(directory, name)
+        try:
+            if os.path.getmtime(full) < since:
+                continue
+        except OSError:
+            continue
+        match = _SEQ_FRAME_RE.match(name)
+        if not match:
+            groups.setdefault((name, None, None), [])
+            continue
+        prefix, digits, ext = match.groups()
+        groups.setdefault((prefix, ext, len(digits)), []).append(int(digits))
+
+    patterns = []
+    for (prefix, ext, padding), frames in sorted(groups.items()):
+        if ext is None:
+            patterns.append(os.path.join(directory, prefix))
+            continue
+        first = str(min(frames)).zfill(padding)
+        last = str(max(frames)).zfill(padding)
+        if first == last:
+            patterns.append(os.path.join(directory, '%s%s%s' % (prefix, first, ext)))
+        else:
+            patterns.append(os.path.join(directory, '%s[%s-%s]%s' % (prefix, first, last, ext)))
+    return patterns
+
+
+def _find_python():
+    """Pick a Python 3.8+ outside Silhouette to run flame_import.py.
+
+    Prefer Flame's bundled Python (newest first), then the system one.
+    """
+    candidates = sorted(glob.glob('/opt/Autodesk/python/*/bin/python3'), reverse=True)
+    candidates += ['/usr/bin/python3', '/usr/local/bin/python3']
+    for path in candidates:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return ''
+
+
+def _launch_import(patterns, reel_name):
+    """Run flame_import.py as its own process and watch it from the main thread.
+
+    A separate process keeps the import independent of Silhouette: Python
+    threads inside Silhouette can stall for minutes, and the process also
+    finishes if Silhouette is closed right after the render.
+    """
+    # Logik Backdoor is optional: without it, renders are brought in with
+    # Import Results in Flame, so skip quietly instead of raising a dialog.
+    if not os.path.isfile(LOGIK_BACKDOOR_CLIENT):
+        _log('Logik Backdoor not installed (%s); skipping auto-import. '
+             'Use Import Results in Flame.' % LOGIK_BACKDOOR_CLIENT)
+        return
+
+    python = _find_python()
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'flame_import.py')
+    if not python or not os.path.isfile(script):
+        _log('Cannot auto-import: python=%r script=%r' % (python, script))
+        _show_import_failure(['No Python found to run %s' % script])
+        return
+
+    handle, result_path = tempfile.mkstemp(prefix='sfx_flame_import_', suffix='.json')
+    os.close(handle)
+
+    # Isolated mode (-I) ignores Silhouette's PYTHONHOME/PYTHONPATH.
+    args = [python, '-I', script, '--reel', reel_name, '--result', result_path] + patterns
+    _log('Launching import: %s' % ' '.join(args))
+    try:
+        log_fh = open(SETUP_LOG, 'a')
+        process = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=log_fh,
+            start_new_session=True,
+            close_fds=True,
+        )
+        log_fh.close()
+    except Exception as exc:
+        _log('Could not launch import process: %s' % exc)
+        _show_import_failure(['Could not launch import process: %s' % exc])
+        return
+    _report_results(process, result_path)
+
+
+def _report_results(process, result_path):
+    """Poll on Silhouette's main thread; show failures once the import process ends."""
+    from PySide6.QtCore import QTimer
+
+    if process.poll() is None:
+        QTimer.singleShot(500, lambda: _report_results(process, result_path))
+        return
+    failures = []
+    try:
+        with open(result_path) as fh:
+            failures = json.load(fh).get('failures', [])
+    except Exception:
+        failures = ['Import process exited with code %s (see %s)' % (process.returncode, SETUP_LOG)]
+    try:
+        os.remove(result_path)
+    except OSError:
+        pass
+    _log('Import process finished (exit %s)' % process.returncode)
+    if failures:
+        _show_import_failure(failures)
+
+
+def _show_import_failure(failures):
+    try:
+        from fx import displayError
+        displayError(
+            'Auto-import to Flame failed:\n%s\n\n'
+            'Use Silhouette RoundTrip -> Import Results in Flame instead.' % '\n'.join(failures)
+        )
+    except Exception:
+        pass
+
+
+def _on_pre_render(*args, **kwargs):
+    _render_start[0] = time.time()
+    _log('pre_render: start %.1f (args=%r)' % (_render_start[0], args))
+
+
+def _on_post_render(*args, **kwargs):
+    # Accept any arguments: Silhouette versions differ in what they pass.
+    try:
+        _log('post_render: called (args=%r kwargs=%r)' % (args, kwargs))
+        renderer = None
+        for arg in args:
+            if hasattr(arg, 'canceled') and hasattr(arg, 'outputs'):
+                renderer = arg
+                break
+        if renderer is None:
+            renderer = _find_active_renderer()
+        _log('post_render: renderer=%r canceled=%r' % (
+            renderer, getattr(renderer, 'canceled', None)))
+        if renderer is not None and getattr(renderer, 'canceled', False):
+            _log('post_render: render cancelled, not importing')
+            return
+        since = _render_start[0] - 1.0 if _render_start[0] else 0.0
+        patterns = []
+        for directory in _render_dirs(renderer):
+            patterns.extend(_new_sequences(directory, since))
+        _log('post_render: new sequences %r' % patterns)
+        if not patterns:
+            _log('post_render: no new frames found, not importing')
+            return
+        reel_name = _render_job.get('result_reel_name') or DEFAULT_RESULT_REEL
+        _launch_import(patterns, reel_name)
+    except Exception:
+        _log('post_render error:\n%s' % traceback.format_exc())
+
+
+def _register_render_hooks(job):
+    _render_job.clear()
+    _render_job.update(job)
+    try:
+        import hook
+        hook.add('pre_render', _on_pre_render)
+        hook.add('post_render', _on_post_render)
+        _log('Registered post_render auto-import (reel %r)' % (
+            job.get('result_reel_name') or DEFAULT_RESULT_REEL))
+    except Exception:
+        _log('Could not register render hooks:\n%s' % traceback.format_exc())
+
+
 def run():
     try:
         job = _load_job()
+        _register_render_hooks(job)
         _log('source_path : %s' % job.get('source_path'))
         _log('project_path: %s' % job.get('project_path'))
         _log('render_path : %s' % job.get('render_path'))

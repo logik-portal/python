@@ -1,10 +1,10 @@
 """
 Script Name: silhouette_roundtrip
-Script Version: 1.2.0
+Script Version: 1.3.0
 Flame Version: 2025
 Written by: John Geehreng and Cursor
 Creation Date: 09.03.26
-Update Date: 09.08.26
+Update Date: 10.22.26
 
 Custom Action Type: Batch / MediaHub Files / Main Menu
 
@@ -15,6 +15,8 @@ Description:
 - Silhouette imports the media, creates a session, and builds
   Mask ML -> Matte Assist ML -> Matte Refine ML -> Output (DWAA EXR, alpha).
 - Import the rendered matte sequence back into the current Batch reel.
+- With Logik Backdoor installed, each completed Silhouette render is imported
+  automatically onto the result reel. Without it, use Import Results.
 
 Menus:
 Right-click Clip Node in Batch -> Silhouette RoundTrip... -> Open in Silhouette
@@ -24,6 +26,7 @@ Right-click file in MediaHub -> Silhouette RoundTrip... -> (same)
 Flame Main Menu -> Silhouette RoundTrip Setup
 
 Updates:
+10.22.26 - v1.3.0 - Auto-import renders into Flame via Logik Backdoor (optional).
 09.08.26 - v1.1.0 - MediaHub Fix. Fix Mac crashing.
 09.08.26 - v1.2.0 - Adjuted OCIO Config to be more flexible.
 """
@@ -609,6 +612,7 @@ def resolve_job_paths(item, config):
         'render_dir': render_dir,
         'colour_space': colour_space,
         'ocio_config_path': get_silhouette_ocio_config_path(colour_space),
+        'result_reel_name': config.get('result_reel_name', 'Elements'),
     }
 
 
@@ -625,6 +629,7 @@ def write_job_json(job):
         'colour_space': job.get('colour_space', ''),
         'ocio_config_path': job.get('ocio_config_path', ''),
         'apply_only': job.get('apply_only', False),
+        'result_reel_name': job.get('result_reel_name', 'Elements'),
     }
     job_path = os.path.join(job['project_dir'], 'flame_job.json')
     with open(job_path, 'w') as handle:
