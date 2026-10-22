@@ -1,10 +1,10 @@
 # Scale Compensator
 
-**Script Version:** 1.1.1  
+**Script Version:** 2.0.4  
 **Flame Version:** 2023.2  
 **Written by:** John Geehreng  
 **Creation Date:** 11.18.23  
-**Update Date:** 10.22.25  
+**Update Date:** 10.22.26  
 
 **Script Type:** Action and Timeline
 
@@ -17,6 +17,26 @@ Compensate for different resolutions. In Action, you can generate Axes. In Timel
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.0.4 [10.22.26]
+- Fixed: screenGeometry error with Flame 2027.2.
+<br>
+
+### v2.0.3 [05.18.26]
+- minor UI adjustment - pyflame lib update (v5.3.1)
+<br>
+
+### v2.0.2 [05.14.26]
+- fixed a float/value error
+<br>
+
+### v2.0.1 [05.12.26]
+- fixed an error saving the config settings
+<br>
+
+### v2.0.0 [03.01.26]
+- Updated for pyflame lib v5.2.3
+<br>
 
 ### v1.1.1 [10.22.25]
 - Started using flame.projects.current_project.project_folder to determine where to save/load json's

@@ -1,10 +1,10 @@
 '''
 Script Name: scale compensator
-Script Version: 2.0.3
+Script Version: 2.0.4
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 11.18.23
-Update Date: 05.18.26
+Update Date: 10.22.26
 
 Custom Action Type: Action and Timeline
 
@@ -17,6 +17,7 @@ To install:
     Copy script into your python folder, typically /opt/Autodesk/shared/python/scale_compensator
 
 Updates:
+    10.22.26 - v2.0.4 - Fixed: screenGeometry error with Flame 2027.2.
     05.18.26 - v2.0.3 - minor UI adjustment - pyflame lib update (v5.3.1)
     05.14.26 - v2.0.2 - fixed a float/value error
     05.12.26 - v2.0.1 - fixed an error saving the config settings
@@ -43,7 +44,7 @@ from lib.pyflame_lib_scale_compensator import *
 
 SCRIPT_NAME = 'Scale Compensator'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
-SCRIPT_VERSION = 'v2.0.3'
+SCRIPT_VERSION = 'v2.0.4'
 
 #-------------------------------------#
 # Main Script

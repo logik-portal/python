@@ -19,10 +19,14 @@
 
 """
 PyFlame Library
-Version: 5.3.1
+Version: 5.3.1.1
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
 Update Date: 05.04.26
+
+Updates:
+    10.22.26 - v5.3.1.1 - Fixed: screenGeometry error with Flame 2027.2.
+               Patched copy of PyFlame 5.3.1 - not the latest PyFlame release. Current release is 5.5.3.
 
 Minimum Flame 2025.1
 
@@ -2912,7 +2916,7 @@ class _PyFlame:
 
         # Get current screen resolution
         main_window_res = pyflame.window_resolution()
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -24206,7 +24210,7 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         # Get Current Screen Resolution
         main_window_res = pyflame.window_resolution()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Get window size
         window_size = self.size()
