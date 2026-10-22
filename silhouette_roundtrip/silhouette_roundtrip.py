@@ -1,6 +1,6 @@
 """
 Script Name: silhouette_roundtrip
-Script Version: 1.3.0
+Script Version: 1.3.1
 Flame Version: 2025
 Written by: John Geehreng and Cursor
 Creation Date: 09.03.26
@@ -26,6 +26,7 @@ Right-click file in MediaHub -> Silhouette RoundTrip... -> (same)
 Flame Main Menu -> Silhouette RoundTrip Setup
 
 Updates:
+10.22.26 - v1.3.1 - Fixed: screenGeometry error with Flame 2027.2.
 10.22.26 - v1.3.0 - Auto-import renders into Flame via Logik Backdoor (optional).
 09.08.26 - v1.1.0 - MediaHub Fix. Fix Mac crashing.
 09.08.26 - v1.2.0 - Adjuted OCIO Config to be more flexible.
