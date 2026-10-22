@@ -15,7 +15,7 @@ For all selected segments with Actions, creates a new top level Axis node with a
 
 ## Updates
 
-- v.1.1 - 10.22.26
+- v0.1.1 - 10.22.26
 - Fixed: screenGeometry error with Flame 2027.2.
-- v.1 - 04.17.26
+- v0.1 - 04.17.26
 - Initial Release

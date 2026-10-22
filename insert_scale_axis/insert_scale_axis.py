@@ -15,9 +15,9 @@ Menus:
     Right-click on a segment or timeline --> Action Tools -> Scale Action with Axis
 
 Updates:
-    v.1.1 - 10.22.26
+    v0.1.1 - 10.22.26
     - Fixed: screenGeometry error with Flame 2027.2.
-    v.1 - 04.17.26
+    v0.1 - 04.17.26
     - Initial Release
 """
 
@@ -30,7 +30,7 @@ from pyflame_lib_action_tools import *
 
 FOLDER_NAME = 'Action Tools'
 SCRIPT_NAME = 'Scale Action with Axis'
-SCRIPT_VERSION = 'v.1.1'
+SCRIPT_VERSION = 'v0.1.1'
 
 def scope_sequence(selection):
     return any(isinstance(item, flame.PySequence) for item in selection)

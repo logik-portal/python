@@ -16,9 +16,9 @@ For all selected segments with Actions, scales the top Axis by a user-supplied v
 
 ## Updates
 
-- v.2.1 - 10.22.26
+- v0.2.1 - 10.22.26
 - Fixed: screenGeometry error with Flame 2027.2.
-- v.2 - 04.17.26
+- v0.2 - 04.17.26
 - Now scales the first Node Axis it finds, instead of only axis-L1 or axis1.
-- v.1 - 04.07.26
+- v0.1 - 04.07.26
 - Initial Release

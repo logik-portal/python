@@ -15,11 +15,11 @@ Menus:
     Right-click on a segment or timeline --> Action Tools -> Scale Action
 
 Updates:
-    v.2.1 - 10.22.26
+    v0.2.1 - 10.22.26
     - Fixed: screenGeometry error with Flame 2027.2.
-    v.2 - 04.17.26
+    v0.2 - 04.17.26
     - Now scales the first Node Axis it finds, instead of only axis-L1 or axis1.
-    v.1 - 04.07.26
+    v0.1 - 04.07.26
     - Initial Release
 """
 
@@ -33,7 +33,7 @@ from pyflame_lib_action_tools import *
 
 FOLDER_NAME = 'Action Tools'
 SCRIPT_NAME = 'Scale Action'
-SCRIPT_VERSION = 'v.2.1'
+SCRIPT_VERSION = 'v0.2.1'
 
 
 TARGET_AXIS_NAMES = {"axis_L1", "axis1"}
