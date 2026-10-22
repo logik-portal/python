@@ -1,11 +1,11 @@
 '''
 Script Name: Node Ops | Align Nodes Horizontally Sawtooth
-Script Version: 0.1.0
+Script Version: 0.1.1
 Flame Version: 2025.2
 Written by: Erik Borzi
 Special thanks: Michael Vaglienty & Andrew Miller
 Creation Date: 07.26.24
-Update Date: 07.26.24
+Update Date: 10.22.26
 
 Usage: Batch Desktop
 
@@ -50,6 +50,11 @@ To use:
 To install:
 
     Copy script into /opt/Autodesk/shared/python/node_ops
+
+Updates:
+
+    v0.1.1 10.22.26
+        - Fixed: screenGeometry error with Flame 2027.2.
 '''
 
 import flame

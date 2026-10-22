@@ -2,12 +2,12 @@
 
 """
 Script Name: Node Ops
-Script Version: 0.1.0
+Script Version: 0.1.1
 Flame Version: 2025.2
 Written by: Erik Borzi
 Special Thanks: Andrew Miller
 Creation Date: 03.01.25
-Update Date: 04.10.25
+Update Date: 10.22.26
    
 Description:
     
@@ -198,4 +198,9 @@ To use:
 To install:
 
     Copy script into /opt/Autodesk/shared/python/node_ops
+
+Updates:
+
+    v0.1.1 10.22.26
+        - Fixed: screenGeometry error with Flame 2027.2.
 """

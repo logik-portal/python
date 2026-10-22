@@ -1,6 +1,6 @@
 """
 Script Name: PyFlame Library
-Version: 3.2.0
+Version: 3.2.0.1
 Written by: Michael Vaglienty
 Creation Date: 10.31.20
 Update Date: 09.09.24
@@ -80,6 +80,11 @@ Usage:
         ...
 
 Updates:
+
+    v3.2.0.1 10.22.26
+
+        Fixed: screenGeometry error with Flame 2027.2.
+        Patched copy of PyFlame 3.2.0 - not the latest PyFlame release. Current release is 5.5.3.
 
     v3.2.0 09.09.24
 
@@ -1736,7 +1741,7 @@ class _PyFlameFunctions():
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -8314,7 +8319,7 @@ class PyFlameMessageWindow(QtWidgets.QDialog):
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Center window on screen
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -8602,7 +8607,7 @@ class PyFlamePasswordWindow(QtWidgets.QDialog):
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Center window on screen
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -8974,7 +8979,7 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Center window on screen
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -9159,7 +9164,8 @@ class PyFlameProgressWindow(QtWidgets.QDialog):
         parent = self.parent()
         if parent:
             # Center the window on the screen
-            screen_geometry =  QtWidgets.QDesktopWidget().screenGeometry()
+            main_window_res = pyflamewin.main_window()
+            screen_geometry = main_window_res.geometry()
             x = (screen_geometry.width() - self.width()) / 2
             y = (screen_geometry.height() - self.height()) / 2
             x = x/2
@@ -9356,7 +9362,7 @@ class PyFlameDialogWindow(QtWidgets.QDialog):
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Center window on screen
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -9596,7 +9602,7 @@ class PyFlameWindow(QtWidgets.QWidget):
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Center window on screen
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
