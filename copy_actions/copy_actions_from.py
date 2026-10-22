@@ -1,10 +1,10 @@
 """
 Script Name: copy actions from
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025
 Written by: John Geehreng
 Creation Date: 01.16.24
-Update Date: 01.28.26
+Update Date: 10.22.26
 
 Custom Action Type: Timeline
 
@@ -23,6 +23,10 @@ To install:
     Copy script into /opt/Autodesk/shared/python/copy_actions or appropriate shared python folder
 
 Updates:
+
+    v1.0.1 10.22.26
+
+        Fixed: screenGeometry error with Flame 2027.2.
 
     v1.0.0 01.28.26
 
@@ -72,7 +76,7 @@ from lib.pyflame_lib_copy_actions import *
 # Main Script
 
 SCRIPT_NAME = 'Copy Actions From'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.0.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class CopyActions():
