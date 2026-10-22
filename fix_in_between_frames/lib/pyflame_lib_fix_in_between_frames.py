@@ -1,9 +1,13 @@
 """
 Script Name: PyFlame Library
-Version: 4.3.1
+Version: 4.3.1.1
 Written by: Michael Vaglienty
 Creation Date: 10.31.20
 Update Date: 04.14.25
+
+Updates:
+    10.22.26 - v4.3.1.1 - Fixed: screenGeometry error with Flame 2027.2.
+               Patched copy of PyFlame 4.3.1 - not the latest PyFlame release. Current release is 5.5.3.
 
 This file contains a library of various custom UI widgets that can be used to build QT windows similar to the look of Flame along with some other useful functions.
 
@@ -2591,7 +2595,7 @@ class _PyFlameFunctions():
 
         # Get current screen resolution
         main_window_res = pyflamewin.main_window()
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -12658,7 +12662,7 @@ class PyFlameDialogWindow(QtWidgets.QDialog):
 
             # Get Current Screen Resolution
             main_window_res = pyflamewin.main_window()
-            resolution = main_window_res.screenGeometry()
+            resolution = main_window_res.geometry()
 
             # Center Window on Screen
             self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
@@ -13129,7 +13133,7 @@ class PyFlameWindow(QtWidgets.QWidget):
 
             # Get Current Screen Resolution
             main_window_res = pyflamewin.main_window()
-            resolution = main_window_res.screenGeometry()
+            resolution = main_window_res.geometry()
 
             # Center Window on Screen
             self.move((resolution.width() / 2) - (self.frameSize().width() / 2),

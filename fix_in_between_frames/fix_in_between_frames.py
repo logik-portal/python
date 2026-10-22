@@ -1,10 +1,10 @@
 """
 Script Name: Fix In Between Frames
-Script Version: 1.0.1
+Script Version: 1.0.2
 Flame Version: 2026.1
 Written by: John Geehreng
 Creation Date: 08.07.25
-Update Date: 08.11.25
+Update Date: 10.22.26
 
 Script Type: Batch
 
@@ -21,6 +21,9 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+    v1.0.2 10.22.26
+        - Fixed: screenGeometry error with Flame 2027.2.
+
     v1.0.1 08.11.25
         - Changed Connection to 'Default' so it won't break when applying to a clip vs a node.
 
@@ -42,7 +45,7 @@ from lib.pyflame_lib_fix_in_between_frames import *
 
 FOLDER_NAME = 'Timewarp Tools'
 SCRIPT_NAME = 'Fix In Between Frames'
-SCRIPT_VERSION = 'v1.0.1'
+SCRIPT_VERSION = 'v1.0.2'
 
 #-------------------------------------
 # [Main Script]
