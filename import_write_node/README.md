@@ -1,21 +1,20 @@
 # Import Write Node
 
-**Script Version:** 2.12.0  
+**Script Version:** 2.12.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 05.26.19  
-**Update Date:** 03.30.26  
+**Update Date:** 10.13.26  
 
 **Script Type:** Batch
 
 ## Description
 
-Import open clip created by selected write node into batch schematic reel or
-shelf reel or auto-import write node image sequence when render is complete.
+Import open clip created by selected write node into batch schematic reel or shelf reel or auto-import write node image sequence when render is complete.
 
 ## URL
 
-https://github.com/logik-portal/python/import_write_node
+https://logik-portal.com/scripts/import_write_node
 
 ## Menus
 
@@ -30,6 +29,11 @@ https://github.com/logik-portal/python/import_write_node
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.12.1 [10.13.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v2.12.0 [03.30.26]
 - Updated to PyFlameLib v5.3.0.
