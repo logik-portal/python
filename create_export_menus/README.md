@@ -1,10 +1,10 @@
 # Create Export Menus
 
-**Script Version:** 5.6.0  
+**Script Version:** 5.6.1  
 **Flame Version:** 2026  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.20  
-**Update Date:** 10.09.26  
+**Update Date:** 10.16.26  
 
 **Script Type:** MediaPanel
 
@@ -30,20 +30,19 @@ Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
 
+### v5.6.1 [10.16.26]
+- Updated to PyFlameLib v5.5.3.
+<br>
+
 ### v5.6.0 [10.09.26]
 - Updated to PyFlameLib v5.5.2 to fix "screenGeometry" error when loading script.
-- Added Delete Original button. When checked, original clip will be deleted after exported clip is imported back
-- into Flame. Only enabled when Import Export is checked.
-- Added Use Pattern Browse button and pattern entry. When checked, exported clip will be imported back into Flame
-- using pattern browsing. Files matching the pattern are imported as versions of one clip. Only enabled when
-- Import Export is checked.
-- Export menus can no longer be saved with the same name as an existing project or shared export menu. This causes
-- a conflict and prevents the new menu from being loaded into Flame.
+- Added Delete Original button. When checked, original clip will be deleted after exported clip is imported back into Flame. Only enabled when Import Export is checked.
+- Added Use Pattern Browse button and pattern entry. When checked, exported clip will be imported back into Flame using pattern browsing. Files matching the pattern are imported as versions of one clip. Only enabled when Import Export is checked.
+- Export menus can no longer be saved with the same name as an existing project or shared export menu. This causes a conflict and prevents the new menu from being loaded into Flame.
 <br>
 
 ### v5.5.0 [05.25.26]
-- Added Import Export button. When checked, exported clip will be imported back into Flame.
-- Only works with Movie preset types.
+- Added Import Export button. When checked, exported clip will be imported back into Flame. Only works with Movie preset types.
 <br>
 
 ### v5.4.1 [02.27.26]
@@ -93,8 +92,7 @@ Copy script folder into /opt/Autodesk/shared/python
 <br>
 
 ### v4.5.0 [09.03.23]
-- Update to pyflame lib v2.0.0.
-- *** The update to pyflame lib v2.0.0. will cause old script menus to not work. ***
+- Update to pyflame lib v2.0.0. *** The update to pyflame lib v2.0.0. will cause old script menus to not work. ***
 <br>
 
 ### v4.4 [04.20.23]
@@ -111,8 +109,7 @@ Copy script folder into /opt/Autodesk/shared/python
 - Messages print to Flame message window - Flame 2023.1 and later
 - Updated browser window for Flame 2023.1 and later
 - Setup window no longer closes after creating a new export preset
-- Menu template updated - With template importing new pyflame_lib module, error appears during flame startup when loading
-- menu presets. There errors can be ignored. Errors might be due to order flame is loading modules. Menus work fine.
+- Menu template updated - With template importing new pyflame_lib module, error appears during flame startup when loading menu presets. There errors can be ignored. Errors might be due to order flame is loading modules. Menus work fine.
 <br>
 
 ### v4.1 [03.19.22]
@@ -127,10 +124,7 @@ Copy script folder into /opt/Autodesk/shared/python
 <br>
 
 ### v3.7 [01.03.22]
-- Shared export menus now only work with the major version of Flame they're created with. This avoids errors when using
-- a menu with a new version of Flame. For example a menu created with Flame 2022.2 will work with all versions
-- of Flame 2022 but not 2021 or 2023. Shared export menus will now also only show up in versions of Flame that they will
-- work with.
+- Shared export menus now only work with the major version of Flame they're created with. This avoids errors when using a menu with a new version of Flame. For example a menu created with Flame 2022.2 will work with all versions of Flame 2022 but not 2021 or 2023. Shared export menus will now also only show up in versions of Flame that they will work with.
 - Added token for Tape Name to be used if clip has a clip name assigned
 <br>
 
@@ -183,8 +177,7 @@ Copy script folder into /opt/Autodesk/shared/python
 - New UI
 - Tokens can be used to dynamically set the export path
 - Options to choose to export in foreground, export between marks, and export top layer
-- Menus can be saved so that they're visible in current project only and
-- shared between all projects
+- Menus can be saved so that they're visible in current project only and shared between all projects
 <br>
 
 ### v1.1 [04.05.20]

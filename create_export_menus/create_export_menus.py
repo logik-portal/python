@@ -1,31 +1,21 @@
 # Create Export Menus
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Create Export Menus
-Script Version: 5.6.0
+Script Version: 5.6.1
 Flame Version: 2026
 Written by: Michael Vaglienty
 Creation Date: 03.29.20
-Update Date: 10.09.26
+Update Date: 10.16.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel
 
@@ -52,6 +42,9 @@ To install:
 
 Updates:
  
+    v5.6.1 10.16.26
+        - Updated to PyFlameLib v5.5.3.
+
     v5.6.0 10.09.26
         - Updated to PyFlameLib v5.5.2 to fix "screenGeometry" error when loading script.
         - Added Delete Original button. When checked, original clip will be deleted after exported clip is imported back
@@ -208,7 +201,7 @@ from lib.pyflame_lib_create_export_menus import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Create Export Menus'
-SCRIPT_VERSION = 'v5.6.0'
+SCRIPT_VERSION = 'v5.6.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # Widget keys for preset tab dicts (self.create_tab_widgets / self.edit_tab_widgets).
