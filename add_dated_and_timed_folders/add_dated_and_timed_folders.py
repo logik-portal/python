@@ -1,31 +1,21 @@
 # Add Dated and Timed Folders
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Add Dated and Timed Folders
-Script Version: 2.7.1
-Flame Version: 2025.1
+Script Version: 2.8.0
+Flame Version: 2025.2
 Written by: John Geehreng and Michael Vaglienty
 Creation Date: 07.04.20
-Update Date: 10.22.26
-
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+Update Date: 10.21.26
+ 
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel/MediaHub Files
 
@@ -41,7 +31,7 @@ Usage:
 
 URL:
 
-    https://logik-portal.com/scripts/#add_dated_and_timed_folders
+    https://logik-portal.com/scripts/add_dated_and_timed_folders
 
 Menus:
 
@@ -57,6 +47,7 @@ Menus:
         Right-click on folder -> Folders -> Add Dated and Timestamped Folders
         Right-click on folder -> Folders -> Add Dated Folder
         Right-click on folder -> Folders -> Add Timestamped Folder
+        Right-click with nothing selected -> Folders -> (same actions) - creates folders in the current MediaHub folder
 
 To install:
 
@@ -64,8 +55,19 @@ To install:
 
 Updates:
 
-    v2.7.1 10.22.26
-        - Fixed: screenGeometry error with Flame 2027.2.
+    v2.8.0 10.21.26
+        - In the MediaHub if no folder is selected, new dated/timed folders can be created at whatever path the MediaHub is
+          currently open to.
+        - Setup now only accepts date formats the script can use: YY or YYYY, MM and DD once each, separated by - / . or 
+          nothing. Other characters show a message listing them. A bad saved format no longer stops Setup from opening.
+        - Selecting a library or folder together with other items no longer fails. Only the libraries and folders are used.
+        - MediaHub folders are now always created inside the selected folder.
+        - With several libraries or folders selected, folders are created in each one that needs them. The ones that already 
+          have them are listed in one message.
+        - MediaHub folders that can't be created are now shown in a message with the reason.
+        - The script now stops cleanly if the install check fails.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v2.7.0 06.25.26
         - Path is now copied to clipboard when creating folders in the MediaHub Files tab.
@@ -107,6 +109,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import re
 import flame
@@ -119,7 +123,7 @@ from lib.pyflame_lib_add_dated_and_timed_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Dated and Timed Folders'
-SCRIPT_VERSION = 'v2.7.1'
+SCRIPT_VERSION = 'v2.8.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -132,6 +136,9 @@ class AddDatedAndTimedFolders:
 
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
 
+        # Menu wrappers check this so they stop cleanly if the install check fails
+        self.ready = False
+
         # Check script path, if path is incorrect, stop script.
         if not pyflame.verify_script_install():
             return
@@ -139,14 +146,25 @@ class AddDatedAndTimedFolders:
         # Create/Load config file settings.
         self.settings = self.load_config()
 
-        self.selection = selection
+        # Only act on libraries and folders. Anything else in a mixed selection is skipped
+        self.selection = [item for item in selection if isinstance(item, (flame.PyLibrary, flame.PyFolder, flame.PyMediaHubFilesFolder))]
 
-        self.current_date = self.get_current_date(self.settings.date_format)
+        # MediaHub folders that couldn't be created, shown in one message at the end
+        self.folder_errors = []
+
+        # Fall back to the default date format if the saved one can't be used, so Setup still opens to fix it
+        try:
+            self.current_date = self.get_current_date(self.settings.date_format)
+        except ValueError as e:
+            pyflame.print(f'Saved date format can not be used: {self.settings.date_format} ({e}). Using YY-MM-DD until it is fixed in Setup.', print_type=PrintType.ERROR)
+            self.current_date = self.get_current_date('YY-MM-DD')
         self.current_time = self.get_current_time(self.settings.time_format)
         print('Current Date Format:', self.settings.date_format)
         print('Current Date:', self.current_date)
         print('Current Time Format:', self.settings.time_format)
         print('Current Time:', self.current_time, '\n')
+
+        self.ready = True
 
     def load_config(self) -> PyFlameConfig:
         """
@@ -178,32 +196,44 @@ class AddDatedAndTimedFolders:
 
             def validate_date_format() -> bool:
                 """
-                Validate that the user input contains a valid combination of date components.
-                The input should match patterns containing either (YY, MM, DD) or (YYYY, MM, DD) combinations,
-                potentially separated by '-', '/', or '.'. YY, YYYY, MM, DD must all be present in any order.
+                Validate Date Format
+                ====================
 
-                Returns:
+                Check the date format uses YY or YYYY, MM and DD once each, separated only by '-', '/', '.' or nothing.
+                These are the only formats get_current_date can build. Shows an error message if the format can't be used.
+
+                Returns
+                -------
                     bool: True if the format is valid, False otherwise.
                 """
 
-                # Regex pattern to check for date components in any order, with non-alphanumeric separators
-                pattern = re.compile(
-                    r'^(YY|YYYY|MM|DD)(\W*)(YY|YYYY|MM|DD)(\W*)(YY|YYYY|MM|DD)$'
-                    )
+                date_format = self.date_entry.text
 
-                # Search the user format string for the required patterns. If found, return True, otherwise False.
-                if pattern.search(self.date_entry.text):
-                    return True
-                else:
+                # Tell the user which characters can't be used
+                bad_characters = sorted(set(re.sub(r'[YMD\-/.]', '', date_format)))
+                if bad_characters:
+                    shown_characters = '  '.join('space' if character == ' ' else character for character in bad_characters)
+                    PyFlameMessageWindow(
+                        message=f"Date format can't use these characters: {shown_characters}\n\nOnly - / . can go between YY or YYYY, MM and DD, or nothing at all.\n\nSuch as: YYYY-MM-DD, MM.DD.YY, YYMMDD.",
+                        message_type=MessageType.ERROR,
+                        parent=self.setup_window,
+                        )
                     return False
+
+                # YY or YYYY, MM and DD must each be used once
+                match = re.fullmatch(r'(YYYY|YY|MM|DD)([-/.]?)(YYYY|YY|MM|DD)([-/.]?)(YYYY|YY|MM|DD)', date_format)
+                if not match or sorted(part[0] for part in match.group(1, 3, 5)) != ['D', 'M', 'Y']:
+                    PyFlameMessageWindow(
+                        message='Invalid date format.\n\nUse YY or YYYY, MM and DD once each.\n\nSuch as: YYYY-MM-DD, MM-DD-YY, YYMMDD, etc.',
+                        message_type=MessageType.ERROR,
+                        parent=self.setup_window,
+                        )
+                    return False
+
+                return True
 
             # Validate the date format before saving
             if not validate_date_format():
-                PyFlameMessageWindow(
-                    message='Invalid date format.\n\nExpected combinations of YY or YYYY with MM and DD.\n\nSuch as: YYYY-MM-DD, MM-DD-YY, YYMMDD, etc.',
-                    message_type=MessageType.ERROR,
-                    parent=self.setup_window,
-                    )
                 return
 
             self.settings.save_config(
@@ -420,6 +450,8 @@ class AddDatedAndTimedFolders:
         Reuses an existing dated and/or timed folder if one already exists.
         """
 
+        existing = []
+
         for item in self.selection:
 
             # Check for an existing dated folder, otherwise create one.
@@ -438,13 +470,16 @@ class AddDatedAndTimedFolders:
                     timed_folder_exists = True
                     break
             if timed_folder_exists:
-                PyFlameMessageWindow(
-                    message=f'Timed folder already exists: {self.current_date}/{self.current_time}',
-                    parent=None,
-                    )
+                existing.append(str(item.name)[1:-1])
             else:
                 dated_folder.create_folder(self.current_time)
                 pyflame.print(f'Created date and timestamped folder: {self.current_date}/{self.current_time}', text_color=TextColor.GREEN)
+
+        if existing:
+            PyFlameMessageWindow(
+                message=f'Timed folder {self.current_date}/{self.current_time} already exists in:\n\n' + '\n'.join(existing),
+                parent=None,
+                )
 
     def dated_folders(self):
         """
@@ -454,20 +489,21 @@ class AddDatedAndTimedFolders:
         Create a folder with the current date.
         """
 
-        # Check if dated folder already exists.
-        for item in self.selection:
-            for folders in item.folders:
-                if folders.name == self.current_date:
-                    PyFlameMessageWindow(
-                        message=f'Dated folder already exists: {self.current_date}',
-                        parent=None,
-                        )
-                    return
+        existing = []
 
-        # Create dated folder if it does not exist.
+        # Create dated folder in each selected item that doesn't have one yet.
         for item in self.selection:
+            if any(folders.name == self.current_date for folders in item.folders):
+                existing.append(str(item.name)[1:-1])
+                continue
             item.create_folder(self.current_date)
             pyflame.print(f'Created dated folder: {self.current_date}', text_color=TextColor.GREEN)
+
+        if existing:
+            PyFlameMessageWindow(
+                message=f'Dated folder {self.current_date} already exists in:\n\n' + '\n'.join(existing),
+                parent=None,
+                )
 
     def timed_folders(self):
         """
@@ -477,24 +513,57 @@ class AddDatedAndTimedFolders:
         Create a folder with the current time.
         """
 
-        # Check if timed folder already exists.
-        for item in self.selection:
-            for folders in item.folders:
-                if folders.name == self.current_time:
-                    PyFlameMessageWindow(
-                        message=f'Timed folder already exists: {self.current_time}',
-                        parent=None,
-                        )
-                    return
+        existing = []
 
-        # Create timed folder if it does not exist.
+        # Create timed folder in each selected item that doesn't have one yet.
         for item in self.selection:
+            if any(folders.name == self.current_time for folders in item.folders):
+                existing.append(str(item.name)[1:-1])
+                continue
             item.create_folder(self.current_time)
             pyflame.print(f'Created timestamped folder: {self.current_time}', text_color=TextColor.GREEN)
+
+        if existing:
+            PyFlameMessageWindow(
+                message=f'Timed folder {self.current_time} already exists in:\n\n' + '\n'.join(existing),
+                parent=None,
+                )
 
     # ------------------------------------------------------------------------------
     # [Media Hub Operations]
     # ------------------------------------------------------------------------------
+
+    def get_mediahub_paths(self) -> list:
+        """
+        Get MediaHub Paths
+        ==================
+
+        Get the paths of the selected MediaHub folders. With nothing selected, use the folder MediaHub is currently showing.
+
+        Returns
+        -------
+            paths (list):
+                Folder paths to create folders in. Empty if no folder is selected and the current MediaHub folder can't be found.
+        """
+
+        if self.selection:
+            return [folder.path for folder in self.selection]
+
+        # Nothing selected, use the folder MediaHub is currently showing. Flame versions without get_path show the error below instead of crashing
+        try:
+            current_path = flame.mediahub.files.get_path()
+        except Exception:
+            current_path = ''
+        if current_path:
+            return [current_path]
+
+        PyFlameMessageWindow(
+            message='No folder selected and the current MediaHub folder could not be found.',
+            message_type=MessageType.ERROR,
+            parent=None,
+            )
+
+        return []
 
     def files_date_time_folders(self):
         """
@@ -504,12 +573,18 @@ class AddDatedAndTimedFolders:
         Create a folder with the current date and a subfolder with the current time.
         """
 
-        for folder in self.selection:
-            path = f'{folder.path}{self.current_date}/{self.current_time}'
+        folder_paths = self.get_mediahub_paths()
+        if not folder_paths:
+            return
+
+        for folder_path in folder_paths:
+            path = os.path.join(folder_path, self.current_date, self.current_time)
             if self.create_file_path(path):
                 pyflame.print(f'Created date and timestamped folder: {path}', text_color=TextColor.GREEN)
 
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
+
+        self.show_folder_errors()
 
     def files_dated_folders(self):
         """
@@ -519,27 +594,39 @@ class AddDatedAndTimedFolders:
         Create a folder with the current date.
         """
 
-        for folder in self.selection:
-            path = f'{folder.path}{self.current_date}'
+        folder_paths = self.get_mediahub_paths()
+        if not folder_paths:
+            return
+
+        for folder_path in folder_paths:
+            path = os.path.join(folder_path, self.current_date)
             if self.create_file_path(path):
                 pyflame.print(f'Created dated folder: {path}', text_color=TextColor.GREEN)
 
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
+
+        self.show_folder_errors()
 
     def files_timed_folders(self) -> None:
         """
         Files Timed Folders
         ===================
 
-        MediaHubFiles - Create a folder with the current time within the selected folder.
+        MediaHubFiles - Create a folder with the current time within the selected folder, or the current MediaHub folder if nothing is selected.
         """
 
-        for folder in self.selection:
-            path = f'{folder.path}{self.current_time}'
+        folder_paths = self.get_mediahub_paths()
+        if not folder_paths:
+            return
+
+        for folder_path in folder_paths:
+            path = os.path.join(folder_path, self.current_time)
             if self.create_file_path(path):
                 pyflame.print(f'Created timestamped folder: {path}', text_color=TextColor.GREEN)
 
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
+
+        self.show_folder_errors()
 
     def create_file_path(self, path) -> bool:
         """
@@ -565,49 +652,72 @@ class AddDatedAndTimedFolders:
                 pyflame.copy_to_clipboard(path)
                 return True
             except Exception as e:
-                pyflame.print(f'Error creating folder: {path}', print_type=PrintType.ERROR)
+                pyflame.print(f'Error creating folder: {path}: {e}', print_type=PrintType.ERROR)
+                self.folder_errors.append(f'{path}\n{e}')
                 return False
         else:
             pyflame.print(f'Folder already exists: {path}')
             pyflame.copy_to_clipboard(path)
             return False
 
+    def show_folder_errors(self) -> None:
+        """
+        Show Folder Errors
+        ==================
+
+        Show one message listing every MediaHub folder that couldn't be created.
+        """
+
+        if self.folder_errors:
+            PyFlameMessageWindow(
+                message='Could not create these folders:\n\n' + '\n\n'.join(self.folder_errors),
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+
 # ------------------------------------------------------------------------------
 
 def setup(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.setup()
+    if script.ready:
+        script.setup()
 
 def date_time_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.date_time_folders()
+    if script.ready:
+        script.date_time_folders()
 
 def dated_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.dated_folders()
+    if script.ready:
+        script.dated_folders()
 
 def timed_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.timed_folders()
+    if script.ready:
+        script.timed_folders()
 
 def files_date_time_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.files_date_time_folders()
+    if script.ready:
+        script.files_date_time_folders()
 
 def files_dated_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.files_dated_folders()
+    if script.ready:
+        script.files_dated_folders()
 
 def files_timed_folders(selection):
 
     script = AddDatedAndTimedFolders(selection)
-    script.files_timed_folders()
+    if script.ready:
+        script.files_timed_folders()
 
 # ==============================================================================
 # [Scopes]
@@ -621,6 +731,10 @@ def scope_library_or_folder(selection):
     return False
 
 def scope_folder(selection):
+
+    # Nothing selected uses the folder MediaHub is currently showing
+    if not selection:
+        return True
 
     for item in selection:
         if isinstance(item, flame.PyMediaHubFilesFolder):
@@ -642,21 +756,21 @@ def get_media_panel_custom_ui_actions():
                     'order': 1,
                     'isVisible': scope_library_or_folder,
                     'execute': date_time_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 },
                 {
                     'name': 'Add Dated Folder',
                     'order': 2,
                     'isVisible': scope_library_or_folder,
                     'execute': dated_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 },
                 {
                     'name': 'Add Timestamped Folder',
                     'order': 3,
                     'isVisible': scope_library_or_folder,
                     'execute': timed_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 }
             ]
         }
@@ -673,21 +787,21 @@ def get_mediahub_files_custom_ui_actions():
                     'order': 1,
                     'isVisible': scope_folder,
                     'execute': files_date_time_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 },
                 {
                     'name': 'Add Dated Folder',
                     'order': 2,
                     'isVisible': scope_folder,
                     'execute': files_dated_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 },
                 {
                     'name': 'Add Timestamped Folder',
                     'order': 3,
                     'isVisible': scope_folder,
                     'execute': files_timed_folders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 }
             ]
         }
@@ -709,7 +823,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Add Dated and Timed Folders Setup',
                     'execute': setup,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
