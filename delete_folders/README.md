@@ -1,10 +1,10 @@
 # Delete Folders
 
-**Script Version:** 2.11.0  
+**Script Version:** 2.11.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.04.20  
-**Update Date:** 03.26.26  
+**Update Date:** 10.13.26  
 
 **Script Type:** MediaHub - Files Tab
 
@@ -16,7 +16,7 @@ Delete one or more folders along with contents in the MediaHub File Tab view
 
 ## URL
 
-https://github.com/logik-portal/python/delete_folders
+https://logik-portal.com/scripts/delete_folders
 
 ## Menus
 
@@ -27,6 +27,15 @@ https://github.com/logik-portal/python/delete_folders
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.11.1 [10.13.26]
+- Confirmation window now lists the folders to be deleted.
+- Added a second warning when a selected folder is a symlink. Confirming deletes the folder the link points to and removes the link.
+- A folder that fails to delete no longer stops the rest. Failures are listed in one message at the end.
+- Symlinks pointing to /, a drive root, the home folder or a folder containing the link are never deleted.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v2.11.0 [03.26.26]
 - Updated to PyFlameLib v5.3.0.

@@ -1,31 +1,21 @@
 # Delete Folders
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Delete Folders
-Script Version: 2.11.0
+Script Version: 2.11.1
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 10.04.20
-Update Date: 03.26.26
+Update Date: 10.13.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaHub - Files Tab
 
@@ -36,7 +26,7 @@ Description:
     *** WARNING - THIS WILL DELETE ALL SELECTED FOLDERS/SUBFOLDERS - THIS IS CAN NOT BE UNDONE***
 
 URL:
-    https://github.com/logik-portal/python/delete_folders
+    https://logik-portal.com/scripts/delete_folders
 
 Menu:
 
@@ -47,6 +37,14 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.11.1 10.13.26
+        - Confirmation window now lists the folders to be deleted.
+        - Added a second warning when a selected folder is a symlink. Confirming deletes the folder the link points to and removes the link.
+        - A folder that fails to delete no longer stops the rest. Failures are listed in one message at the end.
+        - Symlinks pointing to /, a drive root, the home folder or a folder containing the link are never deleted.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v2.11.0 03.26.26
         - Updated to PyFlameLib v5.3.0.
@@ -90,6 +88,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import shutil
 import flame
@@ -101,7 +101,7 @@ from lib.pyflame_lib_delete_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Delete Folders'
-SCRIPT_VERSION = 'v2.11.0'
+SCRIPT_VERSION = 'v2.11.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -125,9 +125,47 @@ def delete_folders(selection):
     if not pyflame.verify_script_install():
         return
 
+    def refuse_reason(link: str, target: str) -> str:
+        """
+        Refuse Reason
+        =============
+
+        Check whether a symlink's target is a protected location that must never be deleted.
+
+        Args
+        ----
+            link (str):
+                Path of the symlink, without the trailing slash.
+
+            target (str):
+                Resolved real path the symlink points to.
+
+        Returns
+        -------
+            reason (str): Short reason the target is protected, or '' if it can be deleted.
+        """
+
+        home = os.path.realpath(os.path.expanduser('~'))
+        link_parent = os.path.realpath(os.path.dirname(link))
+
+        if target == '/':
+            return 'target is the root folder'
+        if os.path.ismount(target):
+            return 'target is a drive root'
+        if target == home or home.startswith(target + os.sep):
+            return 'target is the home folder or contains it'
+        if link_parent == target or link_parent.startswith(target + os.sep):
+            return 'target contains the link'
+
+        return ''
+
+    # List selected folder paths without the trailing slash
+    folder_list = '\n'.join(folder.path.rstrip('/') for folder in selection)
+
     delete_files = PyFlameMessageWindow(
         message=(
             'Delete selected folder(s)?\n\n'
+            f'{folder_list}\n\n'
             'All files and sub-folders in selected folder(s) will be deleted.\n\n'
             'This cannot be undone!\n\n'
             'Are you sure you want to continue?'
@@ -137,22 +175,100 @@ def delete_folders(selection):
         )
 
     if delete_files:
+
+        # Save each link's target once so the folder deleted is the one shown in the warning. Links to protected locations are kept apart and never deleted.
+        symlinks = {}
+        refused = {}
+        for folder in selection:
+            link = folder.path.rstrip('/')
+            if os.path.islink(link):
+                target = os.path.realpath(link)
+                reason = refuse_reason(link, target)
+                if reason:
+                    refused[link] = (target, reason)
+                else:
+                    symlinks[link] = target
+
+        # Warn separately about symlinks, since rmtree with a trailing slash follows the link and deletes the real folder
+        if symlinks or refused:
+            message = ''
+            if symlinks:
+                symlink_list = '\n'.join(f'{link} -> {target}' for link, target in symlinks.items())
+                message += (
+                    'These selected folder(s) are symlinks:\n\n'
+                    f'{symlink_list}\n\n'
+                    'The real folder(s) these links point to, and everything in them, will be deleted. '
+                    'The links will also be removed.\n\n'
+                    'This cannot be undone!\n\n'
+                    )
+            if refused:
+                refused_list = '\n'.join(f'{link} -> {target} ({reason})' for link, (target, reason) in refused.items())
+                message += (
+                    'These symlink(s) point to a protected location and will NOT be deleted:\n\n'
+                    f'{refused_list}\n\n'
+                    )
+            message += 'Are you sure you want to continue?'
+
+            delete_symlinks = PyFlameMessageWindow(
+                message=message,
+                message_type=MessageType.WARNING,
+                parent=None,
+                )
+
+            # Cancel everything if symlink delete is not confirmed
+            if not delete_symlinks:
+                pyflame.print('Delete cancelled. Nothing was deleted.', print_type=PrintType.WARNING)
+                return
+
         pyflame.print(
             text='Deleting Selected Folders:',
             underline=True,
             text_color=TextColor.GREEN,
             )
+
+        # Collect failed deletes to show in one message at the end
+        failures = []
         for folder in selection:
             pyflame.print(
                 text=f'{folder.path[:-1]}',
                 print_type=PrintType.WARNING,
                 new_line=False,
                 )
-            shutil.rmtree(folder.path)
+
+            # Skip links to protected locations: never delete the target or remove the link
+            path = folder.path.rstrip('/')
+            if path in refused:
+                target, reason = refused[path]
+                pyflame.print(f'Not deleted {path}: {reason} ({target})', print_type=PrintType.ERROR)
+                failures.append(f'{path}: not deleted, {reason} ({target})')
+                continue
+
+            # Keep going if one folder fails so the rest still get deleted
+            try:
+                if path in symlinks:
+                    shutil.rmtree(symlinks[path])
+
+                    # Link may already be gone if its target was one of its ancestors
+                    if os.path.lexists(path):
+                        os.unlink(path)
+                else:
+                    shutil.rmtree(folder.path)
+            except Exception as e:
+                pyflame.print(f'Could not delete {path}: {e}', print_type=PrintType.ERROR)
+                failures.append(f'{path}: {e}')
 
         flame.execute_shortcut("Refresh the MediaHub's Folders and Files")
 
-        pyflame.print('\nSelected Folders Deleted', text_color=TextColor.GREEN)
+        # Show all failures in one message
+        if failures:
+            failure_list = '\n'.join(failures)
+            PyFlameMessageWindow(
+                message=f'These folder(s) could not be deleted:\n\n{failure_list}',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+        else:
+            pyflame.print('\nSelected Folders Deleted', text_color=TextColor.GREEN)
 
 # ==============================================================================
 # [Scopes]
