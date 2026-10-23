@@ -1,10 +1,10 @@
 # Import Camera
 
-**Script Version:** 4.17.0  
+**Script Version:** 4.17.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.02.18  
-**Update Date:** 06.22.26  
+**Update Date:** 10.13.26  
 
 ## Description
 
@@ -12,7 +12,7 @@ Creates a new Action node setup with selected FBX or Alembic file loaded.
 
 ## URL
 
-https://logik-portal.com/scripts/#import_camera
+https://logik-portal.com/scripts/import_camera
 
 ## Menus
 
@@ -28,6 +28,11 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 
 ## Updates
 
+### v4.17.1 [10.13.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
+
 ### v4.17.0 [06.22.26]
 - Updated to PyFlameLib v5.4.0.
 - Fixed calculator issues in Linux.
@@ -36,8 +41,7 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 ### v4.16.0 [08.27.25]
 - Updated to PyFlameLib v5.0.0.
 - Escape key closes main window.
-- Added warning message when importing ST Map Matchbox Setup without background clip or node with background resolution selected.
-- ST Map and camera track aren't applied properly without the background clip or node with background resolution selected.
+- Added warning message when importing ST Map Matchbox Setup without background clip or node with background resolution selected. ST Map and camera track aren't applied properly without the background clip or node with background resolution selected.
 <br>
 
 ### v4.15.0 [03.12.25]
@@ -114,8 +118,7 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 ### v4.6 [01.02.23]
 - Fixed not being able to select Alembic files in the import browser.
 - Minimum Flame version is now 2022.3.
-- Ability to set tokenized path to always open browser to when importing: Flame Main Menu -> pyFlame -> Import Camera Setup
-- By default this is turned off.
+- Ability to set tokenized path to always open browser to when importing: Flame Main Menu -> pyFlame -> Import Camera Setup By default this is turned off.
 - Patch Setup button renamed to ReComp Setup for clarity.
 <br>
 
@@ -173,12 +176,8 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 
 ### v3.1 [09.26.20]
 - Updated UI
-- Import FBX with Patch Setup - Will import FBX into an Action node and also create
-- other nodes to re-comp work done in FBX Action over original background.
-- Import FBX with ST map Setup - Will import FBX into an Action node and also build
-- a undistort/redistort setup using the ST maps. ST maps must be in the same folder or sub-folder of
-- FBX camera for this to work. ST Maps should also contain 'undistort' or 'redistort' in their file
-- names.
+- Import FBX with Patch Setup - Will import FBX into an Action node and also create other nodes to re-comp work done in FBX Action over original background.
+- Import FBX with ST map Setup - Will import FBX into an Action node and also build a undistort/redistort setup using the ST maps. ST maps must be in the same folder or sub-folder of FBX camera for this to work. ST Maps should also contain 'undistort' or 'redistort' in their file names.
 <br>
 
 ### v3.0 [06.06.20]
