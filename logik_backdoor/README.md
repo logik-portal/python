@@ -1,10 +1,10 @@
 # Logik Backdoor
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.0.1  
 **Flame Version:** 2025.2  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.05.26  
-**Update Date:** 10.05.26  
+**Update Date:** 10.13.26  
 
 ## Description
 
@@ -12,8 +12,7 @@ A bridge allowing other applications to control Flame using provided tools.
 
 ## Notes
 
-These examples can be added to 3rd party application export options to import into Flame after
-export is complete.
+These examples can be added to 3rd party application export options to import into Flame after export is complete.
 <br><br>
 To import an image sequence into a Library:
 <br><br>
@@ -101,10 +100,7 @@ frame_node                 Select Batch nodes by name and frame the schematic on
 <br><br>
 Tools are called by other applications using the logik_backdoor_client.py script.
 <br><br>
-Each tool is its own file in the tools folder, loaded automatically at
-startup. To add a tool, add a file to the tools folder (tools/<name>.py) that defines a
-function called <name> returning a dict, with a docstring describing it and an optional TIMEOUT
-in seconds.
+Each tool is its own file in the tools folder, loaded automatically at startup. To add a tool, add a file to the tools folder (tools/<name>.py) that defines a function called <name> returning a dict, with a docstring describing it and an optional TIMEOUT in seconds.
 
 ## URL
 
@@ -115,6 +111,11 @@ https://logik-portal.com/scripts/logik_backdoor
 Copy script into /opt/Autodesk/shared/python/logik_backdoor
 
 ## Updates
+
+### v1.0.1 [10.13.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v1.0.0 [10.05.26]
 - Initial release.

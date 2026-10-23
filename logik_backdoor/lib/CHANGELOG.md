@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
  
 https://logik-portal.com/pyflame
 
+## v5.5.3 [10.16.26]
+
+### Updates
+
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+
 ## v5.5.2 [10.08.26]
 
 ### Updates
