@@ -7,6 +7,16 @@ on:
     branches:
       - main  # Change to your default branch name if different
 
+# Only one run at a time. When several pushes land seconds apart (e.g. the
+# WOPR publisher pushing one commit per folder), a newer push cancels the older
+# in-flight run instead of letting it fail at push time. The newest run is never
+# cancelled (only a later push can cancel it, and that later run then covers its
+# state), and the bot's own "[skip ci]" commit never starts a run, so it can't
+# cancel anything.
+concurrency:
+  group: build-python-scripts-json
+  cancel-in-progress: true
+
 # Repository configuration - easily changeable constants
 env:
   REPO_OWNER: "logik-portal"
@@ -38,11 +48,34 @@ jobs:
           REPO_NAME: ${{ env.REPO_NAME }}
           REPO_BRANCH: ${{ env.REPO_BRANCH }}
 
+      # Safety net: if main moved while this run was building (push rejected),
+      # move onto the new origin/main and REGENERATE python_scripts.json from
+      # that tree instead of merging/rebasing the generated file, then retry.
       - name: Commit and push changes
         if: success()
+        env:
+          REPO_OWNER: ${{ env.REPO_OWNER }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+          REPO_BRANCH: ${{ env.REPO_BRANCH }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git remote set-url origin https://x-access-token:${{ secrets.JSON_PAT }}@github.com/${{ github.repository }}
-          git add python_scripts.json
-          git diff --staged --quiet || (git commit -m "Auto-update python_scripts.json [skip ci]" && git push)
+          for attempt in 1 2 3 4 5; do
+            git add python_scripts.json
+            if git diff --staged --quiet; then
+              echo "python_scripts.json is up to date - nothing to push"
+              exit 0
+            fi
+            git commit -m "Auto-update python_scripts.json [skip ci]"
+            if git push origin "HEAD:${REPO_BRANCH}"; then
+              exit 0
+            fi
+            echo "Push rejected on attempt ${attempt} - syncing with origin/${REPO_BRANCH} and regenerating"
+            sleep $((attempt * 5))
+            git fetch origin "${REPO_BRANCH}"
+            git reset --hard FETCH_HEAD
+            python .github/workflows/build_python_scripts_json.py
+          done
+          echo "Giving up: push still rejected after 5 attempts" >&2
+          exit 1
