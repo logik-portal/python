@@ -1,31 +1,21 @@
 # PDF to JPG
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: PDF to JPG
-Script Version: 1.0.0
+Script Version: 1.1.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 01.04.26
-Update Date: 01.04.26
+Update Date: 10.23.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Media Panel
 
@@ -43,15 +33,28 @@ Description:
 
     Image path is copied to clipboard and can be pasted into other applications.
 
+URL:
+
+    https://logik-portal.com/scripts/pdf_to_jpg
+
 Menus:
 
     Right-click in Media Panel -> PDF to JPG
+
+Notes:
+
+    Does not work on Intel Macs.
 
 To install:
 
     Copy script into /opt/Autodesk/shared/python/pdf_to_jpg
 
 Updates:
+
+    v1.1.0 10.23.26
+        - Now works in linux.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v1.0.0 01.04.26
         - Initial release.
@@ -61,7 +64,10 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
+import platform
 import flame
 from lib.pyflame_lib_pdf_to_jpg import *
 
@@ -70,7 +76,7 @@ from lib.pyflame_lib_pdf_to_jpg import *
 # ==============================================================================
 
 SCRIPT_NAME = 'PDF to JPG'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -90,6 +96,9 @@ class PDFtoJPG:
         # Install required python packages if not already installed.
         if not self.install_required_python_packages():
             return
+
+        # Init variables
+        self.progress_window: Any = None
 
         # Create/Load config file settings.
         self.load_config()
@@ -115,6 +124,28 @@ class PDFtoJPG:
                 True if the python packages are installed, False otherwise.
         """
 
+        # Determine which platform packages are required. Intel Macs are not supported.
+        if platform.system() == 'Darwin':
+            if platform.machine() != 'arm64':
+                PyFlameMessageWindow(
+                    message='PDF to JPG requires an Apple Silicon Mac. Intel Macs are not supported.\n\nPython package install cancelled.',
+                    message_type=MessageType.WARNING,
+                    title='PDF to JPG',
+                    parent=None,
+                    )
+                return False
+            platform_suffix = 'macos'
+        elif platform.system() == 'Linux':
+            platform_suffix = 'linux'
+        else:
+            PyFlameMessageWindow(
+                message=f'Operating system: {platform.system()} is not supported.',
+                message_type=MessageType.ERROR,
+                title='PDF to JPG',
+                parent=None,
+                )
+            return False
+
         # Install required python packages if not already installed.
         flame_version = pyflame.get_flame_version()
 
@@ -133,7 +164,7 @@ class PDFtoJPG:
             return False
 
         # Install required python packages
-        installed = pyflame.python_package_local_install(package=[f'PIL_python{python_version}', 'fitz'])
+        installed = pyflame.python_package_local_install(package=[f'PIL_python{python_version}_{platform_suffix}', f'fitz_python3_{platform_suffix}'])
         if not installed:
             pyflame.print(f'Python packages not installed, exiting script.')
             return False
@@ -165,7 +196,7 @@ class PDFtoJPG:
 
     # ------------------------------------------------------------------------------
 
-    def get_pdf_path(self) -> str:
+    def get_pdf_path(self) -> str | None:
         """
         Get PDF Path
         ============
@@ -179,7 +210,7 @@ class PDFtoJPG:
                 If no path is selected, returns `None`.
         """
 
-        pdf_path = pyflame.file_browser(
+        pdf_path: Any = pyflame.file_browser(
                     path=self.settings.pdf_path,
                     title=f'Select PDF to convert',
                     extension='pdf',
@@ -361,9 +392,13 @@ class PDFtoJPG:
                     font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", font_size)
                 except:
                     try:
-                        font = ImageFont.load_default()
+                        # Fall back to bundled Montserrat font (Linux)
+                        font = ImageFont.truetype(os.path.join(SCRIPT_PATH, 'assets', 'fonts', 'Montserrat-Regular.ttf'), font_size)
                     except:
-                        font = None
+                        try:
+                            font = ImageFont.load_default()
+                        except:
+                            font = None
 
                 # Page number text
                 text = f"Page {page_num}"
@@ -482,7 +517,7 @@ class PDFtoJPG:
             print(f'Total PDF pages: {total_pdf_pages}')
 
             # Calculate number of output images (for progress tracking)
-            total_output_images = (total_pdf_pages + pages_per_image - 1) // pages_per_image  # Round up
+            total_output_images = (total_pdf_pages + pages_per_image - 1) // pages_per_image  # Round up # pyright: ignore[reportPossiblyUnboundVariable]
             print(f'Total output images: {total_output_images}')
 
             dpi = self.settings.image_resolution
@@ -499,11 +534,11 @@ class PDFtoJPG:
 
             # Convert pages in groups - loop over actual PDF pages
             out_index = 0
-            for start in range(0, total_pdf_pages, pages_per_image):  # Use total_pdf_pages, not total_output_images
+            for start in range(0, total_pdf_pages, pages_per_image):  # Use total_pdf_pages, not total_output_images # pyright: ignore[reportPossiblyUnboundVariable]
                 self.progress_window.current_task = pages_processed
 
                 # Get the actual page indices to process from the PDF
-                group_indices = list(range(start, min(start + pages_per_image, total_pdf_pages)))
+                group_indices = list(range(start, min(start + pages_per_image, total_pdf_pages))) # pyright: ignore[reportPossiblyUnboundVariable]
                 rendered = [render_page_to_pil(i) for i in group_indices]
 
                 # Add page numbers to each rendered page if enabled
@@ -512,7 +547,7 @@ class PDFtoJPG:
                 else:
                     rendered_with_numbers = rendered
 
-                if pages_per_image == 1:
+                if pages_per_image == 1: # pyright: ignore[reportPossiblyUnboundVariable]
                     combined = rendered_with_numbers[0]
                     page_label = f"{group_indices[0] + 1:03d}"
                 else:
