@@ -1,10 +1,10 @@
 # Add Gmask
 
-**Script Version:** 2.10.0  
+**Script Version:** 2.10.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 01.05.20  
-**Update Date:** 03.26.26  
+**Update Date:** 10.16.26  
 
 **Script Type:** Batch
 
@@ -14,7 +14,7 @@ Adds right-click menu to batch to add GMask or GMask Tracer node to batch
 
 ## URL
 
-https://github.com/logik-portal/python/add_gmask
+https://logik-portal.com/scripts/add_gmask
 
 ## Menus
 
@@ -26,6 +26,13 @@ https://github.com/logik-portal/python/add_gmask
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.10.1 [10.16.26]
+- Add GMask menu now only shows when nothing is selected or a single node with a Matte input is selected.
+- Fixed GMask connecting to the Back Matte input instead of Matte on Comp nodes.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v2.10.0 [03.26.26]
 - Updated to PyFlameLib v5.3.0.

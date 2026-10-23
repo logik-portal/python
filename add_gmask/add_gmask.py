@@ -1,31 +1,21 @@
 # Add GMask
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Add GMask
-Script Version: 2.10.0
+Script Version: 2.10.1
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 01.05.20
-Update Date: 03.26.26
+Update Date: 10.16.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Batch
 
@@ -34,7 +24,7 @@ Description:
     Adds right-click menu to batch to add GMask or GMask Tracer node to batch
 
 URL:
-    https://github.com/logik-portal/python/add_gmask
+    https://logik-portal.com/scripts/add_gmask
 
 Menus:
 
@@ -47,6 +37,12 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.10.1 10.16.26
+        - Add GMask menu now only shows when nothing is selected or a single node with a Matte input is selected.
+        - Fixed GMask connecting to the Back Matte input instead of Matte on Comp nodes.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v2.10.0 03.26.26
         - Updated to PyFlameLib v5.3.0.
@@ -92,6 +88,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 
 import flame
@@ -102,7 +100,7 @@ from lib.pyflame_lib_add_gmask import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add GMask'
-SCRIPT_VERSION = 'v2.10.0'
+SCRIPT_VERSION = 'v2.10.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -122,6 +120,7 @@ def create_gmask_node(selection, gmask_type):
         selected_node_sockets = flame.batch.current_node.get_value().sockets
 
         # Find node connected to front socket
+        connected_node = None
         connected_node_pos_x = ''
         for n in selected_node_sockets.values():
             if isinstance(n, dict):
@@ -148,19 +147,25 @@ def create_gmask_node(selection, gmask_type):
 
         gmask_node.pos_y = int(selected_node.pos_y - 100)
 
-        # Get selected node matte input socket name
-        for socket in selected_node.input_sockets:
-            if 'Matte' in socket:
-                selected_node_socket = socket
+        # Get selected node matte input socket name. Prefer 'Matte' so Comp nodes don't use 'Back Matte'
+        selected_node_socket = ''
+        if 'Matte' in selected_node.input_sockets:
+            selected_node_socket = 'Matte'
+        else:
+            for socket in selected_node.input_sockets:
+                if 'Matte' in socket:
+                    selected_node_socket = socket
+                    break
 
         # Connect gmask tracer node
         flame.batch.connect_nodes(gmask_node, 'Default', selected_node, selected_node_socket)
 
         # Connect gmask tracer front if node connected to selected node
-        try:
-            flame.batch.connect_nodes(connected_node, 'Default', gmask_node, 'Default')
-        except:
-            pass
+        if connected_node is not None:
+            try:
+                flame.batch.connect_nodes(connected_node, 'Default', gmask_node, 'Default')
+            except:
+                pass
 
     def add_at_cursor_position():
         """
@@ -211,12 +216,11 @@ def scope(selection):
     if selection == ():
         return True
 
-    for item in selection:
-        if isinstance(item, flame.PyNode):
-            for node in selection:
-                for socket in node.input_sockets:
-                    if 'Matte' in socket:
-                        return True
+    # Only show for a single selected node with a Matte input
+    if len(selection) == 1 and isinstance(selection[0], flame.PyNode):
+        for socket in selection[0].input_sockets:
+            if 'Matte' in socket:
+                return True
 
     return False
 
