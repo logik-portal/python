@@ -1,31 +1,21 @@
 # Folders To File System
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Folders to File System
-Script Version: 1.6.0
+Script Version: 1.7.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 03.26.23
-Update Date: 07.10.25
+Update Date: 10.23.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel
 
@@ -34,7 +24,7 @@ Description:
     Create folders in selected file system path from folders in selected Library or Folder.
 
 URL:
-    https://github.com/logik-portal/python/folders_to_file_system
+    https://logik-portal.com/scripts/folders_to_file_system
 
 Menus:
 
@@ -45,6 +35,14 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.7.0 10.23.26
+        - Fixed wrong folder paths when the selected folder's name is part of a parent, library, workspace or project name.
+        - Fixed error when clips are selected along with libraries or folders.
+        - Fixed permission error message not showing the selected path.
+        - Errors creating folders are now shown instead of being hidden.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v1.6.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -72,6 +70,8 @@ Updates:
 # [Imports]
 #-------------------------------------
 
+from __future__ import annotations
+
 import os
 
 import flame
@@ -82,7 +82,7 @@ from lib.pyflame_lib_folders_to_file_system import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Folders to File System'
-SCRIPT_VERSION = 'v1.6.0'
+SCRIPT_VERSION = 'v1.7.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -138,9 +138,9 @@ class FoldersToFileSystem:
 
         Open file browser to select folder to create folders in.
         """
-
+ 
         # Open file browser to select folder to create folders in
-        path = pyflame.file_browser(
+        path: Any = pyflame.file_browser(
             path=self.settings.path,
             title='Select Folder',
             select_directory=True,
@@ -150,7 +150,7 @@ class FoldersToFileSystem:
             print('Selected path:', path, '\n')
             if not os.access(path, os.W_OK):
                 PyFlameMessageWindow(
-                    message='You do not have permission to create folders in the selected path:\n\n{path}',
+                    message=f'You do not have permission to create folders in the selected path:\n\n{path}',
                     message_type=MessageType.ERROR,
                     parent=None,
                     )
@@ -179,59 +179,62 @@ class FoldersToFileSystem:
                 Path to create folders in.
         """
 
-        def get_folders(folder):
+        def get_folders(folder, folder_path: str) -> None:
+            """
+            Get Folders
+            ===========
 
-            def get_parent(folders):
+            Add the path of every subfolder of folder to folder_list, relative to the selected item.
 
-                # Get folder parent name and add to list
-                folder_parent = folders.parent
-                folder_parent_name = folder_parent.name
+            Args
+            ----
+                folder (PyLibrary | PyFolder):
+                    Library or folder to get subfolders from.
 
-                folder_path_list.append(str(folder_parent_name)[1:-1])
-
-                # Try to loop through to parent of parent if it exists
-                try:
-                    get_parent(folder_parent)
-                except:
-                    pass
+                folder_path (str):
+                    Path of folder, starting with the selected item's name.
+            """
 
             for folders in folder.folders:
-                folder_path_list = []
-                folder_name = folders.name
-                folder_path_list.append(str(folder_name)[1:-1])
+                new_folder_path = f'{folder_path}/{str(folders.name)[1:-1]}'
 
-                get_parent(folders)
-                get_folders(folders)
-
-                # Reverse folder list order
-                folder_path_list.reverse()
-
-                # Convert folder list to string
-                new_folder_path = '/'.join(folder_path_list)
-                new_folder_path = root_folder + new_folder_path.split(root_folder, 1)[1]
+                get_folders(folders, new_folder_path)
 
                 # Add folder path string to master folder list for dictionary conversion
                 folder_list.append(new_folder_path)
 
         folder_list = []
 
-        # Convert folder tree into list of folders to create
+        # Convert folder tree into list of folders to create, skipping anything that isn't a library or folder
         for folder in self.selection:
-            root_folder = str(folder.name)[1:-1]
-            get_folders(folder)
+            if isinstance(folder, (flame.PyLibrary, flame.PyFolder)):
+                get_folders(folder, str(folder.name)[1:-1])
 
         # Create folders
         pyflame.print('Creating folders...')
+
+        failed_folders = []
 
         for folder in folder_list:
             folder_path = os.path.join(path, folder)
             print(f'   {folder_path}')
             try:
-                os.makedirs(folder_path)
-            except:
-                pass
+                os.makedirs(folder_path, exist_ok=True)
+            except Exception as e:
+                pyflame.print(f'Failed to create folder: {folder_path} - {e}', print_type=PrintType.ERROR)
+                failed_folders.append(f'{folder_path} - {e}')
 
         print('\n', end='')
+
+        # Show one error window listing every folder that couldn't be created
+        if failed_folders:
+            failed_list = '\n'.join(failed_folders)
+            PyFlameMessageWindow(
+                message=f'Unable to create folders:\n\n{failed_list}',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return
 
         PyFlameMessageWindow(
             message=f'Folders Created Successfully\n\n{path}',

@@ -1,10 +1,10 @@
 # Folders To File System
 
-**Script Version:** 1.6.0  
+**Script Version:** 1.7.0  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.26.23  
-**Update Date:** 07.10.25  
+**Update Date:** 10.23.26  
 
 **Script Type:** MediaPanel
 
@@ -14,7 +14,7 @@ Create folders in selected file system path from folders in selected Library or 
 
 ## URL
 
-https://github.com/logik-portal/python/folders_to_file_system
+https://logik-portal.com/scripts/folders_to_file_system
 
 ## Menus
 
@@ -25,6 +25,15 @@ https://github.com/logik-portal/python/folders_to_file_system
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.7.0 [10.23.26]
+- Fixed wrong folder paths when the selected folder's name is part of a parent, library, workspace or project name.
+- Fixed error when clips are selected along with libraries or folders.
+- Fixed permission error message not showing the selected path.
+- Errors creating folders are now shown instead of being hidden.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v1.6.0 [07.10.25]
 - Updated to PyFlameLib v5.0.0.
