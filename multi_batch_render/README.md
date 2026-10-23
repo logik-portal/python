@@ -1,10 +1,10 @@
 # Multi Batch Render
 
-**Script Version:** 4.15.0  
+**Script Version:** 4.15.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 12.12.18  
-**Update Date:** 07.22.26  
+**Update Date:** 10.13.26  
 
 **Script Type:** Batch / Media Panel Desktop
 
@@ -14,7 +14,7 @@ Batch render multiple batch groups
 
 ## URL
 
-https://logik-portal.com/scripts/#multi_batch_render
+https://logik-portal.com/scripts/multi_batch_render
 
 ## Menus
 
@@ -26,6 +26,11 @@ https://logik-portal.com/scripts/#multi_batch_render
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v4.15.1 [10.13.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v4.15.0 [07.22.26]
 - Updated to PyFlameLib v5.5.0.
@@ -81,9 +86,7 @@ Copy script folder into /opt/Autodesk/shared/python
 <br>
 
 ### v4.5 [09.06.22]
-- Updated menus for Flame 2023.2+:
-- Right-click in batch -> Multi-Batch Render
-- Right-click selected batch groups in desktop -> Render Selected Batch Groups
+- Updated menus for Flame 2023.2+: Right-click in batch -> Multi-Batch Render Right-click selected batch groups in desktop -> Render Selected Batch Groups
 <br>
 
 ### v4.4 [05.27.22]
