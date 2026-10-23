@@ -1,10 +1,10 @@
 # Replace Render Nodes
 
-**Script Version:** 2.3.0  
+**Script Version:** 2.3.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.22.20  
-**Update Date:** 04.02.26  
+**Update Date:** 10.13.26  
 
 **Script Type:** Batch
 
@@ -14,7 +14,7 @@ Replace all render nodes in batch when they fail to properly show up in render l
 
 ## URL
 
-https://github.com/logik-portal/python/replace_render_nodes
+https://logik-portal.com/scripts/replace_render_nodes
 
 ## Menus
 
@@ -25,6 +25,11 @@ https://github.com/logik-portal/python/replace_render_nodes
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.3.1 [10.13.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v2.3.0 [04.02.26]
 - Updated to PyFlameLib v5.3.0.
