@@ -1,16 +1,18 @@
 # Add Audio
 
-**Script Version:** 1.5.0  
+**Script Version:** 1.5.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.04.22  
-**Update Date:** 03.26.26  
+**Update Date:** 10.16.26  
 
 **Script Type:** Batch
 
 ## Description
 
 Add stereo or 5.1 audio to selected sequences.
+<br><br>
+Only works with sequences. Clips are not supported, and the menu only appears when a sequence is selected.
 <br><br>
 To add stereo audio to a sequence, select the sequence then select the audio clip to be added.
 To add stereo audio to multiple sequences, select in sequence/audio/sequence/audio... order.
@@ -25,7 +27,7 @@ When added to the sequence they will be put in this order: LF, RF, C, LFE, LS, R
 
 ## URL
 
-https://github.com/logik-portal/python/add_audio
+https://logik-portal.com/scripts/add_audio
 
 ## Menus
 
@@ -39,6 +41,15 @@ https://github.com/logik-portal/python/add_audio
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.5.1 [10.16.26]
+- Audio tracks are now labelled after the audio added to them: Stereo L/R, or 5.1 LF, RF, C, LFE, LS, RS and 5.1 Stereo L/R. The audio clips keep their original names.
+- 5.1 audio now stops with an error naming any missing, duplicate or misnamed channel files. Previously a misnamed file was silently skipped and the other channels shifted tracks.
+- Selection order is now checked before anything is created. Selecting audio before its sequence shows an error instead of failing and leaving a partly made library.
+- Added note that the script only works with sequences.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v1.5.0 [03.26.26]
 - Updated to PyFlameLib v5.3.0.
