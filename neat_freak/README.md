@@ -1,10 +1,10 @@
 # Neat Freak
 
-**Script Version:** 2.2.0  
+**Script Version:** 2.3.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 10.22.21  
-**Update Date:** 04.19.26  
+**Update Date:** 10.23.26  
 
 **Script Type:** Batch/Media Panel/Timeline
 
@@ -22,22 +22,18 @@ Render/Write node outputs are set to match each clip's: name, duration, timecode
 <br><br>
 Using Neat Node Profiles:
 <br><br>
-- Using Neat Node Profiles allows for easily applying the same Neat node
-settings to multiple clips bypassing having to set each Neat node manually.
+- Using Neat Node Profiles allows for easily applying the same Neat node settings to multiple clips bypassing having to set each Neat node manually.
 <br><br>
-- Enabled by default. To turn off, disable in Neat Freak setup. When
-disabled, the Neat node loads with default settings. When enabled, a
-prompt appears to select a Neat node profile.
+- To use a saved profile, select Neat Freak... -> Neat Denoise Selected
+Clips with Profile, then pick a profile from the prompt. If no profiles are saved for the current project, a message explains how to save one.
+Neat Denoise Selected Clips always uses default Neat settings.
 <br><br>
-- To create a Neat node profile: add a Neat node, go into the node and apply
-desired settings, then right-click on the Neat node and select
-Neat Freak... -> Save Neat Node Profile. The profile then appears in
-the selection prompt. Multiple profiles can be created. Profiles
-are saved per project.
+- To create a Neat node profile: add a Neat node, go into the node and apply desired settings, then right-click on the Neat node and select
+Neat Freak... -> Save Neat Node Profile. The profile then appears in the selection prompt. Multiple profiles can be created. Profiles are saved per project.
 
 ## URL
 
-https://logik-portal.com/scripts/#neat_freak
+https://logik-portal.com/scripts/neat_freak
 
 ## Menus
 
@@ -45,14 +41,35 @@ https://logik-portal.com/scripts/#neat_freak
 - Flame Main Menu → Logik → Logik Portal Script Setup → Neat Freak Setup
 ### Batch
 - Right-click on any clips(s) in batch → Neat Freak... → Neat Denoise Selected Clips
+- Right-click on any clips(s) in batch → Neat Freak... → Neat Denoise Selected Clips with Profile
+- Right-click on any Neat node in batch → Neat Freak... → Save Neat Node Profile
 ### Media Panel
 - Right-click on any clips(s) in media panel → Neat Freak... → Neat Denoise Selected Clips
+- Right-click on any clips(s) in media panel → Neat Freak... → Neat Denoise Selected Clips with Profile
+### Timeline
+- Right-click on any segment(s) in timeline → Neat Freak... → Neat Denoise Selected Clips
+- Right-click on any segment(s) in timeline → Neat Freak... → Neat Denoise Selected Clips with Profile
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v2.3.0 [10.23.26]
+- Fixed Neat v5 not being used when Neat v6 isn't installed.
+- Fixed error when Neat isn't installed. One message is shown and no empty nodes are left.
+- Fixed saved profiles that fail to load leaving empty Neat nodes.
+- Fixed error when the profile folder has no profiles, and profile names with dots.
+- Fixed timeline segments being skipped after one fails. Failed segments are listed at the end.
+- Fixed error when non-clip items are selected along with clips.
+- Save Neat Node Profile now saves the selected Neat node, checks the name, and asks before replacing a profile.
+- Fixed error when the script install check fails.
+- Added Neat Denoise Selected Clips with Profile menu option to Batch, Media Panel and Timeline.
+- Removed Use Saved Profiles option from Setup. Neat Denoise Selected Clips now always uses default Neat settings.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v2.2.0 [04.19.26]
 - Updated to work in Flame 2027+.
@@ -110,13 +127,7 @@ Copy script folder into /opt/Autodesk/shared/python
 - Render/Write nodes now take start frame into account when setting render range.
 - Colour Management in render node now gets set to 16-bit float, Colour Management node is no longer needed/added.
 - Updated config file loading/saving.
-- Moved menus for Flame 2023.2+:
-- Setup:
-- Flame Main Menu -> Logik -> Logik Portal Script Setup -> Neat Freak Setup
-- Batch:
-- Right-click on any clip in batch -> Neat Denoise Selected Clips
-- Media Panel:
-- Right-click on any clip in media panel -> Neat Denoise Selected Clips
+- Moved menus for Flame 2023.2+: Setup: Flame Main Menu -> Logik -> Logik Portal Script Setup -> Neat Freak Setup Batch: Right-click on any clip in batch -> Neat Denoise Selected Clips Media Panel: Right-click on any clip in media panel -> Neat Denoise Selected Clips
 <br>
 
 ### v1.3 [08.03.22]
