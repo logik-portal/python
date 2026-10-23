@@ -1,31 +1,21 @@
 # Add Mux
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Add Mux
-Script Version: 2.7.0
+Script Version: 2.7.1
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 07.31.19
-Update Date: 03.26.26
+Update Date: 10.16.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Batch
 
@@ -36,7 +26,7 @@ Description:
     Right-click on an existing node to add connected mux node after it.
 
 URL:
-    https://github.com/logik-portal/python/add_mux
+    https://logik-portal.com/scripts/add_mux
 
 Menus:
 
@@ -53,6 +43,11 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.7.1 10.16.26
+        - Freeze Selected MUX now skips non-MUX nodes in the selection instead of failing.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v2.7.0 03.26.26
         - Updated to PyFlameLib v5.3.0.
@@ -91,6 +86,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import flame
 from lib.pyflame_lib_add_mux import *
 
@@ -99,7 +96,7 @@ from lib.pyflame_lib_add_mux import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Add Mux'
-SCRIPT_VERSION = 'v2.7.0'
+SCRIPT_VERSION = 'v2.7.1'
 
 # ==============================================================================
 # [Main Script]
@@ -178,6 +175,9 @@ def freeze_mux_node(selection):
     current_frame = flame.batch.current_frame
 
     for mux_node in selection:
+        # Skip non-MUX nodes in a mixed selection
+        if mux_node.type != 'MUX':
+            continue
         mux_node.range_active = True
         mux_node.range_start = current_frame
         mux_node.range_end = current_frame
