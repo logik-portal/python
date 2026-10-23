@@ -1,31 +1,21 @@
 # Delete Empty Folders
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Delete Empty Folders
-Script Version: 1.6.0
+Script Version: 1.7.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 11.15.23
-Update Date: 03.31.26
+Update Date: 10.23.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel
 
@@ -34,7 +24,7 @@ Description:
     Delete any empty folders in selected Library or Folder.
 
 URL:
-    https://github.com/logik-portal/python/delete_empty_folders
+    https://logik-portal.com/scripts/delete_empty_folders
 
 Menu:
 
@@ -45,6 +35,13 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.7.0 10.23.26
+        - Fixed Flame hanging when an empty folder can't be deleted. Folders that can't be deleted are listed in one message.
+        - Fixed error when clips are selected along with libraries or folders.
+        - Folders are now deleted without a confirmation prompt for each folder.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v1.6.0 03.31.26
         - Updated to PyFlameLib v5.3.0.
@@ -71,6 +68,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import flame
 from lib.pyflame_lib_delete_empty_folders import *
@@ -80,7 +79,7 @@ from lib.pyflame_lib_delete_empty_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Delete Empty Folders'
-SCRIPT_VERSION = 'v1.6.0'
+SCRIPT_VERSION = 'v1.7.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -109,22 +108,66 @@ class DeleteEmptyFolders:
         Loop through selection(Library or Folder) and delete empty folders.
         """
 
-        def check_folders(root_folder):
+        def check_folders(root_folder, failed_folders: list) -> None:
+            """
+            Check Folders
+            =============
+
+            Delete empty folders in root folder until none are left. Folders that can't be deleted are added to
+            failed_folders and not retried.
+
+            Args
+            ----
+                root_folder (PyLibrary or PyFolder):
+                    Library or folder to delete empty folders from.
+
+                failed_folders (list):
+                    List of folders that couldn't be deleted. Each item is (folder, error message).
+            """
+
+            failed_count = len(failed_folders)
+            attempted_folders = []
 
             while True:
-                # Find empty folders
-                empty_folders = find_empty_folders(root_folder)
+                # Find empty folders, skipping folders that were already attempted
+                failed = [failed_folder for failed_folder, error in failed_folders]
+                empty_folders = []
+                for folder in find_empty_folders(root_folder):
+                    if folder not in attempted_folders:
+                        empty_folders.append(folder)
+                    elif folder not in failed:
+                        # Delete returned True but folder still exists, record as failed so it isn't retried
+                        folder_name = str(folder.name)[1:-1]
+                        pyflame.print(f'Could not delete folder: {folder_name} - still there after delete', print_type=PrintType.ERROR)
+                        failed_folders.append((folder, f'{folder_name} - still there after delete'))
+                        failed.append(folder)
 
-                # If no empty folders, break the loop
+                # If no new empty folders, break the loop
                 if not empty_folders:
                     break
 
                 # Delete found empty folders
+                deleted = False
                 for folder in empty_folders:
-                    pyflame.print(f'Deleting empty folder: {str(folder.name)[1:-1]}')
-                    flame.delete(folder)
+                    folder_name = str(folder.name)[1:-1]
+                    pyflame.print(f'Deleting empty folder: {folder_name}')
+                    attempted_folders.append(folder)
+                    try:
+                        if flame.delete(folder, confirm=False):
+                            deleted = True
+                        else:
+                            pyflame.print(f'Could not delete folder: {folder_name}', print_type=PrintType.ERROR)
+                            failed_folders.append((folder, folder_name))
+                    except Exception as e:
+                        pyflame.print(f'Could not delete folder: {folder_name} - {e}', print_type=PrintType.ERROR)
+                        failed_folders.append((folder, f'{folder_name} - {e}'))
 
-            pyflame.print('All empty folders have been deleted.', text_color=TextColor.GREEN)
+                # Stop if nothing could be deleted so the loop can't run forever
+                if not deleted:
+                    break
+
+            if len(failed_folders) == failed_count:
+                pyflame.print('All empty folders have been deleted.', text_color=TextColor.GREEN)
 
         def find_empty_folders(folder, parent=None):
 
@@ -143,9 +186,21 @@ class DeleteEmptyFolders:
 
         pyflame.print('Checking for and deleting empty folders...')
 
-        # Loop through selection and check for empty folders
+        failed_folders = []
+
+        # Loop through selected libraries and folders and check for empty folders. Skip anything else.
         for folder in self.selection:
-            check_folders(folder)
+            if isinstance(folder, (flame.PyLibrary, flame.PyFolder)):
+                check_folders(folder, failed_folders)
+
+        # Show one message listing folders that couldn't be deleted
+        if failed_folders:
+            failed_list = '\n'.join(error for failed_folder, error in failed_folders)
+            PyFlameMessageWindow(
+                message=f'Could not delete these empty folders:\n\n{failed_list}',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
 
 # ==============================================================================
 # [Scopes]
