@@ -1,31 +1,21 @@
 # Import ST Map
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Import ST Map
-Script Version: 3.2.0
+Script Version: 3.2.1
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 04.30.21
-Update Date: 04.07.26
+Update Date: 10.13.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Batch
 
@@ -36,7 +26,7 @@ Description:
     Comp work is recomped over original plate at end of setup
 
 URL:
-    https://github.com/logik-portal/python/import_st_map
+    https://logik-portal.com/scripts/import_st_map
 
 Menus:
 
@@ -47,6 +37,10 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v3.2.1 10.13.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v3.2.0 04.07.26
         - Updated to PyFlameLib v5.3.0.
@@ -99,6 +93,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import re
 
@@ -110,7 +106,7 @@ from lib.pyflame_lib_import_st_map import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Import ST Maps'
-SCRIPT_VERSION = 'v3.2.0'
+SCRIPT_VERSION = 'v3.2.1'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
