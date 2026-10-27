@@ -1,10 +1,10 @@
 # Find Folder
 
-**Script Version:** 3.0.0  
+**Script Version:** 3.0.1  
 **Flame Version:** 2025  
 **Written by:** Kieran Hanrahan  
 **Creation Date:** 07.22.22  
-**Update Date:** 09.05.24  
+**Update Date:** 10.27.26  
 
 ## Description
 
@@ -29,3 +29,9 @@ For all users, copy this file to:
 <br><br>
 For a specific user, copy this file to:
 /opt/Autodesk/user/<user name>/python
+
+## Updates
+
+### v3.0.1 [10.27.26]
+- Updated with a Qt fix for Flame 2027.2.
+<br>
