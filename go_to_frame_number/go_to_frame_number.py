@@ -2,13 +2,13 @@
 Script Name: Go to Frame Number
 Written By: Kieran Hanrahan
 
-Script Version: 3.0.1
+Script Version: 3.0.2
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/go-to-frame-number
 
 Creation Date: 10.26.22
-Update Date: 04.10.25
+Update Date: 10.27.26
 
 Description:
 
@@ -31,13 +31,18 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+Updates:
+
+    v3.0.2 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Go to Frame Number'
-VERSION_INFO = (3, 0, 1)
+VERSION_INFO = (3, 0, 2)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 
@@ -781,7 +786,7 @@ class GoToFrameNumber:
         self.window.setLayout(self.vbox)
 
         # Center Window
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
 
         self.window.move(resolution.center().x() - self.window_size['x'] / 2,
                          resolution.center().y() - self.window_size['y'] / 2)
