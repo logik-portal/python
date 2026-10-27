@@ -3,10 +3,10 @@
 
 """
 Script Name: Build Python Scripts JSON
-Script Version: 1.0.1
+Script Version: 1.1.0
 Written by: Michael Vaglienty
 Creation Date: 12.17.25
-Update Date: 07.08.26
+Update Date: 10.27.26
 
 Script Type: GitHub Actions
 
@@ -17,6 +17,12 @@ Description:
 
     Output file is written as 'python_scripts.json' in the current working directory.
 
+    Retired scripts: retired.json in the repo root ({"<folder>": {"reason": "...",
+    "retired_at": "YYYY-MM-DD"}}, committed by the WOPR admin) marks scripts that are no
+    longer updated. Their entries stay in the list and gain "Retired": true and
+    "Retired Reason": "...", placed before "Description". Entries that are not retired are
+    unchanged. A missing or invalid retired.json means nothing is retired.
+
 URL:
     https://github.com/logik-portal/python
 
@@ -26,6 +32,11 @@ To install:
     No manual installation required.
 
 Updates:
+
+    v1.1.0 10.27.26
+        - Retired scripts: entries listed in the repo root's retired.json gain
+          "Retired": true and "Retired Reason". Nothing else in the output changes,
+          and a missing or invalid retired.json means nothing is retired.
 
     v1.0.1 07.08.26
         - Fixed extract_docstring() to find the module docstring with
@@ -61,6 +72,9 @@ REPO_BRANCH = os.environ.get('REPO_BRANCH', 'main')
 # Use relative path so it works in GitHub Actions (writes to current working directory)
 # File is moved in Workflow.yaml
 OUTPUT_FILE = 'python_scripts.json'
+
+# Retired scripts list in the repo root, maintained by the WOPR admin (see load_retired)
+RETIRED_FILE = 'retired.json'
 
 def get_github_folders(repo, branch='main'):
     """
@@ -518,6 +532,96 @@ def parse_docstring_metadata(docstring_content, folder_name):
     return metadata
 
 
+def parse_retired(text):
+    """
+    Parse retired.json content.
+
+    Args
+    ----
+    text (str or None):
+        Raw retired.json content, or None when the file does not exist
+
+    Returns
+    -------
+    dict
+        {folder: reason} for every retired folder. Empty when the content is missing,
+        is not valid JSON or is not a JSON object.
+    """
+
+    if not text:
+        return {}
+    try:
+        data = json.loads(text)
+    except ValueError:
+        print(f'Warning: {RETIRED_FILE} is not valid JSON - no scripts marked retired')
+        return {}
+    if not isinstance(data, dict):
+        print(f'Warning: {RETIRED_FILE} is not a JSON object - no scripts marked retired')
+        return {}
+
+    retired = {}
+    for folder, info in data.items():
+        if not isinstance(folder, str) or not folder.strip():
+            continue
+        reason = info.get('reason') if isinstance(info, dict) else ''
+        retired[folder.strip()] = sanitize_for_json(str(reason or '').strip())
+    return retired
+
+
+def load_retired(use_local, repo=REPO_NAME, branch=REPO_BRANCH):
+    """
+    Read retired.json from the checkout (local) or from GitHub (API fallback mode).
+
+    Returns
+    -------
+    dict
+        {folder: reason}; empty when the file is missing or invalid.
+    """
+
+    text = None
+    if use_local:
+        path = os.path.join(os.getcwd(), RETIRED_FILE)
+        if os.path.isfile(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    text = f.read()
+            except (UnicodeDecodeError, IOError):
+                text = None
+    else:
+        url = f'https://raw.githubusercontent.com/{REPO_OWNER}/{repo}/{branch}/{RETIRED_FILE}'
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        try:
+            with urllib.request.urlopen(url, context=ssl_context, timeout=20) as response:
+                text = response.read().decode('utf-8')
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+    return parse_retired(text)
+
+
+def mark_retired(metadata, reason):
+    """
+    Return a copy of metadata with "Retired" and "Retired Reason" placed before "Description".
+
+    Placing the keys before the last key keeps every existing line of the entry unchanged in
+    python_scripts.json (no trailing-comma change), so retiring a script never looks like a
+    version or description change to anything that reads the file's diff.
+    """
+
+    marked = {}
+    for key, value in metadata.items():
+        if key == 'Description':
+            marked['Retired'] = True
+            marked['Retired Reason'] = reason
+        marked[key] = value
+    if 'Retired' not in marked:
+        marked['Retired'] = True
+        marked['Retired Reason'] = reason
+    return marked
+
+
 def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FILE):
     """
     Extract metadata from all Python script docstrings and create a JSON file.
@@ -549,6 +653,9 @@ def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FI
     # Check if we're running locally (files exist) or need to fetch from API
     # Simple check - if .git exists, we're in a checked-out repo
     use_local = os.path.exists('.git')
+    retired = load_retired(use_local, repo, branch)
+    if retired:
+        print(f'{len(retired)} retired script(s) listed in {RETIRED_FILE}')
 
     if use_local:
         print('Reading from local filesystem...')
@@ -563,8 +670,10 @@ def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FI
             python_content = get_local_python_script_content(folder)
             docstring = extract_docstring(python_content)
             metadata = parse_docstring_metadata(docstring, folder)
+            if folder in retired:
+                metadata = mark_retired(metadata, retired[folder])
             scripts_data.append(metadata)
-            print('✓')
+            print('✓ (retired)' if folder in retired else '✓')
     else:
         # Fallback to GitHub API (for testing outside GitHub Actions)
         print(f'Fetching folders from {REPO_OWNER}/{repo}...')
@@ -579,8 +688,10 @@ def create_readme_json(repo=REPO_NAME, branch=REPO_BRANCH, output_file=OUTPUT_FI
             python_content = get_python_script_content(folder, repo, branch)
             docstring = extract_docstring(python_content)
             metadata = parse_docstring_metadata(docstring, folder)
+            if folder in retired:
+                metadata = mark_retired(metadata, retired[folder])
             scripts_data.append(metadata)
-            print('✓')
+            print('✓ (retired)' if folder in retired else '✓')
 
     print(f'\nSaving data to {output_file}...')
     with open(output_file, 'w', encoding='utf-8') as f:
