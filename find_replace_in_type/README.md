@@ -1,10 +1,10 @@
 # Find Replace In Type
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.0.1  
 **Flame Version:** 2026  
 **Written by:** Kieran Hanrahan  
 **Creation Date:** 03.02.25  
-**Update Date:** 04.21.25  
+**Update Date:** 10.27.26  
 
 ## Description
 
@@ -31,3 +31,9 @@ For all users, copy this file to:
 <br><br>
 For a specific user, copy this file to:
 /opt/Autodesk/user/<user name>/python
+
+## Updates
+
+### v1.0.1 [10.27.26]
+- Updated with a Qt fix for Flame 2027.2.
+<br>
