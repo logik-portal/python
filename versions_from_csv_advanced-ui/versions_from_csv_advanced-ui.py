@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: CSV Sequence Duplicator (Flame UI Style) with Color Support
-Script Version: v1.1.0
+Script Version: 1.1.1
 Flame Version: 2025
 Written by: Quinn Richardson + Claude
 Creation Date: 09.22.25
+Update Date: 10.27.26
 
 Description:
 
@@ -41,6 +42,11 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /User/user_name/Library/Preferences/Autodesk/flame/python
+
+Updates:
+
+    v1.1.1 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 import flame
@@ -52,7 +58,7 @@ from functools import partial
 
 
 TITLE = 'CSV Sequence Duplicator'
-VERSION = '1.1'
+VERSION = '1.1.1'
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[CSV DUPLICATOR]'
 
@@ -416,7 +422,7 @@ class CSVDuplicatorWindow(QtWidgets.QWidget):
 
     def center_window(self):
         """Center the window on screen."""
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.move(
             (resolution.width() / 2) - (self.frameSize().width() / 2),
             (resolution.height() / 2) - (self.frameSize().height() / 2))
