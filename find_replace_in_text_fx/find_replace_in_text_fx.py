@@ -2,13 +2,13 @@
 Script Name: Find and Replace in Text TimelineFX
 Written by: Kieran Hanrahan
 
-Script Version: 3.0.0
+Script Version: 3.0.1
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/find-replace-in-text-fx
 
 Creation Date: 07.21.22
-Update Date: 03.06.25
+Update Date: 10.27.26
 
 Description:
 
@@ -35,6 +35,11 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+Updates:
+
+    v3.0.1 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 
@@ -42,7 +47,7 @@ import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Find and Replace in Text TimelineFX'
-VERSION_INFO = (3, 0, 0)
+VERSION_INFO = (3, 0, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -278,7 +283,7 @@ class FlameProgressWindow(QtWidgets.QDialog):
         self.setMaximumSize(QtCore.QSize(500, 330))
         self.setStyleSheet('background-color: rgb(36, 36, 36)')
 
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -592,7 +597,7 @@ class FindReplaceInTextFX:
         self.window.setFocusPolicy(QtCore.Qt.StrongFocus)
 
         # Center Window
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
 
         self.window.move(
                 (resolution.width() / 2) - (self.window.frameSize().width() / 2),
