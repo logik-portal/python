@@ -1,10 +1,10 @@
 """
 Script Name: Flatten Segments
-Script Version: 2.1.0
+Script Version: 2.1.1
 Flame Version: 2025
 Written By: Kieran Hanrahan
 Creation Date: 01.12.24
-Update Date: 03.07.25
+Update Date: 10.27.26
 
 Description:
 
@@ -26,6 +26,11 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+Updates:
+
+    v2.1.1 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 from functools import partial
@@ -34,7 +39,7 @@ import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Flatten Segments'
-VERSION_INFO = (2, 1, 0)
+VERSION_INFO = (2, 1, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -471,7 +476,7 @@ class FlattenSegments:
         self.window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         # Center Window
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
 
         self.window.move(
                 (resolution.width() / 2) - (self.window_x / 2),
