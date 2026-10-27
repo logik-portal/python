@@ -561,43 +561,43 @@
   },
   {
     "Script Name": "find folder",
-    "Script Version": "3.0.0",
+    "Script Version": "3.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "07.22.22",
-    "Update Date": "09.05.24",
-    "Description": "Script Name: Find Folder\nScript Version: 3.0.0\nFlame Version: 2025\nWritten by: Kieran Hanrahan\nCreation Date: 07.22.22\nUpdate Date: 09.05.24\n\nDescription:\n\nSearches for a subdirectory of the current directory in the Media Hub.  Useful for\nnavigating a folder that contains many many subfolders with long names but you have\na search term that would quickly find the folder you need.\n\nURL: http://github.com/khanrahan/find-folder\n\nMenus:\n\nRight-click selected folder in Media Hub Files -> Find... -> Find Folder\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Find Folder\nScript Version: 3.0.1\nFlame Version: 2025\nWritten by: Kieran Hanrahan\nCreation Date: 07.22.22\nUpdate Date: 10.27.26\n\nDescription:\n\nSearches for a subdirectory of the current directory in the Media Hub.  Useful for\nnavigating a folder that contains many many subfolders with long names but you have\na search term that would quickly find the folder you need.\n\nURL: http://github.com/khanrahan/find-folder\n\nMenus:\n\nRight-click selected folder in Media Hub Files -> Find... -> Find Folder\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python\n\nUpdates:\n\nv3.0.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "find replace in name advance",
-    "Script Version": "3.1.0",
+    "Script Version": "3.1.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "02.21.24",
-    "Update Date": "04.10.25",
-    "Description": "Script Name: Find & Replace in Name Advance\nWritten By: Kieran Hanrahan\n\nScript Version: 3.1.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/find-replace-in-name-advance\n\nCreation Date: 02.21.24\nUpdate Date: 04.10.25\n\nDescription:\n\nPerform find & replace on names of selected items.  Functions on Workspaces,\nLibraries, Desktops, Reel Groups, Reels, Folders, Sequences, Clips, and Timeline\nSegments.\n\nMenus:\n\nRight-click selected items on the Desktop --> Edit... --> Find & Replace in Name Advance\n\nRight-click selected items in the Media Panel --> Edit... --> Find & Replace in Name Advance\n\nRight-click selected items in the Timeline --> Edit... --> Find & Replace in Name Advance\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Find & Replace in Name Advance\nWritten By: Kieran Hanrahan\n\nScript Version: 3.1.1\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/find-replace-in-name-advance\n\nCreation Date: 02.21.24\nUpdate Date: 10.27.26\n\nDescription:\n\nPerform find & replace on names of selected items.  Functions on Workspaces,\nLibraries, Desktops, Reel Groups, Reels, Folders, Sequences, Clips, and Timeline\nSegments.\n\nMenus:\n\nRight-click selected items on the Desktop --> Edit... --> Find & Replace in Name Advance\n\nRight-click selected items in the Media Panel --> Edit... --> Find & Replace in Name Advance\n\nRight-click selected items in the Timeline --> Edit... --> Find & Replace in Name Advance\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/\n\nUpdates:\n\nv3.1.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "find replace in text fx",
-    "Script Version": "3.0.0",
+    "Script Version": "3.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "07.21.22",
-    "Update Date": "03.06.25",
-    "Description": "Script Name: Find and Replace in Text TimelineFX\nWritten by: Kieran Hanrahan\n\nScript Version: 3.0.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/find-replace-in-text-fx\n\nCreation Date: 07.21.22\nUpdate Date: 03.06.25\n\nDescription:\n\nThis script will find a specified search string within a Text TimelineFX and\nreplace that search term with something else without having to enter the Text\neditor.\n\nWorks on segments or sequences containing Text TimelineFX.  For sequences, it will\nfind all segments that have Text TimelineFX and perform the find & replace.\n\nMenus:\n\nRight-click selected segments in a sequence -> Edit... -> Find and Replace in Text TimelineFX\n\nRight-click selected sequence or sequences -> Edit... -> Find and Replace in Text TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Find and Replace in Text TimelineFX\nWritten by: Kieran Hanrahan\n\nScript Version: 3.0.1\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/find-replace-in-text-fx\n\nCreation Date: 07.21.22\nUpdate Date: 10.27.26\n\nDescription:\n\nThis script will find a specified search string within a Text TimelineFX and\nreplace that search term with something else without having to enter the Text\neditor.\n\nWorks on segments or sequences containing Text TimelineFX.  For sequences, it will\nfind all segments that have Text TimelineFX and perform the find & replace.\n\nMenus:\n\nRight-click selected segments in a sequence -> Edit... -> Find and Replace in Text TimelineFX\n\nRight-click selected sequence or sequences -> Edit... -> Find and Replace in Text TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/\n\nUpdates:\n\nv3.0.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "find replace in type",
-    "Script Version": "1.0.0",
+    "Script Version": "1.0.1",
     "Flame Version": "2026",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "03.02.25",
-    "Update Date": "04.21.25",
-    "Description": "Script Name: Find and Replace in Type\nWritten by: Kieran Hanrahan\n\nScript Version: 1.0.0\nFlame Version: 2026\n\nURL: http://github.com/khanrahan/find-replace-in-type\n\nCreation Date: 03.02.25\nUpdate Date: 04.21.25\n\nDescription:\n\nThis script will find a specified search string within a Type TimelineFX and\nreplace that search term with something else without having to enter the Type\neditor.\n\nWorks on segments or sequences containing Type TimelineFX.  For sequences, it will\nfind all segments that have Type TimelineFX and perform the find & replace.\n\nMenus:\n\nRight-click selected segments in a sequence -> Edit... -> Find and Replace in Type TimelineFX\n\nRight-click selected sequence or sequences -> Edit... -> Find and Replace in Type TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Find and Replace in Type\nWritten by: Kieran Hanrahan\n\nScript Version: 1.0.1\nFlame Version: 2026\n\nURL: http://github.com/khanrahan/find-replace-in-type\n\nCreation Date: 03.02.25\nUpdate Date: 10.27.26\n\nDescription:\n\nThis script will find a specified search string within a Type TimelineFX and\nreplace that search term with something else without having to enter the Type\neditor.\n\nWorks on segments or sequences containing Type TimelineFX.  For sequences, it will\nfind all segments that have Type TimelineFX and perform the find & replace.\n\nMenus:\n\nRight-click selected segments in a sequence -> Edit... -> Find and Replace in Type TimelineFX\n\nRight-click selected sequence or sequences -> Edit... -> Find and Replace in Type TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python\n\nUpdates:\n\nv1.0.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "fix corrupt action",
@@ -631,13 +631,13 @@
   },
   {
     "Script Name": "flatten segments",
-    "Script Version": "2.1.0",
+    "Script Version": "2.1.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "01.12.24",
-    "Update Date": "03.07.25",
-    "Description": "Script Name: Flatten Segments\nScript Version: 2.1.0\nFlame Version: 2025\nWritten By: Kieran Hanrahan\nCreation Date: 01.12.24\nUpdate Date: 03.07.25\n\nDescription:\n\nTakes vertically stacked segments and flattens them to just the top most segments.\n\nURL: http://github.com/khanrahan/flatten-segments\n\nMenus:\n\nRight-click selected segments in a sequence --> Edit... --> Flatten Segments\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Flatten Segments\nScript Version: 2.1.1\nFlame Version: 2025\nWritten By: Kieran Hanrahan\nCreation Date: 01.12.24\nUpdate Date: 10.27.26\n\nDescription:\n\nTakes vertically stacked segments and flattens them to just the top most segments.\n\nURL: http://github.com/khanrahan/flatten-segments\n\nMenus:\n\nRight-click selected segments in a sequence --> Edit... --> Flatten Segments\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/\n\nUpdates:\n\nv2.1.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "flush renders",
@@ -691,13 +691,13 @@
   },
   {
     "Script Name": "go to frame number",
-    "Script Version": "3.0.1",
+    "Script Version": "3.0.2",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "10.26.22",
-    "Update Date": "04.10.25",
-    "Description": "Script Name: Go to Frame Number\nWritten By: Kieran Hanrahan\n\nScript Version: 3.0.1\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/go-to-frame-number\n\nCreation Date: 10.26.22\nUpdate Date: 04.10.25\n\nDescription:\n\nTakes one or more selected clips and/or sequences and moves the positioner to a\nspecific frame number.\n\nMenus:\n\nRight-click selected clips and/or sequences on the Desktop Reels --> Navigate... --> Go to Frame Number\n\nRight-click selected clips and/or sequences in the Media Panel --> Navigate... --> Go to Frame Number\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Go to Frame Number\nWritten By: Kieran Hanrahan\n\nScript Version: 3.0.2\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/go-to-frame-number\n\nCreation Date: 10.26.22\nUpdate Date: 10.27.26\n\nDescription:\n\nTakes one or more selected clips and/or sequences and moves the positioner to a\nspecific frame number.\n\nMenus:\n\nRight-click selected clips and/or sequences on the Desktop Reels --> Navigate... --> Go to Frame Number\n\nRight-click selected clips and/or sequences in the Media Panel --> Navigate... --> Go to Frame Number\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/\n\nUpdates:\n\nv3.0.2 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "import browser",
@@ -891,13 +891,13 @@
   },
   {
     "Script Name": "path translator",
-    "Script Version": "2.1.2",
+    "Script Version": "2.1.3",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "02.10.24",
-    "Update Date": "05.18.26",
-    "Description": "Script Name: Path Translator\nWritten By: Kieran Hanrahan\n\nScript Version: 2.1.2\nFlame Version: 2025\n\nURL: http://www.github.com/khanrahan/path-translator\n\nCreation Date: 02.10.24\nUpdate Date: 05.18.26\n\nDescription:\n\nTake a path, either Windows or POSIX, and extract part of the path using tokens.\nUseful for converting windows paths to POSIX for Flame, or even paths from other\nmachines that just have different mount points.\n\nExample paths this was tested on below.\n\nwindows path no trailing slash\nJ:\\dir\\dir\\dir\\dir\\_dir\\000000\n\nfrankenstein path with posix slashes and windows mount\nJ:/dir/dir/dir/dir/dir/dir/dir-dir/file_file_file_file-file_v000.mov\n\nMenus:\n\nRight-click selected folders in the Media Hub --> Navigate... --> Path Translator\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Path Translator\nWritten By: Kieran Hanrahan\n\nScript Version: 2.1.3\nFlame Version: 2025\n\nURL: http://www.github.com/khanrahan/path-translator\n\nCreation Date: 02.10.24\nUpdate Date: 10.27.26\n\nDescription:\n\nTake a path, either Windows or POSIX, and extract part of the path using tokens.\nUseful for converting windows paths to POSIX for Flame, or even paths from other\nmachines that just have different mount points.\n\nExample paths this was tested on below.\n\nwindows path no trailing slash\nJ:\\dir\\dir\\dir\\dir\\_dir\\000000\n\nfrankenstein path with posix slashes and windows mount\nJ:/dir/dir/dir/dir/dir/dir/dir-dir/file_file_file_file-file_v000.mov\n\nMenus:\n\nRight-click selected folders in the Media Hub --> Navigate... --> Path Translator\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user, copy this file to:\n/opt/Autodesk/user/<user name>/python\n\nUpdates:\n\nv2.1.3 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "pdf to jpg",
@@ -1301,13 +1301,13 @@
   },
   {
     "Script Name": "toggle timeline fx",
-    "Script Version": "1.0.0",
+    "Script Version": "1.0.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Kieran Hanrahan",
     "Creation Date": "10.17.25",
-    "Update Date": "10.17.25",
-    "Description": "Script Name: Toggle TimelineFX\nWritten By: Kieran Hanrahan\n\nScript Version: 1.0.0\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/toggle-timeline-fx\n\nCreation Date: 10.17.25\nUpdate Date:  10.17.25\n\nDescription:\n\nToggle TimelineFX on selected sequences between On & Off.\n\nMenus:\n\nRight-click selected items on the Desktop --> Edit... --> Toggle TimelineFX\nRight-click selected items in the Media Panel --> Edit... --> Toggle TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Toggle TimelineFX\nWritten By: Kieran Hanrahan\n\nScript Version: 1.0.1\nFlame Version: 2025\n\nURL: http://github.com/khanrahan/toggle-timeline-fx\n\nCreation Date: 10.17.25\nUpdate Date:  10.27.26\n\nDescription:\n\nToggle TimelineFX on selected sequences between On & Off.\n\nMenus:\n\nRight-click selected items on the Desktop --> Edit... --> Toggle TimelineFX\nRight-click selected items in the Media Panel --> Edit... --> Toggle TimelineFX\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/\n\nUpdates:\n\nv1.0.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "type sync",
@@ -1391,13 +1391,13 @@
   },
   {
     "Script Name": "versions from csv advanced-ui",
-    "Script Version": "v1.1.0",
+    "Script Version": "1.1.1",
     "Flame Version": "2025",
     "Maximum Flame Version": "Latest",
     "Author": "Quinn Richardson + Claude",
     "Creation Date": "09.22.25",
-    "Update Date": "09.22.25",
-    "Description": "Script Name: CSV Sequence Duplicator (Flame UI Style) with Color Support\nScript Version: v1.1.0\nFlame Version: 2025\nWritten by: Quinn Richardson + Claude\nCreation Date: 09.22.25\n\nDescription:\n\nEnhanced UI version for duplicating sequences from CSV file using\nFlame-style UI components. Creates multiple duplicates of selected\nsequences with names from CSV file. Automatically colors clips\ncontaining \"_post_\" in their name.\n\nUsage:\n\nFirst- for each sequence you need to create, make or save a CSV file\nwith one entry per line each sequence you need to create.\n\n-In Flame-\nRight-click selected sequence on the desktop or desktop reel -->\n\"Choose Duplicate from CSV\" --> Advanced UI\nSelect the Browse button to locate your CSV file.\nThe window above the browse button shows you the sequence to be duplicated\nThe window below the browse button shows you the named sequences to be created\nfrom the source sequence.\nIf everything appears correct, Click Create Duplicates.\n\nThe window will remain in case you need to make duplicates of other sequences.\n\nClips with \"_post_\" in their name will be automatically colored.\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user on Linux, copy this file to:\n~/flame/python\n\nFor a specific user on Mac, copy this file to:\n/User/user_name/Library/Preferences/Autodesk/flame/python"
+    "Update Date": "10.27.26",
+    "Description": "Script Name: CSV Sequence Duplicator (Flame UI Style) with Color Support\nScript Version: 1.1.1\nFlame Version: 2025\nWritten by: Quinn Richardson + Claude\nCreation Date: 09.22.25\nUpdate Date: 10.27.26\n\nDescription:\n\nEnhanced UI version for duplicating sequences from CSV file using\nFlame-style UI components. Creates multiple duplicates of selected\nsequences with names from CSV file. Automatically colors clips\ncontaining \"_post_\" in their name.\n\nUsage:\n\nFirst- for each sequence you need to create, make or save a CSV file\nwith one entry per line each sequence you need to create.\n\n-In Flame-\nRight-click selected sequence on the desktop or desktop reel -->\n\"Choose Duplicate from CSV\" --> Advanced UI\nSelect the Browse button to locate your CSV file.\nThe window above the browse button shows you the sequence to be duplicated\nThe window below the browse button shows you the named sequences to be created\nfrom the source sequence.\nIf everything appears correct, Click Create Duplicates.\n\nThe window will remain in case you need to make duplicates of other sequences.\n\nClips with \"_post_\" in their name will be automatically colored.\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python\n\nFor a specific user on Linux, copy this file to:\n~/flame/python\n\nFor a specific user on Mac, copy this file to:\n/User/user_name/Library/Preferences/Autodesk/flame/python\n\nUpdates:\n\nv1.1.1 10.27.26\n- Updated with a Qt fix for Flame 2027.2."
   },
   {
     "Script Name": "write file transcoder",
