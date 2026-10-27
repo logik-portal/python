@@ -1,10 +1,10 @@
 # Toggle Timeline Fx
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.0.1  
 **Flame Version:** 2025  
 **Written by:** Kieran Hanrahan  
 **Creation Date:** 10.17.25  
-**Update Date:** 10.17.25  
+**Update Date:** 10.27.26  
 
 ## Description
 
@@ -29,3 +29,9 @@ For a specific user on Linux, copy this file to:
 <br><br>
 For a specific user on Mac, copy this file to:
 /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+## Updates
+
+### v1.0.1 [10.27.26]
+- Updated with a Qt fix for Flame 2027.2.
+<br>

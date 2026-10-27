@@ -2,13 +2,13 @@
 Script Name: Toggle TimelineFX
 Written By: Kieran Hanrahan
 
-Script Version: 1.0.0
+Script Version: 1.0.1
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/toggle-timeline-fx
 
 Creation Date: 10.17.25
-Update Date:  10.17.25
+Update Date:  10.27.26
 
 Description:
 
@@ -29,6 +29,11 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+Updates:
+
+    v1.0.1 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 from functools import partial
@@ -37,7 +42,7 @@ import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Toggle TimelineFX'
-VERSION_INFO = (1, 0, 0)
+VERSION_INFO = (1, 0, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 MESSAGE_PREFIX = '[PYTHON]'
@@ -536,7 +541,7 @@ class MainWindow(QtWidgets.QWidget):
         reflect actual size.  Therefore, its important to have your setMinimumSize be
         very close to final size.
         """
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.move(
                 (resolution.width() / 2) - (self.frameSize().width() / 2),
                 (resolution.height() / 2) - (self.frameSize().height() / 2))
