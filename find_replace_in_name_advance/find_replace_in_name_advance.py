@@ -2,13 +2,13 @@
 Script Name: Find & Replace in Name Advance
 Written By: Kieran Hanrahan
 
-Script Version: 3.1.0
+Script Version: 3.1.1
 Flame Version: 2025
 
 URL: http://github.com/khanrahan/find-replace-in-name-advance
 
 Creation Date: 02.21.24
-Update Date: 04.10.25
+Update Date: 10.27.26
 
 Description:
 
@@ -34,6 +34,11 @@ To Install:
 
     For a specific user on Mac, copy this file to:
     /Users/<user_name>/Library/Preferences/Autodesk/flame/python/
+
+Updates:
+
+    v3.1.1 10.27.26
+        - Updated with a Qt fix for Flame 2027.2.
 """
 
 import datetime as dt
@@ -46,7 +51,7 @@ import flame
 from PySide6 import QtCore, QtGui, QtWidgets
 
 TITLE = 'Find and Replace in Name Advance'
-VERSION_INFO = (3, 1, 0)
+VERSION_INFO = (3, 1, 1)
 VERSION = '.'.join([str(num) for num in VERSION_INFO])
 TITLE_VERSION = f'{TITLE} v{VERSION}'
 
@@ -284,7 +289,7 @@ class FlameMessageWindow(QtWidgets.QDialog):
         self.setMaximumSize(QtCore.QSize(500, 330))
         self.setStyleSheet('background-color: rgb(36, 36, 36)')
 
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
@@ -993,7 +998,7 @@ class FindReplace:
         self.save_window.setWindowTitle('Save Preset As...')
 
         # Center Window
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.save_window.move(
             (resolution.width() / 2) - (self.save_window_dimensions['x'] / 2),
             (resolution.height() / 2) - (self.save_window_dimensions['y'] / 2 + 44))
@@ -1160,7 +1165,7 @@ class FindReplace:
         self.window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         # Center Window
-        resolution = QtGui.QGuiApplication.primaryScreen().screenGeometry()
+        resolution = QtGui.QGuiApplication.primaryScreen().geometry()
         self.window.move(
                 (resolution.width() / 2) - (self.window.frameSize().width() / 2),
                 (resolution.height() / 2) - (self.window.frameSize().height() / 2))
