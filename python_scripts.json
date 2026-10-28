@@ -1291,13 +1291,13 @@
   },
   {
     "Script Name": "test script",
-    "Script Version": "1.0.0",
+    "Script Version": "1.0.1",
     "Flame Version": "2025.1",
     "Maximum Flame Version": "Latest",
     "Author": "Me",
     "Creation Date": "01.15.25",
-    "Update Date": "01.15.25",
-    "Description": "Script Name: Test Script\nScript Version: 1.0.0\nFlame Version: 2025.1\nWritten by: Me\nCreation Date: 01.15.25\n\nDescription:\nWhat the script does.\n\nMenus:\nRight-click in batch -> Test Script\n\nUpdates:\nv1.0.0 03.26.26\n- Initial release."
+    "Update Date": "10.27.26",
+    "Description": "Script Name: Test Script\nScript Version: 1.0.1\nFlame Version: 2025.1\nWritten by: Me\nCreation Date: 01.15.25\nUpdate Date: 10.27.26\n\nDescription:\nWhat the script does.\n\nMenus:\nRight-click in batch -> Test Script\n\nUpdates:\nv1.0.1 10.27.26\n- Updated test\n\nv1.0.0 03.26.26\n- Initial release."
   },
   {
     "Script Name": "tidy nodes",
