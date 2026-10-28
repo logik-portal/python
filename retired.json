@@ -10,5 +10,9 @@
   "slate_maker": {
     "reason": "No longer maintained.",
     "retired_at": "2026-10-28"
+  },
+  "srt_to_xml": {
+    "reason": "No longer maintained.",
+    "retired_at": "2026-10-28"
   }
 }
