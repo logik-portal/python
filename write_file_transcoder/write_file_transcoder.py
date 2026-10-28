@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Script Name: Write File Transcoder
-Script Version: 1.1.0
+Script Version: 1.2.0
 Flame Version: 2026.2
 Written by: Huseyin Pasaoglu
 Creation Date: 09.15.26
-Update Date: 10.09.26
+Update Date: 10.28.26
 
 Description:
 
@@ -44,7 +44,8 @@ Description:
     carrying machine settings such as the ffmpeg path.
 
     Only the source formats ticked in Settings, General tab start a review
-    automatically; the manual action ignores that list. Sources are also checked
+    automatically, and renders under the folders listed there (a video disk,
+    say) never do; the manual action ignores both. Sources are also checked
     for an EXR compression ffmpeg decodes badly (PIZ), which would otherwise
     show up as unexplained horizontal bands.
 
@@ -72,6 +73,12 @@ Menus:
     Right-click a Write File node in Batch -> Write File Transcoder -> Create review...
 
 Updates:
+
+    v1.2.0 10.28.26
+    - Added excluded folders: renders under a folder listed in Settings,
+      General tab (e.g. /Volumes/Video) never start a review automatically.
+      Whole folders are matched, so /Volumes/Video does not exclude
+      /Volumes/Video2. Right-click -> Create review... still works anywhere.
 
     v1.1.0 10.09.26
     - Added a format filter: the automatic trigger now only fires for the
@@ -124,7 +131,7 @@ except Exception:                      # must stay importable outside Flame
 
 
 SCRIPT_NAME = "Write File Transcoder"
-SCRIPT_VERSION = "1.1.0"
+SCRIPT_VERSION = "1.2.0"
 VERSION = SCRIPT_VERSION          # kept for the settings window title
 
 # Credit shown in the settings window footer.
@@ -1580,6 +1587,9 @@ class MachineSettings:
     ocio_threads: int = 0                 # 0 -> min(16, cpu count)
     trigger_formats: list = field(
         default_factory=lambda: list(DEFAULT_TRIGGER_FORMATS))
+    # Folders whose renders never start a review automatically (e.g. a video
+    # disk). Disk names differ per machine, so this lives here, not in a preset.
+    excluded_paths: list = field(default_factory=list)
 
     def triggers_on(self, path_or_extension: str) -> bool:
         """Should a finished render of this file start a review?"""
@@ -1590,6 +1600,32 @@ class MachineSettings:
         if not ext:
             return False
         return ext in {normalise_format(f) for f in (self.trigger_formats or [])}
+
+    def excluded_by(self, path: str) -> str:
+        """The excluded folder this render lands under, or '' if there is none.
+
+        Matches whole folders: '/Volumes/Video' excludes '/Volumes/Video/x.exr'
+        but not '/Volumes/Video2/x.exr'. Symlinks are resolved on both sides,
+        and case is ignored on macOS, where the file system ignores it too.
+        """
+        import os as _os
+        import sys as _sys
+
+        def _norm(p):
+            p = _os.path.realpath(_os.path.expanduser(p))
+            return p.lower() if _sys.platform == "darwin" else p
+
+        if not path:
+            return ""
+        target = _norm(path)
+        for folder in self.excluded_paths or []:
+            folder = str(folder).strip()
+            if not folder:
+                continue
+            root = _norm(folder)
+            if target == root or target.startswith(root.rstrip(_os.sep) + _os.sep):
+                return folder
+        return ""
 
 # ==========================================================================
 #  encoder
@@ -3653,6 +3689,16 @@ class SettingsWindow(QtWidgets.QWidget):
             grid.addWidget(box, index // 3, index % 3)
         form.addRow("Convert these formats", formats)
 
+        # Folders (e.g. a video disk) whose renders are never converted.
+        self.excluded_edit = QtWidgets.QPlainTextEdit()
+        self.excluded_edit.setPlaceholderText("One folder per line, e.g. /Volumes/Video")
+        self.excluded_edit.setFixedHeight(70)
+        self.excluded_edit.textChanged.connect(self._commit_general)
+        form.addRow("Never convert renders under", self.excluded_edit)
+        add_excluded = QtWidgets.QPushButton("Add folder...")
+        add_excluded.clicked.connect(self._add_excluded_folder)
+        form.addRow("", add_excluded)
+
         self.ffmpeg_edit = self._line(self._commit_general)
         self.ffprobe_edit = self._line(self._commit_general)
         form.addRow("ffmpeg path", self.ffmpeg_edit)
@@ -3675,8 +3721,9 @@ class SettingsWindow(QtWidgets.QWidget):
         self.general_status = self._note("")
         form.addRow("Status", self.general_status)
         form.addRow(self._note(
-            "Only renders in the ticked formats start a review automatically. "
-            "Right-click -> Create review... always runs, whatever the format.\n"
+            "Only renders in the ticked formats, and outside the folders listed "
+            "above, start a review automatically. Right-click -> Create review... "
+            "always runs, whatever the format or folder.\n"
             "The settings on this tab are machine-specific and are NEVER "
             "included in a preset export."))
         return page
@@ -3692,7 +3739,19 @@ class SettingsWindow(QtWidgets.QWidget):
         machine.ocio_threads = self.threads_spin.value()
         machine.trigger_formats = [ext for ext, box in self.format_checks.items()
                                    if box.isChecked()]
+        machine.excluded_paths = [line.strip() for line
+                                  in self.excluded_edit.toPlainText().splitlines()
+                                  if line.strip()]
         self._touch()
+
+    def _add_excluded_folder(self):
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Never convert renders under", "/Volumes" if wc_platform.IS_MACOS
+            else os.path.expanduser("~"))
+        if not folder or folder in self.settings.machine.excluded_paths:
+            return
+        lines = self.excluded_edit.toPlainText().rstrip("\n")
+        self.excluded_edit.setPlainText((lines + "\n" if lines else "") + folder)
 
     def _find_tools(self):
         self.ffmpeg_edit.setText(wc_platform.find_tool("ffmpeg"))
@@ -3719,6 +3778,7 @@ class SettingsWindow(QtWidgets.QWidget):
         chosen = {str(f).lower() for f in (machine.trigger_formats or [])}
         for ext, box in self.format_checks.items():
             box.setChecked(ext in chosen)
+        self.excluded_edit.setPlainText("\n".join(machine.excluded_paths or []))
         self._loading = False
         self._load_general_status()
 
@@ -3935,6 +3995,13 @@ def batch_export_end(info, userData, *args, **kwargs):
             # which source formats count. Manual "Create review..." ignores this.
             eng.notifier("debug", "Skipped, format not selected for automatic "
                                   "conversion: %s" % os.path.basename(resolved))
+            return
+
+        excluded = eng.settings.machine.excluded_by(resolved)
+        if excluded:
+            # Same idea for places: e.g. nothing on the video disk is converted.
+            eng.notifier("debug", "Skipped, render is under excluded path %s: %s"
+                         % (excluded, resolved))
             return
 
         if is_aborted(info):
