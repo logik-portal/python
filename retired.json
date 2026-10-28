@@ -12,7 +12,7 @@
     "retired_at": "2026-10-28"
   },
   "slate_maker": {
-    "reason": "No longer maintained.",
+    "reason": "No longer maintained. Use Uber Slate Maker instead!",
     "retired_at": "2026-10-28"
   },
   "srt_to_xml": {
