@@ -1,6 +1,6 @@
 {
   "adjust_text_fx": {
-    "reason": "No longer maintained.",
+    "reason": "No longer maintained. Worked with Text node which has been replaced with Type node.",
     "retired_at": "2026-10-28"
   },
   "export_srt": {
