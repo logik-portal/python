@@ -1,4 +1,8 @@
 {
+  "adjust_text_fx": {
+    "reason": "No longer maintained.",
+    "retired_at": "2026-10-28"
+  },
   "premiere_xml_mediahub": {
     "reason": "Built for Flame 2023 (PySide2) and no longer maintained. It does not run on Flame 2025 or later.",
     "retired_at": "2026-10-28"
