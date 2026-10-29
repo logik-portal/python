@@ -1,18 +1,21 @@
 """
 Script Name: Test Script
-Script Version: 1.0.1
+Script Version: 1.1.0
 Flame Version: 2025.1
 Written by: Me
 Creation Date: 01.15.25 
-Update Date: 10.27.26
+Update Date: 10.29.26
 
 Description:
-What the script does.
+What the script does. Which is nothing.
 
 Menus:
 Right-click in batch -> Test Script
 
 Updates: 
+v1.1.0 10.29.26
+- Blah
+
 v1.0.1 10.27.26
 - Updated test
 
