@@ -1,10 +1,10 @@
 # Clip To Batch Group
 
-**Script Version:** 3.0.0  
+**Script Version:** 3.0.1  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.16.19  
-**Update Date:** 05.05.26  
+**Update Date:** 11.01.26  
 
 **Script Type:** MediaPanel / Media Hub
 
@@ -23,14 +23,11 @@ Script Setup:
 Leaving Tokenized Save Path button off will not save the batch group and the default Flame path will be used.
 (Default: off)
 <br><br>
-When creating a batch group from all clips, clips are loaded in the order
-they are selected. Select clips individually to control the order, or use
-shift-select to load them top-down. The first clip in the selection
-determines the batch group settings.
+When creating a batch group from all clips, clips are loaded in the order they are selected. Select clips individually to control the order, or use shift-select to load them top-down. The first clip in the selection determines the batch group settings.
 
 ## URL
 
-https://logik-portal.com/scripts/#clip_to_batch_group
+https://logik-portal.com/scripts/clip_to_batch_group
 
 ## Menus
 
@@ -55,13 +52,17 @@ Copy script into /opt/Autodesk/shared/python/clip_to_batch_group
 
 ## Updates
 
+### v3.0.1 [11.01.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
+
 ### v3.0.0 [05.05.26]
 - Updated to work in Flame 2027.
 - Added setup window to configure script options:
 - Set batch group to use either Render or Write File node.
 - Set batch group suffix.
-- Set tokenized save path. Batch setup will be saved when the batch group is created.
-- Leaving Tokenized Save Path button off will not save the batch group and the default Flame path will be used.
+- Set tokenized save path. Batch setup will be saved when the batch group is created. Leaving Tokenized Save Path button off will not save the batch group and the default Flame path will be used.
 - Updated to PyFlameLib v5.3.1.
 <br>
 
@@ -89,8 +90,7 @@ Copy script into /opt/Autodesk/shared/python/clip_to_batch_group
 
 ### v2.2.0 [09.12.23]
 - When creating a batch group from a clip in the media panel, the script will check for a shot name assigned to the clip.
-- If a shot name is assigned, that will be used for the batch group name. If no shot name is assigned, the script will
-- attempt to extract the shot name from the clip name.
+- If a shot name is assigned, that will be used for the batch group name. If no shot name is assigned, the script will attempt to extract the shot name from the clip name.
 - Updated with PyFlameLib v2.
 <br>
 
@@ -103,10 +103,8 @@ Copy script into /opt/Autodesk/shared/python/clip_to_batch_group
 <br>
 
 ### v1.7 [02.19.21]
-- Option added to switch to batch tab or not when batch groups are create can be toggled
-- by editing self.go_to_batch value in __init__. Must be True or False.
-- Mediahub menu options added to import all selected clips into one batch group. Clip selected first is
-- plate used for shot length and timecode.
+- Option added to switch to batch tab or not when batch groups are create can be toggled by editing self.go_to_batch value in __init__. Must be True or False.
+- Mediahub menu options added to import all selected clips into one batch group. Clip selected first is plate used for shot length and timecode.
 <br>
 
 ### v1.6 [11.18.20]
