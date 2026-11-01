@@ -1,31 +1,21 @@
 # Create Media Panel Templates
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Create Media Panel Templates
-Script Version: 3.9.0
+Script Version: 3.10.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 05.01.19
-Update Date: 07.10.25
+Update Date: 10.28.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel
 
@@ -35,7 +25,7 @@ Description:
     Right-click menus will be created for each template
 
 URL:
-    https://github.com/logik-portal/python/create_media_panel_templates
+    https://logik-portal.com/scripts/create_media_panel_templates
 
 Menus:
 
@@ -50,6 +40,23 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v3.10.0 10.28.26
+        - A / in the template name is now replaced with an underscore in the menu file name.
+        - Generated folder templates now skip selected clips when run.
+        - The overwrite warning now names the existing template when a different name uses the same menu file name.
+        - Overwriting a template now names the template that will be replaced, and the old template is only removed after the new one is written.
+        - Fixed template names with an apostrophe or quote creating a menu with a syntax error.
+        - Fixed empty folders being left out when several items are selected.
+        - Fixed wrong template tree when the selected item's name is part of a parent, library or workspace name.
+        - Clips in the selection are now ignored instead of stopping the script.
+        - Fixed template names with a backslash causing an error or a wrong menu name.
+        - An empty template name now shows an error instead of creating a hidden menu file.
+        - Fixed library templates creating their libraries once for each selected item.
+
+    v3.9.1 10.13.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v3.9.0 07.10.25
         - Updated to PyFlameLib v5.0.0.
@@ -89,8 +96,10 @@ Updates:
 # [Imports]
 #-------------------------------------
 
+from __future__ import annotations
+
+import ast
 import os
-import re
 
 import flame
 from lib.pyflame_lib_create_media_panel_templates import *
@@ -100,7 +109,7 @@ from lib.pyflame_lib_create_media_panel_templates import *
 #-------------------------------------
 
 SCRIPT_NAME = 'Create Media Panel Templates'
-SCRIPT_VERSION = 'v3.9.0'
+SCRIPT_VERSION = 'v3.10.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 #-------------------------------------
@@ -133,6 +142,7 @@ class CreateTemplate:
         for item in self.selection:
             if isinstance(item, (flame.PyFolder)):
                 self.top_item = 'item.create_folder'
+                self.targets = '[item for item in selection if isinstance(item, (flame.PyFolder, flame.PyLibrary))]'
                 self.item_name = str(item.name)[1:-1]
                 self.creation_type = 'Folder'
                 self.menu_name = 'Folder Templates...'
@@ -141,6 +151,7 @@ class CreateTemplate:
         for item in self.selection:
             if isinstance(item, (flame.PyLibrary)):
                 self.top_item = 'flame.project.current_project.current_workspace.create_library'
+                self.targets = 'selection[:1]'
                 self.item_name = str(item.name)[1:-1]
                 self.creation_type = 'Library'
                 self.menu_name = 'Library Templates...'
@@ -201,6 +212,43 @@ class CreateTemplate:
 
     def check_file_paths(self):
 
+        def existing_template_name(menu_path: str) -> str:
+            """
+            Existing Template Name
+            ======================
+
+            Get the template name of an existing menu file from its docstring, without running it.
+            Falls back to the file name if the file can't be parsed.
+
+            Args
+            ----
+                menu_path (str): Path of existing menu file.
+
+            Returns
+            -------
+                template_name (str): Template name of existing menu.
+            """
+
+            try:
+                with open(menu_path, 'r') as menu_file:
+                    docstring = ast.get_docstring(ast.parse(menu_file.read()))
+                for line in docstring.splitlines():
+                    if line.startswith('Script Name:') and 'Menu: ' in line:
+                        return line.split('Menu: ', 1)[1]
+            except Exception:
+                pass
+
+            return os.path.basename(menu_path)[:-3]
+
+        # Stop if template name is empty
+        if not self.name_entry.text.strip():
+            PyFlameMessageWindow(
+                message='Enter a template name.',
+                message_type=MessageType.ERROR,
+                parent=self.window,
+                )
+            return
+
         # Check for menu folders, create if they don't exist
         if not os.path.isdir(self.folder_menus):
             try:
@@ -226,92 +274,93 @@ class CreateTemplate:
 
         # Set menu file name
         menu_file_name = self.name_entry.text
-        menu_file_name = menu_file_name.replace('.', '_') + '.py'
+        menu_file_name = menu_file_name.replace('.', '_').replace('/', '_') + '.py'
 
         # Set possible menu save paths
         folder_menu_file_path = os.path.join(self.folder_menus, menu_file_name)
         library_menu_file_path = os.path.join(self.library_menus, menu_file_name)
 
-        # Select menu file save path
+        # Select menu file save path. Template names are unique across both types, so a same-named template of the other type gets replaced.
         if self.creation_type == 'Folder':
             self.menu_save_path = folder_menu_file_path
+            other_menu_file_path = library_menu_file_path
+            other_type = 'Library'
         elif self.creation_type == 'Library':
             self.menu_save_path = library_menu_file_path
+            other_menu_file_path = folder_menu_file_path
+            other_type = 'Folder'
 
         # Check if menu file name already exists, overwrite?
-        shared_folders_list = os.listdir(self.folder_menus)
-        shared_libraries_list = os.listdir(self.library_menus)
+        template_name = self.name_entry.text
+        same_type_exists = os.path.isfile(self.menu_save_path)
+        other_type_exists = os.path.isfile(other_menu_file_path)
 
-        if menu_file_name in shared_libraries_list or menu_file_name in shared_folders_list:
+        # Get existing template names, they can differ from the typed name but share the file name (a.b, a_b, a/b)
+        same_type_name = existing_template_name(self.menu_save_path) if same_type_exists else template_name
+        other_type_name = existing_template_name(other_menu_file_path) if other_type_exists else template_name
+
+        if same_type_exists and other_type_exists:
+            file_name_note = ' and use the same file name' if template_name != same_type_name or template_name != other_type_name else ''
+            overwrite_message = f"{self.creation_type} template '{same_type_name}' and {other_type} template '{other_type_name}' already exist{file_name_note}. Replace both with the new {self.creation_type} template?"
+        elif same_type_exists:
+            file_name_note = ' and uses the same file name' if same_type_name != template_name else ''
+            overwrite_message = f"{self.creation_type} template '{same_type_name}' already exists{file_name_note}. Overwrite?"
+        elif other_type_exists:
+            file_name_note = ' and uses the same file name' if other_type_name != template_name else ''
+            overwrite_message = f"{other_type} template '{other_type_name}' already exists{file_name_note}. Replace it with a {self.creation_type} template?"
+
+        if same_type_exists or other_type_exists:
             if not PyFlameMessageWindow(
-                message='Menu already exists, overwrite?',
+                message=overwrite_message,
                 message_type=MessageType.WARNING,
                 parent=self.window,
                 ):
                 return
-            try:
-                os.remove(folder_menu_file_path)
-                os.remove(folder_menu_file_path + 'c')
-            except:
-                pass
-            try:
-                os.remove(library_menu_file_path)
-                os.remove(library_menu_file_path + 'c')
-            except:
-                pass
 
-            pyflame.print('Old menu deleted.')
+        # Other type menu is removed only after the new menu is written
+        self.other_menu_file_path = other_menu_file_path if other_type_exists else None
 
-            return self.create_new_template()
         return self.create_new_template()
 
     def create_new_template(self):
 
         def get_tree():
 
-            def get_folders(folder):
+            def get_folders(folder, folder_path: str) -> None:
+                """
+                Get Folders
+                ===========
 
-                def get_parent(folders):
+                Add the path of every subfolder of folder to master_folder_list, relative to the selected item.
 
-                    # Get folder parent name and add to list
-                    folder_parent = folders.parent
-                    folder_parent_name = folder_parent.name
+                Args
+                ----
+                    folder (PyLibrary | PyFolder):
+                        Library or folder to get subfolders from.
 
-                    folder_path_list.append(str(folder_parent_name)[1:-1])
-
-                    # Try to loop through to parent of parent if it exists
-                    try:
-                        get_parent(folder_parent)
-                    except:
-                        pass
+                    folder_path (str):
+                        Path of folder, starting with the selected item's name.
+                """
 
                 for folders in folder.folders:
-                    folder_path_list = []
-                    folder_name = folders.name
-                    folder_path_list.append(str(folder_name)[1:-1])
+                    new_folder_path = f'{folder_path}/{str(folders.name)[1:-1]}'
 
-                    get_parent(folders)
-                    get_folders(folders)
-
-                    # Reverse folder list order
-                    folder_path_list.reverse()
-                    #print ('folder_path_list:', folder_path_list)
-
-                    # Convert folder list to string
-                    new_folder_path = '/'.join(folder_path_list)
-                    new_folder_path = root_folder + new_folder_path.split(root_folder, 1)[1]
-                    #print ('new_folder_path:', new_folder_path)
+                    get_folders(folders, new_folder_path)
 
                     # Add folder path string to master folder list for dictionary conversion
                     master_folder_list.append(new_folder_path)
 
             master_folder_list = []
 
-            # Convert folder tree into list
+            # Convert folder tree into list, skipping anything that isn't a library or folder
             for folder in self.selection:
-                root_folder = str(folder.name)[1:-1]
+                if isinstance(folder, (flame.PyFolder, flame.PyLibrary)):
+                    root_folder = str(folder.name)[1:-1]
 
-                get_folders(folder)
+                    # Add selected item itself so empty items are still top-level keys
+                    master_folder_list.append(root_folder)
+
+                    get_folders(folder, root_folder)
 
             # Convert folder list to dictionary
             self.folder_dict = {}
@@ -320,10 +369,6 @@ class CreateTemplate:
                 p = self.folder_dict
                 for x in path.split('/'):
                     p = p.setdefault(x, {})
-
-            # If only a single empty library or folder, make dict root_folder
-            if self.folder_dict == {}:
-                self.folder_dict = {root_folder: {}}
             #print ('folder_dict:', self.folder_dict, '\n')
 
         def save_new_menu():
@@ -334,7 +379,10 @@ class CreateTemplate:
             menu_template_token_dict['<FolderDict>'] = f'{self.folder_dict}'
             menu_template_token_dict['<TopItem>'] = self.top_item
             menu_template_token_dict['<TemplateMenuName>'] = self.menu_name
-            menu_template_token_dict['<TemplateName>'] = self.name_entry.text
+            menu_template_token_dict['<Targets>'] = self.targets
+
+            # Escape backslashes and quotes so the name is valid inside the template's quoted strings and docstring
+            menu_template_token_dict['<TemplateName>'] = self.name_entry.text.replace('\\', '\\\\').replace('\'', '\\\'').replace('"', '\\"')
             #print ('menu_template_token_dict:', menu_template_token_dict, '\n')
 
             # Open menu template
@@ -346,14 +394,20 @@ class CreateTemplate:
                 for line in menu_template_lines:
                     if key in line:
                         line_index = menu_template_lines.index(line)
-                        new_line = re.sub(key, value, line)
+                        new_line = line.replace(key, value)
                         menu_template_lines[line_index] = new_line
 
-            # Save new menu
-            out_file = open(self.menu_save_path, 'w')
-            for line in menu_template_lines:
-                print(line, file=out_file)
-            out_file.close()
+            # Save new menu to a temp file first, then move it over the old menu so a failed write never leaves a broken menu
+            temp_menu_path = self.menu_save_path + '.tmp'
+            try:
+                with open(temp_menu_path, 'w') as out_file:
+                    for line in menu_template_lines:
+                        print(line, file=out_file)
+                os.replace(temp_menu_path, self.menu_save_path)
+            except Exception:
+                if os.path.isfile(temp_menu_path):
+                    os.remove(temp_menu_path)
+                raise
 
             # Close menu template
             menu_template.close()
@@ -362,7 +416,23 @@ class CreateTemplate:
         get_tree()
 
         # Save new menu
-        save_new_menu()
+        try:
+            save_new_menu()
+        except Exception as e:
+            PyFlameMessageWindow(
+                message=f'Could not save menu: {e}',
+                message_type=MessageType.ERROR,
+                parent=self.window,
+                )
+            return
+
+        # Remove same-named menu of the other type now that the new menu is saved
+        if self.other_menu_file_path:
+            try:
+                os.remove(self.other_menu_file_path)
+                pyflame.print(f'Old menu deleted: {self.other_menu_file_path}')
+            except Exception as e:
+                pyflame.print(f'Could not delete old menu: {self.other_menu_file_path} - {e}', print_type=PrintType.ERROR)
 
         self.window.close()
 
