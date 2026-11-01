@@ -1,31 +1,21 @@
 # Batch Nodes
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Batch Nodes
-Script Version: 3.12.0
+Script Version: 3.13.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 04.18.20
-Update Date: 05.15.26
+Update Date: 10.28.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Batch / Flame Main Menu
 
@@ -41,13 +31,17 @@ Usage:
 
     Nodes added by right-clicking on them in batch will be saved with current node settings.
 
-    All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus
+    All created node menu scripts are saved in /opt/Autodesk/shared/python/batch_nodes/menus
 
     Menus can be renamed and removed from the node list in the Batch Nodes setup window.
 
+    Before a menu is overwritten, replaced or removed, a confirmation window is shown.
+
+    Renamed menus can not contain slashes, backslashes or quotes. Node names used with Create Menu for Selected Node can not contain slashes or quotes.
+
 URL:
 
-    https://logik-portal.com/scripts/#batch_nodes
+    https://logik-portal.com/scripts/batch_nodes
 
 Menus:
 
@@ -55,16 +49,13 @@ Menus:
         Flame Main Menu -> Logik -> Logik Portal Script Setup -> Batch Nodes Setup
 
     To create menus for nodes with settings applied in batch:
-        Right-click on node in batch -> Batch Nodes... -> Create Menu For Selected Node
+        Right-click on node in batch -> Batch Nodes... -> Create Menu for Selected Node
 
     To create menus for ofx nodes:
-        Right-click on node in batch -> Batch Nodes... -> Create Menu For Selected Node
+        Right-click on node in batch -> Batch Nodes... -> Create Menu for Selected Node
 
     To add node from menu to batch:
         Right-click in batch -> Batch Nodes... -> Select Node to be added
-
-URL:
-    https://github.com/logik-portal/python/batch_nodes
 
     To add node from menu to batch connected to selected node:
         Right-click on node in batch -> Batch Nodes... -> Select Node to be added
@@ -74,6 +65,18 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v3.13.0 10.28.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+        - Create Menu for Selected Node now stops with an error if the node name contains a quote or slash.
+        - Adding a menu from the Setup window now asks before overwriting an existing menu, and removes the old saved setup folder when a saved-setup menu is replaced.
+        - Remove now deletes only the selected menus' own files and setup folders, not other menus whose names contain them, and asks for confirmation first.
+        - Renaming a menu to the name of another existing menu now asks before replacing it. Names with slashes, backslashes or quotes are rejected before anything changes, and if the rename still fails partway the changes are undone.
+        - Renaming a menu now only changes the menu name in the menu script, not matching text in its code or path.
+        - Create Menu for Selected Node now asks before overwriting an existing menu that has no saved setup folder.
+        - Setup window now opens when the Matchbox shaders folder for the current Flame version is missing.
+        - Script now stops cleanly if the install check fails.
 
     v3.12.0 05.15.26
         - Updated to PyFlameLib v5.3.1.
@@ -136,9 +139,11 @@ Updates:
         - Misc code updates
 """
 
-#-------------------------------------
+# ==============================================================================
 # [Imports]
-#-------------------------------------
+# ==============================================================================
+
+from __future__ import annotations
 
 import os
 import re
@@ -148,17 +153,17 @@ from functools import partial
 import flame
 from lib.pyflame_lib_batch_nodes import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Batch Nodes'
-SCRIPT_VERSION = 'v3.12.0'
+SCRIPT_VERSION = 'v3.13.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class BatchNodes:
 
@@ -167,7 +172,8 @@ class BatchNodes:
         pyflame.print_title(f'{SCRIPT_NAME} {SCRIPT_VERSION}')
 
         # Check script path, if path is incorrect, stop script.
-        if not pyflame.verify_script_install():
+        self.script_installed = pyflame.verify_script_install()
+        if not self.script_installed:
             return
 
         #  Init variables
@@ -499,7 +505,7 @@ class BatchNodes:
         self.tabs.tab_pages['Logik Matchbox'].grid_layout.addWidget(self.logik_rename_btn, 3, 4)
         self.tabs.tab_pages['Logik Matchbox'].grid_layout.addWidget(self.logik_done_btn, 11, 4)
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def get_batch_node_list(self):
         """
@@ -521,6 +527,12 @@ class BatchNodes:
 
         Get list of matchboxes from matchbox path.
         """
+
+        # Leave list empty if this Flame version has no shaders folder so the setup window still opens
+        if not os.path.isdir(self.matchbox_path):
+            pyflame.print(f'Matchbox Shaders Folder Not Found: {self.matchbox_path}', text_color=TextColor.YELLOW)
+
+            return
 
         matchboxes = os.listdir(self.matchbox_path)
         matchboxes.sort()
@@ -556,7 +568,7 @@ class BatchNodes:
         self.window.close()
         pyflame.refresh_hooks()
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def get_node_scripts_lists(self, listbox, folder):
 
@@ -583,89 +595,281 @@ class BatchNodes:
             node = node.text()
             selected_node_text.append(node)
 
-        file_list = os.listdir(self.node_dir)
+        if not selected_node_text:
+            return
 
+        # Confirm once for the whole selection before deleting anything
+        if not PyFlameMessageWindow(
+            message='Delete selected menus and their saved node setups?\n\n' + '\n'.join(selected_node_text),
+            message_type=MessageType.WARNING,
+            title=f'{SCRIPT_NAME}: Confirm Operation',
+            parent=self.window,
+            ):
+            pyflame.print('Cancelled', text_color=TextColor.RED)
+
+            return
+
+        file_list = os.listdir(self.node_dir)
+        failed_items = []
+
+        # Only delete the menu's own files and setup folder, not other menus whose names contain it
         for node in selected_node_text:
-            for f in file_list:
-                if node in f:
+            for f in (node + '.py', node + '.pyc', node):
+                if f in file_list:
+                    item_path = os.path.join(self.node_dir, f)
                     try:
-                        os.remove(os.path.join(self.node_dir, f))
-                    except:
-                        shutil.rmtree(os.path.join(self.node_dir, f))
-                    pyflame.print(f'{f}: Deleted', text_color=TextColor.RED)
+                        if os.path.isdir(item_path):
+                            shutil.rmtree(item_path)
+                        else:
+                            os.remove(item_path)
+                        pyflame.print(f'{f}: Deleted', text_color=TextColor.RED)
+                    except Exception as e:
+                        failed_items.append(f'{f}: {e}')
+
+        if failed_items:
+            PyFlameMessageWindow(
+                message='Could not delete:\n\n' + '\n'.join(failed_items),
+                message_type=MessageType.ERROR,
+                parent=self.window,
+                )
 
         self.get_node_scripts_lists(self.batch_node_menu_list, self.node_dir)
         self.get_node_scripts_lists(self.matchbox_node_menu_list, self.node_dir)
         self.get_node_scripts_lists(self.logik_node_menu_list, self.node_dir)
 
-    #-------------------------------------
+    # ------------------------------------------------------------------------------
 
     def rename_menu(self, menu_list):
 
         def rename():
 
-            def edit_menu_file(new_menu_name):
+            def get_new_menu_text(menu_text: str, new_menu_name: str) -> str:
+                """
+                Get New Menu Text
+                =================
 
-                # Edit python menu file to change menu name
-                menu_script_path = os.path.join(self.node_dir, selected_menu + '.py')
+                Return the selected menu script text with the menu name changed to the new name.
 
-                menu_lines = open(menu_script_path, 'r')
-                lines = menu_lines.read().splitlines()
+                Only the places where the templates write the menu name are changed (docstring, setup path,
+                new node name, printed messages, title banner and menu entry name). Code, node types and
+                matchbox paths that happen to contain the name are left as is.
 
-                menu_lines.close()
+                Args
+                ----
+                    menu_text (str):
+                        Current menu script text.
 
-                for l in lines:
-                    if selected_menu in l:
-                        if 'flame.batch.create_node' not in l:
-                            line_index = lines.index(l)
-                            new_line = l.replace(selected_menu, new_menu_name)
-                            lines[line_index] = new_line
+                    new_menu_name (str):
+                        New menu name.
 
-                out_file = open(menu_script_path, 'w')
-                for line in lines:
-                    print(line, file=out_file)
-                out_file.close()
+                Returns
+                -------
+                    menu_text (str): Menu script text with the new name.
+                """
 
-            def rename_node_files(new_menu_name):
+                old_name = re.escape(selected_menu)
+
+                # Places where the templates write the menu name, as (text before, text after)
+                name_patterns = [
+                    rf'(menu script for ){old_name}( node)',
+                    rf'(Batch Nodes\.\.\. -> ){old_name}()$',
+                    rf"(new_node_name = '){old_name}(')",
+                    rf"('Node Created: ){old_name}(')",
+                    rf"(print_title\(f'Batch Nodes - ){old_name}( )",
+                    rf"('name': '){old_name}(')",
+                    ]
+
+                for pattern in name_patterns:
+                    menu_text = re.sub(pattern, lambda m: m.group(1) + new_menu_name + m.group(2), menu_text, flags=re.MULTILINE)
+
+                # Saved setup path ends with <name>/<name>, only change those last two parts
+                menu_text = re.sub(
+                    rf"(load_node_setup\('.*/){old_name}/{old_name}(')",
+                    lambda m: m.group(1) + new_menu_name + '/' + new_menu_name + m.group(2),
+                    menu_text,
+                    )
+
+                return menu_text
+
+            def move_item(current_path: str, new_path: str) -> None:
+                """
+                Move Item
+                =========
+
+                Rename a file or folder and remember it so the rename can be undone if a later step fails.
+
+                Args
+                ----
+                    current_path (str):
+                        Path to rename.
+
+                    new_path (str):
+                        New path.
+                """
+
+                os.rename(current_path, new_path)
+                moved_items.append((current_path, new_path))
+
+            def undo_rename() -> list:
+                """
+                Undo Rename
+                ===========
+
+                Put back everything moved so far, newest first.
+
+                Returns
+                -------
+                    failed_items (list): Items that could not be put back.
+                """
+
+                failed_items = []
+
+                for current_path, new_path in reversed(moved_items):
+                    try:
+                        os.rename(new_path, current_path)
+                    except Exception as e:
+                        failed_items.append(f'{os.path.basename(new_path)}: {e}')
+
+                return failed_items
+
+            def rename_node_files(new_menu_name: str) -> None:
+                """
+                Rename Node Files
+                =================
+
+                Rename the saved setup folder, the setup files named after the menu, and the menu script.
+
+                Args
+                ----
+                    new_menu_name (str): New menu name.
+                """
 
                 # Rename saved node directory if it exists
-                for root, dirs, files in os.walk(self.node_dir):
-                    for d in dirs:
-                        if d == selected_menu:
-                            current_dir = os.path.join(root, d)
-                            new_dir = current_dir.replace(selected_menu, new_menu_name)
-                            os.rename(current_dir, new_dir)
+                current_dir = os.path.join(self.node_dir, selected_menu)
+                if os.path.isdir(current_dir):
+                    new_dir = os.path.join(self.node_dir, new_menu_name)
+                    move_item(current_dir, new_dir)
 
-                            # iterate through files in saved setup directory to change file names
-                            for file_name in os.listdir(new_dir):
-                                if selected_menu in file_name:
-                                    new_file_name = file_name.replace(selected_menu, new_menu_name)
-                                    os.rename(os.path.join(new_dir, file_name), os.path.join(new_dir, new_file_name))
+                    # Rename setup files whose base name is the menu name, e.g. <name>.openfx_node, <name>.1.glsl
+                    for file_name in os.listdir(new_dir):
+                        if file_name == selected_menu or file_name.startswith(selected_menu + '.'):
+                            new_file_name = new_menu_name + file_name[len(selected_menu):]
+                            move_item(os.path.join(new_dir, file_name), os.path.join(new_dir, new_file_name))
 
                 # Rename python file and saved setup if it exists
                 for f in os.listdir(self.node_dir):
                     if f == selected_menu + '.py':
-                        os.rename(os.path.join(self.node_dir, selected_menu + '.py'), os.path.join(self.node_dir, new_menu_name + '.py'))
+                        move_item(os.path.join(self.node_dir, selected_menu + '.py'), os.path.join(self.node_dir, new_menu_name + '.py'))
                     if f == selected_menu + '.pyc':
-                        os.rename(os.path.join(self.node_dir, selected_menu + '.pyc'), os.path.join(self.node_dir, new_menu_name + '.pyc'))
+                        move_item(os.path.join(self.node_dir, selected_menu + '.pyc'), os.path.join(self.node_dir, new_menu_name + '.pyc'))
 
-            if not new_name_entry.text:
+            new_menu_name = new_name_entry.text.strip()
+
+            # __pycache__ in menus/ is not a menu
+            if not new_menu_name or new_menu_name == '__pycache__':
                 return
 
-            if new_name_entry.text == selected_menu:
+            # Same name, nothing to rename
+            if new_menu_name == selected_menu:
+                rename_window.close()
+
+                return
+
+            # Reject characters that break the setup path or the generated menu script
+            bad_characters = [c for c in ('/', '\\', "'") if c in new_menu_name]
+            if bad_characters:
+                PyFlameMessageWindow(
+                    message=f'Menu name can not contain: {" ".join(bad_characters)}',
+                    message_type=MessageType.ERROR,
+                    parent=rename_window,
+                    )
+
+                return
+
+            # Find files of another menu with the new name. Skip the selected menu's own files so a case-only rename on a case-insensitive file system isn't seen as another menu.
+            replace_items = []
+            menu_dir_items = os.listdir(self.node_dir)
+
+            for extension in ('.py', '.pyc', ''):
+                item_path = os.path.join(self.node_dir, new_menu_name + extension)
+                current_path = os.path.join(self.node_dir, selected_menu + extension)
+                if os.path.exists(item_path) and not (os.path.exists(current_path) and os.path.samefile(item_path, current_path)):
+                    # Use the real on-disk name so a menu that differs only in case is restored with its own name if the rename fails
+                    item_name = new_menu_name + extension
+                    if item_name not in menu_dir_items:
+                        item_name = next((i for i in menu_dir_items if i.lower() == item_name.lower()), item_name)
+                    replace_items.append(os.path.join(self.node_dir, item_name))
+
+            if replace_items:
                 if not PyFlameMessageWindow(
-                    message=f'Overwrite existing menu: {selected_menu}?',
-                    message_type=MessageType.CONFIRM,
+                    message=f'Menu already exists: {new_menu_name}\n\nReplace it? The existing {new_menu_name} menu and its saved node setup will be deleted.',
+                    message_type=MessageType.WARNING,
                     title=f'{SCRIPT_NAME}: Confirm Operation',
                     parent=rename_window,
                     ):
                     return
 
-            new_menu_name = new_name_entry.text
+            moved_items = []
+            replaced_items = []
+            restore_failures = []
+            menu_script_path = os.path.join(self.node_dir, new_menu_name + '.py')
 
-            edit_menu_file(new_menu_name)
+            try:
+                # Build new menu text before changing any files
+                with open(os.path.join(self.node_dir, selected_menu + '.py'), 'r') as menu_file:
+                    old_menu_text = menu_file.read()
+                new_menu_text = get_new_menu_text(old_menu_text, new_menu_name)
 
-            rename_node_files(new_menu_name)
+                # Move the menu being replaced aside so it can be put back if the rename fails. It's deleted once the rename is done.
+                for item_path in replace_items:
+                    backup_path = os.path.join(self.node_dir, f'.{os.path.basename(item_path)}.bn_replaced')
+                    x = 1
+                    while os.path.exists(backup_path):
+                        backup_path = os.path.join(self.node_dir, f'.{os.path.basename(item_path)}.bn_replaced{x}')
+                        x += 1
+                    move_item(item_path, backup_path)
+                    replaced_items.append((item_path, backup_path))
+
+                rename_node_files(new_menu_name)
+
+                try:
+                    with open(menu_script_path, 'w') as menu_file:
+                        menu_file.write(new_menu_text)
+                except Exception:
+                    # Script may be partly written, put the original text back before undoing the renames
+                    try:
+                        with open(menu_script_path, 'w') as menu_file:
+                            menu_file.write(old_menu_text)
+                    except Exception as restore_error:
+                        restore_failures.append(f'{selected_menu}.py text could not be restored: {restore_error}')
+                    raise
+            except Exception as e:
+                failed_items = restore_failures + undo_rename()
+                self.get_node_scripts_lists(self.batch_node_menu_list, self.node_dir)
+                self.get_node_scripts_lists(self.matchbox_node_menu_list, self.node_dir)
+                self.get_node_scripts_lists(self.logik_node_menu_list, self.node_dir)
+                if failed_items:
+                    undo_message = 'Some changes could not be undone:\n\n' + '\n'.join(failed_items)
+                else:
+                    undo_message = 'All changes were undone.'
+                PyFlameMessageWindow(
+                    message=f'Could not rename {selected_menu} to {new_menu_name}:\n\n{e}\n\n{undo_message}',
+                    message_type=MessageType.ERROR,
+                    parent=rename_window,
+                    )
+
+                return
+
+            # Rename is done, delete the menu that was replaced
+            for item_path, backup_path in replaced_items:
+                try:
+                    if os.path.isdir(backup_path):
+                        shutil.rmtree(backup_path)
+                    else:
+                        os.remove(backup_path)
+                    pyflame.print(f'{os.path.basename(item_path)}: Deleted', text_color=TextColor.RED)
+                except Exception as e:
+                    pyflame.print(f'{os.path.basename(item_path)}: Could Not Delete Replaced Item {backup_path}: {e}', print_type=PrintType.ERROR)
 
             self.batch_node_menu_list.clear()
             self.matchbox_node_menu_list.clear()
@@ -763,11 +967,35 @@ class BatchNodes:
         #print ('node_name:', node_name, '\n')
 
         node_script = os.path.join(self.node_dir, node_name) + '.py'
+        node_setup_path = os.path.join(self.node_dir, node_name)
+
+        # Confirm before overwriting an existing menu. A plain menu doesn't use a saved setup, so an old setup folder is removed.
+        if os.path.exists(node_script) or os.path.exists(node_setup_path):
+            message = f'Overwrite existing menu: {node_name}?'
+            if os.path.isdir(node_setup_path):
+                message += '\n\nIts saved node setup folder will be deleted.'
+            if not PyFlameMessageWindow(
+                message=message,
+                message_type=MessageType.WARNING,
+                title=f'{SCRIPT_NAME}: Confirm Operation',
+                parent=self.window,
+                ):
+                pyflame.print(f'{node_name}: Cancelled', text_color=TextColor.RED)
+
+                return
 
         # Create script for new node
         create_node_script()
 
         pyflame.print(f'{node_name}: Node Script Saved.', text_color=TextColor.GREEN)
+
+        # Remove old saved setup only after the new script is written
+        if os.path.isdir(node_setup_path):
+            try:
+                shutil.rmtree(node_setup_path)
+                pyflame.print(f'{node_name}: Old Node Setup Folder Deleted', text_color=TextColor.RED)
+            except Exception as e:
+                pyflame.print(f'{node_name}: Could Not Delete Old Node Setup Folder: {e}', print_type=PrintType.ERROR)
 
     def save_selected_node(self):
 
@@ -807,17 +1035,27 @@ class BatchNodes:
 
         node_name = str(selected_node.name)[1:-1]
 
+        # Reject characters that break the setup path or the generated menu script
+        bad_characters = [c for c in ("'", '/') if c in node_name]
+        if bad_characters:
+            PyFlameMessageWindow(
+                message=f'Node name can not contain: {" ".join(bad_characters)}',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+
+            return
+
         # Check user python folder for existing node script
         create_node = True
 
-        for n in os.listdir(self.node_dir):
-            if n == node_name:
-                create_node = PyFlameMessageWindow(
-                    message=f'Overwrite existing menu: {node_name}?',
-                    message_type=MessageType.WARNING,
-                    title=f'{SCRIPT_NAME}: Confirm Operation',
-                    parent=None,
-                    )
+        if os.path.exists(os.path.join(self.node_dir, node_name)) or os.path.exists(os.path.join(self.node_dir, node_name + '.py')):
+            create_node = PyFlameMessageWindow(
+                message=f'Overwrite existing menu: {node_name}?',
+                message_type=MessageType.WARNING,
+                title=f'{SCRIPT_NAME}: Confirm Operation',
+                parent=None,
+                )
 
         if create_node:
             node_type = str(selected_node.type)[1:-1]
@@ -852,21 +1090,23 @@ class BatchNodes:
         else:
             pyflame.print('Cancelled', text_color=TextColor.RED)
 
-#-------------------------------------
+# ==============================================================================
 
 def edit_node_lists(selection):
 
     script = BatchNodes(selection)
-    script.main_window()
+    if script.script_installed:
+        script.main_window()
 
 def save_node(selection):
 
     script = BatchNodes(selection)
-    script.save_selected_node()
+    if script.script_installed:
+        script.save_selected_node()
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_node(selection):
     import flame
@@ -876,9 +1116,9 @@ def scope_node(selection):
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_main_menu_custom_ui_actions():
 

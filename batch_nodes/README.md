@@ -1,47 +1,68 @@
 # Batch Nodes
 
-**Script Version:** 3.12.0  
+**Script Version:** 3.13.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 04.18.20  
-**Update Date:** 05.15.26  
+**Update Date:** 10.28.26  
 
 **Script Type:** Batch / Flame Main Menu
 
 ## Description
 
-*** Does not work with Flame 2024.0 due to bug in Flame ***
-<br><br>
-Add menus to batch right-click for your favorite nodes.
-<br><br>
+Add menus to batch right-click for your favorite nodes in batch.
+
+## Usage
+
 Works with standard batch nodes/matchboxes/ofx.
 <br><br>
 OFX can only be added by right clicking on an existing node in batch.
 <br><br>
-Nodes added by right-clicking on them in batch will be saved with current settings.
+Nodes added by right-clicking on them in batch will be saved with current node settings.
 <br><br>
-All created node menu scripts are saved in /opt/Autodesk/user/YOURUSER/python/batch_node_menus
+All created node menu scripts are saved in /opt/Autodesk/shared/python/batch_nodes/menus
+<br><br>
+Menus can be renamed and removed from the node list in the Batch Nodes setup window.
+<br><br>
+Before a menu is overwritten, replaced or removed, a confirmation window is shown.
+<br><br>
+Renamed menus can not contain slashes, backslashes or quotes. Node names used with Create Menu for Selected Node can not contain slashes or quotes.
 
 ## URL
 
-https://github.com/logik-portal/python/batch_nodes
+https://logik-portal.com/scripts/batch_nodes
 
 ## Menus
 
 ### To create/rename/delete menus from node lists
 - Flame Main Menu → Logik → Logik Portal Script Setup → Batch Nodes Setup
 ### To create menus for nodes with settings applied in batch
-- Right-click on node in batch → Batch Nodes... → Create Menu For Selected Node
+- Right-click on node in batch → Batch Nodes... → Create Menu for Selected Node
 ### To create menus for ofx nodes
-- Right-click on node in batch → Batch Nodes... → Create Menu For Selected Node
+- Right-click on node in batch → Batch Nodes... → Create Menu for Selected Node
 ### To add node from menu to batch
 - Right-click in batch → Batch Nodes... → Select Node to be added
+### To add node from menu to batch connected to selected node
+- Right-click on node in batch → Batch Nodes... → Select Node to be added
 
 ## Installation
 
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v3.13.0 [10.28.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+- Create Menu for Selected Node now stops with an error if the node name contains a quote or slash.
+- Adding a menu from the Setup window now asks before overwriting an existing menu, and removes the old saved setup folder when a saved-setup menu is replaced.
+- Remove now deletes only the selected menus' own files and setup folders, not other menus whose names contain them, and asks for confirmation first.
+- Renaming a menu to the name of another existing menu now asks before replacing it. Names with slashes, backslashes or quotes are rejected before anything changes, and if the rename still fails partway the changes are undone.
+- Renaming a menu now only changes the menu name in the menu script, not matching text in its code or path.
+- Create Menu for Selected Node now asks before overwriting an existing menu that has no saved setup folder.
+- Setup window now opens when the Matchbox shaders folder for the current Flame version is missing.
+- Script now stops cleanly if the install check fails.
+<br>
 
 ### v3.12.0 [05.15.26]
 - Updated to PyFlameLib v5.3.1.
