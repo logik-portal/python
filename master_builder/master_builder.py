@@ -1,37 +1,29 @@
 # Master Builder
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Master Builder
-Script Version: 1.7.1
+Script Version: 1.8.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 02.09.22
-Update Date: 05.14.26
+Update Date: 11.01.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Reel Group
 
 Description:
 
     Create masters from clips/sequences in a Reel Group.
+
+Usage:
 
     Each reel should contain one part of the final master. For example:
 
@@ -44,12 +36,19 @@ Description:
     Reels that contain multiple clips will cause the script to make a new master from each clip.
 
     For instance if there are: 1 2-second clip of color bars, 4 slates, 4 edits, and 1 1-second clip of black
-    the script will create 4 edits with each one containing: color bars, a slate, edit, and 1 second clip of black.
+    the script will create 4 masters with each one containing: color bars, a slate, an edit, and 1 second clip of black.
 
-    Black is automatically inserted into timeline gaps between clips on the primary track.
+    Black is automatically inserted into timeline gaps between clips on the first track.
 
     Reels containing more than one clip must have an equal number of clips. If there are 4 slates, there
     should be 4 edits.
+
+    Masters are saved to a new Master Reel in the Reel Group. Use Master Names From to name the masters
+    after the clips on one of the reels (for example the slate reel). With None, each master keeps the name
+    of the clip it was built from.
+
+    If a build fails, an error message is shown and the reels the script created are removed. Masters that
+    were already built are kept.
 
     Other things to keep in mind:
 
@@ -60,6 +59,10 @@ Description:
 
         Sequences can contain multiple tracks but not multiple versions.
 
+URL:
+
+    https://logik-portal.com/scripts/master_builder
+
 Menu:
 
     Right-click on Reel Group -> Master Builder
@@ -69,6 +72,16 @@ To install:
     Copy script into /opt/Autodesk/shared/python/master_builder
 
 Updates:
+
+    v1.8.0 11.01.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+        - Updated docstring: where masters are saved, how they are named and what happens if a build fails.
+        - Fixed builds failing in Flame 2027 (primary_track error).
+        - Fixed error when Reel Group has no clips or sequences. An error message is now shown.
+        - Fixed reels with different numbers of clips passing the clip count check when no reel has a single clip.
+        - Fixed error when another item is selected along with the Reel Group.
+        - If a build fails, an error message is now shown and Temp Reel is removed. Master Reel is removed if it holds no masters.
 
     v1.7.1 05.14.26
         - Fixed reel name bug.
@@ -106,6 +119,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 
 import flame
@@ -116,7 +131,7 @@ from lib.pyflame_lib_master_builder import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Master Builder'
-SCRIPT_VERSION = 'v1.7.1'
+SCRIPT_VERSION = 'v1.8.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -133,7 +148,17 @@ class MasterBuilder:
         if not pyflame.verify_script_install():
             return
 
-        self.reel_group = selection[0]
+        # Use the first Reel Group in the selection, other selected items may come first
+        self.reel_group = next(item for item in selection if isinstance(item, flame.PyReelGroup))
+
+        # Check Reel Group has clips or sequences
+        if not any(reel.clips or reel.sequences for reel in self.reel_group.reels):
+            PyFlameMessageWindow(
+                message='Reel Group has no clips or sequences.',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return
 
         # Check reels for mixed clip type
         mixed_reels = self.check_reels()
@@ -204,12 +229,11 @@ class MasterBuilder:
         self.max_clips = max(self.clip_count_dict.items(), key=lambda x: x[1])
         self.min_clips = min(self.clip_count_dict.items(), key=lambda x: x[1])
 
-        self.clip_values = [self.max_clips[1], self.min_clips[1]]
+        # Reels with more than one clip must all have the same number of clips
+        multi_clip_counts = {v for v in self.clip_count_dict.values() if v > 1}
+        if len(multi_clip_counts) > 1:
+            return False
 
-        # Check number of clips on each reel against the lowest and highest number of clips on a reel
-        for k, v in self.clip_count_dict.items():
-            if v not in self.clip_values:
-                return False
         return True
 
     def check_versions(self):
@@ -296,52 +320,80 @@ class MasterBuilder:
                 if k.sequences:
                     clip_in_all_list.append(k.sequences[0])
 
-        # Create new reels for masters
-        self.create_reels()
+        # Start with no reels so clean-up knows what was created
+        self.temp_reel = None
+        self.master_reel = None
 
-        # Build list of reels with more than one clip
-        multi_clip_reel = []
+        try:
+            # Create new reels for masters
+            self.create_reels()
 
-        for k, v in self.clip_count_dict.items():
-            if v > 1:
-                multi_clip_reel.append(k)
+            # Build list of reels with more than one clip
+            multi_clip_reel = []
 
-        # If reels exist with more than one clip, build multiple masters
-        if multi_clip_reel:
-            masters_list = []
-            for x in range(self.max_clips[1]):
-                masters_dict = {}
-                clip_list = []
-                master_name = ''
-                for reel in multi_clip_reel:
-                    if reel.clips:
-                        clip = reel.clips[x]
-                    elif reel.sequences:
-                        clip = reel.sequences[x]
-                    if reel.name == self.desktop_reels_push_button.text:
-                        master_name = str(clip.name)[1:-1]
-                    clip_list.append(clip)
+            for k, v in self.clip_count_dict.items():
+                if v > 1:
+                    multi_clip_reel.append(k)
 
-                masters_dict[master_name] = (clip_list + clip_in_all_list)
-                masters_list.append(masters_dict)
+            # If reels exist with more than one clip, build multiple masters
+            if multi_clip_reel:
+                masters_list = []
+                for x in range(self.max_clips[1]):
+                    masters_dict = {}
+                    clip_list = []
+                    master_name = ''
+                    for reel in multi_clip_reel:
+                        if reel.clips:
+                            clip = reel.clips[x]
+                        elif reel.sequences:
+                            clip = reel.sequences[x]
+                        if reel.name == self.desktop_reels_push_button.text:
+                            master_name = str(clip.name)[1:-1]
+                        clip_list.append(clip)
 
-            # Build masters from lists of clips
-            print ('Building masters:\n')
+                    masters_dict[master_name] = (clip_list + clip_in_all_list)
+                    masters_list.append(masters_dict)
 
-            for master in masters_list:
-                for k, v in master.items():
-                    self.assemble_master(k, v)
+                # Build masters from lists of clips
+                print ('Building masters:\n')
 
-        else:
-            # Create master from single clips on reels
-            master_name = clip_in_all_list[0].name
+                for master in masters_list:
+                    for k, v in master.items():
+                        self.assemble_master(k, v)
 
-            print('Master Name:', master_name)
+            else:
+                # Create master from single clips on reels
+                master_name = clip_in_all_list[0].name
 
-            self.assemble_master(master_name, clip_in_all_list)
+                print('Master Name:', master_name)
 
-        # Delete temp reel
-        flame.delete(self.temp_reel)
+                self.assemble_master(master_name, clip_in_all_list)
+
+            # Delete temp reel
+            flame.delete(self.temp_reel)
+        except Exception as e:
+            pyflame.print(f'Masters build failed: {e}', print_type=PrintType.ERROR)
+
+            # Remove temp reel left by the failed build
+            try:
+                if self.temp_reel is not None:
+                    flame.delete(self.temp_reel)
+            except Exception:
+                pass
+
+            # Remove master reel only if it holds no finished masters
+            try:
+                if self.master_reel is not None and not self.master_reel.clips and not self.master_reel.sequences:
+                    flame.delete(self.master_reel)
+            except Exception:
+                pass
+
+            PyFlameMessageWindow(
+                message=f'Masters build failed.<br><br>{e}',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return
 
         print('\n')
         pyflame.print('Masters build complete.', text_color=TextColor.GREEN)
@@ -391,8 +443,11 @@ class MasterBuilder:
         # Open master sequence/clip
         master_sequence = clip_to_edit.open_as_sequence()
 
-        # Set primary track to first tracks
-        master_sequence.primary_track = master_sequence.versions[0].tracks[0]
+        # Set primary track to first tracks. Newer Flame versions removed primary_track, the first track is used anyway
+        try:
+            master_sequence.primary_track = master_sequence.versions[0].tracks[0]
+        except (AttributeError, RuntimeError):
+            pass
 
         # ------------------------------------------------------------------------------
 

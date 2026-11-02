@@ -1,17 +1,19 @@
 # Master Builder
 
-**Script Version:** 1.7.1  
+**Script Version:** 1.8.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 02.09.22  
-**Update Date:** 05.14.26  
+**Update Date:** 11.01.26  
 
 **Script Type:** Reel Group
 
 ## Description
 
 Create masters from clips/sequences in a Reel Group.
-<br><br>
+
+## Usage
+
 Each reel should contain one part of the final master. For example:
 <br><br>
 Reel 1 - color bars
@@ -22,22 +24,27 @@ Reels that contain one clip will have that clip added to every master created.
 <br><br>
 Reels that contain multiple clips will cause the script to make a new master from each clip.
 <br><br>
-For instance if there are: 1 2-second clip of color bars, 4 slates, 4 edits, and 1 1-second clip of black
-the script will create 4 edits with each one containing: color bars, a slate, edit, and 1 second clip of black.
+For instance if there are: 1 2-second clip of color bars, 4 slates, 4 edits, and 1 1-second clip of black the script will create 4 masters with each one containing: color bars, a slate, an edit, and 1 second clip of black.
 <br><br>
-Black is automatically inserted into timeline gaps between clips on the primary track.
+Black is automatically inserted into timeline gaps between clips on the first track.
 <br><br>
-Reels containing more than one clip must have an equal number of clips. If there are 4 slates, there
-should be 4 edits.
+Reels containing more than one clip must have an equal number of clips. If there are 4 slates, there should be 4 edits.
+<br><br>
+Masters are saved to a new Master Reel in the Reel Group. Use Master Names From to name the masters after the clips on one of the reels (for example the slate reel). With None, each master keeps the name of the clip it was built from.
+<br><br>
+If a build fails, an error message is shown and the reels the script created are removed. Masters that were already built are kept.
 <br><br>
 Other things to keep in mind:
 <br><br>
 All clips must have proper record timecode set for placement in timeline.
 <br><br>
-Each reel should contain either all clips or all sequences. Clips and sequences
-should not be mixed within the same reel.
+Each reel should contain either all clips or all sequences. Clips and sequences should not be mixed within the same reel.
 <br><br>
 Sequences can contain multiple tracks but not multiple versions.
+
+## URL
+
+https://logik-portal.com/scripts/master_builder
 
 ## Menus
 
@@ -48,6 +55,17 @@ Sequences can contain multiple tracks but not multiple versions.
 Copy script into /opt/Autodesk/shared/python/master_builder
 
 ## Updates
+
+### v1.8.0 [11.01.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+- Updated docstring: where masters are saved, how they are named and what happens if a build fails.
+- Fixed builds failing in Flame 2027 (primary_track error).
+- Fixed error when Reel Group has no clips or sequences. An error message is now shown.
+- Fixed reels with different numbers of clips passing the clip count check when no reel has a single clip.
+- Fixed error when another item is selected along with the Reel Group.
+- If a build fails, an error message is now shown and Temp Reel is removed. Master Reel is removed if it holds no masters.
+<br>
 
 ### v1.7.1 [05.14.26]
 - Fixed reel name bug.
