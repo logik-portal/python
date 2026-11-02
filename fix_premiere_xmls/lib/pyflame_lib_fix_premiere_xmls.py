@@ -2912,7 +2912,7 @@ class _PyFlame:
 
         # Get current screen resolution
         main_window_res = pyflame.window_resolution()
-        screen_resolution = main_window_res.screenGeometry()
+        screen_resolution = main_window_res.geometry()
 
         # Check if high DPI scaling is enabled. If so, double the screen height.
         if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -25662,7 +25662,7 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         # Get Current Screen Resolution
         main_window_res = pyflame.window_resolution()
-        resolution = main_window_res.screenGeometry()
+        resolution = main_window_res.geometry()
 
         # Get window size
         window_size = self.size()

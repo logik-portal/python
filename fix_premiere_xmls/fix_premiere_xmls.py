@@ -1,10 +1,10 @@
 """
 Script Name: fix premiere xmls
-Script Version: 3.5.7
+Script Version: 3.5.8
 Flame Version: 2025.1
 Written by: Ted Stanley, John Geehreng, and Michael Vaglienty
 Creation Date: 03.03.21
-Update Date: 09.13.26
+Update Date: 11.02.26
 
 Custom Action Type: MediaHub, MediaPanel, Timeline
 
@@ -31,6 +31,7 @@ To install:
     Copy script into /opt/Autodesk/shared/python/fix_premiere_xmls or put it wherever you keep your scripts
 
 Updates:
+    11.02.26 - v3.5.8 - Fixed screenGeometry error with Flame 2027.2 in PyFlame lib.
     09.13.26 - v3.5.7 - Speed-changed in-points from pproTicksIn during prep. Removed Apply Premiere Motion as a separate step.
     09.13.26 - v3.5.6 - Apply Premiere Motion / Timewarp (XML2Action 1.23) after import. Does not replace 3.5.4 duration math.
     09.13.26 - v3.5.5 - Retag still clipitem + file + samplecharacteristics to the sequence rate. Leave real off-rate video out points alone.
@@ -92,7 +93,7 @@ from lib.pyflame_lib_fix_premiere_xmls import *
 # Main Script
 
 SCRIPT_NAME = "Fix Premiere XMLs"
-SCRIPT_VERSION = 'v3.5.7'
+SCRIPT_VERSION = 'v3.5.8'
 
 class fix_premiere_xmls():
 
