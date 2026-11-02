@@ -2,39 +2,22 @@
 # Slate Maker
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Uber Slate Maker
-Script Version: v2.6.1
-Flame Version: 2027
+Script Version: 2.7.0
+Flame Version: 2027.1
 Written by: Michael Vaglienty
-Extended by: Bryan Bayley (v2.0.0 and later)
+Extended by: Bryan Bayley
 Creation Date: 12.29.18
-Update Date: 08.31.26
+Update Date: 11.02.26
 
-Derived from: Slate Maker v1.0.0 / Uber Slate Maker v1.3.1
-
-Modifications: v1.0.0 is Michael Vaglienty's original. Everything from v2.0.0
-onward (update, rename and per-field tools, metadata stamping, learned update
-fields) was added in-house by Bryan Bayley with the original author's
-permission - see Version History below for the per-version detail.
-
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: MediaPanel
 
@@ -42,6 +25,9 @@ Description:
 
     Create slates from CSV file data using Type Node templates, and update
     slates after they have been created.
+
+    This script only works with Flame 2027.1 and later.
+    Use v1.3.1 of this script for earlier versions of Flame with the Type Node.
 
     - Slates of multiple ratios can be created from the same CSV file.
     - Preview slate text before creation.
@@ -52,7 +38,7 @@ Description:
     - Does not work with Flare
 
 URL:
-    https://logik-portal.com/scripts/#uber_slate_maker
+    https://logik-portal.com/scripts/uber_slate_maker
 
 Usage:
 
@@ -66,62 +52,88 @@ Usage:
 
     Metadata Storage (v2.5.0+, requires Flame 2027):
 
-        - Created slates are stamped with custom metadata keys on a Metadata TimelineFX on the
-        slate segment (PyMetadataNode API): one 'SlateToken.<TOKEN>' key per resolved token,
-        plus SlateName, SlateRatio, TokenizedSlateName, SlateDateFormat, SlateSpaces,
-        SlateVersion and SlateTokenOrder. Values are stored raw (no escaping needed).
-        - Segment effects travel with the clip when it is edited into a sequence, so the keys
-        are found on the slate segment inside sequences.
-        - Slates created with v2.0.0-v2.4.x stored the same schema in clip tags; those are
-        still read as a fallback and updates are written back to the tags.
+    - Created slates are stamped with custom metadata keys on a Metadata TimelineFX on the
+      slate segment (PyMetadataNode API): one 'SlateToken.<TOKEN>' key per resolved token,
+      plus SlateName, SlateRatio, TokenizedSlateName, SlateDateFormat, SlateSpaces,
+      SlateVersion and SlateTokenOrder. Values are stored raw (no escaping needed).
+    - Segment effects travel with the clip when it is edited into a sequence, so the keys
+      are found on the slate segment inside sequences.
+    - Slates created with v2.0.0-v2.4.x stored the same schema in clip tags; those are
+      still read as a fallback and updates are written back to the tags.
 
     Update Mode Notes:
 
-        - Update mode reads the stamped metadata (custom keys, or legacy tags) and does
-        exact-value replacement in the slate's Type Node text, then re-stamps the changed
-        values.
-        - Slates created with v1.0.0 (no stamped metadata) cannot be bulk-updated (but see
-        Update Field's any-slate support below).
-        - CURRENT_DATE gets a 'Set to Today' button that uses the date format stamped at creation.
-        - If an updated token appears in the tokenized slate name, the clip is renamed to match.
-        - Slates manually tweaked after creation still update as long as the stamped value text
-        is intact.
-        - Update Slates also works on sequences with a v2 slate cut in - the slate segment is
-        found by its tags and its Type Node is updated in place. The slate segment is renamed
-        to match updated values; the sequence's own name is left alone (re-run Rename from
-        Slate to refresh it). If a sequence contains multiple slate segments, only the first
-        is updated.
-        - The Slate Maker: Update Field submenu offers one menu item per field (Update
-        Date, Update Agency, etc.) that opens the same update flow restricted to that
-        single token - a quick way to change one value across all selected slates. The
-        field list is learned automatically: whenever slates are created, the CSV's
-        tokens are added to the menu (RATIO excluded, CURRENT_DATE listed as DATE).
-        The list can also be curated by hand via the Edit Update Fields menu item -
-        one field per line, in menu order. It is stored under 'update_field_tokens'
-        in config/config.json; python hooks are rescanned on change, so new menu
-        items appear without a Flame restart.
-        - Update Field works on ANY slate, not just ones made by this script. For items
-        without Slate Maker tags, the slate is taken to be the FIRST SEGMENT of the
-        sequence (or the clip itself), and the field's current value is read from its
-        label line in the Type Node text - a line starting with the field name, e.g.
-        'Agency: Mother' or 'AGENCY  Mother' (case-insensitive). Updating replaces
-        everything after the label on that line. Bare label lines with no value on the
-        same line (two-column slate layouts) are not matched, so label-only text layers
-        are never damaged; such slates are reported and skipped. Untagged slates get a
-        pure text edit - no rename, no tags added.
+    - Update mode reads the stamped metadata (custom keys, or legacy tags) and does
+      exact-value replacement in the slate's Type Node text, then re-stamps the changed
+      values.
+    - Slates created with v1.0.0 (no stamped metadata) cannot be bulk-updated (but see
+      Update Field's any-slate support below).
+    - CURRENT_DATE gets a 'Set to Today' button that uses the date format stamped at creation.
+    - If an updated token appears in the tokenized slate name, the clip is renamed to match.
+    - Slates manually tweaked after creation still update as long as the stamped value text
+      is intact.
+    - Update Slates also works on sequences with a v2 slate cut in - the slate segment is
+      found by its tags and its Type Node is updated in place. The slate segment is renamed
+      to match updated values; the sequence's own name is left alone (re-run Rename from
+      Slate to refresh it). If a sequence contains multiple slate segments, only the first
+      is updated.
+    - The Slate Maker: Update Field submenu offers one menu item per field (Update
+      Date, Update Agency, etc.) that opens the same update flow restricted to that
+      single token - a quick way to change one value across all selected slates. The
+      field list is learned automatically: whenever slates are created, the CSV's
+      tokens are added to the menu (RATIO excluded, CURRENT_DATE listed as DATE).
+      The list can also be curated by hand via the Edit Update Fields menu item -
+      one field per line, in menu order. It is stored under 'update_field_tokens'
+      in config/config.json; python hooks are rescanned on change, so new menu
+      items appear without a Flame restart.
+    - Update Field works on ANY slate, not just ones made by this script. For items
+      without Slate Maker tags, the slate is taken to be the FIRST SEGMENT of the
+      sequence (or the clip itself), and the field's current value is read from its
+      label line in the Type Node text - a line starting with the field name, e.g.
+      'Agency: Mother' or 'AGENCY  Mother' (case-insensitive). Updating replaces
+      everything after the label on that line. Bare label lines with no value on the
+      same line (two-column slate layouts) are not matched, so label-only text layers
+      are never damaged; such slates are reported and skipped. Untagged slates get a
+      pure text edit - no rename, no tags added.
 
     Rename Mode Notes:
 
-        - Slate clip tags propagate onto the timeline segment when a slate is edited into a
-        sequence, so a sequence containing a v2 slate carries that slate's SlateToken tags.
-        - Rename from Slate reads those tags and renames the selected sequences (or bare slate
-        clips) using a tokenized pattern, e.g. <AD-ID>_<TITLE>.
-        - Sequences without a v2 slate segment are reported and skipped.
+    - Slate clip tags propagate onto the timeline segment when a slate is edited into a
+      sequence, so a sequence containing a v2 slate carries that slate's SlateToken tags.
+    - Rename from Slate reads those tags and renames the selected sequences (or bare slate
+      clips) using a tokenized pattern, e.g. <AD-ID>_<TITLE>.
+    - Sequences without a v2 slate segment are reported and skipped.
+
+Menus:
+
+    Uber Slate Maker... -> Create Slates             (select slate background clip(s))
+    Uber Slate Maker... -> Rename from Slate         (select sequences containing a slate, or slate clips)
+    Uber Slate Maker: Update... -> Update Slates     (bulk editor; v2 slate clips or sequences containing one)
+    Uber Slate Maker: Update... -> Update <Field>    (one item per learned/configured field; works on any slate)
+    Uber Slate Maker: Update... -> Edit Update Fields (curate the Update <Field> menu list)
+
+To install:
+
+    Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
 
+    v2.7.0 11.02.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Fixed spaces around CSV column headers or RATIO values causing errors, skipped rows or
+          tokens left in the slate text. Also fixed in the Slate Name token menu.
+        - Fixed blank or short CSV rows causing an error. 
+        - Fixed CSV files saved as CSV UTF-8 (Excel) not reading the first column header.
+        - Fixed Create Slates making extra or wrong slates after a Slate Preview or a failed run.
+        - If Create Slates, Update Slates or Rename from Slate fails, an error message is now shown.
+          Create Slates shows its window again so the CSV can be fixed. Before, the window was left
+          hidden.
+        - An empty -= Slates =- library is no longer created when there are no slates to create.
+        - Fixed Enter key error in the CSV Editor.
+        - Escape now closes the script windows.
+
     v2.6.1 08.31.26
-        - Reverted to older version of pyflame library for resolve
+        - Reverted to older version of pyflame library to resolve
           compability issues that could cause script not to work.
 
     v2.6.0 08.06.26
@@ -211,33 +223,48 @@ Updates:
           (or slate clips themselves) from their slate token values using a
           tokenized name pattern.
 
-    v2.0.0 08.02.26
+    v2.0.0 08.02.26  
         - Added Update Slates mode: token values are stamped to clip tags at
           creation and can be bulk-edited later via Slate Maker: Update Slates.
 
-    v1.0.0 04.29.25
-        - Initial version, derived from Uber Slate Maker with update
-          functionality removed.
+    v1.3.1 04.14.25
+        - Added CURRENT_DATE token to token menu.
+        - Fixed bug: Selecting a sequence with no slates created by this script would cause the script to crash.
+        - Fixed bug: Changing text in CSV field was causing errors in the terminal.
+        - Fixed bug: Rename Column Header was not working properly in CSV Editor.
+        - Fixed bug: Text in cells/headers beinging renamed now shows in renaming window is CSV Editor.
+        - Slates made with older versions of the script cannot be updated with this version.
 
-Menus:
+    v1.3.0 04.01.25
+        - Combined Multi-ratio and Single-ratio modes.
+        - Slate background clips name must contain have a underscore and ratio. Example: slate_background_16x9
+        - Type Node templates no longer needs to be saved when creating slates. Slate background clips should have a Type Node Timeline Effect with a Slate Template applied.
+        - Saved Type Node Templates are still required to UPDATE slates. They must have the ratio in the filename. Example: slate_16x9.type_node
+        - The ability to make slates of different ratios from the same csv file is done automatically if a ratio column is present in the csv file.
+        - If a ratio column is present in the csv file, only the ratios of the selected slate backgrounds will be created.
+          Example: If the CSV has a ratio column with entries of 16x9, 1x1, and 4x3, and slate_bg_16x9 is selected as the slate background, only 16x9 slates will be created.
 
-    Tools live in two right-click folders in the Media Panel (Flame's menu API
-    does not support nested subfolders, so the update tools get a sibling folder):
+    v1.2.0 03.23.25
+        - Added ability to set slate clip color and change color when updating slates.
+        - Fixed misc bugs.
 
-    Uber Slate Maker... -> Create Slates             (select slate background clip(s))
-    Uber Slate Maker... -> Rename from Slate         (select sequences containing a slate, or slate clips)
-    Uber Slate Maker: Update... -> Update Slates     (bulk editor; v2 slate clips or sequences containing one)
-    Uber Slate Maker: Update... -> Update <Field>    (one item per learned/configured field; works on any slate)
-    Uber Slate Maker: Update... -> Edit Update Fields (curate the Update <Field> menu list)
+    v1.1.0 03.16.25
+        - Added Preview Slates feature with clipboard support.
+        - Added simple CSV Editor to quickly change/update CSV files.
+        - Added Update Slates option.
+        - Added ability to set slate clip color and change color when updating slates.
+        - Holding down alt while hovering over a selected field will show the full field value and copy it to the clipboard.
+        - Fixed misc bugs.
 
-To install:
-
-    Copy script folder into /opt/Autodesk/shared/python
+    v1.0.0 03.07.25
+        - Updated to use Type Node instead of Text Node for Flame 2026 and later.
 """
 
-#-------------------------------------
-# [Import Modules]
-#-------------------------------------
+# ==============================================================================
+# [Imports]
+# ==============================================================================
+
+from __future__ import annotations
 
 import csv
 import datetime
@@ -250,12 +277,12 @@ import xml.etree.ElementTree as ET
 import flame
 from lib.pyflame_lib_uber_slate_maker import *
 
-#-------------------------------------
+# ==============================================================================
 # [Constants]
-#-------------------------------------
+# ==============================================================================
 
 SCRIPT_NAME = 'Uber Slate Maker'
-SCRIPT_VERSION = 'v2.6.1'
+SCRIPT_VERSION = 'v2.7.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # Shared config schema - all modes load the same config/config.json.
@@ -297,12 +324,17 @@ VARIES = '<varies across slates>'
 # broader - any token passing is_date_token gets it.)
 DATE_TOKENS = ('CURRENT_DATE', 'DATE')
 
-#-------------------------------------
+# ==============================================================================
 # [Shared Helpers]
-#-------------------------------------
+# ==============================================================================
 
 def escape_tag_value(value: str) -> str:
-    """Escape a token value for storage in a clip tag. Reversible via unescape_tag_value."""
+    """
+    Escape Tag Value
+    ================
+
+    Escape a token value for storage in a clip tag. Reversible via unescape_tag_value.
+    """
 
     return value.replace('%', '%25').replace('\n', '%0A').replace('\r', '%0D')
 
@@ -347,7 +379,12 @@ def normalize_field_tokens(tokens) -> list:
     return normalized
 
 def refresh_python_hooks() -> None:
-    """Rescan python hooks so Update <Field> menu changes appear without a Flame restart."""
+    """
+    Refresh Python Hooks
+    ====================
+
+    Rescan python hooks so Update <Field> menu changes appear without a Flame restart.
+    """
 
     try:
         flame.execute_shortcut('Rescan Python Hooks')
@@ -378,7 +415,12 @@ def learn_update_fields(settings, run_tokens: list) -> None:
     refresh_python_hooks()
 
 def resolve_date(date_format: str) -> str:
-    """Return today's date formatted per the script's date format strings (e.g. 'mm/dd/yy')."""
+    """
+    Resolve Date
+    ============
+
+    Return today's date formatted per the script's date format strings (e.g. 'mm/dd/yy').
+    """
 
     now = datetime.datetime.now()
     date_format = date_format.replace('yyyy', '20%y')
@@ -388,7 +430,12 @@ def resolve_date(date_format: str) -> str:
     return now.strftime(date_format)
 
 def convert_ascii_to_text(ascii_code: str) -> str:
-    """Type Node XML stores text as space-separated ASCII code points - decode to a string."""
+    """
+    Convert Ascii To Text
+    =====================
+
+    Type Node XML stores text as space-separated ASCII code points - decode to a string.
+    """
 
     return ''.join(chr(int(code)) for code in ascii_code.split())
 
@@ -406,7 +453,12 @@ def convert_text_to_ascii(text_to_convert: str) -> str:
     return ' '.join(str(a) for a in ascii_list)
 
 def decode_type_node_layers(setup_path: str) -> list:
-    """Decoded text of every CharacterSet layer in a .type_node file, in file order."""
+    """
+    Decode Type Node Layers
+    =======================
+
+    Decoded text of every CharacterSet layer in a .type_node file, in file order.
+    """
 
     layers = []
     root = ET.parse(setup_path).getroot()
@@ -450,7 +502,12 @@ def find_label_value(decoded_layers: list, token: str):
     return value, occurrences
 
 def replace_label_value(decoded: str, token: str, new_value: str) -> str:
-    """Replace the value part of every label line for the token, keeping the label as-is."""
+    """
+    Replace Label Value
+    ===================
+
+    Replace the value part of every label line for the token, keeping the label as-is.
+    """
 
     pattern = label_line_pattern(token)
     lines = []
@@ -460,7 +517,12 @@ def replace_label_value(decoded: str, token: str, new_value: str) -> str:
     return '\n'.join(lines)
 
 def find_type_fx(clip):
-    """Return the first Type effect found on a clip, or None."""
+    """
+    Find Type Fx
+    ============
+
+    Return the first Type effect found on a clip, or None.
+    """
 
     for version in clip.versions:
         for track in version.tracks:
@@ -470,7 +532,7 @@ def find_type_fx(clip):
                         return fx
     return None
 
-def read_slate_tags(tag_list) -> dict:
+def read_slate_tags(tag_list) -> dict | None:
     """
     Parse Slate Maker metadata out of a list of tag strings.
 
@@ -516,7 +578,12 @@ def read_slate_tags(tag_list) -> dict:
 METADATA_FX_TYPE = 'Source Metadata'
 
 def find_metadata_fx(segment):
-    """Return the first Metadata effect on a segment, or None."""
+    """
+    Find Metadata Fx
+    ================
+
+    Return the first Metadata effect on a segment, or None.
+    """
 
     for fx in segment.effects:
         if fx.type in (METADATA_FX_TYPE, 'Metadata'):
@@ -549,7 +616,7 @@ def unquote_metadata_value(value) -> str:
         return text[1:-1]
     return text
 
-def read_slate_metadata(meta_fx) -> dict:
+def read_slate_metadata(meta_fx) -> dict | None:
     """
     Parse Slate Maker custom keys out of a Metadata effect.
 
@@ -589,7 +656,7 @@ def read_slate_metadata(meta_fx) -> dict:
         'meta_fx': meta_fx,
         }
 
-def read_segment_slate_data(segment) -> dict:
+def read_segment_slate_data(segment) -> dict | None:
     """
     Slate metadata from a segment - Metadata effect custom keys first
     (v2.5.0+ storage), then legacy tags (propagated onto the segment when a
@@ -604,7 +671,7 @@ def read_segment_slate_data(segment) -> dict:
 
     return read_slate_tags(segment.tags.get_value())
 
-def find_slate_tags(item) -> dict:
+def find_slate_tags(item) -> dict | None:
     """
     Find Slate Maker metadata on a clip or sequence.
 
@@ -627,11 +694,14 @@ def find_slate_tags(item) -> dict:
 
     return None
 
-#-------------------------------------
+# ==============================================================================
 # [Main Script]
-#-------------------------------------
+# ==============================================================================
 
 class SlateMaker():
+
+    slate_ratios: list[str]
+    slate_library: Any
 
     def __init__(self, selection: Any) -> None:
 
@@ -655,7 +725,7 @@ class SlateMaker():
 
         return PyFlameConfig(config_values=dict(DEFAULT_CONFIG))
 
-    #-------------------------------------
+    # ==============================================================================
 
     def slate_maker(self) -> None:
 
@@ -686,7 +756,8 @@ class SlateMaker():
                     if not clip_has_type_node:
                         PyFlameMessageWindow(
                             message='All selected slate backgrounds must have a Type Node with a Slate Template applied.',
-                            type=MessageType.ERROR
+                            message_type=MessageType.ERROR,
+                            parent=None,
                             )
                         return False
 
@@ -713,7 +784,8 @@ class SlateMaker():
                         flame.delete(new_clip)
                     PyFlameMessageWindow(
                         message='Turn off Protect from Editing: Flame Preferences -> General.',
-                        type=MessageType.ERROR
+                        message_type=MessageType.ERROR,
+                        parent=None,
                         )
                     return True
 
@@ -725,7 +797,7 @@ class SlateMaker():
 
             return True
 
-        def get_slate_ratios() -> str:
+        def get_slate_ratios() -> str | None:
 
             print('Getting Selected Clip Ratios...')
 
@@ -795,7 +867,7 @@ class SlateMaker():
         def csv_browse() -> None:
 
             csv_file_path = pyflame.file_browser(
-                path=self.csv_path_entry.text(),
+                path=self.csv_path_entry.text,
                 title='Select CSV File',
                 extension=['csv'],
                 window_to_hide=[self.window],
@@ -811,24 +883,27 @@ class SlateMaker():
 
         def validate_fields() -> bool:
 
-            if not self.csv_path_entry.text():
+            if not self.csv_path_entry.text:
                 PyFlameMessageWindow(
                     message='Enter path to CSV file.',
-                    type=MessageType.ERROR
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return False
 
-            elif not os.path.isfile(self.csv_path_entry.text()):
+            elif not os.path.isfile(self.csv_path_entry.text):
                 PyFlameMessageWindow(
                     message='CSV file does not exist.',
-                    type=MessageType.ERROR
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return False
 
-            elif not self.slate_clip_name_entry.text():
+            elif not self.slate_clip_name_entry.text:
                 PyFlameMessageWindow(
                     message='Enter Slate Name tokens for Slate Clip Naming.',
-                    type=MessageType.ERROR
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return False
 
@@ -839,12 +914,12 @@ class SlateMaker():
             self.settings.save_config(
                 config_values=
                     {
-                        'csv_file_path': self.csv_path_entry.text(),
-                        'date_format': self.date_push_button.text(),
-                        'slate_clip_name': self.slate_clip_name_entry.text(),
-                        'spaces_to_underscores': self.convert_spaces_button.isChecked(),
-                        'create_ratio_folders' : self.create_resolutions_folders_button.isChecked(),
-                        'clip_color': self.clip_color_push_button.get_color(),
+                        'csv_file_path': self.csv_path_entry.text,
+                        'date_format': self.date_push_button.text,
+                        'slate_clip_name': self.slate_clip_name_entry.text,
+                        'spaces_to_underscores': self.convert_spaces_button.checked,
+                        'create_ratio_folders' : self.create_resolutions_folders_button.checked,
+                        'clip_color': self.clip_color_push_button.color,
                     }
                 )
 
@@ -853,43 +928,60 @@ class SlateMaker():
             if not validate_fields():
                return
 
-            if not self.preflight_csv(self.csv_path_entry.text()):
+            if not self.preflight_csv(self.csv_path_entry.text):
                 return
 
             save_config()
 
             self.window.hide()
 
-            self.create_slates(
-                csv_file_path=self.csv_path_entry.text(),
-                date_format=self.date_push_button.text(),
-                )
+            # Show the error and bring the window back so the CSV can be fixed and run again
+            self.progress_window = None
+            try:
+                slates_created = self.create_slates(
+                    csv_file_path=self.csv_path_entry.text,
+                    date_format=self.date_push_button.text,
+                    )
+            except Exception as e:
+                pyflame.print(f'Slate Creation Failed: {e}', print_type=PrintType.ERROR)
+                if self.progress_window is not None:
+                    self.progress_window.close()
+                PyFlameMessageWindow(
+                    message=f'Slate creation failed.\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+                self.window.show()
+            else:
+                if slates_created:
+                    self.window.close()
 
         def preview_slates() -> None:
 
             if not validate_fields():
                 return
 
-            if not self.preflight_csv(self.csv_path_entry.text()):
+            if not self.preflight_csv(self.csv_path_entry.text):
                 return
 
             self.slate_preview(
-                csv_file_path=self.csv_path_entry.text(),
-                date_format=self.date_push_button.text(),
+                csv_file_path=self.csv_path_entry.text,
+                date_format=self.date_push_button.text,
                 )
 
         def edit_csv() -> None:
 
-            if not os.path.isfile(self.csv_path_entry.text()):
+            if not os.path.isfile(self.csv_path_entry.text):
                 PyFlameMessageWindow(
                     message='Enter path to valid CSV file.',
-                    type=MessageType.ERROR
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return
 
-            self.csv_editor(csv_file_path=self.csv_path_entry.text())
+            self.csv_editor(csv_file_path=self.csv_path_entry.text)
 
-        #-------------------------------------
+        # ==============================================================================
 
         if not validate_selection():
             return
@@ -902,14 +994,16 @@ class SlateMaker():
         if not self.slate_templates:
             return
 
-        #-------------------------------------
+        # ==============================================================================
 
         # Create Main Window
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}</small>',
             return_pressed=save_config,
+            escape_pressed=lambda: self.window.close(),
             grid_layout_columns=6,
             grid_layout_rows=7,
+            parent=None,
             )
 
         # Labels
@@ -931,8 +1025,8 @@ class SlateMaker():
             text=self.settings.slate_clip_name,
             )
 
-        # Push Button Menu
-        self.date_push_button = PyFlamePushButtonMenu(
+        # Menu
+        self.date_push_button = PyFlameMenu(
             text=self.settings.date_format,
             menu_options=[
                 'yy/mm/dd',
@@ -942,11 +1036,10 @@ class SlateMaker():
                 'dd/mm/yy',
                 'dd/mm/yyyy'
                 ],
-            max_width=True,
             )
 
-        # Token Push Button Menu
-        self.slate_clip_name_token_push_button = PyFlameTokenPushButton(
+        # Token Menu
+        self.slate_clip_name_token_push_button = PyFlameTokenMenu(
             token_dest=self.slate_clip_name_entry,
             )
 
@@ -959,23 +1052,23 @@ class SlateMaker():
             )
 
         # Clip Color Push Button Menu
-        self.clip_color_push_button = PyFlameColorPushButtonMenu(
+        self.clip_color_push_button = PyFlameColorMenu(
             color=self.settings.clip_color,
             )
 
-        # Toggle Push Buttons
+        # Push Buttons
         self.convert_spaces_button = PyFlamePushButton(
             text='Spaces to _',
-            button_checked=self.settings.spaces_to_underscores,
+            checked=self.settings.spaces_to_underscores,
             tooltip='Convert spaces in clip name to underscores',
             )
         self.create_resolutions_folders_button = PyFlamePushButton(
             text=' Create Folders',
-            button_checked=self.settings.create_ratio_folders,
+            checked=self.settings.create_ratio_folders,
             tooltip='Create separate folders for each slate resolution in Slate Library',
             )
 
-        # Action Buttons
+        # Buttons
         self.csv_browse_button = PyFlameButton(text='Browse', connect=csv_browse)
         self.edit_csv_button = PyFlameButton(text='Edit CSV', connect=edit_csv)
         self.preview_slates_button = PyFlameButton(text='Preview Slates', connect=preview_slates)
@@ -988,13 +1081,13 @@ class SlateMaker():
 
         # Populate token menu from CSV
         self.get_clip_name_tokens(
-            csv_file_path=self.csv_path_entry.text(),
+            csv_file_path=self.csv_path_entry.text,
             clip_name_push_button=self.slate_clip_name_token_push_button,
             )
 
-        #-------------------------------------
+        # ==============================================================================
         # [Widget Layout]
-        #-------------------------------------
+        # ==============================================================================
 
         self.window.grid_layout.addWidget(self.slate_ratios_label, 0, 0)
         self.window.grid_layout.addWidget(self.slate_ratios_field, 0, 1, 1, 4)
@@ -1039,7 +1132,7 @@ class SlateMaker():
                     for char_set in root.findall('.//CharacterSet'):
                         try:
                             type_elem = char_set.find('Text')
-                            if type_elem is not None:
+                            if type_elem is not None and type_elem.text:
                                 slate_text = type_elem.text.strip()
                                 slate_text = convert_ascii_to_text(slate_text)
                                 slate_text_list.append(slate_text)
@@ -1076,7 +1169,7 @@ class SlateMaker():
                             slate_ratio = slate_name.rsplit('_', 1)[1]
                             slate_name = slate_name.rsplit('_', 1)[0]
                         except:
-                            pass
+                            slate_ratio = ''
 
                         slate_preview.append(' ')
                         slate_preview.append(f'{slate_name}')
@@ -1113,7 +1206,7 @@ class SlateMaker():
             read_type_node_setups()
 
         def copy_text():
-            pyflame.copy_to_clipboard(self.preview_text_edit.text())
+            pyflame.copy_to_clipboard(self.preview_text_edit.text)
 
         def close_preview_window():
             self.clean_temp_folder()
@@ -1122,10 +1215,12 @@ class SlateMaker():
         self.clean_temp_folder()
 
         self.preview_window = PyFlameWindow(
-            title=f'{SCRIPT_NAME}: Slate Preview <small>{SCRIPT_VERSION}',
+            title=f'{SCRIPT_NAME}: Slate Preview <small>{SCRIPT_VERSION}</small>',
             return_pressed=close_preview_window,
+            escape_pressed=close_preview_window,
             grid_layout_columns=6,
             grid_layout_rows=16,
+            parent=self.window,
             )
 
         self.preview_slates_label = PyFlameLabel(
@@ -1135,7 +1230,8 @@ class SlateMaker():
 
         self.preview_text_edit = PyFlameTextEdit(
             text='',
-            read_only=True,
+            text_style=TextStyle.READ_ONLY,
+            height=420, # Fill the rows it spans so the window has no extra space at the bottom
             )
 
         self.preview_copy_button = PyFlameButton(
@@ -1166,20 +1262,22 @@ class SlateMaker():
                 pyflame.print('CSV Saved', text_color=TextColor.GREEN)
 
             csv_root_path = os.path.dirname(csv_file_path)
-            csv_file_path = os.path.join(csv_root_path, self.csv_editor_selected_csv_entry.text())
+            csv_file_path = os.path.join(csv_root_path, self.csv_editor_selected_csv_entry.text)
             print('CSV File Path:', csv_file_path)
 
             if csv_file_path == '':
                 PyFlameMessageWindow(
                     message='Enter a CSV file path.',
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=self.csv_editor_window,
                     )
                 return
 
             if os.path.exists(csv_file_path):
                 overwrite = PyFlameMessageWindow(
                     message='File already exists. Overwrite?',
-                    type=MessageType.WARNING,
+                    message_type=MessageType.WARNING,
+                    parent=self.csv_editor_window,
                     )
                 if overwrite:
                     save_file(csv_file_path)
@@ -1192,10 +1290,12 @@ class SlateMaker():
             self.csv_editor_window.close()
 
         self.csv_editor_window = PyFlameWindow(
-            title=f'{SCRIPT_NAME}: CSV Editor <small>{SCRIPT_VERSION}',
-            return_pressed=save_csv,
+            title=f'{SCRIPT_NAME}: CSV Editor <small>{SCRIPT_VERSION}</small>',
+            return_pressed=partial(save_csv, csv_file_path),
+            escape_pressed=close_csv_editor_window,
             grid_layout_columns=6,
             grid_layout_rows=17,
+            parent=self.window,
             )
 
         self.csv_editor_csv_label = PyFlameLabel(text='Selected CSV')
@@ -1204,7 +1304,10 @@ class SlateMaker():
             text=csv_file_path.split('/')[-1],
             )
 
-        self.csv_editor_csv_table = PyFlameTable(csv_file_path=csv_file_path)
+        self.csv_editor_csv_table = PyFlameTable(
+            csv_file_path=csv_file_path,
+            height=420, # Fill the rows it spans so the window has no extra space at the bottom
+            )
 
         self.csv_editor_cancel_button = PyFlameButton(
             text='Close',
@@ -1225,18 +1328,19 @@ class SlateMaker():
         self.csv_editor_window.grid_layout.addWidget(self.csv_editor_cancel_button, 17, 4)
         self.csv_editor_window.grid_layout.addWidget(self.csv_editor_save_button, 17, 5)
 
-    #-------------------------------------
+    # ==============================================================================
     # [Misc Functions]
-    #-------------------------------------
+    # ==============================================================================
 
-    def get_slate_ratios_from_clip_name(self, clip) -> str:
+    def get_slate_ratios_from_clip_name(self, clip) -> str | None:
 
         match = re.search(r'(\d+)x(\d+)', str(clip.name)[1:-1])
         if match:
             return f"{match.group(1)}x{match.group(2)}"
         PyFlameMessageWindow(
             message='Slate background clip name must contain have a underscore and ratio.\n\nExample: slate_background_16x9',
-            type=MessageType.ERROR
+            message_type=MessageType.ERROR,
+            parent=None,
             )
         return None
 
@@ -1250,9 +1354,9 @@ class SlateMaker():
 
         if os.path.exists(csv_file_path):
 
-            with open(csv_file_path, 'r') as csv_file:
+            with open(csv_file_path, 'r', encoding='utf-8-sig') as csv_file:
                 csv_token_line = csv_file.readline().strip()
-            csv_token_line = csv_token_line.split(',')
+            csv_token_line = [name.strip() for name in csv_token_line.split(',')]
 
             token_menu_dict = {}
 
@@ -1267,22 +1371,21 @@ class SlateMaker():
 
     def color_segment(self, segment) -> None:
 
-        color_name = self.clip_color_push_button.get_color()
-        rgba_value = self.clip_color_push_button.get_color_value()
+        color_name = self.clip_color_push_button.color
+        rgba_value = self.clip_color_push_button.color_value
 
         if color_name != 'No Color':
             segment.colour = rgba_value
 
-    def update_progress_window(self, slates_created, slates_total) -> int:
+    def update_progress_window(self, slates_created) -> int:
 
-        self.progress_window.set_progress_value(slates_created)
-        self.progress_window.set_text(f'Processing Slate: [{str(slates_created)} of {str(slates_total)}]')
+        self.progress_window.current_task = slates_created
 
         slates_created += 1
 
         return slates_created
 
-    #-------------------------------------
+    # ==============================================================================
 
     def preflight_csv(self, csv_file_path: str) -> bool:
         """
@@ -1296,14 +1399,15 @@ class SlateMaker():
         errors = []
         warnings = []
 
-        with open(csv_file_path, mode='r', newline='') as f:
+        with open(csv_file_path, mode='r', newline='', encoding='utf-8-sig') as f:
             reader = csv.reader(f)
             try:
                 headers = [h.strip() for h in next(reader)]
             except StopIteration:
                 PyFlameMessageWindow(
                     message='CSV pre-flight: file is empty.',
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return False
             rows = list(reader)
@@ -1323,7 +1427,7 @@ class SlateMaker():
                 errors.append('RATIO column is required when multiple slate backgrounds are selected.')
 
             # Slate name tokens must exist in headers
-            slate_name_pattern = self.slate_clip_name_entry.text()
+            slate_name_pattern = self.slate_clip_name_entry.text
             name_tokens = re.findall(r'<([^<>]+)>', slate_name_pattern)
             missing_tokens = [t for t in name_tokens if t not in headers and t != 'CURRENT_DATE']
             if missing_tokens:
@@ -1382,19 +1486,29 @@ class SlateMaker():
             message = 'CSV pre-flight failed:\n\n' + '\n'.join(f'• {e}' for e in errors)
             if warnings:
                 message += '\n\nAlso:\n' + '\n'.join(f'• {w}' for w in warnings)
-            PyFlameMessageWindow(message=message, type=MessageType.ERROR)
+            PyFlameMessageWindow(
+                message=message,
+                message_type=MessageType.ERROR,
+                parent=self.window,
+                )
             return False
 
         if warnings:
             message = 'CSV pre-flight warnings:\n\n' + '\n'.join(f'• {w}' for w in warnings)
             message += '\n\nProceed with slate creation?'
-            return bool(PyFlameMessageWindow(message=message, type=MessageType.WARNING))
+            return bool(
+                PyFlameMessageWindow(
+                    message=message,
+                    message_type=MessageType.WARNING,
+                    parent=self.window,
+                    )
+                )
 
         return True
 
-    #-------------------------------------
+    # ==============================================================================
 
-    def create_slates(self, csv_file_path, date_format) -> None:
+    def create_slates(self, csv_file_path, date_format) -> bool:
 
         def create_slate_library() -> None:
 
@@ -1405,7 +1519,7 @@ class SlateMaker():
 
         def create_slated_clips() -> None:
 
-            def get_tag_value(flame_pyobject, tag_name) -> str:
+            def get_tag_value(flame_pyobject, tag_name) -> str | None:
 
                 for tag in flame_pyobject.tags.get_value():
                     if tag.startswith(tag_name + ': '):
@@ -1435,7 +1549,7 @@ class SlateMaker():
                     'SlateRatio': slate_bg_ratio,
                     'TokenizedSlateName': self.settings.slate_clip_name,
                     'SlateDateFormat': date_format,
-                    'SlateSpaces': int(self.convert_spaces_button.isChecked()),
+                    'SlateSpaces': int(self.convert_spaces_button.checked),
                     'SlateVersion': '2',
                     METADATA_TOKEN_ORDER_KEY: '|'.join(token_values),
                     }
@@ -1456,7 +1570,6 @@ class SlateMaker():
             pyflame.print('Creating Slated Clips...', text_color=TextColor.GREEN)
 
             slates_created = 1
-            slates_total = len(slate_dict)
 
             for slate_bg_clip in self.selection:
                 print('Slate Background Clip:', slate_bg_clip)
@@ -1492,26 +1605,35 @@ class SlateMaker():
                         slate_bg_ratio=slate_bg_ratio,
                         )
 
-                    slates_created = self.update_progress_window(slates_created, slates_total)
+                    slates_created = self.update_progress_window(slates_created)
 
             print('\n', end='')
 
-        #-------------------------------------
+        # ==============================================================================
 
-        create_slate_library()
+        # Clear setups and tokens left by an earlier preview or failed run so they aren't reused
+        self.clean_temp_folder()
+        self.setup_token_map = {}
 
         slate_dict = self.create_slate_dicts(csv_file_path, date_format)
 
         if slate_dict == {}:
+            self.window.show()
             PyFlameMessageWindow(
                 message='Ratio not found in CSV file.\n\nNo slates to create.',
-                type=MessageType.ERROR
+                message_type=MessageType.ERROR,
+                parent=self.window,
                 )
-            return
+            return False
+
+        create_slate_library()
 
         self.progress_window = PyFlameProgressWindow(
-            num_to_do=len(slate_dict),
+            task='Processing Slate',
+            total_tasks=len(slate_dict),
+            task_progress_message='{task}: [{processing_task} of {total_tasks}]',
             title='Creating Slates',
+            parent=None,
             )
 
         self.create_type_nodes(slate_dict)
@@ -1520,11 +1642,7 @@ class SlateMaker():
 
         pyflame.cleanup_temp_folder()
 
-        self.progress_window.enable_done_button(True)
-
-        self.window.close()
-
-        self.progress_window.set_title_text('Slate Creation Complete')
+        self.progress_window.tasks_completed(title='Slate Creation Complete')
 
         pyflame.print('Slate Creation Complete', text_color=TextColor.GREEN)
 
@@ -1536,6 +1654,8 @@ class SlateMaker():
                     run_tokens.append(token)
         learn_update_fields(self.settings, run_tokens)
 
+        return True
+
     def create_slate_dicts(self, csv_file_path, date_format) -> dict:
 
         def add_to_slate_dict(slate_name: str) -> None:
@@ -1545,7 +1665,7 @@ class SlateMaker():
 
         def resolve_slate_name_tokens(row_dict: dict) -> str:
 
-            slate_name = str(self.slate_clip_name_entry.text())
+            slate_name = str(self.slate_clip_name_entry.text)
 
             for token, value in row_dict.items():
                 token_placeholder = f'<{token}>'
@@ -1573,12 +1693,20 @@ class SlateMaker():
         slate_dict = {}
         slate_names = []
 
-        with open(csv_file_path, mode="r", newline="") as file:
+        with open(csv_file_path, mode="r", newline="", encoding='utf-8-sig') as file:
             reader = csv.reader(file)
-            tokens = next(reader)
+            tokens = [token.strip() for token in next(reader)]
+            has_ratio = len(self.selection) > 1 or 'RATIO' in tokens
             for index, row in enumerate(reader, start=1):
                 slate_key = f"Slate {index}"
-                self.row_dict = dict(zip(tokens, row))
+                row_dict = dict(zip(tokens, row))
+
+                # Skip rows with a blank or missing RATIO, same as the CSV pre-flight check
+                if has_ratio and not row_dict.get('RATIO', '').strip():
+                    pyflame.print(f'Skipping CSV row {index + 1}: blank RATIO value', text_color=TextColor.YELLOW)
+                    continue
+
+                self.row_dict = row_dict
 
                 if 'CURRENT_DATE' in self.row_dict:
                     self.row_dict['CURRENT_DATE'] = self.current_date
@@ -1594,8 +1722,9 @@ class SlateMaker():
                 if '<CURRENT_DATE>' in slate_name:
                     slate_name = slate_name.replace('<CURRENT_DATE>', self.current_date)
 
-                if len(self.selection) > 1 or 'RATIO' in self.row_dict:
-                    ratio = self.row_dict['RATIO']
+                if has_ratio:
+                    ratio = self.row_dict['RATIO'].strip()
+                    self.row_dict['RATIO'] = ratio
                     slate_name = f'{slate_name}_{ratio}'
                     if ratio in self.slate_ratios:
                         add_to_slate_dict(slate_name)
@@ -1622,7 +1751,7 @@ class SlateMaker():
 
                 slate_name = re.sub(r'[\\/*?:"<>|]', ' ', slate_name)
 
-                if self.convert_spaces_button.isChecked():
+                if self.convert_spaces_button.checked:
                     slate_name = re.sub(r' ', '_', slate_name)
 
                 return slate_name
@@ -1723,9 +1852,9 @@ class SlateMaker():
 
         print('\n', end='')
 
-#-------------------------------------
+# ==============================================================================
 # [Update Mode]
-#-------------------------------------
+# ==============================================================================
 
 class SlateUpdater():
     """
@@ -1750,7 +1879,10 @@ class SlateUpdater():
     no tags are added.
     """
 
-    def __init__(self, selection: Any, single_token: str = None) -> None:
+    slates: list[dict]
+    progress_window: PyFlameProgressWindow
+
+    def __init__(self, selection: Any, single_token: str='') -> None:
 
         self.single_token = single_token
         mode_title = f'Update {field_display_name(single_token)}' if single_token else 'Update Slates'
@@ -1772,7 +1904,7 @@ class SlateUpdater():
         if not self.install_verified:
             return
 
-        def read_slate_info(item) -> dict:
+        def read_slate_info(item) -> dict | None:
             """
             Read v2 slate metadata from a selected item.
 
@@ -1849,8 +1981,13 @@ class SlateUpdater():
                 }
 
         def get_slate_fx(info: dict):
-            """Return the Type effect to read/write for this slate - on the slate
-            segment for sequences, on the clip for library slate clips."""
+            """
+            Get Slate Fx
+            ============
+
+            Return the Type effect to read/write for this slate - on the slate
+            segment for sequences, on the clip for library slate clips.
+            """
 
             if info['segment'] is not None:
                 for fx in info['segment'].effects:
@@ -1877,19 +2014,20 @@ class SlateUpdater():
             if not self.slates:
                 if self.single_token:
                     reason = (
-                        f'Update Field needs either Slate Maker v2 token metadata, or a '
+                        f'Update Field needs either Slate Maker token metadata, or a '
                         f'Type Node on the first segment whose text contains a '
                         f'"{self.single_token}" label line (e.g. '
                         f'"{field_display_name(self.single_token)}: value").'
                         )
                 else:
                     reason = (
-                        'Update Slates works on slate clips created with Slate Maker '
+                        'Update Slates works on slate clips created with Uber Slate Maker '
                         'v2.0.0+, or on sequences with one of those slates cut in.'
                         )
                 PyFlameMessageWindow(
                     message=f'None of the selected items are updatable slates.\n\n{reason}',
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return False
 
@@ -1911,7 +2049,8 @@ class SlateUpdater():
                         f'and will be skipped:\n\n{sample}{suffix}\n\n'
                         f'Continue with the {len(self.slates)} updatable slate(s)?'
                         ),
-                    type=MessageType.WARNING,
+                    message_type=MessageType.WARNING,
+                    parent=None,
                     )
                 if not proceed:
                     return False
@@ -1956,7 +2095,8 @@ class SlateUpdater():
                     flame.delete(new_clip)
                 PyFlameMessageWindow(
                     message='Turn off Protect from Editing: Flame Preferences -> General.',
-                    type=MessageType.ERROR
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return True
 
@@ -2016,8 +2156,19 @@ class SlateUpdater():
                 if not subs:
                     continue
 
+                # A slate's Type Node can be removed while the update window sits
+                # open - skip it rather than failing the whole batch.
+                fx = get_slate_fx(info)
+                if fx is None:
+                    pyflame.print(
+                        f"Skipping slate with no Type Node: {info['name']}",
+                        new_line=False,
+                        text_color=TextColor.YELLOW,
+                        )
+                    continue
+
                 setup_path = os.path.join(self.temp_path, f'update_{index:03d}.type_node')
-                get_slate_fx(info).save_setup(setup_path)
+                fx.save_setup(setup_path)
 
                 decoded_layers = decode_type_node_layers(setup_path)
                 decoded_text = '\n'.join(decoded_layers)
@@ -2073,12 +2224,23 @@ class SlateUpdater():
             lines.extend(['', 'Notes:'] + notes)
             lines.extend(['', 'Proceed with update?'])
 
-            return bool(PyFlameMessageWindow(message='\n'.join(lines), type=MessageType.WARNING))
+            return bool(
+                PyFlameMessageWindow(
+                    message='\n'.join(lines),
+                    message_type=MessageType.WARNING,
+                    parent=self.window,
+                    )
+                )
 
         def apply_updates(plan: list) -> None:
 
             def name_fragment(value: str, spaces_to_underscores: bool) -> str:
-                """Apply the same transforms clip naming applies to a token value."""
+                """
+                Name Fragment
+                =============
+
+                Apply the same transforms clip naming applies to a token value.
+                """
 
                 fragment = re.sub(r'[\\/*?:"<>|]', '_', value.strip())
                 if spaces_to_underscores:
@@ -2114,7 +2276,10 @@ class SlateUpdater():
                 updated_path = item['setup_path'].replace('.type_node', '_updated.type_node')
                 tree.write(updated_path, encoding='utf-8', xml_declaration=True)
 
-                get_slate_fx(item['info']).load_setup(updated_path)
+                fx = get_slate_fx(item['info'])
+                if fx is None:
+                    raise RuntimeError(f"Type Node missing on slate: {item['info']['name']}")
+                fx.load_setup(updated_path)
 
             def rename_slate(item: dict) -> str:
                 """
@@ -2187,8 +2352,11 @@ class SlateUpdater():
             pyflame.print('Updating Slates...', text_color=TextColor.GREEN)
 
             self.progress_window = PyFlameProgressWindow(
-                num_to_do=len(plan),
+                task='Updating Slate',
+                total_tasks=len(plan),
+                task_progress_message='{task}: [{processing_task} of {total_tasks}]',
                 title='Updating Slates',
+                parent=None,
                 )
 
             slates_done = 1
@@ -2199,14 +2367,12 @@ class SlateUpdater():
                 new_name = rename_slate(item)
                 restamp_metadata(item, new_name)
 
-                self.progress_window.set_progress_value(slates_done)
-                self.progress_window.set_text(f'Updating Slate: [{slates_done} of {len(plan)}]')
+                self.progress_window.current_task = slates_done
                 slates_done += 1
 
             pyflame.cleanup_temp_folder()
 
-            self.progress_window.enable_done_button(True)
-            self.progress_window.set_title_text('Slate Update Complete')
+            self.progress_window.tasks_completed(title='Slate Update Complete')
 
             pyflame.print('Slate Update Complete', text_color=TextColor.GREEN)
 
@@ -2214,13 +2380,14 @@ class SlateUpdater():
 
             changes = {}
             for token, (entry, original) in self.token_entries.items():
-                if entry.text() != original:
-                    changes[token] = entry.text()
+                if entry.text != original:
+                    changes[token] = entry.text
 
             if not changes:
                 PyFlameMessageWindow(
                     message='No token values were changed.',
-                    type=MessageType.INFO,
+                    message_type=MessageType.INFO,
+                    parent=self.window,
                     )
                 return
 
@@ -2229,7 +2396,8 @@ class SlateUpdater():
             if not plan:
                 PyFlameMessageWindow(
                     message='No selected slates carry the edited token(s) — nothing to update.',
-                    type=MessageType.INFO,
+                    message_type=MessageType.INFO,
+                    parent=self.window,
                     )
                 return
 
@@ -2239,11 +2407,23 @@ class SlateUpdater():
 
             self.window.hide()
 
-            apply_updates(plan)
+            # Show the error and close the window, some slates may already be updated
+            self.progress_window = None
+            try:
+                apply_updates(plan)
+            except Exception as e:
+                pyflame.print(f'Slate Update Failed: {e}', print_type=PrintType.ERROR)
+                if self.progress_window is not None:
+                    self.progress_window.close()
+                PyFlameMessageWindow(
+                    message=f'Slate update failed.\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
 
             self.window.close()
 
-        #-------------------------------------
+        # ==============================================================================
 
         if not gather_slates():
             return
@@ -2256,9 +2436,12 @@ class SlateUpdater():
         if not token_summary:
             PyFlameMessageWindow(
                 message='Selected slates have no editable tokens.',
-                type=MessageType.ERROR,
+                message_type=MessageType.ERROR,
+                parent=None,
                 )
             return
+
+        edit_tokens = []
 
         if self.single_token:
             # DATE and CURRENT_DATE are the same field: slates created with the
@@ -2278,14 +2461,15 @@ class SlateUpdater():
                         f'The Update Field menu list can be changed via '
                         f'Slate Maker: Update... -> Edit Update Fields.'
                         ),
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return
             token_summary = {t: token_summary[t] for t in edit_tokens}
 
-        #-------------------------------------
+        # ==============================================================================
         # [Update Window]
-        #-------------------------------------
+        # ==============================================================================
 
         if self.single_token:
             window_title = f'{SCRIPT_NAME}: Update {field_display_name(self.single_token)}'
@@ -2296,8 +2480,10 @@ class SlateUpdater():
 
         self.window = PyFlameWindow(
             title=f'{window_title} <small>{SCRIPT_VERSION}</small>',
+            escape_pressed=lambda: self.window.close(),
             grid_layout_columns=6,
             grid_layout_rows=len(token_summary) + 4,
+            parent=None,
             )
 
         self.updating_label = PyFlameLabel(
@@ -2338,9 +2524,9 @@ class SlateUpdater():
         self.window.grid_layout.addWidget(self.cancel_button, row + 1, 4)
         self.window.grid_layout.addWidget(self.update_button, row + 1, 5)
 
-#-------------------------------------
+# ==============================================================================
 # [Rename Mode]
-#-------------------------------------
+# ==============================================================================
 
 class SlateRenamer():
     """
@@ -2351,6 +2537,8 @@ class SlateRenamer():
     slate's SlateToken tags. This mode reads those tags and renames each
     selected item using a tokenized name pattern, e.g. <AD-ID>_<TITLE>.
     """
+
+    items: list[dict]
 
     def __init__(self, selection: Any) -> None:
 
@@ -2394,7 +2582,8 @@ class SlateRenamer():
                         'Rename from Slate works on sequences containing a slate made by '
                         'Slate Maker v2.0.0+, or on those slate clips themselves.'
                         ),
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=None,
                     )
                 return False
 
@@ -2409,7 +2598,8 @@ class SlateRenamer():
                         f'skipped:\n\n{sample}{suffix}\n\n'
                         f'Continue with the {len(self.items)} item(s) that do?'
                         ),
-                    type=MessageType.WARNING,
+                    message_type=MessageType.WARNING,
+                    parent=None,
                     )
                 if not proceed:
                     return False
@@ -2427,9 +2617,14 @@ class SlateRenamer():
             return {token: f'<{token}>' for token in token_order}
 
         def resolve_name(pattern: str, info: dict, spaces_to_underscores: bool):
-            """Resolve the name pattern against one item's slate token values.
+            """
+            Resolve Name
+            ============
 
-            Returns (new_name, missing_tokens)."""
+            Resolve the name pattern against one item's slate token values.
+
+            Returns (new_name, missing_tokens).
+            """
 
             name = pattern
             missing = []
@@ -2448,7 +2643,7 @@ class SlateRenamer():
 
         def rename_items() -> None:
 
-            pattern = self.pattern_entry.text()
+            pattern = self.pattern_entry.text
 
             if not pattern:
                 PyFlameMessageWindow(
@@ -2457,11 +2652,12 @@ class SlateRenamer():
                         'Use the token menu to insert tokens from the selected '
                         'slates, e.g. <ID>_<TITLE>.'
                         ),
-                    type=MessageType.ERROR,
+                    message_type=MessageType.ERROR,
+                    parent=self.window,
                     )
                 return
 
-            spaces_to_underscores = self.spaces_button.isChecked()
+            spaces_to_underscores = self.spaces_button.checked
 
             plan = []
             notes = []
@@ -2479,7 +2675,11 @@ class SlateRenamer():
                 message = 'Nothing to rename — all names already match the pattern.'
                 if notes:
                     message += '\n\n' + '\n'.join(notes)
-                PyFlameMessageWindow(message=message, type=MessageType.INFO)
+                PyFlameMessageWindow(
+                    message=message,
+                    message_type=MessageType.INFO,
+                    parent=self.window,
+                    )
                 return
 
             # Flag resulting name collisions - AD-IDs should be unique, so
@@ -2503,42 +2703,58 @@ class SlateRenamer():
                 lines.extend(['', 'Notes:'] + notes)
                 lines.extend(['', 'Proceed with rename?'])
 
-                if not bool(PyFlameMessageWindow(message='\n'.join(lines), type=MessageType.WARNING)):
+                confirmed = PyFlameMessageWindow(
+                    message='\n'.join(lines),
+                    message_type=MessageType.WARNING,
+                    parent=self.window,
+                    )
+                if not confirmed:
                     pyflame.print('Rename Cancelled', text_color=TextColor.RED)
                     return
 
             self.settings.save_config(
                 config_values={
                     'rename_pattern': pattern,
-                    'rename_spaces_to_underscores': spaces_to_underscores,
+                    'spaces_to_underscores': spaces_to_underscores,
                     }
                 )
 
             self.window.hide()
 
-            for info, new_name in plan:
-                info['item'].name = new_name
-                pyflame.print(f"Renamed: {info['name']} → {new_name}", new_line=False, text_color=TextColor.GREEN)
+            # Show the error and close the window, some items may already be renamed
+            try:
+                for info, new_name in plan:
+                    info['item'].name = new_name
+                    pyflame.print(f"Renamed: {info['name']} → {new_name}", new_line=False, text_color=TextColor.GREEN)
 
-            print('\n', end='')
+                print('\n', end='')
 
-            pyflame.print('Rename Complete', text_color=TextColor.GREEN)
+                pyflame.print('Rename Complete', text_color=TextColor.GREEN)
+            except Exception as e:
+                pyflame.print(f'Rename Failed: {e}', print_type=PrintType.ERROR)
+                PyFlameMessageWindow(
+                    message=f'Rename failed.\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
 
             self.window.close()
 
-        #-------------------------------------
+        # ==============================================================================
 
         if not gather_items():
             return
 
-        #-------------------------------------
+        # ==============================================================================
         # [Rename Window]
-        #-------------------------------------
+        # ==============================================================================
 
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME}: Rename from Slate <small>{SCRIPT_VERSION}</small>',
+            escape_pressed=lambda: self.window.close(),
             grid_layout_columns=6,
             grid_layout_rows=5,
+            parent=None,
             )
 
         self.info_label = PyFlameLabel(
@@ -2548,12 +2764,12 @@ class SlateRenamer():
 
         self.pattern_label = PyFlameLabel(text='Name Pattern')
         self.pattern_entry = PyFlameEntry(text=self.settings.rename_pattern)
-        self.token_push_button = PyFlameTokenPushButton(token_dest=self.pattern_entry)
+        self.token_push_button = PyFlameTokenMenu(token_dest=self.pattern_entry)
         self.token_push_button.add_menu_options(build_token_menu())
 
         self.spaces_button = PyFlamePushButton(
             text='Spaces to _',
-            button_checked=self.settings.rename_spaces_to_underscores,
+            checked=self.settings.spaces_to_underscores,
             tooltip='Convert spaces in resulting names to underscores',
             )
 
@@ -2575,9 +2791,9 @@ class SlateRenamer():
         self.window.grid_layout.addWidget(self.cancel_button, 4, 4)
         self.window.grid_layout.addWidget(self.rename_button, 4, 5)
 
-#-------------------------------------
+# ==============================================================================
 # [Update Field Menu Editor]
-#-------------------------------------
+# ==============================================================================
 
 class UpdateFieldEditor():
     """
@@ -2610,8 +2826,10 @@ class UpdateFieldEditor():
 
         self.window = PyFlameWindow(
             title=f'{SCRIPT_NAME}: Edit Update Fields <small>{SCRIPT_VERSION}</small>',
+            escape_pressed=lambda: self.window.close(),
             grid_layout_columns=6,
             grid_layout_rows=12,
+            parent=None,
             )
 
         self.info_label = PyFlameLabel(
@@ -2639,7 +2857,7 @@ class UpdateFieldEditor():
         self.window.grid_layout.addWidget(self.cancel_button, 11, 4)
         self.window.grid_layout.addWidget(self.save_button, 11, 5)
 
-#-------------------------------------
+# ==============================================================================
 
 def slate_maker(selection: Any) -> None:
 
@@ -2652,7 +2870,12 @@ def slate_maker_update(selection: Any) -> None:
     script.slate_updater()
 
 def slate_maker_update_field(token: str):
-    """Return a menu execute callback that opens Update Slates restricted to one token."""
+    """
+    Slate Maker Update Field
+    ========================
+
+    Return a menu execute callback that opens Update Slates restricted to one token.
+    """
 
     def execute(selection: Any) -> None:
         script = SlateUpdater(selection, single_token=token)
@@ -2670,9 +2893,9 @@ def slate_maker_rename(selection: Any) -> None:
     script = SlateRenamer(selection)
     script.slate_renamer()
 
-#-------------------------------------
+# ==============================================================================
 # [Scopes]
-#-------------------------------------
+# ==============================================================================
 
 def scope_clip(selection) -> bool:
 
@@ -2688,9 +2911,9 @@ def scope_sequence(selection) -> bool:
             return True
     return False
 
-#-------------------------------------
+# ==============================================================================
 # [Flame Menus]
-#-------------------------------------
+# ==============================================================================
 
 def get_update_field_tokens() -> list:
     """
@@ -2728,13 +2951,13 @@ def get_media_panel_custom_ui_actions():
             'name': 'Create Slates',
             'isVisible': scope_clip_or_sequence,
             'execute': slate_maker,
-            'minimumVersion': '2027',
+            'minimumVersion': '2027.1',
         },
         {
             'name': 'Rename from Slate',
             'isVisible': scope_clip_or_sequence,
             'execute': slate_maker_rename,
-            'minimumVersion': '2027',
+            'minimumVersion': '2027.1',
         },
     ]
 
@@ -2743,7 +2966,7 @@ def get_media_panel_custom_ui_actions():
             'name': 'Update Slates',
             'isVisible': scope_clip_or_sequence,
             'execute': slate_maker_update,
-            'minimumVersion': '2027',
+            'minimumVersion': '2027.1',
         },
     ]
 
@@ -2752,7 +2975,7 @@ def get_media_panel_custom_ui_actions():
             'name': f'Update {field_display_name(token)}',
             'isVisible': scope_clip_or_sequence,
             'execute': slate_maker_update_field(token),
-            'minimumVersion': '2027',
+            'minimumVersion': '2027.1',
         }
         for token in get_update_field_tokens()
     ]
@@ -2762,7 +2985,7 @@ def get_media_panel_custom_ui_actions():
             'name': 'Edit Update Fields',
             'isVisible': scope_clip_or_sequence,
             'execute': slate_maker_edit_update_fields,
-            'minimumVersion': '2027',
+            'minimumVersion': '2027.1',
         }
     )
 
