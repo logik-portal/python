@@ -1,32 +1,22 @@
 # Nano Banana
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: Nano Banana
-Script Version: 1.2.0
+Script Version: 1.3.0
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 08.18.26
+Update Date: 11.01.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
-
+License: MIT License (MIT) - see LICENSE file for details
+ 
 Script Type: Media Panel
 
 Description:
@@ -37,39 +27,58 @@ Description:
 
     Currently supported models:
 
+        Gemini Nano Banana 2.1 (Nano Banana 2.1) - Default model
+            - High-efficiency model with improved visual quality, text rendering and multi-turn consistency.
+            - Supports 1K, 2K, and 4K resolutions.
+            - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
+            - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
+            - Thinking levels: Minimal, Medium, High. Default: Medium.
+
+        Gemini 3.1 Flash Image (Nano Banana 2)
+            - Previous high-efficiency model. Still supported, Google recommends Nano Banana 2.1 for new work.
+            - Supports 1K, 2K, 4K, and 512 (512px) resolutions.
+            - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
+            - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
+            - Thinking levels: Minimal, High. Default: Minimal.
+
         Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)
             - Fastest and lowest cost model. Best for quick iteration.
             - Only supports 1K resolution.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
-            - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
-
-        Gemini 3.1 Flash Image (Nano Banana 2)
-            - General purpose model. Best balance of speed and quality.
-            - Supports 1K, 2K, and 4K resolutions.
-            - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
-            - Supports aspect ratios 1:4, 4:1, 1:8, 8:1.
+            - Thinking levels: Minimal, High. Default: Minimal.
 
         Gemini 3 Pro Image (Nano Banana Pro)
             - Highest quality model. Best for complex prompts and rendering text in images.
             - Supports 1K, 2K, and 4K resolutions.
             - Supports aspect ratios 1:1, 21:9, 16:9, 4:3, 3:2, 9:16, 3:4, 2:3, 5:4, 4:5.
+            - Thinking is always on and the level can't be set.
 
     Gemini Chat:
 
-        Send a message to chat with Gemini 3.7 Flash about creating an image. Great for improving prompts or describing images.
+        Send a message to chat with Gemini 3.8 Flash about creating an image. Great for improving prompts or describing images.
         Enter a message in the prompt field and click the Gemini Chat button. The response will be displayed in the prompt
-        text window. Copy and paste any respone into the prompt text field and use the Send Prompt button to send the prompt
+        text window. Copy and paste any response into the prompt text field and use the Send Prompt button to send the prompt
         to Nano Banana.
+
+    Images:
+
+        Returned images are saved as PNG or JPEG. Any other type Google returns (such as WebP, which Flame
+        can't read) is converted to PNG. The image gallery only shows PNG and JPEG files.
 
     ** WARNING **
     Using this script will incur charges to your Nano Banana/Gemini account.
     Please review your usage limits and pricing plan before proceeding.
-    Your API will be stored unencrypted in the config file so be aware of who has access to it.
+    Your API key will be stored unencrypted in the config file so be aware of who has access to it.
 
     Images are stored in <script_path>/images/. A tokenized path can be set in the script
-    setup to store images in a different location.
+    setup, or with the Change Path button in the main window, to store images in a different location.
+    The folder images are saved to is shown under the Image Gallery buttons.
 
-Workflow:
+URL:
+
+    https://logik-portal.com/scripts/nano_banana
+
+Useage:
 
     Run the script with a clip selected in the media panel to export the first frame of the clip
     to the script's images folder and add it to the prompt.
@@ -84,16 +93,26 @@ Workflow:
 
         Send Prompt: Sends the current prompt to Nano Banana at the selected model and resolution.
 
+        Gemini Chat: Sends the prompt field text (and the prompt image, if there is one) to Gemini Chat.
+
         Import to Flame: Import the current selected image in the Image Gallery to the media panel.
 
         Send to Prompt: Adds the selected image in the Image Gallery to the prompt.
 
         Clear Prompt Image: Clears the current prompt image from the prompt.
 
+        Reveal in Finder / Reveal in MediaHub: Opens the images folder in Finder or the MediaHub.
+
+        Delete Image: Deletes the selected image in the Image Gallery from disk (after a confirm).
+
+        Change Path: Opens the path selection window to change the folder images are saved to. Tokens can be used.
+
+        Done: Saves the selected model, resolution, aspect ratio and thinking level, then closes the window.
+
 Menus:
 
     Script Setup:
-        Flame Main Menu -> Logik Portal -> Logik Portal Script Setup -> Nano Banana Setup
+        Flame Main Menu -> Logik -> Logik Portal Script Setup -> Nano Banana Setup
 
     To prompt Nano Banana with no prompt image:
         Media Panel -> Right-click -> Nano Banana
@@ -107,13 +126,56 @@ To install:
 
 Updates:
 
+    v1.3.0 11.01.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+        - Working path is now shown under the image gallery.
+        - Added a Change Path button to change the working folder from the main UI. 
+        - Fixed: in Flame 2027.2 every request failed with "No internet connection" because Flame's Python couldn't 
+          find its SSL certificates. Requests now also use the certificates that come with Flame's Python (certifi) 
+          and the system's own certificate bundle, so nothing needs to be installed.
+        - Fixed: Send Prompt and Gemini Chat caused an error when the prompt image file was moved or deleted outside 
+          the script. The error names the file, the prompt image is cleared and nothing is sent.
+        - Added the 512 (512px) resolution for Nano Banana 2.
+        - Added Gemini Nano Banana 2.1 (Nano Banana 2.1) and made it the default model. 
+        - Added Thinking Level menu. 
+        - Updated Gemini Chat to use Gemini 3.8 Flash. Gemini 3.7 Flash is deprecated and Google auto-routes it to 
+          3.8 (no shutdown date).
+        - Fixed: the image gallery listed file types the prompt image can't show (exr, dpx, tif...), and clicking one 
+          raised an error. The gallery now shows only PNG and JPEG files, so Import to Flame only gets files Flame 
+          can read.
+        - Fixed: the prompt image was sent with the wrong type for non-PNG files. The type now matches the 
+          file (PNG or JPEG).
+        - Fixed: Send Prompt and Gemini Chat stayed enabled during a request, so a double click could send a second 
+          paid request. Both are disabled (and Return does nothing) until the request ends.
+        - Fixed: saved resolution and aspect ratio were lost when the window opened (4K/4:3 came back as 1K/1:1). 
+          Changing the model now resets them to that model's first options.
+        - Fixed: clicking Done saved the resolved images path over the tokenized one, so every project saved into 
+          the first project's folder.
+        - Fixed: Send Prompt API errors now show Google's error message.
+        - Requests over Google's 20 MB request size limit are no longer sent. An error shows the prompt image size.
+        - Fixed: running the script again on the same clip opened a file exists dialog and the window didn't open. 
+          The exported frame is now overwritten.
+        - Export errors are now shown in a message window.
+        - Fixed: exporting failed when the images folder didn't exist yet. The folder is now created.
+        - Fixed: every selected clip was exported. Only the first selected clip or sequence is exported now.
+        - Fixed: an empty Gemini Chat reply was added to the history instead of showing an error.
+        - Fixed: "Image generated successfully." was shown when no image came back. The reason is now shown 
+          (blocked prompt, safety finish reason, returned text).
+        - Fixed: "Please wait..." stayed in the status line after an empty prompt or a failed request.
+        - Fixed: an empty or invalid API response raised an error instead of showing a message.
+        - Fixed: Delete Image raised an error when the selected file was already removed.
+        - Fixed: Reveal in Finder/MediaHub failed when the images folder didn't exist yet. The folder is now created.
+        - Fixed: Return pressed in the image gallery sent a prompt. Return/Enter in the prompt text field now sends the 
+          prompt, Shift+Return adds a new line, and Return elsewhere no longer sends.
+
     v1.2.0 08.18.26
         - Updated to use Google's current Nano Banana models.
             - Added: Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite).
             - Updated: gemini-3.1-flash-image-preview to gemini-3.1-flash-image (Nano Banana 2).
             - Updated: gemini-3-pro-image-preview to gemini-3-pro-image (Nano Banana Pro).
-            - Removed: Gemini 2.5 Flash Image (Nano Banana). Google is retiring this model on 10.02.26.
-        - Updated Gemini Chat to use Gemini 3.7 Flash. Gemini 2.5 Flash is being retired on 10.16.26.
+            - Removed: Gemini 2.5 Flash Image (Nano Banana). Google lists its shutdown as 03.15.27.
+        - Updated Gemini Chat to use Gemini 3.7 Flash. Google limits access to Gemini 2.5 Flash to earlier users (no shutdown date announced).
         - Nano Banana 2 is now the default model. Models saved in the config by older versions of the
           script are replaced with the default model on startup.
         - Fixed: aspect ratios 1:4, 4:1, 1:8, and 8:1 were listed for Nano Banana Pro, which does not
@@ -140,16 +202,20 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import base64
+import http.client
 import json
 import os
 import random
+import ssl
 import urllib.error
 import urllib.request
 from typing import Any
 
 import flame
-from PySide6 import QtCore, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 from lib.pyflame_lib_nano_banana import *
 
 # ==============================================================================
@@ -157,36 +223,105 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.2.0'
+SCRIPT_VERSION = 'v1.3.0'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # Aspect ratios supported by all current Nano Banana image models.
 STANDARD_ASPECT_RATIOS = ['1:1', '21:9', '16:9', '4:3', '3:2', '9:16', '3:4', '2:3', '5:4', '4:5']
 
-# Banner and strip aspect ratios. Not supported by Nano Banana Pro.
+# Banner and strip aspect ratios. Not supported by Nano Banana Pro or Nano Banana 2 Lite.
 EXTENDED_ASPECT_RATIOS = STANDARD_ASPECT_RATIOS + ['1:4', '4:1', '1:8', '8:1']
 
 # Image models shown in the Select Model menu, along with the resolutions and
 # aspect ratios each model accepts. Menu text is 'model_id (Model Name)'.
 IMAGE_MODELS = {
-    'gemini-3.1-flash-lite-image (Nano Banana 2 Lite)': {
-        'resolutions': ['1K'],
-        'aspect_ratios': EXTENDED_ASPECT_RATIOS,
-        },
-    'gemini-3.1-flash-image (Nano Banana 2)': {
+    'gemini-nano-banana-2.1 (Nano Banana 2.1)': {
         'resolutions': ['1K', '2K', '4K'],
         'aspect_ratios': EXTENDED_ASPECT_RATIOS,
+        'thinking_levels': ['Minimal', 'Medium', 'High'],
+        'default_thinking_level': 'Medium',
         },
+    'gemini-3.1-flash-image (Nano Banana 2)': {
+        'resolutions': ['1K', '2K', '4K', '512'],
+        'aspect_ratios': EXTENDED_ASPECT_RATIOS,
+        'thinking_levels': ['Minimal', 'High'],
+        'default_thinking_level': 'Minimal',
+        },
+    'gemini-3.1-flash-lite-image (Nano Banana 2 Lite)': {
+        'resolutions': ['1K'],
+        'aspect_ratios': STANDARD_ASPECT_RATIOS,
+        'thinking_levels': ['Minimal', 'High'],
+        'default_thinking_level': 'Minimal',
+        },
+    # Thinking is always on for Pro and the level can't be set, so no thinkingConfig is sent.
     'gemini-3-pro-image (Nano Banana Pro)': {
         'resolutions': ['1K', '2K', '4K'],
         'aspect_ratios': STANDARD_ASPECT_RATIOS,
+        'thinking_levels': [],
+        'default_thinking_level': None,
         },
     }
 
-DEFAULT_IMAGE_MODEL = 'gemini-3.1-flash-image (Nano Banana 2)'
+DEFAULT_IMAGE_MODEL = 'gemini-nano-banana-2.1 (Nano Banana 2.1)'
+
+# Thinking Level menu text for models where the level can't be set.
+THINKING_ALWAYS_ON = 'Always On'
 
 # Text model used by the Gemini Chat button.
-CHAT_MODEL = 'gemini-3.7-flash'
+CHAT_MODEL = 'gemini-3.8-flash'
+
+# Prompt image types sent to Google, by file extension. Also the only files the image gallery
+# shows, so Import to Flame never gets a file Flame can't read (Flame can't read WebP).
+PROMPT_IMAGE_MIME_TYPES = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    }
+
+# Google's limit for the total size of a request with inline image data (20 MB).
+MAX_REQUEST_BYTES = 20 * 1024 * 1024
+
+# System CA certificate bundles: macOS (and some Linux), RHEL/Rocky/CentOS, Debian/Ubuntu.
+SYSTEM_CA_BUNDLES = [
+    '/etc/ssl/cert.pem',
+    '/etc/pki/tls/certs/ca-bundle.crt',
+    '/etc/ssl/certs/ca-certificates.crt',
+    ]
+
+def create_ssl_context() -> ssl.SSLContext:
+    """
+    Create SSL Context
+    ==================
+
+    Create the SSL context used for every request. Flame 2027.2's Python looks for its
+    certificates in a folder that doesn't exist, so certifi's and the system's certificates
+    are added when found. Nothing here can raise, since Flame imports this file at startup.
+
+    Returns
+    -------
+        context (ssl.SSLContext): SSL context with every certificate bundle found.
+    """
+
+    context = ssl.create_default_context()
+
+    # Add the certificates that come with Flame's Python, if certifi is there
+    try:
+        import certifi
+        context.load_verify_locations(cafile=certifi.where())
+    except Exception:
+        pass
+
+    # Add the system's own certificate bundles
+    for ca_bundle in SYSTEM_CA_BUNDLES:
+        if os.path.isfile(ca_bundle):
+            try:
+                context.load_verify_locations(cafile=ca_bundle)
+            except Exception:
+                pass
+
+    return context
+
+SSL_CONTEXT = create_ssl_context()
 
 # ==============================================================================
 # [Main Script]
@@ -218,6 +353,7 @@ def load_config() -> PyFlameConfig:
             'model': DEFAULT_IMAGE_MODEL,
             'resolution': '1K',
             'aspect_ratio': '1:1',
+            'thinking_level': IMAGE_MODELS[DEFAULT_IMAGE_MODEL]['default_thinking_level'],
             },
         )
 
@@ -248,7 +384,7 @@ def verify_api_key(api_key: str) -> bool:
 
     try:
         url = f'https://generativelanguage.googleapis.com/v1/models?key={api_key}'
-        urllib.request.urlopen(url, timeout=10)
+        urllib.request.urlopen(url, timeout=10, context=SSL_CONTEXT)
         print_pass_fail('API Key Verified', True)
         return True
     except urllib.error.HTTPError as e:
@@ -285,7 +421,7 @@ def verify_internet_connection() -> bool:
     """
 
     try:
-        urllib.request.urlopen('https://www.google.com', timeout=5)
+        urllib.request.urlopen('https://www.google.com', timeout=5, context=SSL_CONTEXT)
         print_pass_fail('Internet Connection Verified', True, new_line=False)
         return True
     except (urllib.error.URLError, OSError):
@@ -297,7 +433,67 @@ def verify_internet_connection() -> bool:
             )
         return False
 
+class PromptReturnFilter(QtCore.QObject):
+
+    def __init__(self, text_edit, return_pressed) -> None:
+        """
+        Prompt Return Filter
+        ====================
+
+        Event filter for the prompt text edit. Return/Enter (main or keypad) calls return_pressed,
+        Shift+Return is passed on so the text edit adds a new line.
+
+        Args
+        ----
+            text_edit (PyFlameTextEdit):
+                Text edit the filter is installed on. Also the filter's Qt parent.
+
+            return_pressed (callable):
+                Function called when Return/Enter is pressed.
+        """
+
+        super().__init__(text_edit)
+        self.return_pressed = return_pressed
+
+    def eventFilter(self, obj, event) -> bool:
+        """
+        Event Filter
+        ============
+
+        Send on Return/Enter, pass every other event on.
+
+        Args
+        ----
+            obj (QObject):
+                Object that received the event (the prompt text edit).
+
+            event (QEvent):
+                Event to check.
+
+        Returns
+        -------
+            handled (bool): True if the key press was used to send (or was a held-down repeat) and should not reach the text edit.
+        """
+
+        if event.type() != QtCore.QEvent.Type.KeyPress or event.key() not in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
+            return False
+
+        # Shift+Return adds a new line, and a read-only field never sends
+        if event.modifiers() & QtCore.Qt.KeyboardModifier.ShiftModifier or obj.isReadOnly():
+            return False
+
+        # Swallow auto-repeat so holding Return can't send a second paid request
+        if event.isAutoRepeat():
+            return True
+
+        self.return_pressed()
+
+        return True
+
 class NanoBanana:
+
+    # Open Nano Banana window, so the Setup window can update its images path
+    open_window = None
 
     def __init__(self, selection) -> None:
 
@@ -313,14 +509,14 @@ class NanoBanana:
         self.selection = selection
         print('Selection:', selection, '\n')
 
-        self.settings.images_path = pyflame.resolve_tokens(tokenized_string=self.settings.images_path)
-        print('Images Path:', self.settings.images_path, '\n')
+        # Keep the resolved path separate so the tokenized path in settings is what gets saved.
+        self.images_path = pyflame.resolve_tokens(tokenized_string=self.settings.images_path)
+        print('Images Path:', self.images_path, '\n')
 
-        # Export image to Nano Banana Prompt if selection is a clip or sequence.
+        # Export image to Nano Banana Prompt if selection is a clip or sequence. Open with a blank prompt image otherwise.
         self.flame_image_exported = False
-        if isinstance(self.selection[0], (flame.PyClip, flame.PySequence)):
-            self.export_to_nano_banana()
-            self.flame_image_exported = True
+        if self.selection and isinstance(self.selection[0], (flame.PyClip, flame.PySequence)):
+            self.flame_image_exported = self.export_to_nano_banana()
 
         # Open main window
         self.nano_banana()
@@ -347,12 +543,17 @@ class NanoBanana:
 
         return True
 
-    def export_to_nano_banana(self) -> None:
+    def export_to_nano_banana(self) -> bool:
         """
         Export to Nano Banana
         =====================
 
-        Export the first frame of the current selection(Clip or Sequence) to the Nano Banana Prompt.
+        Export the first frame of the first selected Clip or Sequence to the Nano Banana Prompt.
+        An earlier export of the same clip is overwritten.
+
+        Returns
+        -------
+            exported (bool): True if the frame was exported, False if the export failed.
         """
 
         pyflame.print('Exporting to Nano Banana...')
@@ -363,22 +564,40 @@ class NanoBanana:
         # Set version of export preset to match current version of Flame to avoid error windows.
         pyflame.update_export_preset(export_preset_path)
 
-        # Resolve image export path
-        image_export_path = pyflame.resolve_tokens(tokenized_string=self.settings.images_path)
+        # Resolved image export path
+        image_export_path = self.images_path
         print('Image Export Path:', image_export_path)
 
         # Get exportedimage path
         self.exported_image_path = os.path.join(image_export_path, self.selection[0].name + '.png')
         print('Exported Image Path:', self.exported_image_path, '\n')
 
-        # Initialize Exporter
-        exporter = flame.PyExporter()
-        exporter.foreground = True
+        try:
+            # Create images folder on first use, the exporter fails if it's missing
+            os.makedirs(image_export_path, exist_ok=True)
 
-        # Export first frame of selection using export preset
-        exporter.export(self.selection, export_preset_path, image_export_path)
+            # Remove an earlier export of this clip so Flame doesn't open a blocking file exists dialog
+            if os.path.isfile(self.exported_image_path):
+                os.remove(self.exported_image_path)
+
+            # Initialize Exporter
+            exporter = flame.PyExporter()
+            exporter.foreground = True
+
+            # Export first frame of the first selected clip only
+            exporter.export([self.selection[0]], export_preset_path, image_export_path)
+        except Exception as e:
+            pyflame.print(f'Export failed: {e}', print_type=PrintType.ERROR)
+            PyFlameMessageWindow(
+                message=f'Unable to export the selected clip to Nano Banana.\n\n{e}\n\nThe window will open with no prompt image.',
+                message_type=MessageType.ERROR,
+                parent=None,
+                )
+            return False
 
         pyflame.print('Image exported to Nano Banana.')
+
+        return True
 
     def nano_banana(self) -> None:
 
@@ -409,8 +628,152 @@ class NanoBanana:
                     'model': self.select_model_menu.text,
                     'resolution': self.image_resolution_menu.text,
                     'aspect_ratio': self.aspect_ratio_menu.text,
+                    'thinking_level': self.thinking_level_menu.text,
                     }
                 )
+
+        def request_failed(message: str, status: str) -> None:
+            """
+            Request Failed
+            ==============
+
+            Replace the wait message in the status line and show the error.
+
+            Args
+            ----
+                message (str):
+                    Error message to show.
+
+                status (str):
+                    Short failure message for the status line.
+            """
+
+            self.banana_message_entry.text = status
+            pyflame.print(status, print_type=PrintType.ERROR)
+            PyFlameMessageWindow(
+                message=message,
+                message_type=MessageType.ERROR,
+                parent=self.main_window,
+                )
+
+        def request_too_large(payload: bytes, image_path: str | None, status: str) -> bool:
+            """
+            Request Too Large
+            =================
+
+            Check the encoded request against Google's request size limit. Show an error if it's over.
+
+            Args
+            ----
+                payload (bytes):
+                    Encoded request body.
+
+                image_path (str | None):
+                    Prompt image sent with the request, if any.
+
+                status (str):
+                    Short failure message for the status line.
+
+            Returns
+            -------
+                too_large (bool): True if the request is over the limit and should not be sent.
+            """
+
+            if len(payload) <= MAX_REQUEST_BYTES:
+                return False
+
+            mb = 1024 * 1024
+            message = f'The request is too large to send ({len(payload) / mb:.1f} MB). Google\'s limit is {MAX_REQUEST_BYTES // mb} MB.'
+            if image_path:
+                message += f'\n\nPrompt image: {os.path.basename(image_path)} ({os.path.getsize(image_path) / mb:.1f} MB). Images are about a third larger once encoded.'
+            message += '\n\nUse a smaller prompt image or a lower resolution image.'
+            request_failed(message, status)
+
+            return True
+
+        def get_no_response_reason(result: dict) -> str:
+            """
+            Get No Response Reason
+            ======================
+
+            Get the reason Google gave for returning nothing: the prompt block reason and/or the candidate's finish reason.
+
+            Args
+            ----
+                result (dict): Decoded API response.
+
+            Returns
+            -------
+                reason (str): Reason lines, or an empty string if no reason was given.
+            """
+
+            reasons = []
+
+            prompt_feedback = result.get('promptFeedback')
+            if isinstance(prompt_feedback, dict) and prompt_feedback.get('blockReason'):
+                reasons.append(f'Block reason: {prompt_feedback["blockReason"]}')
+
+            # STOP is a normal finish, so it doesn't explain a missing result
+            candidates = result.get('candidates') or []
+            finish_reason = None
+            if candidates and isinstance(candidates[0], dict):
+                finish_reason = candidates[0].get('finishReason')
+            if finish_reason and finish_reason != 'STOP':
+                reasons.append(f'Finish reason: {finish_reason}')
+
+            return '\n'.join(reasons)
+
+        def get_response_parts(result: dict) -> list:
+            """
+            Get Response Parts
+            ==================
+
+            Get the content parts of the first candidate in the API response. Parts that aren't dicts are skipped.
+
+            Args
+            ----
+                result (dict): Decoded API response.
+
+            Returns
+            -------
+                parts (list): Content parts, or an empty list if there are no candidates.
+            """
+
+            candidates = result.get('candidates') or []
+            if not candidates or not isinstance(candidates[0], dict):
+                return []
+
+            content = candidates[0].get('content')
+            if not isinstance(content, dict) or not isinstance(content.get('parts'), list):
+                return []
+
+            return [part for part in content['parts'] if isinstance(part, dict)]
+
+        def prompt_image_missing(status: str) -> bool:
+            """
+            Prompt Image Missing
+            ====================
+
+            Check that the prompt image file still exists. If it was moved or deleted outside the script,
+            show an error naming the file, clear the prompt image and set the status line.
+
+            Args
+            ----
+                status (str): Short failure message for the status line.
+
+            Returns
+            -------
+                missing (bool): True if the prompt image file is gone and nothing should be sent.
+            """
+
+            image_path = self.prompt_image_widget.image_path
+            if not self.prompt_image_widget.has_image or not image_path or os.path.isfile(image_path):
+                return False
+
+            self.prompt_image_widget.image = None
+            request_failed(f'Prompt image not found:\n\n{image_path}\n\nIt was moved or deleted. The prompt image has been cleared.', status)
+
+            return True
 
         def send_prompt() -> None:
             """
@@ -421,10 +784,6 @@ class NanoBanana:
             returned image to the images folder.
             """
 
-            pyflame.print('Sending prompt... Please wait...')
-            self.banana_message_entry.text = 'Sending prompt... Please wait...'
-            pyflame.pause()
-
             # Get prompt text
             prompt_text = self.prompt_text_edit.text_str.strip()
             if not prompt_text:
@@ -434,6 +793,14 @@ class NanoBanana:
                     parent=self.main_window,
                     )
                 return
+
+            # Prompt image moved or deleted outside the script
+            if prompt_image_missing('Prompt not sent.'):
+                return
+
+            pyflame.print('Sending prompt... Please wait...')
+            self.banana_message_entry.text = 'Sending prompt... Please wait...'
+            pyflame.pause()
 
             selected_model = self.select_model_menu.text
             selected_model = selected_model.rsplit(' (', 1)[0].strip()
@@ -446,19 +813,20 @@ class NanoBanana:
 
             parts: list[dict[str, Any]] = [{'text': prompt_text}]
 
+            image_path = None
             if self.prompt_image_widget.has_image and self.prompt_image_widget.image_path:
                 image_path = self.prompt_image_widget.image_path
-                ext = os.path.splitext(image_path)[1].lower()
-                mime_map = {
-                    '.png': 'image/png',
-                    '.jpg': 'image/jpeg',
-                    '.jpeg': 'image/jpeg',
-                    '.gif': 'image/gif',
-                    '.webp': 'image/webp',
-                }
-                mime = mime_map.get(ext, 'image/png')
-                with open(image_path, 'rb') as img_file:
-                    img_b64 = base64.b64encode(img_file.read()).decode()
+                # Send the prompt image with the type that matches the file
+                mime = PROMPT_IMAGE_MIME_TYPES.get(os.path.splitext(image_path)[1].lower())
+                if not mime:
+                    request_failed(f'Prompt image type not supported:\n\n{os.path.basename(image_path)}\n\nUse a PNG or JPEG image.', 'Prompt not sent.')
+                    return
+                try:
+                    with open(image_path, 'rb') as img_file:
+                        img_b64 = base64.b64encode(img_file.read()).decode()
+                except OSError as e:
+                    request_failed(f'Unable to read the prompt image:\n\n{image_path}\n\n{e}', 'Prompt not sent.')
+                    return
                 parts.append({
                         'inlineData': {
                         'mimeType': mime,
@@ -482,10 +850,20 @@ class NanoBanana:
                 'imageConfig': image_config,
             }
 
+            # Pro thinks at a level that can't be set, so only send a thinking level for models that take one
+            if IMAGE_MODELS[self.select_model_menu.text]['thinking_levels']:
+                generation_config['thinkingConfig'] = {
+                    'thinkingLevel': self.thinking_level_menu.text.upper(),
+                    }
+
             payload = json.dumps({
                 'contents': [{'parts': parts}],
                 'generationConfig': generation_config,
             }).encode()
+
+            # Don't send a request Google will reject for size (it would still be uploaded first)
+            if request_too_large(payload, image_path, 'Prompt not sent.'):
+                return
 
             req = urllib.request.Request(
                 url,
@@ -495,24 +873,28 @@ class NanoBanana:
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=request_timeout) as response:
+                with urllib.request.urlopen(req, timeout=request_timeout, context=SSL_CONTEXT) as response:
                     result = json.loads(response.read().decode())
+                if not isinstance(result, dict):
+                    raise ValueError('Response is not a JSON object.')
             except urllib.error.HTTPError as e:
-                PyFlameMessageWindow(
-                    message=f'Nano Banana API request failed (HTTP {e.code}).\n\nPlease try again.',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                    )
+                # Read error body for Google's error message
+                try:
+                    err_body = e.read().decode()
+                    err_json = json.loads(err_body)
+                    err_detail = err_json.get('error', {}).get('message', err_body)
+                except Exception:
+                    err_detail = str(e)
+                request_failed(f'Nano Banana API request failed (HTTP {e.code}).\n\n{err_detail}', 'Prompt failed.')
+                return
+            except (ValueError, http.client.HTTPException) as e:
+                request_failed(f'Invalid response from the Nano Banana API.\n\n{e}\n\nPlease try again.', 'Prompt failed.')
                 return
             except (urllib.error.URLError, OSError):
-                PyFlameMessageWindow(
-                    message='Unable to reach the Nano Banana API.\n\nPlease check your internet connection and try again.',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                    )
+                request_failed('Unable to reach the Nano Banana API.\n\nPlease check your internet connection and try again.', 'Prompt failed.')
                 return
 
-            response_parts = result.get('candidates', [{}])[0].get('content', {}).get('parts', [])
+            response_parts = get_response_parts(result)
 
             # Capture both text and image from the response.
             # The model sometimes returns a text description alongside the image.
@@ -524,38 +906,68 @@ class NanoBanana:
                 if part.get('text'):
                     model_text.append(part['text'])
                 inline = part.get('inlineData')
-                if inline and not image_data:
+                if isinstance(inline, dict) and not image_data:
                     image_data = inline.get('data')
                     mime_type = inline.get('mimeType', 'image/png')
 
             # Log any text the model returned alongside the image.
-            if model_text:
-                combined = ' '.join(model_text)
+            combined = ' '.join(model_text)
+            if combined:
                 pyflame.print(f'Model: {combined}')
-                self.banana_message_entry.text = combined
-            else:
-                self.banana_message_entry.text = 'Image generated successfully.'
 
+            # Show why no image came back: block/finish reason and any returned text
             if not image_data:
-                PyFlameMessageWindow(
-                    message='No image was returned from the Nano Banana API.\n\nTry a different prompt.',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                    )
+                message = 'No image was returned from the Nano Banana API.'
+                reason = get_no_response_reason(result)
+                if reason:
+                    message += f'\n\n{reason}'
+                if combined:
+                    message += f'\n\nModel response: {combined}'
+                message += '\n\nTry a different prompt.'
+                request_failed(message, 'No image returned.')
                 return
 
-            mime = mime_type or 'image/png'
-            ext = '.png' if 'png' in mime else '.jpg'
-            from datetime import datetime
-            filename = f'nano_banana_{datetime.now().strftime("%Y%m%d_%H%M%S")}{ext}'
-            save_path = os.path.join(self.settings.images_path, filename)
+            # PNG and JPEG are saved as they are. Flame can't read WebP, so any other type is converted to PNG.
+            mime = (mime_type or 'image/png').lower()
+            try:
+                image_bytes = base64.b64decode(image_data)
 
-            os.makedirs(self.settings.images_path, exist_ok=True)
+                converted_image = None
+                if mime == 'image/png':
+                    ext = '.png'
+                elif mime == 'image/jpeg':
+                    ext = '.jpg'
+                else:
+                    ext = '.png'
+                    converted_image = QtGui.QImage()
+                    if not converted_image.loadFromData(image_bytes):
+                        raise ValueError(f'Unable to decode the returned {mime} image.')
 
-            with open(save_path, 'wb') as f:
-                f.write(base64.b64decode(image_data))
+                from datetime import datetime
+                stem = f'nano_banana_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+                save_path = os.path.join(self.images_path, f'{stem}{ext}')
+
+                # Never overwrite an earlier result saved in the same second: add _1, _2... until the name is free
+                count = 0
+                while os.path.exists(save_path):
+                    count += 1
+                    save_path = os.path.join(self.images_path, f'{stem}_{count}{ext}')
+
+                os.makedirs(self.images_path, exist_ok=True)
+
+                if converted_image is not None:
+                    if not converted_image.save(save_path, 'PNG'):
+                        raise OSError(f'Unable to write {save_path}')
+                else:
+                    with open(save_path, 'wb') as f:
+                        f.write(image_bytes)
+            except Exception as e:
+                request_failed(f'Unable to save the returned image.\n\n{e}', 'Image not saved.')
+                return
 
             pyflame.print(f'Image saved: {save_path}')
+
+            self.banana_message_entry.text = combined or 'Image generated successfully.'
 
             self.banana_image_widget.image = save_path
 
@@ -634,6 +1046,10 @@ class NanoBanana:
                 )
                 return
 
+            # Prompt image moved or deleted outside the script
+            if prompt_image_missing('Message not sent.'):
+                return
+
             # ---- Show wait state ----
             pyflame.print('Sending message... Please wait...')
             self.banana_message_entry.text = 'Sending message... Please wait...'
@@ -661,19 +1077,20 @@ class NanoBanana:
             ]
 
             # Include the prompt image if present (for image-aware responses)
+            image_path = None
             if self.prompt_image_widget.has_image and self.prompt_image_widget.image_path:
                 image_path = self.prompt_image_widget.image_path
-                ext = os.path.splitext(image_path)[1].lower()
-                mime_map = {
-                    '.png': 'image/png',
-                    '.jpg': 'image/jpeg',
-                    '.jpeg': 'image/jpeg',
-                    '.gif': 'image/gif',
-                    '.webp': 'image/webp',
-                }
-                mime = mime_map.get(ext, 'image/png')
-                with open(image_path, 'rb') as img_file:
-                    img_b64 = base64.b64encode(img_file.read()).decode()
+                # Send the prompt image with the type that matches the file
+                mime = PROMPT_IMAGE_MIME_TYPES.get(os.path.splitext(image_path)[1].lower())
+                if not mime:
+                    request_failed(f'Prompt image type not supported:\n\n{os.path.basename(image_path)}\n\nUse a PNG or JPEG image.', 'Message not sent.')
+                    return
+                try:
+                    with open(image_path, 'rb') as img_file:
+                        img_b64 = base64.b64encode(img_file.read()).decode()
+                except OSError as e:
+                    request_failed(f'Unable to read the prompt image:\n\n{image_path}\n\n{e}', 'Message not sent.')
+                    return
                 parts.append({
                     'inlineData': {
                         'mimeType': mime,
@@ -690,6 +1107,10 @@ class NanoBanana:
                 },
             }).encode()
 
+            # ---- Don't send a request Google will reject for size ----
+            if request_too_large(payload, image_path, 'Message not sent.'):
+                return
+
             # ---- Send request ----
             req = urllib.request.Request(
                 url,
@@ -698,8 +1119,10 @@ class NanoBanana:
                 method='POST',
             )
             try:
-                with urllib.request.urlopen(req, timeout=60) as response:
+                with urllib.request.urlopen(req, timeout=60, context=SSL_CONTEXT) as response:
                     result = json.loads(response.read().decode())
+                if not isinstance(result, dict):
+                    raise ValueError('Response is not a JSON object.')
             except urllib.error.HTTPError as e:
                 # Read error body for more specific feedback (400 often has useful details)
                 try:
@@ -708,37 +1131,68 @@ class NanoBanana:
                     err_detail = err_json.get('error', {}).get('message', err_body)
                 except Exception:
                     err_detail = str(e)
-                PyFlameMessageWindow(
-                    message=f'Nano Banana API request failed (HTTP {e.code}).\n\n{err_detail}',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                )
+                request_failed(f'Nano Banana API request failed (HTTP {e.code}).\n\n{err_detail}', 'Message failed.')
+                return
+            except (ValueError, http.client.HTTPException) as e:
+                request_failed(f'Invalid response from the Nano Banana API.\n\n{e}\n\nPlease try again.', 'Message failed.')
                 return
             except (urllib.error.URLError, OSError):
-                PyFlameMessageWindow(
-                    message='Unable to reach the Nano Banana API.\n\nPlease check your internet connection and try again.',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                )
+                request_failed('Unable to reach the Nano Banana API.\n\nPlease check your internet connection and try again.', 'Message failed.')
                 return
 
             # ---- Extract text from response (expect text, not image) ----
-            response_parts = result.get('candidates', [{}])[0].get('content', {}).get('parts', [])
-            response_text = "Gemini: " + ' '.join(p.get('text', '') for p in response_parts if p.get('text')).strip()
+            response_parts = get_response_parts(result)
+            gemini_text = ' '.join(p.get('text', '') for p in response_parts if p.get('text')).strip()
 
-            if not response_text:
-                PyFlameMessageWindow(
-                    message='No text response from the Nano Banana API.\n\nTry a different message.',
-                    message_type=MessageType.ERROR,
-                    parent=self.main_window,
-                )
+            # ---- Check for an empty reply before adding the prefix ----
+            if not gemini_text:
+                message = 'No text response from the Nano Banana API.'
+                reason = get_no_response_reason(result)
+                if reason:
+                    message += f'\n\n{reason}'
+                message += '\n\nTry a different message.'
+                request_failed(message, 'No text response.')
                 return
+
+            response_text = 'Gemini: ' + gemini_text
 
             # ---- Append user message (right-aligned) and Gemini response (left-aligned) to history ----
             append_gemini_response_to_prompt(self.prompt_history_text_edit, prompt_text, response_text)
             self.prompt_text_edit.text_str = ''
             self.banana_message_entry.text = 'Message received.'
             pyflame.print('Message received.')
+
+        def run_request(request) -> None:
+            """
+            Run Request
+            ===========
+
+            Run send_prompt or send_message with Send Prompt and Gemini Chat disabled, so a double click,
+            a click queued during pyflame.pause() or Return can't send a second paid request.
+            The buttons are always enabled again when the request ends.
+
+            Args
+            ----
+                request (callable): send_prompt or send_message.
+            """
+
+            # Another request is still running, do nothing
+            if self.request_running:
+                return
+
+            self.request_running = True
+            self.send_prompt_button.enabled = False
+            self.send_message_button.enabled = False
+
+            try:
+                request()
+
+                # Drop clicks and key presses queued during the blocking request while it still counts as running
+                QtWidgets.QApplication.processEvents()
+            finally:
+                self.request_running = False
+                self.send_prompt_button.enabled = True
+                self.send_message_button.enabled = True
 
         def clear_prompt_image() -> None:
             """
@@ -816,9 +1270,20 @@ class NanoBanana:
             Open the image library folder in Finder.
             """
 
-            pyflame.open_in_finder(self.settings.images_path)
+            # Create images folder if it doesn't exist yet so there is something to open
+            try:
+                os.makedirs(self.images_path, exist_ok=True)
+            except Exception as e:
+                PyFlameMessageWindow(
+                    message=f'Unable to create the images folder:\n\n{self.images_path}\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                    )
+                return
 
-            pyflame.print(f'Finder opened: {self.settings.images_path}')
+            pyflame.open_in_finder(self.images_path)
+
+            pyflame.print(f'Finder opened: {self.images_path}')
 
         def reveal_in_mediahub() -> None:
             """
@@ -828,13 +1293,24 @@ class NanoBanana:
             Reveal image in mediahub.
             """
 
-            # Switch to MediaHub tab
-            flame.go_to('MediaHub')
+            # Create images folder if it doesn't exist yet, MediaHub rejects a missing path
+            try:
+                os.makedirs(self.images_path, exist_ok=True)
 
-            # Set path in MediaHub
-            flame.mediahub.files.set_path(self.settings.images_path)
+                # Switch to MediaHub tab
+                flame.go_to('MediaHub')
 
-            pyflame.print(f'MediaHub opened: {self.settings.images_path}')
+                # Set path in MediaHub
+                flame.mediahub.files.set_path(self.images_path)
+            except Exception as e:
+                PyFlameMessageWindow(
+                    message=f'Unable to reveal the images folder in MediaHub:\n\n{self.images_path}\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=self.main_window,
+                    )
+                return
+
+            pyflame.print(f'MediaHub opened: {self.images_path}')
 
         def delete_image() -> None:
             """
@@ -846,6 +1322,19 @@ class NanoBanana:
 
             path = self.image_gallery.selected_path
             if path is None:
+                return
+
+            # File was already removed outside the script: clear anything showing it and refresh the gallery
+            if not os.path.isfile(path):
+                if self.banana_image_widget.image_path and os.path.abspath(self.banana_image_widget.image_path) == os.path.abspath(path):
+                    self.banana_image_widget.image = None
+                if self.prompt_image_widget.image_path and os.path.abspath(self.prompt_image_widget.image_path) == os.path.abspath(path):
+                    self.prompt_image_widget.image = None
+                self.image_gallery.refresh()
+                PyFlameMessageWindow(
+                    message=f'Image was already removed:\n\n{os.path.basename(path)}',
+                    parent=self.main_window,
+                    )
                 return
 
             confirmed = PyFlameMessageWindow(
@@ -907,10 +1396,12 @@ class NanoBanana:
 
         # ------------------------------------------------------------------------------
 
+        # True while send_prompt or send_message is running
+        self.request_running = False
+
         self.main_window = PyFlameWindow(
             title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             parent=None,
-            return_pressed=send_prompt,
             escape_pressed=close_window,
             grid_layout_columns=12,
             grid_layout_rows=22,
@@ -946,10 +1437,17 @@ class NanoBanana:
         self.aspect_ratio_label = PyFlameLabel(
             text='Aspect Ratio',
             )
+        self.thinking_level_label = PyFlameLabel(
+            text='Thinking Level',
+            )
 
         # Entries
         self.banana_message_entry = PyFlameEntry(
             text='',
+            read_only=True,
+            )
+        self.images_path_entry = PyFlameEntry(
+            text=self.images_path,
             read_only=True,
             )
 
@@ -965,7 +1463,8 @@ class NanoBanana:
 
         # Image Gallery
         self.image_gallery = PyFlameImageGallery(
-            folder=self.settings.images_path,
+            folder=self.images_path,
+            extensions=list(PROMPT_IMAGE_MIME_TYPES),
             columns=4,
             show_info=True,
             image_selected=lambda path: setattr(self.banana_image_widget, 'image', path),
@@ -980,28 +1479,76 @@ class NanoBanana:
             text_style=TextStyle.READ_ONLY_SELECTABLE,
             )
 
+        # Return/Enter in the prompt field sends the prompt, Shift+Return adds a new line.
+        # Return anywhere else in the window sends nothing, so it can't send a paid request by accident.
+        self.prompt_return_filter = PromptReturnFilter(self.prompt_text_edit, lambda: run_request(send_prompt))
+        self.prompt_text_edit.installEventFilter(self.prompt_return_filter)
+
         def update_resolution_menu_for_model() -> None:
             """
             Update Resolution Menu for Model
             ================================
 
-            Set image_resolution_menu and aspect_ratio_menu options based on the selected model.
+            When the selected model changes, set image_resolution_menu and aspect_ratio_menu options
+            to the new model's options and reset both to the model's first option. The thinking level
+            is reset to the new model's default.
             """
 
-            model_options = IMAGE_MODELS.get(
-                self.select_model_menu.text.strip(),
-                IMAGE_MODELS[DEFAULT_IMAGE_MODEL],
-                )
+            # Picking the same model again keeps the current resolution, aspect ratio and thinking level
+            selected_model = self.select_model_menu.text
+            if selected_model == self.menu_model:
+                return
+            self.menu_model = selected_model
+
+            model_options = IMAGE_MODELS[selected_model]
 
             resolution_options = model_options['resolutions']
             aspect_ratio_options = model_options['aspect_ratios']
 
             self.image_resolution_menu.menu_options = resolution_options
-            if self.image_resolution_menu.text.strip() not in resolution_options:
-                self.image_resolution_menu.text = resolution_options[0]
+            self.image_resolution_menu.text = resolution_options[0]
             self.aspect_ratio_menu.menu_options = aspect_ratio_options
-            if self.aspect_ratio_menu.text.strip() not in aspect_ratio_options:
-                self.aspect_ratio_menu.text = aspect_ratio_options[0]
+            self.aspect_ratio_menu.text = aspect_ratio_options[0]
+            update_thinking_menu(model_options, model_options['default_thinking_level'])
+
+        def update_thinking_menu(model_options: dict, thinking_level: str | None) -> None:
+            """
+            Update Thinking Menu
+            ====================
+
+            Set thinking_level_menu options for a model. Use the model's default if thinking_level isn't valid for it.
+            For a model whose thinking level can't be set (Pro), disable the menu and show Always On.
+
+            Args
+            ----
+                model_options (dict):
+                    Model entry from IMAGE_MODELS.
+
+                thinking_level (str | None):
+                    Thinking level to show.
+            """
+
+            thinking_levels = model_options['thinking_levels']
+
+            if not thinking_levels:
+                self.thinking_level_menu.menu_options = [THINKING_ALWAYS_ON]
+                self.thinking_level_menu.text = THINKING_ALWAYS_ON
+                self.thinking_level_menu.enabled = False
+                return
+
+            if thinking_level not in thinking_levels:
+                thinking_level = model_options['default_thinking_level']
+
+            self.thinking_level_menu.menu_options = thinking_levels
+            self.thinking_level_menu.text = thinking_level
+            self.thinking_level_menu.enabled = True
+
+        # Saved model's options, load_config already replaced an unknown model with the default.
+        # Use the model's first option if a saved value isn't valid for that model.
+        self.menu_model = self.settings.model
+        model_options = IMAGE_MODELS[self.menu_model]
+        resolution = self.settings.resolution if self.settings.resolution in model_options['resolutions'] else model_options['resolutions'][0]
+        aspect_ratio = self.settings.aspect_ratio if self.settings.aspect_ratio in model_options['aspect_ratios'] else model_options['aspect_ratios'][0]
 
         # Menus
         self.select_model_menu = PyFlameMenu(
@@ -1010,11 +1557,19 @@ class NanoBanana:
             connect=update_resolution_menu_for_model,
             )
         self.image_resolution_menu = PyFlameMenu(
-            text=self.settings.resolution,
+            text=resolution,
+            menu_options=model_options['resolutions'],
             )
         self.aspect_ratio_menu = PyFlameMenu(
-            text=self.settings.aspect_ratio,
+            text=aspect_ratio,
+            menu_options=model_options['aspect_ratios'],
             )
+        self.thinking_level_menu = PyFlameMenu(
+            text='',
+            )
+
+        # Saved thinking level, or the model's default if it isn't valid for that model
+        update_thinking_menu(model_options, self.settings.thinking_level)
 
         # Buttons
         self.done_button = PyFlameButton(
@@ -1023,13 +1578,13 @@ class NanoBanana:
             )
         self.send_prompt_button = PyFlameButton(
             text='Send Prompt',
-            connect=send_prompt,
+            connect=lambda: run_request(send_prompt),
             color=Color.BLUE,
             tooltip='Send prompt to create an image with Nano Banana',
             )
         self.send_message_button = PyFlameButton(
             text='Gemini Chat',
-            connect=send_message,
+            connect=lambda: run_request(send_message),
             tooltip='Send message to chat with Gemini about creating an image',
             )
         self.clear_prompt_image_button = PyFlameButton(
@@ -1056,6 +1611,10 @@ class NanoBanana:
             text='Delete Image',
             connect=delete_image,
             )
+        self.change_path_button = PyFlameButton(
+            text='Change Path',
+            connect=self.path_selection,
+            )
 
         # ------------------------------------------------------------------------------
         # [Widget Layout]
@@ -1070,6 +1629,8 @@ class NanoBanana:
         self.main_window.grid_layout.addWidget(self.delete_button, 19, 1)
         self.main_window.grid_layout.addWidget(self.send_to_prompt_button, 18, 2)
         self.main_window.grid_layout.addWidget(self.clear_prompt_image_button, 19, 2)
+        self.main_window.grid_layout.addWidget(self.images_path_entry, 20, 0, 1, 3)
+        self.main_window.grid_layout.addWidget(self.change_path_button, 21, 0)
 
         self.main_window.grid_layout.addWidget(self.prompt_label, 0, 4, 1, 4)
         self.main_window.grid_layout.addWidget(self.prompt_history_text_edit, 1, 4, 5, 4)
@@ -1087,6 +1648,9 @@ class NanoBanana:
         self.main_window.grid_layout.addWidget(self.aspect_ratio_label, 19, 6)
         self.main_window.grid_layout.addWidget(self.aspect_ratio_menu, 19, 7)
 
+        self.main_window.grid_layout.addWidget(self.thinking_level_label, 20, 4)
+        self.main_window.grid_layout.addWidget(self.thinking_level_menu, 20, 5)
+
         self.main_window.grid_layout.addWidget(self.banana_image_label, 0, 9, 1, 3)
         self.main_window.grid_layout.addWidget(self.banana_image_widget, 1, 9, 17, 3)
         self.main_window.grid_layout.addWidget(self.banana_message_entry, 18, 9, 1, 3)
@@ -1096,9 +1660,6 @@ class NanoBanana:
 
         # ------------------------------------------------------------------------------
 
-        # UI Toggles
-        update_resolution_menu_for_model()
-
         # Set window focus to prompt text edit
         self.prompt_text_edit.set_focus()
 
@@ -1106,7 +1667,196 @@ class NanoBanana:
         if self.flame_image_exported:
             self.prompt_image_widget.image = self.exported_image_path
 
+        NanoBanana.open_window = self
+
         bananas()
+
+    @staticmethod
+    def get_open_window():
+        """
+        Get Open Window
+        ===============
+
+        Get the Nano Banana instance whose main window is open.
+
+        Returns
+        -------
+            open_window (NanoBanana | None): Instance with an open main window, or None if there isn't one.
+        """
+
+        # A closed window is deleted, so isVisible raises RuntimeError
+        try:
+            if NanoBanana.open_window and NanoBanana.open_window.main_window.isVisible():
+                return NanoBanana.open_window
+        except (AttributeError, RuntimeError):
+            pass
+
+        return None
+
+    def path_selection(self) -> None:
+        """
+        Path Selection
+        ==============
+
+        Path selection window for changing the images path from the main window.
+        """
+
+        # Bring open window to front instead of opening a second one. A closed window is deleted, so isVisible raises RuntimeError.
+        try:
+            if self.path_selection_window.isVisible():
+                self.path_selection_window.raise_()
+                self.path_selection_window.activateWindow()
+                return
+        except (AttributeError, RuntimeError):
+            pass
+
+        def browse_images_path() -> None:
+            """
+            Browse Images Path
+            ==================
+
+            Open Flame file browser to select images path.
+            """
+
+            images_path = pyflame.file_browser(
+                path=self.path_selection_entry.text,
+                title='Select Images Path',
+                select_directory=True,
+                window_to_hide=[self.main_window, self.path_selection_window],
+                )
+
+            if images_path:
+                self.path_selection_entry.text = str(images_path)
+
+        def save_path() -> None:
+            """
+            Save Path
+            =========
+
+            Save images path to config file and update the main window. Keep the old path if the entry is blank.
+            """
+
+            tokenized_path = self.path_selection_entry.text.strip()
+
+            # Keep old path if entry is blank
+            if not tokenized_path:
+                self.path_selection_window.close()
+                return
+
+            # Save tokenized path so the token is what gets saved
+            old_tokenized_path = self.settings.images_path
+            try:
+                # Resolve before saving so a path that can't be resolved saves nothing
+                pyflame.resolve_tokens(tokenized_string=tokenized_path)
+
+                self.settings.save_config(
+                    config_values={
+                        'images_path': tokenized_path,
+                        }
+                    )
+            except Exception as e:
+                # Put old path back so a later save doesn't write the new one
+                self.settings.images_path = old_tokenized_path
+                PyFlameMessageWindow(
+                    message=f'Unable to save the images path:\n\n{tokenized_path}\n\n{e}',
+                    message_type=MessageType.ERROR,
+                    parent=self.path_selection_window,
+                    )
+                return
+
+            self.set_images_path(tokenized_path)
+
+            self.path_selection_window.close()
+
+        def close_window() -> None:
+
+            self.path_selection_window.close()
+
+        # ------------------------------------------------------------------------------
+
+        self.path_selection_window = PyFlameWindow(
+            title=f'{SCRIPT_NAME}: Path Selection <small>{SCRIPT_VERSION}',
+            parent=None,
+            return_pressed=save_path,
+            escape_pressed=close_window,
+            grid_layout_columns=6,
+            grid_layout_rows=3,
+            window_margins=15,
+            )
+
+        # Labels
+        self.path_selection_label = PyFlameLabel(
+            text='Images Path',
+            )
+
+        # Entries
+        self.path_selection_entry = PyFlameEntry(
+            text=self.settings.images_path,
+            )
+
+        # Menus
+        self.path_selection_token_menu = PyFlameTokenMenu(
+            token_dest=self.path_selection_entry,
+            token_dict={
+                'Project Name': '<ProjectName>',
+                'Project Nick Name': '<ProjectNickName>',
+                }
+            )
+
+        # Buttons
+        self.path_selection_browse_button = PyFlameButton(
+            text='Browse',
+            color=Color.GRAY,
+            connect=browse_images_path,
+            )
+        self.path_selection_cancel_button = PyFlameButton(
+            text='Cancel',
+            color=Color.GRAY,
+            connect=close_window,
+            )
+        self.path_selection_save_button = PyFlameButton(
+            text='Save',
+            color=Color.BLUE,
+            connect=save_path,
+            )
+
+        # ------------------------------------------------------------------------------
+        # [Widget Layout]
+        # ------------------------------------------------------------------------------
+
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_label, 0, 0)
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_entry, 0, 1, 1, 3)
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_browse_button, 0, 4)
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_token_menu, 0, 5)
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_cancel_button, 2, 4)
+        self.path_selection_window.grid_layout.addWidget(self.path_selection_save_button, 2, 5)
+
+        self.path_selection_entry.set_focus()
+
+    def set_images_path(self, tokenized_path: str) -> None:
+        """
+        Set Images Path
+        ===============
+
+        Update the main window with a new images path: settings, path field and gallery.
+
+        Args
+        ----
+            tokenized_path (str): New images path, may contain tokens.
+        """
+
+        images_path = pyflame.resolve_tokens(tokenized_string=tokenized_path)
+
+        # Keep settings tokenized so a later Done saves the token, not this project's path
+        self.settings.images_path = tokenized_path
+        self.images_path = images_path
+        self.images_path_entry.text = self.images_path
+        self.image_gallery.folder = self.images_path
+
+        # Setting the folder doesn't rebuild the thumbnails, so refresh to show the new folder's images
+        self.image_gallery.refresh()
+
+        pyflame.print(f'Images Path: {self.images_path}')
 
 class NanoBananaSetup:
 
@@ -1146,11 +1896,18 @@ class NanoBananaSetup:
             Open Flame file browser to select images path.
             """
 
+            # Also hide an open Nano Banana window, Flame's file browser opens behind Qt windows
+            windows_to_hide = []
+            nano_banana = NanoBanana.get_open_window()
+            if nano_banana:
+                windows_to_hide.append(nano_banana.main_window)
+            windows_to_hide.append(self.setup_window)
+
             images_path = pyflame.file_browser(
                 path=self.images_path_entry.text,
                 title='Select Images Path',
                 select_directory=True,
-                window_to_hide=self.setup_window,
+                window_to_hide=windows_to_hide,
                 )
 
             if images_path:
@@ -1192,6 +1949,12 @@ class NanoBananaSetup:
                     'images_path': self.images_path_entry.text,
                     }
                 )
+
+            # Update open Nano Banana window with new key and path so its requests and later saves use them
+            nano_banana = NanoBanana.get_open_window()
+            if nano_banana:
+                nano_banana.settings.api_key = self.api_key_entry.text
+                nano_banana.set_images_path(self.images_path_entry.text)
 
             self.setup_window.close()
 
