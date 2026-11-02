@@ -1,10 +1,10 @@
 # User Batch Setups
 
-**Script Version:** 1.9.0  
+**Script Version:** 1.10.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 03.29.22  
-**Update Date:** 05.25.26  
+**Update Date:** 11.02.26  
 
 **Script Type:** Batch
 
@@ -20,14 +20,14 @@ Setup menus are automatically regenerated each time Flame starts up.
 
 ## URL
 
-https://logik-portal.com/scripts/#user_batch_setups
+https://logik-portal.com/scripts/user_batch_setups
 
 ## Menus
 
 ### Setup
-- Flame Main Menu → pyFlame → User Batch Setups - Setup
+- Flame Main Menu → Logik → Logik Portal Script Setup → User Batch Setups: Setup
 ### To refresh/update menus
-- Flame Main Menu → pyFlame → User Batch Setups - Refresh Menus
+- Flame Main Menu → Logik → Logik Portal Script Setup → User Batch Setups: Refresh Menus
 ### To access batch setup menus
 - Right-click in batch → User Batch Setups → Setup Name
 
@@ -36,6 +36,15 @@ https://logik-portal.com/scripts/#user_batch_setups
 Copy script folder into /opt/Autodesk/shared/python
 
 ## Updates
+
+### v1.10.0 [11.02.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+- Fixed the menu paths in the setup path error message and in the Menus section of this docstring. They now match the real menu: Logik -> Logik Portal Script Setup.
+- Fixed one unreadable batch setup stopping the menu refresh and removing the other menus. Unreadable setups are now skipped and listed in one message. If no setup can be read, the menus are left as they were.
+- Fixed two setups with the same name (for example comp.batch and comp.flare.batch) writing to the same menu. The first is kept and the other is skipped.
+- Fixed messages popping up at every Flame startup when the setups folder is missing or has no setups. These are now only printed to the console at startup.
+<br>
 
 ### v1.9.0 [05.25.26]
 - Updated to PyFlameLib v5.3.2.

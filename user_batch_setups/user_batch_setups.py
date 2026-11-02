@@ -1,31 +1,21 @@
 # User Batch Setups
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: User Batch Setups
-Script Version: 1.9.0
+Script Version: 1.10.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 03.29.22
-Update Date: 05.25.26
+Update Date: 11.02.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Batch
 
@@ -41,15 +31,15 @@ Description:
 
 URL:
 
-    https://logik-portal.com/scripts/#user_batch_setups
+    https://logik-portal.com/scripts/user_batch_setups
 
 Menus:
 
     Setup:
-        Flame Main Menu -> pyFlame -> User Batch Setups - Setup
+        Flame Main Menu -> Logik -> Logik Portal Script Setup -> User Batch Setups: Setup
 
     To refresh/update menus:
-        Flame Main Menu -> pyFlame -> User Batch Setups - Refresh Menus
+        Flame Main Menu -> Logik -> Logik Portal Script Setup -> User Batch Setups: Refresh Menus
 
      To access batch setup menus:
         Right-click in batch -> User Batch Setups -> Setup Name
@@ -59,6 +49,19 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v1.10.0 11.02.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+        - Fixed the menu paths in the setup path error message and in the Menus section of this
+          docstring. They now match the real menu: Logik -> Logik Portal Script Setup.
+        - Fixed one unreadable batch setup stopping the menu refresh and removing the other menus.
+          Unreadable setups are now skipped and listed in one message. If no setup can be read,
+          the menus are left as they were.
+        - Fixed two setups with the same name (for example comp.batch and comp.flare.batch) writing
+          to the same menu. The first is kept and the other is skipped.
+        - Fixed messages popping up at every Flame startup when the setups folder is missing or has
+          no setups. These are now only printed to the console at startup.
 
     v1.9.0 05.25.26
         - Updated to PyFlameLib v5.3.2.
@@ -101,6 +104,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -113,7 +118,7 @@ from lib.pyflame_lib_user_batch_setups import *
 # ==============================================================================
 
 SCRIPT_NAME = 'User Batch Setups'
-SCRIPT_VERSION = 'v1.9.0'
+SCRIPT_VERSION = 'v1.10.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -291,26 +296,97 @@ class UserSetups:
         ====================
 
         Refresh menus folder by deleting existing menus and creating new menus for all batch setups found in batch setup path.
+
+        Setups are read before the menus folder is cleared. Unreadable setups, and setups with the same menu name as an
+        earlier setup, are skipped and listed in one message at the end.
         """
+
+        def show_message(message: str, message_type=MessageType.INFO) -> None:
+            """
+            Show Message
+            ============
+
+            Show message window, or print message to the console as a warning at Flame startup.
+
+            Args
+            ----
+                message (str):
+                    Message to show.
+
+                message_type (MessageType):
+                    Message window type.
+            """
+
+            if startup_refresh:
+                pyflame.print(message.replace('\n\n', ' '), print_type=PrintType.WARNING)
+            else:
+                PyFlameMessageWindow(
+                    message=message,
+                    message_type=message_type,
+                    parent=None,
+                    )
+
+        def skipped_list() -> str:
+            """
+            Skipped List
+            ============
+
+            Build list of skipped setups for the end message.
+
+            Returns
+            -------
+                skipped_text (str): One line per skipped setup with its reason.
+            """
+
+            return '\n'.join(f'{file_name}: {reason}' for file_name, reason in skipped_setups)
 
         # Check batch setup path, if path not found give error
         if not os.path.isdir(self.settings.setup_path):
-            PyFlameMessageWindow(
-                message='Batch setup path not found.\n\nCheck path in script setup.\n\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> User Setups Setup',
-                parent=None,
-                )
+            show_message('Batch setup path not found.\n\nCheck path in script setup.\n\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> User Batch Setups: Setup')
+
             return
 
-        # Check for batch setups in batch setup path, if none found give error
-        batch_setups = [f for f in os.listdir(self.settings.setup_path) if f.endswith('.batch')]
+        # Check for batch setups in batch setup path, if none found give error. Ignore macOS AppleDouble (._) files
+        batch_setups = sorted((f for f in os.listdir(self.settings.setup_path) if f.endswith('.batch') and not f.startswith('._')), key=str.lower)
         if not batch_setups:
-            PyFlameMessageWindow(
-                message='No batch setups found.\n\nNo menus to create/update.',
-                parent=None,
-                )
+            show_message('No batch setups found.\n\nNo menus to create/update.')
+
             return
 
         pyflame.print('Refreshing User Batch Menus')
+
+        # Read every setup before clearing menus so one bad setup can't remove the other menus
+        good_setups = []
+        skipped_setups = []
+        menu_names = {}
+
+        for file_name in batch_setups:
+            batch_name = file_name.split('.', 1)[0]
+            batch_path = os.path.join(self.settings.setup_path, file_name)
+
+            # Skip setups that would write over an earlier setup's menu. Names are compared case-insensitively for case-insensitive volumes
+            if batch_name.lower() in menu_names:
+                reason = f'Same menu name as {menu_names[batch_name.lower()]}'
+                pyflame.print(f'Skipping {file_name}: {reason}', print_type=PrintType.WARNING)
+                skipped_setups.append((file_name, reason))
+                continue
+
+            try:
+                batch_version = self.get_batch_version(batch_path)
+            except Exception as e:
+                reason = f'Could not read setup ({e})'
+                pyflame.print(f'Skipping {file_name}: {reason}', print_type=PrintType.WARNING)
+                skipped_setups.append((file_name, reason))
+                continue
+
+            menu_names[batch_name.lower()] = file_name
+            good_setups.append((file_name, batch_path, batch_name, batch_version))
+
+        # Leave existing menus alone if no setups could be read
+        if not good_setups:
+            show_message(f'No readable batch setups found. Menus were not changed.\n\nSkipped setups:\n\n{skipped_list()}', MessageType.ERROR)
+
+            return
 
         # Delete existing menus and recreate menus folder
         shutil.rmtree(self.menu_path)
@@ -323,16 +399,27 @@ class UserSetups:
 
         print_action_header('Generating User Batch Menus')
 
-        for f in os.listdir(self.settings.setup_path):
-            if f.endswith('.batch'):
-                self.create_menu(os.path.join(self.settings.setup_path, f), f.split('.', 1)[0])
+        menus_created = 0
+
+        for file_name, batch_path, batch_name, batch_version in good_setups:
+            try:
+                self.create_menu(batch_path, batch_name, batch_version)
+                menus_created += 1
+            except Exception as e:
+                reason = f'Could not write menu ({e})'
+                pyflame.print(f'Skipping {file_name}: {reason}', print_type=PrintType.WARNING)
+                skipped_setups.append((file_name, reason))
         print('-' * 80, '\n')
 
         # Refresh python hooks
         pyflame.refresh_hooks()
 
-        # Give user message that setup menus have been updated
-        if not startup_refresh:
+        # Give user message that setup menus have been updated, listing any skipped setups
+        if not menus_created:
+            show_message(f'No menus could be created.\n\nSkipped setups:\n\n{skipped_list()}', MessageType.ERROR)
+        elif skipped_setups:
+            show_message(f'User Batch Menus Updated\n\nSkipped setups:\n\n{skipped_list()}', MessageType.ERROR)
+        elif not startup_refresh:
             PyFlameMessageWindow(
                 message='User Batch Menus Updated',
                 parent=None,
@@ -340,7 +427,49 @@ class UserSetups:
         else:
             pyflame.print('User Batch Menus Updated')
 
-    def create_menu(self, batch_path, batch_name) -> None:
+    def get_batch_version(self, batch_path: str) -> str:
+        """
+        Get Batch Version
+        =================
+
+        Read the Flame version a batch setup was saved with. Any .pr suffix is removed.
+
+        Args
+        ----
+            batch_path (str): Path to the batch setup file.
+
+        Returns
+        -------
+            batch_version (str): Flame version of the batch setup.
+
+        Raises
+        ------
+            OSError:
+                If the batch setup file can't be read.
+
+            ET.ParseError:
+                If the batch setup isn't valid XML.
+
+            ValueError:
+                If the batch setup has no Flame version.
+        """
+
+        # Read flame version from batch setup file
+        xml_tree = ET.parse(batch_path)
+        root = xml_tree.getroot()
+
+        xml_version = root.find('.//Version')
+        if xml_version is None or not xml_version.text:
+            raise ValueError('Flame version not found')
+
+        batch_version = str(xml_version.text)
+
+        if 'pr' in batch_version:
+            batch_version = batch_version.rsplit('.pr', 1)[0]
+
+        return batch_version
+
+    def create_menu(self, batch_path, batch_name, batch_version) -> None:
         """
         Create Menu
         ===========
@@ -351,20 +480,6 @@ class UserSetups:
         #print (f'    {batch_name}')
         name = batch_name.replace('_', ' ').title()
         pyflame.print(f'{name}', new_line=False)
-
-        # Read flame version from batch setup file
-        xml_tree = ET.parse(batch_path)
-        root = xml_tree.getroot()
-
-        xml_version = root.find('.//Version')
-        if xml_version is not None:
-            batch_version = str(xml_version.text)
-        else:
-            pyflame.print(f'Batch version not found for {batch_name}. Skipping...', text_color=TextColor.YELLOW)
-            return
-
-        if 'pr' in batch_version:
-            batch_version = batch_version.rsplit('.pr', 1)[0]
 
         # Create menu for batch with menu minimum version set to flame version
         # Read menu template file
