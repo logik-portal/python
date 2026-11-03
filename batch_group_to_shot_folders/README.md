@@ -1,10 +1,10 @@
 # Batch Group To Shot Folders
 
-**Script Version:** 1.0.0  
+**Script Version:** 1.1.0  
 **Flame Version:** 2025.1  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.02.26  
-**Update Date:** 06.11.26  
+**Update Date:** 11.02.26  
 
 ## Description
 
@@ -44,22 +44,36 @@ ShotName: PYT_0010
 ShotName: PYT0010
 ShotName: PYT010
 <br><br>
+If a batch group with the same name is already in the destination folder, choose Replace, Replace All, Add or Cancel.
+Batch groups already in their destination folder are skipped, and batch groups in the selection are never replaced.
+<br><br>
 Script menu will not show up if the current tab is MediaHub.
+
+## URL
+
+https://logik-portal.com/scripts/batch_group_to_shot_folders
 
 ## Menus
 
 ### Setup
-- Flame Main Menu →  Logik → Logik Portal Script Setup → Batch Groups to Folders Setup
+- Flame Main Menu →  Logik → Logik Portal Script Setup → Batch Group to Shot Folders Setup
 ### To Move Batch Groups
-- Right-click on selected batch groups in Media Panel/Desktop → Move Batch Groups to Folders
+- Right-click on selected batch groups in Media Panel/Desktop → Batch Group to Shot Folders → Move to Shot Folders
 ### To Copy Batch Groups
-- Right-click on selected batch groups in Media Panel/Desktop → Copy Batch Groups to Folders
+- Right-click on selected batch groups in Media Panel/Desktop → Batch Group to Shot Folders → Copy to Shot Folders
 
 ## Installation
 
 Copy script into /opt/Autodesk/shared/python/batch_group_to_shot_folders
 
 ## Updates
+
+### v1.1.0 [11.02.26]
+- Fixed Replace deleting a selected batch group when a same-named batch group in the selection is processed first. Batch groups in the selection are never deleted.
+- Fixed Replace deleting a batch group that is already in its destination folder. Batch groups already in their destination folder are now skipped.
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+<br>
 
 ### v1.0.0 [06.11.26]
 - Initial release.

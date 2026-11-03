@@ -1,16 +1,31 @@
+# Batch Group to Shot Folders
+# Copyright (c) 2026 Michael Vaglienty
+#
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
+#
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
+
 """
 Script Name: Batch Group to Shot Folders
-Script Version: 1.0.0
+Script Version: 1.1.0
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 06.02.26
-Update Date: 06.11.26
+Update Date: 11.02.26
+
+License: MIT License (MIT) - see LICENSE file for details
 
 Custom Action Type: Media Panel
 
 Description:
 
     Copy or Move selected batch groups to folders in the Media Panel using a tokenized path.
+
+URL:
+
+    https://logik-portal.com/scripts/batch_group_to_shot_folders
 
 Usage:
 
@@ -46,24 +61,33 @@ Usage:
         ShotName: PYT0010
         ShotName: PYT010
 
+    If a batch group with the same name is already in the destination folder, choose Replace, Replace All, Add or Cancel.
+    Batch groups already in their destination folder are skipped, and batch groups in the selection are never replaced.
+
     Script menu will not show up if the current tab is MediaHub.
 
 Menus:
 
     Setup:
-        Flame Main Menu ->  Logik -> Logik Portal Script Setup -> Batch Groups to Folders Setup
+        Flame Main Menu ->  Logik -> Logik Portal Script Setup -> Batch Group to Shot Folders Setup
 
     To Move Batch Groups:
-        Right-click on selected batch groups in Media Panel/Desktop -> Move Batch Groups to Folders
+        Right-click on selected batch groups in Media Panel/Desktop -> Batch Group to Shot Folders -> Move to Shot Folders
 
     To Copy Batch Groups:
-        Right-click on selected batch groups in Media Panel/Desktop -> Copy Batch Groups to Folders
+        Right-click on selected batch groups in Media Panel/Desktop -> Batch Group to Shot Folders -> Copy to Shot Folders
 
 To install:
 
     Copy script into /opt/Autodesk/shared/python/batch_group_to_shot_folders
 
 Updates:
+
+    v1.1.0 11.02.26
+        - Fixed Replace deleting a selected batch group when a same-named batch group in the selection is processed first. Batch groups in the selection are never deleted.
+        - Fixed Replace deleting a batch group that is already in its destination folder. Batch groups already in their destination folder are now skipped.
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v1.0.0 06.11.26
         - Initial release.
@@ -72,6 +96,8 @@ Updates:
 # ==============================================================================
 # [Imports]
 # ==============================================================================
+
+from __future__ import annotations
 
 import os
 import re
@@ -84,7 +110,7 @@ from lib.pyflame_lib_batch_group_to_shot_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Batch Group to Shot Folders'
-SCRIPT_VERSION = 'v1.0.0'
+SCRIPT_VERSION = 'v1.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -481,15 +507,18 @@ class ToShotFolders:
 
             flame.media_panel.copy(source, dest)
 
-        def remove_existing_batch_groups(dest_folder, batch_name) -> None:
+        def remove_existing_batch_groups(dest_folder, batch_name, selected_batches) -> None:
             """
             Remove Existing Batch Groups
             ============================
 
-            Remove existing batch groups in destination folder if overwrite is enabled and batch group name matches
+            Remove existing batch groups in destination folder if overwrite is enabled and batch group name matches.
+            Never removes a batch group that is part of the current selection.
             """
 
             for batch in dest_folder.batch_groups:
+                if batch in selected_batches:
+                    continue
                 if str(batch.name)[1:-1] == batch_name:
                     print('Removing existing batch in dest:', str(batch.name)[1:-1])
                     flame.delete(batch)
@@ -513,10 +542,20 @@ class ToShotFolders:
             print('Batch Group Dest:', batch_group_dest)
 
             if batch_group_dest:
-                # Check if batch group already exists in destination folder
+                # Skip batch group if it's already in its destination folder so it can't be matched as its own duplicate
+                if batch.parent == batch_group_dest:
+                    pyflame.print(
+                        f'Batch group already in destination folder, skipping: {batch_name}',
+                        text_color=TextColor.YELLOW,
+                        )
+                    continue
+
+                # Check if batch group already exists in destination folder, ignoring batch groups in the current selection
                 duplicate_exists = False
                 if batch_group_dest.batch_groups:
                     for dest_batch in batch_group_dest.batch_groups:
+                        if dest_batch in self.selection:
+                            continue
                         if str(dest_batch.name)[1:-1] == batch_name:
                             duplicate_exists = True
                             break
@@ -524,7 +563,7 @@ class ToShotFolders:
                 if duplicate_exists:
                     if replace_all:
                         # Replace All previously selected, overwrite without prompting
-                        remove_existing_batch_groups(batch_group_dest, batch_name)
+                        remove_existing_batch_groups(batch_group_dest, batch_name, self.selection)
                     else:
                         prompt = PyFlameOptionWindow(
                             message=f'Batch Group {batch_name} already exists in destination folder.',
@@ -543,10 +582,10 @@ class ToShotFolders:
                             cancelled = True
                             break
                         elif prompt.selected == 'Replace':
-                            remove_existing_batch_groups(batch_group_dest, batch_name)
+                            remove_existing_batch_groups(batch_group_dest, batch_name, self.selection)
                         elif prompt.selected == 'Replace All':
                             replace_all = True
-                            remove_existing_batch_groups(batch_group_dest, batch_name)
+                            remove_existing_batch_groups(batch_group_dest, batch_name, self.selection)
                         elif prompt.selected == 'Add':
                             # Leave the existing batch group in place and add alongside it
                             pass
