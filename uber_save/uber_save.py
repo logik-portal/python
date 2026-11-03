@@ -1,51 +1,44 @@
-# Rename Shots
+# Uber Save
 # Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
-
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
+ 
 """
 Script Name: Uber Save
-Script Version: 5.1.0
+Script Version: 5.2.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 07.28.19
-Update Date: 08.18.26
+Update Date: 11.02.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
-Custom Action Type: Batch / Media Panel
+Script Type: Batch / Media Panel
 
 Description:
 
-    Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop or an
-    open batch group in the batch view.
+    Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop, a library
+    or a library folder, or an open batch group in the batch view.
 
 Usage:
 
-    To save batch groups to a custom path, create a new path in the script setup window(Flame Main Menu -> Logik -> Logik Portal Script Setup ->
+    To save batch groups to a custom path, create a new path in the script setup window (Flame Main Menu -> Logik -> Logik Portal Script Setup ->
     Uber Save Setup) then select it in the dropdown menu and save.
 
     If multiple paths have been created, the one selected in the dropdown menu will be used to save batch groups.
 
+    Batch groups in a library or library folder can't be saved where they are. Each one is moved to the desktop,
+    saved, and moved back to its library or folder, one at a time in the order they were selected. Nothing is
+    copied or deleted. When done, batch switches back to the batch group that was open before.
+
     The path can be tokenized using the following tokens:
         <ProjectName> - Adds name of current Flame project to path
-        <ProjectNickName> - Adds Flame project nicknick to path
-        <DesktopName> - Adds name of current desktop to path
-        <SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
+        <ProjectNickName> - Adds Flame project nickname to path
+        <SeqName> - Will try to guess shot sequence name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
         <SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
         <ShotName> - Adds shot name to path. Will first try getting shot name from batch group tag, then render/write node, then it will try to
                      guess shot name from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
@@ -57,19 +50,19 @@ Usage:
 
 URL:
 
-    https://github.com/logik-portal/python/uber_save
+    https://logik-portal.com/scripts/uber_save
 
 Menus:
 
     Flame Main Menu -> Logik -> Logik Portal Script Setup -> Uber Save Setup
 
-    Right-click selected batchgroups in desktop -> Uber Save... -> Save Selected Batchgroups
-    Right-click selected batchgroups in desktop -> Uber Save... -> Iterate and Save Selected Batchgroups
+    Right-click selected batchgroups in Media Panel -> Uber Save... -> Save Selected Batchgroups
+    Right-click selected batchgroups in Media Panel -> Uber Save... -> Iterate and Save Selected Batchgroups
 
-    Right-click on desktop in media panel -> Uber Save... -> Save All Batchgroups
+    Right-click on Desktop in Media Panel -> Uber Save... -> Save All Batchgroups
 
-    Right-click in batch -> Uber Save... -> Save Current Batchgroup
-    Right-click in batch -> Uber Save... -> Iterate and Save Current Batchgroup
+    Right-click in Batch -> Uber Save... -> Save Current Batchgroup
+    Right-click in Batch -> Uber Save... -> Iterate and Save Current Batchgroup
 
 To install:
 
@@ -77,9 +70,34 @@ To install:
 
 Updates:
 
+    v5.2.0 11.02.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+        - Save Selected / Iterate and Save Selected now work on batch groups in libraries and folders:
+          each one is moved to the Desktop, saved, and moved back, one at a time in selection order.
+        - A save path with a token that resolves to nothing (such as an empty project nickname) or a
+          token that can't be resolved is now reported as an error instead of saving to the wrong
+          folder or creating a folder named after the token.
+        - The Setup window can't be used while the New / Edit / Duplicate path window is open.
+        - Duplicating a duplicated path no longer stacks the names. Duplicates are named Copy, Copy 2,
+          Copy 3 and so on.
+        - Browse in the New / Edit / Duplicate path window now starts at the path being edited.
+        - Items in the selection that aren't batch groups are now skipped with a warning in the
+          console. Before, folders named after the path tokens were created for them and the save
+          failed with a misleading error.
+        - Saving a path with the name of another saved path now shows an error instead of replacing
+          that path. Spaces at the start and end of path names and paths are removed.
+        - Fixed a failed save being reported as saved. A save folder that can't be written to is now
+          reported before the batch group is iterated, and a batch setup that isn't saved is reported
+          as an error.
+        - Delete in Setup now asks for confirmation, and no longer selects and saves another path when
+          the selected path is deleted. No path is selected until one is chosen and saved.
+        - A saved path is now selected when no path is selected, so saving works without clicking Save
+          in Setup.
+
     v5.1.0 08.18.26
         - Simplified/improved the process of creating and saving paths further.
-        - Updated to PyFlameLib v5.6.0.
+        - Updated to PyFlameLib v5.5.0.
 
     v5.0.0 06.07.25
         - Updated to PyFlameLib v5.0.0.
@@ -168,6 +186,8 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
 import re
 
@@ -179,7 +199,7 @@ from lib.pyflame_lib_uber_save import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Uber Save'
-SCRIPT_VERSION = 'v5.1.0'
+SCRIPT_VERSION = 'v5.2.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -224,6 +244,33 @@ class UberSaveSetup:
 
     def setup(self) -> None:
 
+        def duplicate_name(source_name: str) -> str:
+            """
+            Duplicate Name
+            ==============
+
+            Get a unique name for a duplicated path. A trailing ' Copy' or ' Copy <n>' is removed from the source
+            name first so names don't stack ('Foo Copy Copy').
+
+            Args
+            ----
+                source_name (str): Name of the path being duplicated.
+
+            Returns
+            -------
+                new_name (str): First of 'base Copy', 'base Copy 2', 'base Copy 3'... not used by a saved path.
+            """
+
+            base_name = re.sub(r' Copy( \d+)?$', '', source_name)
+
+            new_name = f'{base_name} Copy'
+            copy_number = 2
+            while new_name in self.settings.paths:
+                new_name = f'{base_name} Copy {copy_number}'
+                copy_number += 1
+
+            return new_name
+
         def paths_window(type: str) -> None:
             """
             New Edit Window
@@ -242,7 +289,7 @@ class UberSaveSetup:
                     Check settings for errors and return True if all is good.
                     """
 
-                    if path_name_entry.text == '':
+                    if path_name == '':
                         PyFlameMessageWindow(
                             message='Enter path name.',
                             message_type=MessageType.ERROR,
@@ -250,7 +297,7 @@ class UberSaveSetup:
                         )
                         return False
 
-                    if tokenized_path_entry.text == '':
+                    if tokenized_path == '':
                         PyFlameMessageWindow(
                             message='Enter tokenized path.',
                             message_type=MessageType.ERROR,
@@ -258,16 +305,25 @@ class UberSaveSetup:
                         )
                         return False
 
+                    # Don't replace another saved path with the same name
+                    if path_name in self.settings.paths and not (type == 'Edit' and path_name == original_path_name):
+                        PyFlameMessageWindow(
+                            message=f'A path named {path_name} already exists. Enter a different name.',
+                            message_type=MessageType.ERROR,
+                            parent=paths_window,
+                        )
+                        return False
+
                     return True
+
+                # Get new values. Strip spaces, the saved paths menu drops leading spaces from names.
+                path_name = path_name_entry.text.strip()
+                tokenized_path = tokenized_path_entry.text.strip()
 
                 # Check settings, if not ok, return
                 settings_verify = settings_check()
                 if not settings_verify:
                     return
-
-                # Get new values
-                path_name = path_name_entry.text
-                tokenized_path = tokenized_path_entry.text
 
                 # Delete old path in config file if path name has changed and we're in edit mode.
                 if type == 'Edit' and original_path_name != path_name:
@@ -285,6 +341,11 @@ class UberSaveSetup:
                     'path_name': path_name,
                     'tokenized_path': tokenized_path,
                     }
+
+                # Select this path if no valid path is selected, so save actions don't fail
+                if self.settings.selected_path_name not in self.settings.paths:
+                    self.settings.selected_path_name = path_name
+
                 self.settings.save_config()
 
                 # Update saved paths menu
@@ -304,11 +365,22 @@ class UberSaveSetup:
                 Path Browse
                 ===========
 
-                Browse for custom path and set custom path entry to selected path.
+                Browse for custom path and set custom path entry to selected path. Start at the path being
+                edited, cut at the first token and moved up to the nearest existing folder.
                 """
 
+                # Get the nearest existing folder of the path being edited
+                browse_path = tokenized_path_entry.text.split('<', 1)[0].strip()
+                while browse_path and not os.path.isdir(browse_path):
+                    parent_path = os.path.dirname(browse_path)
+                    if parent_path == browse_path:
+                        break
+                    browse_path = parent_path
+                if not browse_path or not os.path.isdir(browse_path):
+                    browse_path = '/'
+
                 file_path = pyflame.file_browser(
-                    path=self.selected_path_entry.text,
+                    path=browse_path,
                     title='Select Directory',
                     select_directory=True,
                     window_to_hide=[self.setup_window, paths_window],
@@ -330,7 +402,7 @@ class UberSaveSetup:
                 tokenized_path = ''
                 original_path_name = ''
             elif type == 'Duplicate':
-                path_name = pyflame.generate_unique_name(value=self.saved_paths_menu.text, existing_names=list(self.settings.paths.keys()))
+                path_name = duplicate_name(self.saved_paths_menu.text)
                 original_path_name = path_name
                 tokenized_path = self.selected_path_entry.text
             else:
@@ -348,6 +420,12 @@ class UberSaveSetup:
                 grid_layout_rows=4,
                 parent=self.setup_window,
                 )
+
+            # Block the Setup window while this window is open. PyFlameWindow is already shown, and Qt only
+            # applies a modality change when the window is shown again.
+            paths_window.hide()
+            paths_window.setWindowModality(QtCore.Qt.WindowModal)
+            paths_window.show()
 
             # Labels
             path_name_label = PyFlameLabel(
@@ -458,31 +536,46 @@ class UberSaveSetup:
             Delete Path
             ===========
 
-            Delete selected path from config file and update saved paths menu. If no path is selected, print error message.
+            Ask for confirmation, then delete selected path from config file and update saved paths menu. Deleting the
+            selected path clears the selection. If no path is selected, print error message.
             """
 
             if self.saved_paths_menu.text == '':
                 pyflame.print('No path to delete.')
             else:
-                self.settings.paths.pop(self.saved_paths_menu.text)
+                path_name = self.saved_paths_menu.text
+                deleting_selected = path_name == self.settings.selected_path_name
 
+                # Confirm delete
+                message = f'Delete path: {path_name}?'
+                if deleting_selected:
+                    message += '\n\nThis is the selected path. Uber Save will have no path selected until Save is clicked in this window.'
+
+                if not PyFlameMessageWindow(
+                    message=message,
+                    message_type=MessageType.WARNING,
+                    parent=self.setup_window,
+                    ):
+                    return
+
+                self.settings.paths.pop(path_name)
+
+                # Clear the saved selection if it was deleted so save actions don't use another path
+                if deleting_selected:
+                    self.settings.selected_path_name = ''
+
+                self.settings.save_config()
+
+                # Show the saved selection if it still exists, otherwise the menu falls back to a remaining path
                 self.saved_paths_menu.update_menu(
-                    text=self.settings.selected_path_name,
+                    text=self.settings.selected_path_name if self.settings.paths else '',
                     menu_options=list(self.settings.paths.keys()),
                     connect=update_selected_path_entry,
                     )
 
-                # Menu falls back to a remaining path, or empty when none are left.
-                # Save that so the config doesn't point at a deleted path.
-                self.settings.save_config(
-                    config_values={
-                        'selected_path_name': self.saved_paths_menu.text,
-                        }
-                    )
-
                 self.selected_path_entry.text = self.settings.paths.get(self.saved_paths_menu.text, {}).get('tokenized_path', ' ')
 
-                pyflame.print(f'SelectedPath Deleted: {self.saved_paths_menu.text}')
+                pyflame.print(f'Path Deleted: {path_name}')
 
         def duplicate_path() -> None:
             """
@@ -674,7 +767,8 @@ class UberSave:
         Raises
         ------
             OSError:
-                If the resolved path could not be created.
+                If a path token could not be resolved, a token resolved to nothing, or the resolved path
+                could not be created.
         """
 
         print('Resolving Batch Save Path...\n')
@@ -682,6 +776,17 @@ class UberSave:
         resolved_save_path = pyflame.resolve_tokens(
             tokenized_string=self.batch_path,
             flame_pyobject=batch_group,)
+
+        # Stop before creating folders if a token wasn't resolved
+        unresolved_tokens = re.findall(r'<[^<>/]+>', resolved_save_path)
+        if unresolved_tokens:
+            raise OSError(f'Path token not resolved: {", ".join(unresolved_tokens)}')
+
+        # Stop before creating folders if a token resolved to nothing, so setups aren't saved a folder too high
+        tokenized_parts = self.batch_path.rstrip('/').split('/')
+        resolved_parts = resolved_save_path.rstrip('/').split('/')
+        if '' not in tokenized_parts[1:] and ('' in resolved_parts[1:] or len(resolved_parts) < len(tokenized_parts)):
+            raise OSError('Part of the save path resolved to nothing. Check the tokens in the path, for example an empty Flame project nickname with <ProjectNickName>, or <SEQNAME> / <SeqName> with a batch group name that starts with a number.')
 
         os.makedirs(resolved_save_path, exist_ok=True)
 
@@ -711,6 +816,9 @@ class UberSave:
 
         Raises
         ------
+            OSError:
+                If the save folder is not writable or the batch setup could not be saved.
+
             Exception:
                 If the batch group could not be saved. Handled by save_batch_groups.
         """
@@ -718,6 +826,10 @@ class UberSave:
         selected_batch_name = str(batch_group.name)[1:-1]
         pyflame.print(f'Saving Batch Group: {selected_batch_name}', new_line=False, text_color=TextColor.GREEN)
         print('-' * 80)
+
+        # Stop before opening or iterating if the save folder can't be written to
+        if not os.access(save_path, os.W_OK):
+            raise OSError(f'Save folder is not writable: {save_path}')
 
         # Open batch if closed
         batch_group.open()
@@ -766,10 +878,126 @@ class UberSave:
             os.makedirs(save_path)
 
         # Hard save current batch iteration
-        batch_group.save_setup(shot_save_path)
+        if batch_group.save_setup(shot_save_path) is False:
+            raise OSError(f'Batch setup could not be saved: {shot_save_path}')
 
         pyflame.print(f'Batch Saved: {selected_batch_name}', new_line=False)
         print('-' * 80, '\n')
+
+    # ==============================================================================
+
+    def save_library_batch_group(self, batch_group, iterate: bool) -> None:
+        """
+        Save Library Batch Group
+        ========================
+
+        Save a batch group that is in a library or library folder. Flame can't save a batch group there,
+        so it is moved to the current Desktop, saved, then always moved back to where it was.
+
+        The batch group object is used throughout (first the selected object, then the object returned
+        by the move). It is never looked up by name, since a moved batch group isn't renamed.
+
+        Args
+        ----
+            batch_group (flame.PyBatch):
+                Batch group in a library or library folder.
+
+            iterate (bool):
+                Iterate up before saving.
+
+        Raises
+        ------
+            OSError:
+                If a path token could not be resolved, the save folder is not writable, the batch group
+                could not be moved to the Desktop, or it could not be moved back (it is then left on the
+                Desktop).
+
+            Exception:
+                If the batch group could not be saved. Handled by save_batch_groups.
+        """
+
+        # Resolve path and check it can be written to before the batch group is moved
+        save_path = self.resolve_path(
+            batch_group=batch_group,
+            )
+
+        if not os.access(save_path, os.W_OK):
+            raise OSError(f'Save folder is not writable: {save_path}')
+
+        original_parent = batch_group.parent
+        original_parent_name = str(original_parent.name)[1:-1]
+        desktop = flame.project.current_project.current_workspace.desktop
+
+        # Move batch group to the Desktop so it can be saved. Use the returned object from now on
+        moved = flame.media_panel.move(batch_group, desktop)
+        if not isinstance(moved, list) or not moved:
+            raise OSError(f'Batch group could not be moved to the Desktop from {original_parent_name}.')
+        moved_group = moved[0]
+
+        save_error = None
+        try:
+            self.save_batchgroup(
+                save_path=save_path,
+                batch_group=moved_group,
+                iterate=iterate,
+                )
+        except Exception as e:
+            save_error = e
+
+        # Always move batch group back. A closed Desktop batch group can't be moved, so open it first
+        try:
+            if not moved_group.opened:
+                moved_group.open()
+            moved_back = flame.media_panel.move(moved_group, original_parent)
+            if not isinstance(moved_back, list) or not moved_back:
+                raise OSError('Move returned nothing.')
+        except Exception as e:
+            move_back_message = f'Batch group was left on the Desktop and could not be moved back to {original_parent_name}: {e}'
+            if save_error is not None:
+                raise OSError(f'{save_error}\n{move_back_message}')
+            raise OSError(move_back_message)
+
+        if save_error is not None:
+            raise save_error
+
+    # ==============================================================================
+
+    def restore_active_batch_group(self, active_uid: str) -> None:
+        """
+        Restore Active Batch Group
+        ==========================
+
+        Switch Batch back to the batch group that was active before batch groups in libraries or folders
+        were moved. Moving batch groups can make Flame switch Batch to another batch group.
+
+        A failure is printed as a warning and isn't reported as a save error.
+
+        Args
+        ----
+            active_uid (str): uid of the batch group that was active before saving.
+        """
+
+        try:
+            # Find Desktop batch group that was active, by uid (Desktop batch groups weren't moved, so their uid is unchanged)
+            active_batch_group = None
+            for desktop_batch_group in flame.project.current_project.current_workspace.desktop.batch_groups:
+                if str(desktop_batch_group.uid) == active_uid:
+                    active_batch_group = desktop_batch_group
+                    break
+
+            if active_batch_group is None:
+                return
+
+            # Do nothing if it is still active
+            if flame.batch is not None and str(flame.batch.uid) == active_uid:
+                return
+
+            # open() doesn't switch Batch to an already open batch group, so close it first
+            if active_batch_group.opened:
+                active_batch_group.close()
+            active_batch_group.open()
+        except Exception as e:
+            pyflame.print(f'Could not switch Batch back to the batch group that was active before: {e}', print_type=PrintType.WARNING)
 
     # ==============================================================================
 
@@ -780,7 +1008,8 @@ class UberSave:
 
         Save each batch group. Failures are collected and reported once after all
         batch groups have been processed so a bad path does not open one message
-        window per batch group.
+        window per batch group. Items that aren't batch groups are skipped with a
+        console warning.
 
         Args
         ----
@@ -795,23 +1024,51 @@ class UberSave:
         """
 
         errors = []
+        library_group_moved = False
+
+        # Remember active batch group so Batch can be switched back to it after batch groups in libraries or folders are moved
+        try:
+            active_uid = str(flame.batch.uid)
+        except Exception:
+            active_uid = None
 
         for batch_group in batch_groups:
+
+            # Skip items that aren't batch groups before their path is resolved, so no folders are made for them
+            if not isinstance(batch_group, flame.PyBatch):
+                try:
+                    item_name = str(batch_group.name)[1:-1]
+                except Exception:
+                    item_name = str(batch_group)
+                pyflame.print(f'Skipped, not a batch group: {item_name}', print_type=PrintType.WARNING)
+                continue
+
             batch_group_name = str(batch_group.name)[1:-1]
 
             try:
-                resolved_path = self.resolve_path(
-                    batch_group=batch_group,
-                    )
+                # Batch groups in a library or folder are moved to the Desktop to be saved, then moved back
+                if not isinstance(batch_group.parent, flame.PyDesktop):
+                    library_group_moved = True
+                    self.save_library_batch_group(
+                        batch_group=batch_group,
+                        iterate=iterate,
+                        )
+                else:
+                    resolved_path = self.resolve_path(
+                        batch_group=batch_group,
+                        )
 
-                self.save_batchgroup(
-                    save_path=resolved_path,
-                    batch_group=batch_group,
-                    iterate=iterate,
-                    )
+                    self.save_batchgroup(
+                        save_path=resolved_path,
+                        batch_group=batch_group,
+                        iterate=iterate,
+                        )
             except Exception as e:
                 pyflame.print(f'Batch Not Saved: {batch_group_name} - {e}', print_type=PrintType.ERROR)
                 errors.append(f'{batch_group_name}: {e}')
+
+        if library_group_moved and active_uid is not None:
+            self.restore_active_batch_group(active_uid)
 
         if errors:
             PyFlameMessageWindow(
@@ -872,7 +1129,7 @@ class UberSave:
         Batch Group Save Selected
         =========================
 
-        Save selected batchgroups in desktop.
+        Save selected batchgroups in desktop, libraries or library folders.
         """
 
         self.save_batch_groups(
@@ -886,7 +1143,7 @@ class UberSave:
         Batch Group Iterate and Save Selected
         =====================================
 
-        Iterate and save selected batchgroups in desktop.
+        Iterate and save selected batchgroups in desktop, libraries or library folders.
         """
 
         self.save_batch_groups(
@@ -926,7 +1183,7 @@ def uber_batch_group_save_all(selection) -> None:
 
 def uber_batch_group_save_selected(selection) -> None:
     """
-    Save selected batchgroups in desktop.
+    Save selected batchgroups in desktop, libraries or library folders.
     """
 
     uber_save = UberSave(selection)
@@ -935,7 +1192,7 @@ def uber_batch_group_save_selected(selection) -> None:
 
 def uber_batch_group_iterate_save_selected(selection) -> None:
     """
-    Iterate and save selected batchgroups in desktop.
+    Iterate and save selected batchgroups in desktop, libraries or library folders.
     """
 
     uber_save = UberSave(selection)
@@ -950,8 +1207,7 @@ def scope_batch(selection) -> bool:
 
     for item in selection:
         if isinstance(item, flame.PyBatch):
-            if isinstance(item.parent.parent, flame.PyWorkspace):
-                return True
+            return True
     return False
 
 def scope_desktop(selection) -> bool:

@@ -1,31 +1,32 @@
 # Uber Save
 
-**Script Version:** 5.1.0  
+**Script Version:** 5.2.0  
 **Flame Version:** 2025  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 07.28.19  
-**Update Date:** 08.18.26  
+**Update Date:** 11.02.26  
+
+**Script Type:** Batch / Media Panel
 
 ## Description
 
-Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop or an
-open batch group in the batch view.
+Save/Save Iterate one or more batch groups to the set path by right-clicking on a selection of batch groups in the desktop, a library or a library folder, or an open batch group in the batch view.
 
 ## Usage
 
-To save batch groups to a custom path, create a new path in the script setup window(Flame Main Menu -> Logik -> Logik Portal Script Setup ->
+To save batch groups to a custom path, create a new path in the script setup window (Flame Main Menu -> Logik -> Logik Portal Script Setup ->
 Uber Save Setup) then select it in the dropdown menu and save.
 <br><br>
 If multiple paths have been created, the one selected in the dropdown menu will be used to save batch groups.
 <br><br>
+Batch groups in a library or library folder can't be saved where they are. Each one is moved to the desktop, saved, and moved back to its library or folder, one at a time in the order they were selected. Nothing is copied or deleted. When done, batch switches back to the batch group that was open before.
+<br><br>
 The path can be tokenized using the following tokens:
 <ProjectName> - Adds name of current Flame project to path
-<ProjectNickName> - Adds Flame project nicknick to path
-<DesktopName> - Adds name of current desktop to path
-<SeqName> - Will try to guess shot seqeunce name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
+<ProjectNickName> - Adds Flame project nickname to path
+<SeqName> - Will try to guess shot sequence name from the batch group name - for example: PYT_0100_comp will give a sequence name of: pyt
 <SEQNAME> - Will do the same as above but give the sequence name in all caps - for example: PYT_0100_comp will give a sequence name of: PYT
-<ShotName> - Adds shot name to path. Will first try getting shot name from batch group tag, then render/write node, then it will try to
-guess shot name from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
+<ShotName> - Adds shot name to path. Will first try getting shot name from batch group tag, then render/write node, then it will try to guess shot name from batch group name - for example: PYT_0100_comp will give a shot name of: PYT_0100.
 <BatchGroupName> - Adds name of batch group to path
 <YYYY> - Adds current year to path
 <YY> - Adds current year to path (last two digits)
@@ -34,16 +35,16 @@ guess shot name from batch group name - for example: PYT_0100_comp will give a s
 
 ## URL
 
-https://github.com/logik-portal/python/uber_save
+https://logik-portal.com/scripts/uber_save
 
 ## Menus
 
 - Flame Main Menu → Logik → Logik Portal Script Setup → Uber Save Setup
-- Right-click selected batchgroups in desktop → Uber Save... → Save Selected Batchgroups
-- Right-click selected batchgroups in desktop → Uber Save... → Iterate and Save Selected Batchgroups
-- Right-click on desktop in media panel → Uber Save... → Save All Batchgroups
-- Right-click in batch → Uber Save... → Save Current Batchgroup
-- Right-click in batch → Uber Save... → Iterate and Save Current Batchgroup
+- Right-click selected batchgroups in Media Panel → Uber Save... → Save Selected Batchgroups
+- Right-click selected batchgroups in Media Panel → Uber Save... → Iterate and Save Selected Batchgroups
+- Right-click on Desktop in Media Panel → Uber Save... → Save All Batchgroups
+- Right-click in Batch → Uber Save... → Save Current Batchgroup
+- Right-click in Batch → Uber Save... → Iterate and Save Current Batchgroup
 
 ## Installation
 
@@ -51,9 +52,24 @@ Copy script into /opt/Autodesk/shared/python/uber_save
 
 ## Updates
 
+### v5.2.0 [11.02.26]
+- Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+- Changed license from GPL-3.0 to MIT. See LICENSE file for details.
+- Save Selected / Iterate and Save Selected now work on batch groups in libraries and folders: each one is moved to the Desktop, saved, and moved back, one at a time in selection order.
+- A save path with a token that resolves to nothing (such as an empty project nickname) or a token that can't be resolved is now reported as an error instead of saving to the wrong folder or creating a folder named after the token.
+- The Setup window can't be used while the New / Edit / Duplicate path window is open.
+- Duplicating a duplicated path no longer stacks the names. Duplicates are named Copy, Copy 2, Copy 3 and so on.
+- Browse in the New / Edit / Duplicate path window now starts at the path being edited.
+- Items in the selection that aren't batch groups are now skipped with a warning in the console. Before, folders named after the path tokens were created for them and the save failed with a misleading error.
+- Saving a path with the name of another saved path now shows an error instead of replacing that path. Spaces at the start and end of path names and paths are removed.
+- Fixed a failed save being reported as saved. A save folder that can't be written to is now reported before the batch group is iterated, and a batch setup that isn't saved is reported as an error.
+- Delete in Setup now asks for confirmation, and no longer selects and saves another path when the selected path is deleted. No path is selected until one is chosen and saved.
+- A saved path is now selected when no path is selected, so saving works without clicking Save in Setup.
+<br>
+
 ### v5.1.0 [08.18.26]
 - Simplified/improved the process of creating and saving paths further.
-- Updated to PyFlameLib v5.6.0.
+- Updated to PyFlameLib v5.5.0.
 <br>
 
 ### v5.0.0 [06.07.25]
@@ -102,8 +118,7 @@ Copy script into /opt/Autodesk/shared/python/uber_save
 - Added Flame file browser - Flame 2023.1 and later.
 - Preset window code cleaned up and moved to imported pyflame_lib.
 - Default preset can now be set in the preset window.
-- Uber Save menu was incorrectly showing up when right-clicking on batch groups saved in a desktop that is saved to the library. Batch
-- groups can not be saved from the library. This menu no longer shows up.
+- Uber Save menu was incorrectly showing up when right-clicking on batch groups saved in a desktop that is saved to the library. Batch groups can not be saved from the library. This menu no longer shows up.
 <br>
 
 ### v4.2 [03.18.22]
@@ -126,8 +141,7 @@ Copy script into /opt/Autodesk/shared/python/uber_save
 
 ### v3.1 [07.10.21]
 - Fixed problem when trying to save on a flare. Added check for flame and flare batch folders.
-- ProjectName token now uses exact flame project name. No longer tries to guess name of project on server. If flame
-- project name is different than server project name, set flame project nickname and use ProjectNickName token.
+- ProjectName token now uses exact flame project name. No longer tries to guess name of project on server. If flame project name is different than server project name, set flame project nickname and use ProjectNickName token.
 - Fixed sequence token when using batch group name as save type.
 <br>
 
