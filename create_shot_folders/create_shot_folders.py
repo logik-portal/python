@@ -9,11 +9,11 @@
 
 """
 Script Name: Create Shot Folders
-Script Version: 5.5.1
-Flame Version: 2025.1
+Script Version: 5.5.2
+Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 06.09.18
-Update Date: 10.13.26
+Update Date: 11.03.26
 
 License: MIT License (MIT) - see LICENSE file for details
 
@@ -48,6 +48,13 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v5.5.2 11.03.26
+        - Minimum Flame version is now 2025.2.
+        - Fixed <SeqName> and <SEQNAME> resolving to nothing in the file system path when the shot name 
+          pattern uses a shot list or range, such as PYT_<ShotNum[0010, 0020]> or PYT_[0010-0050]. Shot 
+          folders were created one level too high.
+        - Fixed copying clips into the plate folder failing when the plate folder has subfolders of its own.
 
     v5.5.1 10.13.26
         - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
@@ -104,7 +111,7 @@ from lib.pyflame_lib_create_shot_folders import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Create Shot Folders'
-SCRIPT_VERSION = 'v5.5.1'
+SCRIPT_VERSION = 'v5.5.2'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -832,6 +839,10 @@ class CreateShotFolders():
 
         def extract_sequence_name(text):
 
+            # Stand in a number for a <ShotNum...> token or a [list/range], so the letters before it are found
+            text = re.sub(r'<ShotNum[^>]*>', '0', text)
+            text = re.sub(r'\[[^\]]*\]', '0', text)
+
             match = re.match(r'([a-zA-Z0-9_]+)(?=_*<ShotNum#*>)', text)
             if not match:
                 match = re.match(r'([a-zA-Z0-9_]+?)(?=(_*\d+))', text)
@@ -1120,6 +1131,51 @@ class CreateShotFolders():
 
         print('\n', end='')
 
+    def get_plate_folder(self, shot_name: str):
+        """
+        Get Plate Folder
+        ================
+
+        Find the Media Panel plate folder of a shot in the new shot folders: the folder tagged
+        'ShotName: <shot_name>', then the plate folder path below it. Works when the plate folder
+        has subfolders of its own. If part of the path isn't found, the deepest folder found is used.
+
+        Args
+        ----
+            shot_name (str):
+                Shot name, e.g. 'PYT_0010'.
+
+        Returns
+        -------
+            plate_folder (flame.PyFolder | None): Plate folder, or None if no shot folder has the tag.
+        """
+
+        target_tag = f'ShotName: {shot_name}'
+
+        # Find the shot folder by its tag
+        shot_folder = None
+        for folder in self.media_panel_dest.folders:
+            if target_tag in [str(tag) for tag in folder.tags.get_value()]:
+                shot_folder = folder
+                break
+
+        if shot_folder is None:
+            return None
+
+        # Walk down the plate folder path below the shot folder (the first part is the shot folder itself)
+        dest_folder = shot_folder
+        for part in self.settings.plate_folder.split('/')[1:]:
+            next_folder = None
+            for sub_folder in dest_folder.folders:
+                if str(sub_folder.name)[1:-1] == part:
+                    next_folder = sub_folder
+                    break
+            if next_folder is None:
+                break
+            dest_folder = next_folder
+
+        return dest_folder
+
     def copy_clips(self) -> None:
         """
         Copy Clips
@@ -1149,12 +1205,14 @@ class CreateShotFolders():
             # shot_name = pyflame.shot_name_from_clip(clip)
             print('Shot Name:', str(clip.shot_name)[1:-1])
             print('Clip:', clip)
-            pyflame.copy_to_shot_folder(
-                shot_name=str(clip.shot_name)[1:-1],
-                pyobject=clip,
-                search_location=self.media_panel_dest,
-                dest_folder_path=self.settings.plate_folder,
-                )
+            shot_name = str(clip.shot_name)[1:-1]
+            plate_folder = self.get_plate_folder(shot_name)
+            if plate_folder is None:
+                pyflame.print(f'Shot Folder for {shot_name} Not Found', print_type=PrintType.ERROR)
+                continue
+
+            flame.media_panel.copy(clip, plate_folder)
+            plate_folder.expanded = True
 
         # If original tab was MediaHub, switch back to it.
         if switch_tab:
@@ -1522,7 +1580,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Create Shot Folders Setup',
                     'execute': CreateShotFoldersSetup,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
@@ -1537,13 +1595,13 @@ def get_media_panel_custom_ui_actions():
                 {
                     'name': 'Shot Folders',
                     'execute': create_shot_folders,
-                    'minimumVersion': '2025.1',
+                    'minimumVersion': '2025.2',
                 },
                 {
                     'name': 'Shot Folders (From Clips)',
                     'isVisible': scope_clip,
                     'execute': create_shot_folders_from_clips,
-                    'minimumVersion': '2025.1',
+                    'minimumVersion': '2025.2',
                 }
             ]
         }
@@ -1560,7 +1618,7 @@ def get_mediahub_files_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': CreateShotFolders,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
@@ -1576,7 +1634,7 @@ def get_timeline_custom_ui_actions():
                     'name': 'Shot Folders (From Segments)',
                     'isVisible': scope_segment,
                     'execute': create_shot_folders_from_segments,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 }
             ]
         }
