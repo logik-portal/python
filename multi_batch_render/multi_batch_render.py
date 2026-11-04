@@ -9,11 +9,11 @@
 
 """
 Script Name: Multi Batch Render
-Script Version: 4.15.1
-Flame Version: 2025.1
+Script Version: 4.15.2
+Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 12.12.18
-Update Date: 10.13.26
+Update Date: 11.03.26
 
 License: MIT License (MIT) - see LICENSE file for details
 
@@ -37,6 +37,12 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v4.15.2 11.03.26
+        - Fixed Render/Write nodes being replaced in the batch group shown in Batch 
+          instead of the one being rendered. Each batch group is now shown in Batch 
+          before its nodes are replaced and it is rendered.
+        - Fixed an error at the end of Render Selected Batch Groups (Media Panel).
 
     v4.15.1 10.13.26
         - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
@@ -160,7 +166,7 @@ from lib.pyflame_lib_multi_batch_render import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Multi Batch Render'
-SCRIPT_VERSION = 'v4.15.1'
+SCRIPT_VERSION = 'v4.15.2'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -185,6 +191,9 @@ class MultiBatchRender:
         self.desktop_batch_group_list = [str(b.name)[1:-1] for b in self.desktop_batch_group_object_list]
         self.failed_render_list = []
         self.reactor_render_success = True
+
+        # Exit Flame button only exists when the window is used, not for Render Selected Batch Groups
+        self.exit_flame = None
 
     def load_config(self) -> PyFlameConfig:
         """
@@ -445,7 +454,38 @@ class MultiBatchRender:
                     new_node.smart_replace = smart_replace
                     n.delete()
 
-        def render_batch_group(batch_to_render) -> bool:
+        def make_current(batch) -> bool:
+            """
+            Make Current
+            ============
+
+            Show the batch group in Batch. Render/Write nodes can only be replaced in the current batch group,
+            and open() alone doesn't switch to a batch group that is already open.
+
+            Args
+            ----
+                batch (flame.PyBatch):
+                    Batch group to show in Batch.
+
+            Returns
+            -------
+                is_current (bool): True if the batch group is now the current one.
+            """
+
+            try:
+                if str(flame.batch.uid) != str(batch.uid):
+                    if batch.opened:
+                        batch.close()
+                    batch.open()
+            except Exception as e:
+                pyflame.print(
+                    text=f'{str(batch.name)[1:-1]}: Could not switch Batch to this batch group - {e}',
+                    print_type=PrintType.WARNING,
+                    )
+
+            return str(flame.batch.uid) == str(batch.uid)
+
+        def render_batch_group(batch_to_render, batch_is_current: bool) -> bool:
             """
             Render Batch Group
             ==================
@@ -455,6 +495,9 @@ class MultiBatchRender:
             Args:
                 batch_to_render (flame.PyBatchGroup):
                     Batch group to render.
+
+                batch_is_current (bool):
+                    True if the batch group is shown in Batch, so its Render/Write nodes can be replaced.
 
             Returns:
             --------
@@ -473,8 +516,14 @@ class MultiBatchRender:
                     print_type=PrintType.WARNING,
                     )
             else:
-                # Replace render/write nodes - fix for flame render node bug
-                duplicate_render_nodes()
+                # Replace render/write nodes - fix for flame render node bug. Only in the batch group being rendered.
+                if batch_is_current:
+                    duplicate_render_nodes()
+                else:
+                    pyflame.print(
+                        text=f'{str(batch_to_render.name)[1:-1]}: Not shown in Batch, Render/Write nodes not replaced.',
+                        print_type=PrintType.WARNING,
+                        )
 
                 # Render - if render fails add to failed render list
                 if self.settings.render_option == 'Foreground':
@@ -597,8 +646,8 @@ class MultiBatchRender:
             self.progress_window.current_task = self.batch_groups_rendered
             batch_to_render = self.desktop_batch_group_object_list[batch_group_number]
 
-            # Open Selected Batch Group
-            batch_to_render.open()
+            # Open selected batch group and show it in Batch
+            batch_is_current = make_current(batch_to_render)
 
             # Close other batch groups if close_after_render is checked
             if self.settings.close_after_render:
@@ -610,7 +659,7 @@ class MultiBatchRender:
                     pass
 
             # Render Selected Batch Group
-            render_successful = render_batch_group(batch_to_render)
+            render_successful = render_batch_group(batch_to_render, batch_is_current)
             if not render_successful:
                 break
 
@@ -627,7 +676,7 @@ class MultiBatchRender:
         show_failed_renders()
 
         # Exit Flame if exit_flame is checked
-        if self.exit_flame.checked:
+        if self.exit_flame is not None and self.exit_flame.checked:
             exit_flame()
 
 def render_selected(selection):
@@ -674,7 +723,7 @@ def get_media_panel_custom_ui_actions():
                     'separator': 'below',
                     'isVisible': scope_batch,
                     'execute': render_selected,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
@@ -691,7 +740,7 @@ def get_batch_custom_ui_actions():
                     'order': 1,
                     'separator': 'below',
                     'execute': main_render_window,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
