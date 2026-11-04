@@ -1,31 +1,21 @@
 # CMYK to RGB
-# Copyright (c) 2025 Michael Vaglienty
+# Copyright (c) 2026 Michael Vaglienty
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is licensed under the MIT License.
+# See the LICENSE file for the full license text.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# License:       GNU General Public License v3.0 (GPL-3.0)
-#                https://www.gnu.org/licenses/gpl-3.0.en.html
+# License:       MIT License (MIT)
+#                https://opensource.org/licenses/MIT
 
 """
 Script Name: CMYK to RGB
-Script Version: 1.0.1
+Script Version: 1.1.0
 Flame Version: 2025
 Written by: Michael Vaglienty
 Creation Date: 12.06.25
-Update Date: 12.24.25
+Update Date: 11.02.26
 
-License: GNU General Public License v3.0 (GPL-3.0) - see LICENSE file for details
+License: MIT License (MIT) - see LICENSE file for details
 
 Script Type: Media Panel / Media Hub File Browser
 
@@ -37,6 +27,21 @@ Description:
 
     PSD files will be saved as TIFF files.
 
+    Works on Linux and Apple Silicon Macs. Intel Macs are not supported.
+
+    The image's embedded CMYK profile is used for the conversion. Images without an
+    embedded profile are converted using U.S. Web Coated (SWOP) v2 (Adobe profile;
+    see assets/icc_profiles/README.txt for its license).
+
+    Output images are 8-bit RGB with an sRGB profile.
+
+    CMYK PSDs with extra channels (alpha or spot) and CMYK TIFFs with transparency
+    are not supported.
+
+URL:
+
+    https://logik-portal.com/scripts/cmyk_to_rgb
+
 Menus:
 
     Right-click on a CMYK clip in the Media Panel -> CMYK to RGB
@@ -47,6 +52,34 @@ To install:
     Copy script into /opt/Autodesk/shared/python/cmyk_to_rgb
 
 Updates:
+
+    v1.1.0 11.02.26
+        - Added Linux support.
+        - Intel Macs are not supported. A message is now shown instead of installing a package
+          that can't run.
+        - Fixed the Pillow install reporting success when it failed.
+        - The Python version is now read from Flame's Python (3.11 or 3.13) instead of guessed
+          from the Flame version.
+        - Images without an embedded CMYK profile are now converted with the U.S. Web Coated
+          (SWOP) v2 profile. Before, they got a basic conversion with wrong colors.
+        - Fixed black point compensation not being applied.
+        - One failed image no longer stops the rest. A single summary is shown at the end
+          instead of a message for each image.
+        - Fixed errors when other items are selected along with the images.
+        - Only CMYK images are converted. RGB, grayscale, LAB and other images are skipped.
+        - PSDs with extra channels (alpha or spot) are now refused. Before, they were saved with
+          scrambled pixels.
+        - Image sequences and missing files are now skipped.
+        - Output images now include an sRGB profile and keep their DPI. JPEGs are saved without
+          chroma subsampling.
+        - A warning is now shown before existing files are overwritten.
+        - Two selected images that would save to the same file name (for example image.psd and
+          image.tif) are no longer both saved.
+        - The menu now only shows for supported image files.
+
+    v1.0.2 10.13.26
+        - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
+        - Changed license from GPL-3.0 to MIT. See LICENSE file for details.
 
     v1.0.1 12.24.25
         - Moved PIL python packages to assets/python_packages directory.
@@ -60,7 +93,11 @@ Updates:
 # [Imports]
 # ==============================================================================
 
+from __future__ import annotations
+
 import os
+import platform
+import sys
 import flame
 from lib.pyflame_lib_cmyk_to_rgb import *
 
@@ -69,8 +106,11 @@ from lib.pyflame_lib_cmyk_to_rgb import *
 # ==============================================================================
 
 SCRIPT_NAME = 'CMYK to RGB'
-SCRIPT_VERSION = 'v1.0.1'
+SCRIPT_VERSION = 'v1.1.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+
+SUPPORTED_EXTENSIONS = ('.tif', '.tiff', '.jpg', '.jpeg', '.psd')
+DEFAULT_CMYK_PROFILE_PATH = os.path.join(SCRIPT_PATH, 'assets', 'icc_profiles', 'USWebCoatedSWOP.icc')
 
 # ==============================================================================
 # [Main Script]
@@ -106,24 +146,44 @@ class CMYKToRGB:
                 True if the python packages are installed, False otherwise.
         """
 
-        # Install required python packages if not already installed.
-        flame_version = pyflame.get_flame_version()
-
-        # Determine which Python version is required.
-        if flame_version <= 2026.9:
-            python_version = '3.11'
-        elif flame_version >= 2027.0 and flame_version < 2027.9:
-            python_version = '3.13'
+        # Determine which platform packages are required. Intel Macs are not supported.
+        if platform.system() == 'Darwin':
+            if platform.machine() != 'arm64':
+                PyFlameMessageWindow(
+                    message='CMYK to RGB requires an Apple Silicon Mac. Intel Macs are not supported.\n\nPython package install cancelled.',
+                    message_type=MessageType.ERROR,
+                    title='CMYK to RGB',
+                    parent=None,
+                    )
+                return False
+            platform_suffix = 'macos'
+        elif platform.system() == 'Linux':
+            platform_suffix = 'linux'
         else:
             PyFlameMessageWindow(
-                message=f'Flame version: {flame_version} is not supported.',
+                message=f'Operating system: {platform.system()} is not supported.',
                 message_type=MessageType.ERROR,
                 title='CMYK to RGB',
                 parent=None,
                 )
             return False
 
-        pyflame.python_package_local_install(package=f'PIL_python{python_version}')
+        # Use the Python version Flame is running, only 3.11 and 3.13 packages are bundled.
+        python_version = f'{sys.version_info.major}.{sys.version_info.minor}'
+        if python_version not in ('3.11', '3.13'):
+            PyFlameMessageWindow(
+                message=f'Python {python_version} is not supported.',
+                message_type=MessageType.ERROR,
+                title='CMYK to RGB',
+                parent=None,
+                )
+            return False
+
+        # Install required python packages
+        installed = pyflame.python_package_local_install(package=f'PIL_python{python_version}_{platform_suffix}')
+        if not installed:
+            pyflame.print('Python packages not installed, exiting script.', print_type=PrintType.ERROR)
+            return False
 
         return True
 
@@ -134,64 +194,173 @@ class CMYKToRGB:
         Process Images
         ==============
 
-        Process the conversion of the selected images from CMYK to RGB
+        Process the conversion of the selected images from CMYK to RGB.
+
+        Images are checked first, then converted and imported. Images that can't be converted are
+        skipped or failed and listed in one summary at the end.
 
         Args
         ----
             selection (list):
-                Clips selected in Flame
+                Clips or MediaHub files selected in Flame.
         """
 
-        # Dictionary to store the image paths and destinations for each image.
-        image_destinations = {}
+        # Imports - keep local to this function.
+        from PIL import Image
+        from PIL import UnidentifiedImageError
 
-        pyflame.print('Getting clip info...', underline=True, new_line=False)
+        # Images to convert: (file name, source path, output path, destination)
+        images_to_convert = []
 
-        # Process each image in the selection.
-        for image in selection:
-            pyflame.print(f'Image: {str(image.name)[1:-1]}', new_line=False)
-            pyflame.print(f'Image type: {type(image)}', new_line=False)
+        # Results: converted holds (file name, output name), skipped and failed hold (file name, reason)
+        converted = []
+        skipped = []
+        failed = []
 
-            if isinstance(image, flame.PyClip): # Get image path and destination for PyClip.
-                pyflame.print('Image is a clip')
-                image_path = self.get_clip_image_path(image)
-                image_destination = image.parent
-            elif isinstance(image, flame.PyMediaHubFilesEntry): # Get image path and destination for PyMediaHubFilesEntry.
-                pyflame.print('Image is a media hub file')
-                image_path = image.path
-                pyflame.print(f'Image path: {image_path}', new_line=False)
-                image_destination = 'New Library'
+        # Lower-case output path -> file name of the image that will be saved there
+        output_owners = {}
 
-            # Check if image extension is supported.
-            if not self.check_image_extension(image_path):
-                PyFlameMessageWindow(
-                    message=f'Unsupported image extension:\n\n{image_path}\n\nOnly TIFF, TIF, JPEG, JPG, and PSD are supported.',
-                    message_type=MessageType.ERROR,
-                    title='CMYK to RGB',
-                    parent=None,
-                    )
-                continue
+        pyflame.print('Checking selected images...', underline=True, new_line=False)
 
-            # Convert image to RGB
-            converted_path = self.convert_cmyk_to_rgb(src_path=image_path, dst_path=None)
-
-            # Add converted path and destination to dictionary
-            if converted_path:
-                image_destinations[converted_path] = image_destination
+        # Check each selected image. Only clips (not sequences) and MediaHub files are used.
+        for item in selection:
+            if isinstance(item, flame.PyClip) and not isinstance(item, flame.PySequence):
+                file_name = str(item.name)[1:-1]
+                destination = item.parent
+            elif isinstance(item, flame.PyMediaHubFilesEntry):
+                file_name = os.path.basename(str(item.path))
+                destination = 'New Library'
             else:
                 continue
 
-        # If there are any image destinations, import the converted images.
-        if len(image_destinations) > 0:
-            self.import_converted_image(image_destinations)
+            try:
+                # Get image path
+                if isinstance(item, flame.PyMediaHubFilesEntry):
+                    image_path = str(item.path)
+                else:
+                    image_path = self.get_clip_image_path(item)
+                file_name = os.path.basename(image_path)
+                pyflame.print(f'Image path: {image_path}', new_line=False)
 
-            print('--------------------------------------------------------------------------------\n\n')
+                if not self.check_image_extension(image_path):
+                    skipped.append((file_name, 'Unsupported file type. Only TIF, JPG and PSD are supported.'))
+                    continue
 
-            PyFlameMessageWindow(
-                message='CMYK to RGB Conversion Complete!',
+                if not os.path.isfile(image_path):
+                    skipped.append((file_name, 'File not found. Image sequences are not supported.'))
+                    continue
+
+                # Read image format and mode without loading the pixels
+                try:
+                    with Image.open(image_path) as img:
+                        img_format = img.format
+                        mode = img.mode
+                except UnidentifiedImageError:
+                    reason = 'Image could not be read.'
+                    if image_path.lower().endswith(('.tif', '.tiff')):
+                        reason += ' CMYK TIFFs with transparency are not supported.'
+                    failed.append((file_name, reason))
+                    continue
+
+                if img_format not in ('TIFF', 'JPEG', 'PSD'):
+                    skipped.append((file_name, f'Unsupported format: {img_format}'))
+                    continue
+
+                if mode != 'CMYK':
+                    skipped.append((file_name, f'Not a CMYK image (mode: {mode})'))
+                    continue
+
+                # Pillow scrambles the pixels of CMYK PSDs with alpha or spot channels
+                if img_format == 'PSD' and self.psd_has_extra_channels(image_path):
+                    failed.append((file_name, 'PSD has extra channels (alpha or spot). Flatten and remove extra channels, then try again.'))
+                    continue
+
+                # Don't let two selected images save to the same file. Compare lower-case paths for case-insensitive volumes.
+                output_path = self.get_output_path(image_path, img_format)
+                output_key = output_path.lower()
+                if output_key in output_owners:
+                    failed.append((file_name, f'Output name clashes with {output_owners[output_key]}'))
+                    continue
+
+                output_owners[output_key] = file_name
+                images_to_convert.append((file_name, image_path, output_path, destination))
+            except Exception as e:
+                failed.append((file_name, str(e)))
+
+        # Ask once before overwriting any existing output files
+        existing = [image for image in images_to_convert if os.path.exists(image[2])]
+        if existing:
+            existing_names = '\n'.join(os.path.basename(image[2]) for image in existing)
+            overwrite = PyFlameMessageWindow(
+                message=f'These output files already exist:\n\n{existing_names}\n\nOverwrite them?',
+                message_type=MessageType.WARNING,
                 title='CMYK to RGB',
                 parent=None,
                 )
+            if not overwrite:
+                for image in existing:
+                    skipped.append((image[0], 'Output file already exists'))
+                images_to_convert = [image for image in images_to_convert if image not in existing]
+
+        # Convert images
+        image_destinations = {}
+        output_sources = {}
+        for file_name, image_path, output_path, destination in images_to_convert:
+            try:
+                self.convert_cmyk_to_rgb(src_path=image_path, dst_path=output_path)
+                image_destinations[output_path] = destination
+                output_sources[output_path] = file_name
+            except Exception as e:
+                pyflame.print(f'Conversion failed: {image_path}\n{e}', print_type=PrintType.ERROR)
+                failed.append((file_name, str(e)))
+
+        # Import converted images, an image that fails to import is listed as failed
+        if image_destinations:
+            import_failures = self.import_converted_image(image_destinations)
+            for output_path in image_destinations:
+                if output_path in import_failures:
+                    failed.append((output_sources[output_path], f'Converted to {os.path.basename(output_path)}, but import failed: {import_failures[output_path]}'))
+                else:
+                    converted.append((output_sources[output_path], os.path.basename(output_path)))
+
+        print('--------------------------------------------------------------------------------\n\n')
+
+        # Nothing selected that the script works on
+        if not converted and not skipped and not failed:
+            pyflame.print('No supported images selected.', print_type=PrintType.WARNING)
+            return
+
+        # Print full details to the console
+        for file_name, output_name in converted:
+            pyflame.print(f'Converted: {file_name} -> {output_name}', text_color=TextColor.GREEN, new_line=False)
+        for file_name, reason in skipped:
+            pyflame.print(f'Skipped: {file_name}: {reason}', print_type=PrintType.WARNING, new_line=False)
+        for file_name, reason in failed:
+            pyflame.print(f'Failed: {file_name}: {reason}', print_type=PrintType.ERROR, new_line=False)
+
+        # All images converted
+        if not skipped and not failed:
+            PyFlameMessageWindow(
+                message=f'CMYK to RGB Conversion Complete!\n\nConverted: {len(converted)}',
+                message_type=MessageType.OPERATION_COMPLETE,
+                title='CMYK to RGB',
+                parent=None,
+                )
+            return
+
+        # Show one summary of converted, skipped and failed images
+        message = f'Converted: {len(converted)}'
+        if skipped:
+            message += '\n\nSkipped:\n' + '\n'.join(f'{file_name}: {reason}' for file_name, reason in skipped)
+        if failed:
+            message += '\n\nFailed:\n' + '\n'.join(f'{file_name}: {reason}' for file_name, reason in failed)
+
+        PyFlameMessageWindow(
+            message=message,
+            message_type=MessageType.ERROR if failed else MessageType.INFO,
+            title='CMYK to RGB',
+            parent=None,
+            )
 
     def get_clip_image_path(self, image: flame.PyClip) -> str:
         """
@@ -239,202 +408,195 @@ class CMYKToRGB:
 
         pyflame.print('Checking image extension...', underline=True, new_line=False)
 
-        # List of allowed image extensions
-        allowed_extensions = ('.tif', '.tiff', '.jpg', '.jpeg', '.psd')
-
         # Convert image path to lowercase
         image_path = image_path.lower()
 
         # Check if the image path ends with any of the allowed extensions
-        if image_path.endswith(allowed_extensions):
+        if image_path.endswith(SUPPORTED_EXTENSIONS):
             pyflame.print('Image extension is supported')
             return True
         else:
             pyflame.print('Image extension is not supported')
             return False
 
-    def convert_cmyk_to_rgb(self, src_path: str, dst_path: str | None = None) -> tuple[str, str]:
+    def psd_has_extra_channels(self, image_path: str) -> bool:
+        """
+        PSD Has Extra Channels
+        ======================
+
+        Check the PSD header for a CMYK PSD with more than 4 channels (alpha or spot channels).
+
+        Args
+        ----
+            image_path (str):
+                The path to the PSD file.
+
+        Returns
+        -------
+            bool:
+                True if the PSD is CMYK and has more than 4 channels, False otherwise.
+        """
+
+        # Read the 26-byte PSD header: bytes 12-13 are the channel count, bytes 24-25 the color mode (4 = CMYK)
+        with open(image_path, 'rb') as psd_file:
+            header = psd_file.read(26)
+
+        channels = int.from_bytes(header[12:14], 'big')
+        color_mode = int.from_bytes(header[24:26], 'big')
+        pyflame.print(f'PSD channels: {channels}, color mode: {color_mode}', new_line=False)
+
+        return color_mode == 4 and channels > 4
+
+    def get_output_path(self, src_path: str, img_format: str) -> str:
+        """
+        Get Output Path
+        ===============
+
+        Get the path the converted image is saved to: the source path with _rgb added to the name.
+        PSD files are saved as TIFF files.
+
+        Args
+        ----
+            src_path (str):
+                The path to the CMYK image.
+
+            img_format (str):
+                The Pillow format of the CMYK image ('TIFF', 'JPEG' or 'PSD').
+
+        Returns
+        -------
+            str:
+                The path to save the converted RGB image to.
+        """
+
+        src_root, src_ext = os.path.splitext(src_path)
+
+        # Pillow cannot save PSD; save as TIFF
+        if img_format == 'PSD':
+            src_ext = '.tif'
+
+        return f'{src_root}_rgb{src_ext}'
+
+    def convert_cmyk_to_rgb(self, src_path: str, dst_path: str) -> str:
         """
         Convert CMYK to RGB
         ===================
 
-        Convert a CMYK image to RGB.
+        Convert a CMYK image to 8-bit RGB with an sRGB profile and save it.
+
+        The embedded CMYK profile is used. If the image has no profile, or it can't be read,
+        the default CMYK profile is used.
 
         Args
         ----
             src_path (str):
                 The path to the CMYK image to convert.
-            dst_path (str | None):
-                The path to save the converted RGB image to. If None, the image will be saved to the same path as the source image, but with the extension changed to _rgb.tif.
+
+            dst_path (str):
+                The path to save the converted RGB image to.
 
         Returns
         -------
             str:
                 The path to the converted RGB image.
+
+        Raises
+        ------
+            OSError:
+                If the image has no usable embedded profile and the default CMYK profile is missing.
+
+            Exception:
+                If the image can't be read, converted or saved.
         """
 
         # Imports - keep local to this function.
+        from io import BytesIO
         from PIL import Image
         from PIL import ImageCms
 
-        def has_alpha_channel(img: Image.Image) -> bool:
-            """
-            Has Alpha Channel
-            =================
-
-            Return True if the Pillow image has an alpha channel.
-            This works for modes like RGBA, LA, etc.
-
-            Args
-            ----
-                img (Image.Image):
-                    The image to check for an alpha channel.
-
-            Returns
-            -------
-                bool:
-                    True if the image has an alpha channel, False otherwise.
-            """
-
-            pyflame.print('Checking for alpha channel...', new_line=False)
-
-            bands = img.getbands()  # e.g. ('R', 'G', 'B', 'A')
-            pyflame.print(f'Bands: {bands}', new_line=False)
-
-            if 'A' in bands:
-                pyflame.print('Alpha channel present', new_line=False)
-                return True
-            else:
-                pyflame.print('Alpha channel not present', new_line=False)
-                return False
-
         pyflame.print('Converting image...', underline=True, new_line=False)
 
-        # Open image
-        img = Image.open(src_path)
-        img_format = img.format  # 'TIFF', 'TIF', 'JPEG', 'JPG', 'PSD', etc.
-        mode = img.mode          # 'CMYK', 'RGBA', etc.
-        print(f'Image format: {img_format}')
-        print(f'Image mode: {mode}')
+        with Image.open(src_path) as img:
+            img_format = img.format
+            pyflame.print(f'Image: {src_path}', new_line=False)
+            pyflame.print(f'Image format: {img_format}', new_line=False)
+            pyflame.print(f'Image mode: {img.mode}', new_line=False)
 
-        # Exit if unsupported format
-        if img_format.lower() not in {'tiff', 'tif', 'jpeg', 'jpg', 'psd'}:
-            PyFlameMessageWindow(
-                message=f'Unsupported format: {img_format}. Only TIF, JPG, and PSD are handled.',
-                message_type=MessageType.ERROR,
-                title='CMYK to RGB',
-                parent=None,
-                )
-            return
+            # Load the embedded CMYK profile
+            cmyk_profile = None
+            embedded_profile = img.info.get('icc_profile')
+            if embedded_profile:
+                try:
+                    cmyk_profile = ImageCms.ImageCmsProfile(BytesIO(embedded_profile))
+                    pyflame.print('Using embedded CMYK profile.', new_line=False)
+                except Exception as e:
+                    pyflame.print(f'Embedded CMYK profile could not be read, using default CMYK profile: {e}', print_type=PrintType.WARNING)
 
-        # Exit if already RGB or RGBA
-        if mode in {'RGB', 'RGBA'}:
-            PyFlameMessageWindow(
-                message=f'Image is already {mode}. No conversion needed.',
-                title='CMYK to RGB',
-                parent=None,
-                )
-            return
+            # Use the default CMYK profile when there is no usable embedded profile
+            if cmyk_profile is None:
+                if not os.path.isfile(DEFAULT_CMYK_PROFILE_PATH):
+                    raise OSError(f'No usable embedded CMYK profile and the default CMYK profile is missing: {DEFAULT_CMYK_PROFILE_PATH}')
+                cmyk_profile = ImageCms.ImageCmsProfile(DEFAULT_CMYK_PROFILE_PATH)
+                pyflame.print(f'Using default CMYK profile: {DEFAULT_CMYK_PROFILE_PATH}', new_line=False)
 
-        # ------------------------------------------------
-
-        # Determine if we have an alpha channel that we want to carry over.
-        alpha_present = has_alpha_channel(img)
-
-        # ICC-Aware CMYK → RGB Conversion
-        embedded_profile = img.info.get('icc_profile')
-
-        if embedded_profile:
-            # Create profiles from the embedded CMYK and sRGB profiles
+            # Relative colorimetric with black point compensation. Older Pillow has no Intent/Flags enums.
             try:
-                # Load embedded CMYK profile directly from bytes
-                cmyk_profile = ImageCms.ImageCmsProfile(BytesIO(embedded_profile))
-            except NameError:
-                # If BytesIO not imported yet, import it
-                from io import BytesIO
-                cmyk_profile = ImageCms.ImageCmsProfile(BytesIO(embedded_profile))
+                rendering_intent = ImageCms.Intent.RELATIVE_COLORIMETRIC
+                flags = ImageCms.Flags.BLACKPOINTCOMPENSATION
+            except AttributeError:
+                rendering_intent = 1
+                flags = ImageCms.FLAGS['BLACKPOINTCOMPENSATION']
 
             rgb_profile = ImageCms.createProfile('sRGB')
-
-            # Try Relative Colorimetric + Black Point Compensation (if available)
-            flags = 0
-            try:
-                flags = ImageCms.FLAGS.get('BLACKPOINTCOMPENSATION', 0)
-            except Exception:
-                pass
-
-            try:
-                rgb = ImageCms.profileToProfile(
-                    img,
-                    cmyk_profile,
-                    rgb_profile,
-                    renderingIntent=1,  # 1 = Relative Colorimetric
-                    outputMode='RGB',
-                    flags=flags,
+            rgb = ImageCms.profileToProfile(
+                img,
+                cmyk_profile,
+                rgb_profile,
+                renderingIntent=rendering_intent,
+                outputMode='RGB',
+                flags=flags,
                 )
-                pyflame.print('Using embedded CMYK ICC profile (RelCol + BPC) for conversion.')
-            except Exception:
-                pyflame.print(f'ICC profile conversion failed. Falling back to basic CMYK to RGB conversion.', print_type=PrintType.ERROR)
-                rgb = img.convert('RGB')
-        else:
-            pyflame.print('No ICC profile embedded. Using basic CMYK to RGB conversion.')
-            rgb = img.convert('RGB')
 
-        # If TIFF (or hypothetically PSD) with alpha, preserve it
-        result = rgb
-        if img_format in {'TIFF', 'TIF', 'PSD'} and alpha_present:
-            try:
-                alpha = img.getchannel('A')
-                result = rgb.convert('RGBA')
-                result.putalpha(alpha)
-            except ValueError:
-                result = rgb
+            # Embed sRGB profile and keep DPI
+            save_kwargs = {
+                'icc_profile': ImageCms.ImageCmsProfile(rgb_profile).tobytes(),
+                }
+            if 'dpi' in img.info:
+                save_kwargs['dpi'] = img.info['dpi']
 
-        # Work out output path and format
-        src_root, src_ext = os.path.splitext(src_path)
+        # Pillow cannot save PSD; save as TIFF
+        out_format = img_format
+        if img_format == 'PSD':
+            out_format = 'TIFF'
+            pyflame.print('Script cannot save PSD files. Saving as TIFF instead.', print_type=PrintType.WARNING)
 
-        # Default: same extension / format, suffixed with _rgb
-        if dst_path is None:
-            out_ext = src_ext
-            out_format = img_format
+        if out_format == 'JPEG':
+            save_kwargs['quality'] = 95
+            save_kwargs['subsampling'] = 0
 
-            # Pillow cannot save PSD; fall back to TIFF
-            if img_format == "PSD":
-                out_ext = ".tif"
-                out_format = "TIFF"
-                pyflame.print('Script cannot save PSD files. Saving as TIFF instead.', print_type=PrintType.WARNING)
+        rgb.save(dst_path, format=out_format, **save_kwargs)
 
-            dst_path = f"{src_root}_rgb{out_ext}"
-        else:
-            # User provided output path
-            _, out_ext = os.path.splitext(dst_path)
-            if img_format == "PSD":
-                pyflame.print('Pillow cannot save PSD files. Saving as TIFF instead.', print_type=PrintType.WARNING)
-                out_format = "TIFF"
-            else:
-                out_format = img_format
-
-        save_kwargs = {}
-        if out_format == "JPEG":
-            save_kwargs["quality"] = 95
-
-        result.save(dst_path, format=out_format, **save_kwargs)
-
-        pyflame.print(f"Saved converted image: {dst_path} (format={out_format}, mode={result.mode})")
+        pyflame.print(f'Saved converted image: {dst_path} (format={out_format}, mode={rgb.mode})')
 
         return dst_path
 
-    def import_converted_image(self, image_destinations: dict[list, list]) -> None:
+    def import_converted_image(self, image_destinations: dict) -> dict:
         """
         Import Converted Image
         ======================
 
-        Import the converted RGB image into the current Flame project.
+        Import the converted RGB images into the current Flame project. Each image is imported on
+        its own, so one failed import doesn't stop the rest.
 
         Args
         ----
-            image_destinations (dict[list, list]):
+            image_destinations (dict):
                 A dictionary of image paths and destinations.
+
+        Returns
+        -------
+            dict:
+                Image paths that failed to import, with the error text.
 
         Notes
         -----
@@ -444,39 +606,50 @@ class CMYKToRGB:
 
         pyflame.print('Importing converted images...', underline=True, new_line=False)
 
-        import_library_created = False
+        import_library = None
+        import_failures = {}
 
         for path, destination in image_destinations.items():
             print('Path: ', path)
             print('Destination: ', destination, '\n')
-            if destination == 'New Library':
-                # Create a new library and import the image to that library.
-                if not import_library_created:
-                    import_library = flame.projects.current_project.current_workspace.create_library('-= Imported CMYK to RGB Images =-')
-                    import_library_created = True
-                    import_library.expanded = True
-                # Import the image to the new library.
-                flame.import_clips(path, import_library)
-            else:
-                flame.import_clips(path, destination)
+            try:
+                if destination == 'New Library':
+                    # Create a new library and import the image to that library.
+                    if import_library is None:
+                        import_library = flame.projects.current_project.current_workspace.create_library('-= Imported CMYK to RGB Images =-')
+                        import_library.expanded = True
+                    # Import the image to the new library.
+                    flame.import_clips(path, import_library)
+                else:
+                    flame.import_clips(path, destination)
+            except Exception as e:
+                pyflame.print(f'Import failed: {path}\n{e}', print_type=PrintType.ERROR)
+                import_failures[path] = str(e)
+
+        return import_failures
 
 # ==============================================================================
 # [Scopes]
 # ==============================================================================
 
-# Scope to only allow clips with file paths to see menu
+# Scope to only allow clips (not sequences) with a supported image file path to see menu
 def scope_clip(selection):
 
     for item in selection:
-        if isinstance(item, (flame.PyClip)) and item.versions[0].tracks[0].segments[0].file_path != '':
-            return True
+        if isinstance(item, flame.PyClip) and not isinstance(item, flame.PySequence):
+            try:
+                file_path = str(item.versions[0].tracks[0].segments[0].file_path)
+            except Exception:
+                continue
+            if file_path.lower().endswith(SUPPORTED_EXTENSIONS):
+                return True
     return False
 
-# Scope to only allow media hub files to see menu
+# Scope to only allow media hub files with a supported image extension to see menu
 def scope_media_hub_file(selection):
 
     for item in selection:
-        if isinstance(item, (flame.PyMediaHubFilesEntry)):
+        if isinstance(item, flame.PyMediaHubFilesEntry) and str(item.path).lower().endswith(SUPPORTED_EXTENSIONS):
             return True
     return False
 
