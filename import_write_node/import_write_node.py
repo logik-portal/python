@@ -9,11 +9,11 @@
 
 """
 Script Name: Import Write Node
-Script Version: 2.12.1
+Script Version: 2.12.2
 Flame Version: 2025.1
 Written by: Michael Vaglienty
 Creation Date: 05.26.19
-Update Date: 10.13.26
+Update Date: 11.03.26
 
 License: MIT License (MIT) - see LICENSE file for details
 
@@ -41,6 +41,10 @@ To install:
     Copy script folder into /opt/Autodesk/shared/python
 
 Updates:
+
+    v2.12.2 11.03.26
+        - Fixed open clips not being found when the Write File node's Create Open Clip name uses <batch iteration> 
+          or <version name>. 
 
     v2.12.1 10.13.26
         - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
@@ -120,7 +124,7 @@ from lib.pyflame_lib_import_write_node import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Import Write Node'
-SCRIPT_VERSION = 'v2.12.1'
+SCRIPT_VERSION = 'v2.12.2'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # ==============================================================================
@@ -182,7 +186,7 @@ class ImportWriteNode:
             print ('    pattern:', pattern)
             project = str(flame.project.current_project.name)
             project_nickname = str(flame.project.current_project.nickname)
-            batch_iteration = str(flame.batch.current_iteration.name)
+            batch_iteration = str(flame.batch.current_iteration.name)[1:-1]
             batch_name = str(flame.batch.name)[1:-1]
             #ext = str(self.write_node.format_extension)[1:-1]
             ext = ''
