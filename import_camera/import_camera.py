@@ -9,11 +9,11 @@
 
 """
 Script Name: Import Camera
-Script Version: 4.17.1
-Flame Version: 2025.1
+Script Version: 4.17.2
+Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 06.02.18
-Update Date: 10.13.26
+Update Date: 11.06.26
 
 License: MIT License (MIT) - see LICENSE file for details
 
@@ -41,6 +41,9 @@ To install:
     Copy script into /opt/Autodesk/shared/python/import_camera
 
 Updates:
+
+    v4.17.2 11.06.26
+        - Fixed Use Tokenized Path: the script called pyflame.resolve_path_tokens, which no longer exists in PyFlameLib. It now uses pyflame.resolve_tokens.
 
     v4.17.1 10.13.26
         - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
@@ -196,7 +199,7 @@ from lib.pyflame_lib_import_camera import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Import Camera'
-SCRIPT_VERSION = 'v4.17.1'
+SCRIPT_VERSION = 'v4.17.2'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class ImportCamera():
@@ -315,7 +318,10 @@ class ImportCamera():
 
         # If 'Use Tokenized Path' is selected, resolve path tokens, otherwise use path in settings
         if self.settings.import_method == 'Use Tokenized Path':
-            import_path = pyflame.resolve_path_tokens(self.settings.custom_import_path, flame.batch)
+            import_path = pyflame.resolve_tokens(
+                tokenized_string=self.settings.custom_import_path,
+                flame_pyobject=flame.batch,
+                )
         else:
             import_path = self.settings.camera_path
 
@@ -1600,13 +1606,13 @@ def get_batch_custom_ui_actions():
                     'name': 'Import FBX Camera',
                     'order': 1,
                     'execute': import_fbx,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 },
                 {
                     'name': 'Import Alembic Camera',
                     'order': 2,
                     'execute': import_abc,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                 }
             ]
         }
@@ -1628,7 +1634,7 @@ def get_main_menu_custom_ui_actions():
                {
                     'name': 'Import Camera Setup',
                     'execute': setup,
-                    'minimumVersion': '2025.1'
+                    'minimumVersion': '2025.2'
                }
            ]
         }
