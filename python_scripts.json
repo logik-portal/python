@@ -864,6 +864,16 @@
     "Description": "Script Name: Mute 6 Audio Tracks\nWritten By: Kieran Hanrahan\n\nScript Version: 1.0.0\nFlame Version: 2022\n\nURL: http://github.com/khanrahan/mute-6-audio-tracks\n\nCreation Date: 11.23.22\nUpdate Date: 03.10.25\n\nDescription:\n\nToggles audio tracks 1-6 between mute or not on the selected sequences.\n\nMenus:\n\nRight-click selected clips and/or sequences on the Desktop Reels --> Mute... --> Toggle Audio Tracks 1-6\n\nRight-click selected clips and/or sequences in the Media Panel --> Mute... --> Toggle Audio Tracks 1-6\n\nTo Install:\n\nFor all users, copy this file to:\n/opt/Autodesk/shared/python/\n\nFor a specific user on Linux, copy this file to:\n/home/<user_name>/flame/python/\n\nFor a specific user on Mac, copy this file to:\n/Users/<user_name>/Library/Preferences/Autodesk/flame/python/"
   },
   {
+    "Script Name": "muxed elbows",
+    "Script Version": "1.0.0",
+    "Flame Version": "2027.2",
+    "Maximum Flame Version": "Latest",
+    "Author": "Michael Vaglienty",
+    "Creation Date": "11.11.26",
+    "Update Date": "11.11.26",
+    "Description": "Script Name: Muxed Elbows\nScript Version: 1.0.0\nFlame Version: 2027.2\nWritten by: Michael Vaglienty\nCreation Date: 11.11.26\nUpdate Date: 11.11.26\n\nLicense: MIT License (MIT) - see LICENSE file for details\n\nScript Type: Batch\n\nDescription:\n\nConvert Mux nodes to Elbow nodes, or Elbow nodes to Mux nodes, keeping all connections.\n\nUsage:\n\nEach connected Mux input becomes its own Elbow. Each Elbow becomes a Mux connected through its Front input and Result output.\nElbows can also become Mux nodes frozen at the current frame, named after that frame.\nMux and Elbow nodes with no connections are skipped. If a node can't be converted, it's put back the way it was.\n\nURL:\n\nhttps://logik-portal.com/scripts/muxed_elbows\n\nMenus:\n\nMUX nodes to elbows:\n\nRight-click selected Mux nodes in Batch -> MUX -> Elbow\n\nElbows to MUX nodes:\n\nRight-click selected Elbow nodes in Batch -> Elbow -> MUX\n\nElbows to MUX nodes frozen at the current frame:\n\nRight-click selected Elbow nodes in Batch -> Elbow -> Frozen MUX\n\nTo install:\n\nCopy script folder into /opt/Autodesk/shared/python\n\nUpdates:\n\nv1.0.0 11.11.26\n- Initial release."
+  },
+  {
     "Script Name": "nano banana",
     "Script Version": "1.3.0",
     "Flame Version": "2025.2",
