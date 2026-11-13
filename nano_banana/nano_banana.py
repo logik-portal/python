@@ -9,11 +9,11 @@
 
 """
 Script Name: Nano Banana
-Script Version: 1.3.0
+Script Version: 1.4.0
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 03.13.26
-Update Date: 11.01.26
+Update Date: 11.12.26
 
 License: MIT License (MIT) - see LICENSE file for details
  
@@ -70,9 +70,9 @@ Description:
     Please review your usage limits and pricing plan before proceeding.
     Your API key will be stored unencrypted in the config file so be aware of who has access to it.
 
-    Images are stored in <script_path>/images/. A tokenized path can be set in the script
-    setup, or with the Change Path button in the main window, to store images in a different location.
-    The folder images are saved to is shown under the Image Gallery buttons.
+    Images are stored in <script_path>/images/. A tokenized path can be set with the Change Path
+    button in the main window to store images in a different location.
+    The folder images are saved to is shown at the top of the Image Gallery, next to the Change Path button.
 
 URL:
 
@@ -125,6 +125,13 @@ To install:
     Copy script into /opt/Autodesk/shared/python/nano_banana
 
 Updates:
+
+    v1.4.0 11.12.26
+        - The images folder and the Change Path button are now at the top of the Image Gallery.
+        - The images path is no longer in the Setup window. Set it with the Change Path button in the main window.
+        - The path selection window (Change Path) now stays on top of the main window.
+        - API key error messages from the Setup window's Save now open on top of the Setup window.
+        - The prompt image info now also shows the image's aspect ratio (Ratio: 16:9). A ~ means it's close to that ratio, not exact.
 
     v1.3.0 11.01.26
         - Updated to PyFlameLib v5.5.3 - Fixes screenGeometry error with Flame 2027.2.
@@ -207,6 +214,7 @@ from __future__ import annotations
 import base64
 import http.client
 import json
+import math
 import os
 import random
 import ssl
@@ -223,7 +231,7 @@ from lib.pyflame_lib_nano_banana import *
 # ==============================================================================
 
 SCRIPT_NAME    = 'Nano Banana'
-SCRIPT_VERSION = 'v1.3.0'
+SCRIPT_VERSION = 'v1.4.0'
 SCRIPT_PATH    = os.path.abspath(os.path.dirname(__file__))
 
 # Aspect ratios supported by all current Nano Banana image models.
@@ -364,12 +372,24 @@ def load_config() -> PyFlameConfig:
 
     return settings
 
-def verify_api_key(api_key: str) -> bool:
+def verify_api_key(api_key: str, parent=None) -> bool:
     """
     Verify API Key
     ==============
 
     Verify Google Nano Banana API key by listing available models.
+
+    Args
+    ----
+        api_key (str):
+            API key to verify.
+
+        parent (PyFlameWindow | None):
+            Window the error messages open over. None when no script window is open yet (start-up check).
+
+    Returns
+    -------
+        verified (bool): True if Google accepted the key.
     """
 
     api_key = api_key.strip() if api_key else ''
@@ -378,7 +398,7 @@ def verify_api_key(api_key: str) -> bool:
         print_pass_fail('No API key has been set', False)
         PyFlameMessageWindow(
             message='No API key has been set.\n\nPlease add your Google Nano Banana API key and try again.\n\nFlame Main Menu -> Logik -> Logik Portal Script Setup -> Nano Banana Setup',
-            parent=None,
+            parent=parent,
             )
         return False
 
@@ -393,14 +413,14 @@ def verify_api_key(api_key: str) -> bool:
             PyFlameMessageWindow(
                 message='Invalid API key.\n\nPlease check your Google Nano Banana API key and try again.',
                 message_type=MessageType.ERROR,
-                parent=None,
+                parent=parent,
                 )
         else:
             print_pass_fail('API Key Verification Failed', False)
             PyFlameMessageWindow(
                 message=f'API key verification failed (HTTP {e.code}).\n\nPlease try again.',
                 message_type=MessageType.ERROR,
-                parent=None,
+                parent=parent,
                 )
         return False
     except (urllib.error.URLError, OSError):
@@ -408,7 +428,7 @@ def verify_api_key(api_key: str) -> bool:
         PyFlameMessageWindow(
             message='Unable to verify API key.\n\nPlease check your internet connection and try again.',
             message_type=MessageType.ERROR,
-            parent=None,
+            parent=parent,
             )
         return False
 
@@ -432,6 +452,61 @@ def verify_internet_connection() -> bool:
             parent=None,
             )
         return False
+
+def get_aspect_ratio_text(width: int, height: int) -> str:
+    """
+    Get Aspect Ratio Text
+    =====================
+
+    Get the aspect ratio of an image size as text. An exact match with one of the aspect ratios in
+    EXTENDED_ASPECT_RATIOS is returned as is (16:9), a size within 5% of the nearest one gets a ~ in
+    front (~16:9), and anything else is returned as a decimal (2.00:1 or 1:2.39).
+
+    Args
+    ----
+        width (int):
+            Image width in pixels.
+
+        height (int):
+            Image height in pixels.
+
+    Returns
+    -------
+        ratio_text (str): Aspect ratio text. Empty if the width or height is 0 or less.
+    """
+
+    if width <= 0 or height <= 0:
+        return ''
+
+    # Use the exact aspect ratio if the reduced size is one of the menu aspect ratios
+    divisor = math.gcd(width, height)
+    exact_ratio = f'{width // divisor}:{height // divisor}'
+    if exact_ratio in EXTENDED_ASPECT_RATIOS:
+        return exact_ratio
+
+    def get_ratio_value(ratio: str) -> float:
+        """
+        Get Ratio Value
+        ===============
+
+        Convert aspect ratio text (16:9) to width divided by height.
+        """
+
+        ratio_width, ratio_height = ratio.split(':')
+
+        return int(ratio_width) / int(ratio_height)
+
+    # Find the nearest menu aspect ratio on a log scale so wide and tall images are treated the same
+    image_ratio = width / height
+    nearest_ratio = min(EXTENDED_ASPECT_RATIOS, key=lambda ratio: abs(math.log(image_ratio / get_ratio_value(ratio))))
+    if abs(image_ratio / get_ratio_value(nearest_ratio) - 1) <= 0.05:
+        return f'~{nearest_ratio}'
+
+    # Not close to any menu aspect ratio, show the ratio as a decimal
+    if width >= height:
+        return f'{width / height:.2f}:1'
+
+    return f'1:{height / width:.2f}'
 
 class PromptReturnFilter(QtCore.QObject):
 
@@ -492,7 +567,7 @@ class PromptReturnFilter(QtCore.QObject):
 
 class NanoBanana:
 
-    # Open Nano Banana window, so the Setup window can update its images path
+    # Open Nano Banana window, so the Setup window can update its API key
     open_window = None
 
     def __init__(self, selection) -> None:
@@ -749,6 +824,26 @@ class NanoBanana:
 
             return [part for part in content['parts'] if isinstance(part, dict)]
 
+        def set_prompt_image(image) -> None:
+            """
+            Set Prompt Image
+            ================
+
+            Set the prompt image and add the image's aspect ratio to the info under it.
+
+            Args
+            ----
+                image (str | None): Path of the image to show, or None to clear the prompt image.
+            """
+
+            self.prompt_image_widget.image = image
+
+            # Add aspect ratio to the info text, which is reset each time the image is set
+            if self.prompt_image_widget.has_image and self.prompt_image_widget.image_size is not None:
+                ratio_text = get_aspect_ratio_text(*self.prompt_image_widget.image_size)
+                if ratio_text:
+                    self.prompt_image_widget.info_text = f'{self.prompt_image_widget.info_text}  |  Ratio: {ratio_text}'
+
         def prompt_image_missing(status: str) -> bool:
             """
             Prompt Image Missing
@@ -770,7 +865,7 @@ class NanoBanana:
             if not self.prompt_image_widget.has_image or not image_path or os.path.isfile(image_path):
                 return False
 
-            self.prompt_image_widget.image = None
+            set_prompt_image(None)
             request_failed(f'Prompt image not found:\n\n{image_path}\n\nIt was moved or deleted. The prompt image has been cleared.', status)
 
             return True
@@ -989,7 +1084,7 @@ class NanoBanana:
             history_cursor.insertText(prompt_text)
             self.prompt_history_text_edit.setTextCursor(history_cursor)
             self.prompt_text_edit.text_str = ''
-            self.prompt_image_widget.image = save_path
+            set_prompt_image(save_path)
 
         def send_message() -> None:
             """
@@ -1202,7 +1297,7 @@ class NanoBanana:
             Clear the image from the prompt image widget.
             """
 
-            self.prompt_image_widget.image = None
+            set_prompt_image(None)
 
         def import_to_flame() -> None:
             """
@@ -1260,7 +1355,7 @@ class NanoBanana:
                     )
                 return
 
-            self.prompt_image_widget.image = path
+            set_prompt_image(path)
 
         def reveal_in_finder() -> None:
             """
@@ -1329,7 +1424,7 @@ class NanoBanana:
                 if self.banana_image_widget.image_path and os.path.abspath(self.banana_image_widget.image_path) == os.path.abspath(path):
                     self.banana_image_widget.image = None
                 if self.prompt_image_widget.image_path and os.path.abspath(self.prompt_image_widget.image_path) == os.path.abspath(path):
-                    self.prompt_image_widget.image = None
+                    set_prompt_image(None)
                 self.image_gallery.refresh()
                 PyFlameMessageWindow(
                     message=f'Image was already removed:\n\n{os.path.basename(path)}',
@@ -1370,7 +1465,7 @@ class NanoBanana:
             if banana_displayed:
                 self.banana_image_widget.image = None
             if prompt_displayed:
-                self.prompt_image_widget.image = None
+                set_prompt_image(None)
 
             self.image_gallery.refresh()
 
@@ -1621,7 +1716,9 @@ class NanoBanana:
         # ------------------------------------------------------------------------------
 
         self.main_window.grid_layout.addWidget(self.image_gallery_label, 0, 0, 1, 3)
-        self.main_window.grid_layout.addWidget(self.image_gallery, 1, 0, 17, 3)
+        self.main_window.grid_layout.addWidget(self.images_path_entry, 1, 0, 1, 2)
+        self.main_window.grid_layout.addWidget(self.change_path_button, 1, 2)
+        self.main_window.grid_layout.addWidget(self.image_gallery, 2, 0, 16, 3)
 
         self.main_window.grid_layout.addWidget(self.reveal_in_finder_button, 18, 0)
         self.main_window.grid_layout.addWidget(self.reveal_in_mediahub_button, 19, 0)
@@ -1629,8 +1726,6 @@ class NanoBanana:
         self.main_window.grid_layout.addWidget(self.delete_button, 19, 1)
         self.main_window.grid_layout.addWidget(self.send_to_prompt_button, 18, 2)
         self.main_window.grid_layout.addWidget(self.clear_prompt_image_button, 19, 2)
-        self.main_window.grid_layout.addWidget(self.images_path_entry, 20, 0, 1, 3)
-        self.main_window.grid_layout.addWidget(self.change_path_button, 21, 0)
 
         self.main_window.grid_layout.addWidget(self.prompt_label, 0, 4, 1, 4)
         self.main_window.grid_layout.addWidget(self.prompt_history_text_edit, 1, 4, 5, 4)
@@ -1665,7 +1760,7 @@ class NanoBanana:
 
         # Add imported image to prompt image widget if image is selected from Flame
         if self.flame_image_exported:
-            self.prompt_image_widget.image = self.exported_image_path
+            set_prompt_image(self.exported_image_path)
 
         NanoBanana.open_window = self
 
@@ -1776,7 +1871,7 @@ class NanoBanana:
 
         self.path_selection_window = PyFlameWindow(
             title=f'{SCRIPT_NAME}: Path Selection <small>{SCRIPT_VERSION}',
-            parent=None,
+            parent=self.main_window,
             return_pressed=save_path,
             escape_pressed=close_window,
             grid_layout_columns=6,
@@ -1888,31 +1983,6 @@ class NanoBananaSetup:
         Setup window for Nano Banana.
         """
 
-        def browse_images_path() -> None:
-            """
-            Browse Images Path
-            ==================
-
-            Open Flame file browser to select images path.
-            """
-
-            # Also hide an open Nano Banana window, Flame's file browser opens behind Qt windows
-            windows_to_hide = []
-            nano_banana = NanoBanana.get_open_window()
-            if nano_banana:
-                windows_to_hide.append(nano_banana.main_window)
-            windows_to_hide.append(self.setup_window)
-
-            images_path = pyflame.file_browser(
-                path=self.images_path_entry.text,
-                title='Select Images Path',
-                select_directory=True,
-                window_to_hide=windows_to_hide,
-                )
-
-            if images_path:
-                self.images_path_entry.text = str(images_path)
-
         def save_settings() -> None:
             """
             Save Settings
@@ -1930,31 +2000,24 @@ class NanoBananaSetup:
                     )
                 return
 
-            if not self.images_path_entry.text:
-                PyFlameMessageWindow(
-                    message='Please enter a images path.',
-                    message_type=MessageType.ERROR,
-                    parent=self.setup_window,
-                    )
+            # Validate API key
+            if not verify_api_key(api_key=self.api_key_entry.text, parent=self.setup_window):
                 return
 
-            # Validate API key
-            if not verify_api_key(api_key=self.api_key_entry.text):
-                return
+            # Reload settings so values the main window saved while this window was open aren't written back
+            self.settings = load_config()
 
             # Save settings
             self.settings.save_config(
                 config_values={
                     'api_key': self.api_key_entry.text,
-                    'images_path': self.images_path_entry.text,
                     }
                 )
 
-            # Update open Nano Banana window with new key and path so its requests and later saves use them
+            # Update open Nano Banana window with new key so its requests and later saves use it
             nano_banana = NanoBanana.get_open_window()
             if nano_banana:
                 nano_banana.settings.api_key = self.api_key_entry.text
-                nano_banana.set_images_path(self.images_path_entry.text)
 
             self.setup_window.close()
 
@@ -1975,7 +2038,7 @@ class NanoBananaSetup:
             return_pressed=save_settings,
             escape_pressed=close_window,
             grid_layout_columns=6,
-            grid_layout_rows=4,
+            grid_layout_rows=3,
             window_margins=15,
             )
 
@@ -1983,33 +2046,13 @@ class NanoBananaSetup:
         self.api_key_label = PyFlameLabel(
             text='Nano Banana API Key',
             )
-        self.images_path_label = PyFlameLabel(
-            text='Images Path',
-            )
 
         # Entries
         self.api_key_entry = PyFlameEntry(
             text=self.settings.api_key,
             )
-        self.images_path_entry = PyFlameEntry(
-            text=self.settings.images_path,
-            )
-
-        # Menus
-        self.images_path_token_menu = PyFlameTokenMenu(
-            token_dest=self.images_path_entry,
-            token_dict={
-                'Project Name': '<ProjectName>',
-                'Project Nick Name': '<ProjectNickName>',
-                }
-            )
 
         # Buttons
-        self.images_path_browse_button = PyFlameButton(
-            text='Browse',
-            color=Color.GRAY,
-            connect=browse_images_path,
-            )
         self.setup_cancel_button = PyFlameButton(
             text='Cancel',
             color=Color.GRAY,
@@ -2027,12 +2070,8 @@ class NanoBananaSetup:
 
         self.setup_window.grid_layout.addWidget(self.api_key_label, 0, 0)
         self.setup_window.grid_layout.addWidget(self.api_key_entry, 0, 1, 1, 5)
-        self.setup_window.grid_layout.addWidget(self.images_path_label, 1, 0)
-        self.setup_window.grid_layout.addWidget(self.images_path_entry, 1, 1, 1, 3)
-        self.setup_window.grid_layout.addWidget(self.images_path_browse_button, 1, 4)
-        self.setup_window.grid_layout.addWidget(self.images_path_token_menu, 1, 5)
-        self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 3, 4)
-        self.setup_window.grid_layout.addWidget(self.setup_save, 3, 5)
+        self.setup_window.grid_layout.addWidget(self.setup_cancel_button, 2, 4)
+        self.setup_window.grid_layout.addWidget(self.setup_save, 2, 5)
 
         self.api_key_entry.set_focus()
 
