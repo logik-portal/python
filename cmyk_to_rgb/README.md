@@ -45,7 +45,6 @@ Copy script into /opt/Autodesk/shared/python/cmyk_to_rgb
 - [How Converting Works](#how-converting-works)
 - [Colour Profiles](#colour-profiles)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -204,61 +203,6 @@ Use this for CMYK JPG and PSD files, which Flame won't import as clips.
 ### Convert the same artwork again
 
 Run the script again on the same images. One warning lists the `_rgb` files that already exist. **Confirm** replaces them. The RGB clips that were imported the first time are still in Flame; the new import adds another clip.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `CMYK to RGB requires an Apple Silicon Mac. Intel Macs are not supported.`<br>`Python package install cancelled.` | Every time you run the script on an Intel Mac. | The script can't run on this computer. Use an Apple Silicon Mac or Linux. |
-| `Operating system: <name> is not supported.` | Running on something other than macOS or Linux. | Use macOS (Apple Silicon) or Linux. |
-| `Python <version> is not supported.` | Flame's Python isn't 3.11 or 3.13. | Check for a newer version of the script. |
-| `This script requires python packages to be installed. System password is required to install them.` | First run, when Pillow isn't installed yet. | Enter your system password. See [Python package](#python-package-first-run-only). |
-| `Python packages successfully installed:`<br>`<package name>`<br>`Starting script...` | After Pillow was installed. | Nothing; the script continues. |
-| `Python package <package> not found.` or `Python package <package> not installed.` | The package file is missing from `assets/python_packages`, or installing it didn't work. | Reinstall the full script folder, then try again. |
-| `Script install path is incorrect: ...` | The script folder isn't named `cmyk_to_rgb`. | Rename the folder to `cmyk_to_rgb` and rescan Python hooks. |
-| `Script folder is not writable.`<br>`Please check permissions and try again.` | Flame can't write to the script folder. | Fix the folder's permissions. |
-| `These output files already exist:`<br>`<file names>`<br>`Overwrite them?` | One or more `_rgb` files already exist. | **Confirm** to overwrite them, **Cancel** to keep them and skip those images. |
-| `CMYK to RGB Conversion Complete!`<br>`Converted: <number>` | Every selected image was converted, and Flame reported no import errors. | Nothing. If a clip is missing, import the `_rgb` file by hand. |
-| `Converted: <number>`<br>`Skipped:`<br>`<file>: <reason>`<br>`Failed:`<br>`<file>: <reason>` | Some images were skipped or failed. Only the lists that have entries are shown. It's an error message when anything failed, otherwise an information message. | Check the reasons below. |
-
-### Reasons in the summary
-
-Skipped:
-
-| Reason | What to do |
-| --- | --- |
-| `Unsupported file type. Only TIF, JPG and PSD are supported.` | Nothing; only those file types are converted. |
-| `File not found. Image sequences are not supported.` | The file is missing or offline, or the clip is an image sequence. Convert single image files only. |
-| `Unsupported format: <format>` | The file's ending doesn't match what's inside (for example a PNG renamed to `.tif`). |
-| `Not a CMYK image (mode: <mode>)` | The image is already RGB (or greyscale, LAB...). Use it as it is. |
-| `Output file already exists` | You chose **Cancel** in the overwrite warning. |
-
-Failed:
-
-| Reason | What to do |
-| --- | --- |
-| `Image could not be read.` | The file is damaged or a type the script can't read. For TIFFs the message adds `CMYK TIFFs with transparency are not supported.`: save the TIFF again without transparency. |
-| `PSD has extra channels (alpha or spot). Flatten and remove extra channels, then try again.` | In Photoshop, flatten the image, delete the alpha and spot channels, save, and run the script again. |
-| `Output name clashes with <file>` | Two selected files would make the same `_rgb` file (for example `logo.psd` and `logo.tif`). Rename one of them, or convert them separately. |
-| `Converted to <file>, but import failed: <error>` | The RGB file was written but Flame reported an error importing it. Import it by hand from next to the source file. |
-| Any other text | An error while converting or saving, for example no write access to the folder. Check the folder's permissions and the console. |
-
-### Console messages
-
-These are printed in Flame's console (shell). Some also show in Flame's message area.
-
-| Message | Meaning |
-| --- | --- |
-| `No supported images selected.` | Nothing in the selection was a clip or a MediaHub file. Nothing happened. |
-| `Converted: <file> -> <rgb file>` | That image was converted, and Flame reported no import error. |
-| `Skipped: <file>: <reason>` / `Failed: <file>: <reason>` | The same lists as in the summary. |
-| `Using embedded CMYK profile.` | The image's own profile was used. |
-| `Using default CMYK profile: <path>` | The image had no profile, so U.S. Web Coated (SWOP) v2 was used. |
-| `Embedded CMYK profile could not be read, using default CMYK profile: <error>` | The image's profile was damaged, so the SWOP profile was used. |
-| `Script cannot save PSD files. Saving as TIFF instead.` | A PSD was converted; the result is a TIFF. |
-| `Python packages not installed, exiting script.` | The password window was cancelled or the install failed. The script stopped. |
 
 ## Tips, Troubleshooting and FAQ
 

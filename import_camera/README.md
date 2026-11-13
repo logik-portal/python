@@ -42,7 +42,6 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 - [The Node Setups](#the-node-setups)
 - [How Importing Works](#how-importing-works)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -208,7 +207,7 @@ The same idea, with lens distortion handled by ST maps. The plate is undistorted
 
 Like the ST Map Matchbox Setup, but it uses Flame's own **STMap** node (`st_map_undistort` and `st_map_redistort`) instead of the Matchbox. The redistort STMap node gives the matte as well, so there is no separate matte node. The other nodes (`mux_in`, `st_map_undistort_map`, `mux`, `divide`, `st_map_redistort_map`, `comp`, `regrain`) and the `st_maps` reel are the same.
 
-For both ST Map setups, select the plate (or a node with the plate's resolution) before importing. Without a selection you get a warning first (see [Messages and What to Do](#pop-up-messages)).
+For both ST Map setups, select the plate (or a node with the plate's resolution) before importing. Without a selection you get a warning first.
 
 ## How Importing Works
 
@@ -253,37 +252,6 @@ For both ST Map setups, select the plate (or a node with the plate's resolution)
 ### Keep a camera file linked instead of importing it
 
 Choose **Read File** under **Import Type**. Linearize Keyframes and the Alembic buttons are greyed out.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `For ST Map to be properly applied, be sure to have the background clip or node with background resolution selected when importing.`<br><br>`Continue with import?` (title: ST Map Camera Import) | You clicked **Load** with an ST Map setup and nothing was selected in Batch. | Click **Confirm** to go on. If you click **Cancel**, nothing is imported **and the options window doesn't come back**: select the plate and run the import again. |
-| `Select Undistort ST Map` | ST Map setups, before the undistort map browser opens. | Click **Ok**, then pick the undistort EXR. |
-| `Undistort map not selected.`<br><br>`"undistort" should be in selected file name.` | The file you picked doesn't have `undistort` in its path. | The options window comes back. Click **Load** again and pick the right file, or rename the map. |
-| `Select Redistort ST Map` | The redistort map wasn't found next to the undistort map. | Click **Ok**, then pick the redistort EXR. |
-| `Redistort map not selected.`<br><br>`"redistort" should be in selected file name.` | The file you picked doesn't have `redistort` in its path. | The options window comes back. Click **Load** again and pick the right file, or rename the map. |
-| `Script install path is incorrect:`<br><br>`<script path>`<br><br>`The name of the script folder should match the name of the main script file.`<br><br>`Script install path should be:`<br><br>`<correct path>` | The script folder isn't named `import_camera`. | Rename the folder to `import_camera` and rescan Python hooks. |
-| `Script folder is not writable.`<br><br>`Please check permissions and try again.` | Flame can't write to the script folder. | Fix the folder's permissions so Flame can write to it. |
-
-### Console messages
-
-| Message | Meaning |
-| --- | --- |
-| `Select FBX file...` / `Select Alembic file...` | The file browser is opening. |
-| `FBX file selected: <path>` | The file you picked. |
-| `Import Cancelled.` | You cancelled the file browser. |
-| `Searching for ST Redistort map...` / `ST Redistort map found.` | The automatic redistort map search. |
-| `ST Maps imported.` | Both ST maps were imported into the `st_maps` reel. |
-| `ST Map import cancelled.` | A map browser was cancelled or the wrong file was picked. The options window comes back. |
-| `Setting camera keyframes to linear.` / `Camera keyframes set to linear.` | Linearize Keyframes ran. |
-| `Building ST Map Matchbox setup...` / `Building ST Map Node setup...` | The ST maps were imported and the ST Map setup is being built. |
-| `Camera imported.` | The `imported_camera` Action was made and loaded. |
-| `Camera imported with No ST Map setup.` / `... with ST Map Matchbox setup.` / `... with ST Map node setup.` | The chosen setup was built. |
-| `FBX imported.` / `Alembic imported.` | The import is finished. |
-| `Temp folder created.` / `Temp folder removed.` | The script's `temp` folder was made or cleaned up. |
 
 ## Tips, Troubleshooting and FAQ
 

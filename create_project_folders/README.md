@@ -44,7 +44,6 @@ Copy script into /opt/Autodesk/shared/python/create_project_folders
 - [When Folders Are Offered](#when-folders-are-offered)
 - [How Folders Are Created](#how-folders-are-created)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -203,7 +202,7 @@ Examples below use project `Big_Job` with nickname `bj`, Flame user `artist` wit
 
 Example: `/Volumes/projects/<YYYY>/<ProjectName>` becomes `/Volumes/projects/2026/Big_Job`.
 
-If the project has no nickname, `<ProjectNickName>` becomes nothing (the same for `<UserNickName>` when the user has no nickname). When that leaves an empty folder in the Projects Path, or an empty folder or library name, an error is shown and nothing is created for that part (see [Messages and What to Do](#messages-and-what-to-do)).
+If the project has no nickname, `<ProjectNickName>` becomes nothing (the same for `<UserNickName>` when the user has no nickname). When that leaves an empty folder in the Projects Path, or an empty folder or library name, an error is shown and nothing is created for that part.
 
 ## When Folders Are Offered
 
@@ -348,60 +347,6 @@ If you don't want folders for this project, click **Cancel**. The project is mar
 3. Click **Manually Create** under the tree you want (media panel or file system). Only missing folders are offered if some already exist.
 
 Or click **Save**, then **Confirm** when asked whether to create folders, and use the Create Project Folders window.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `Configure project folders and media panel libraries/folders now?`<br>`This can be done later through the Setup window.`<br>`Flame Main Menu -> Logik -> Logik Portal Script Setup -> Create Project Folders Setup` | The first Flame start or project load after installing. Asked once. | **Confirm** opens Setup. **Cancel** skips it; use the Flame Main Menu later. |
-| `Set up a folder template and enable creating Media Panel Libraries/Folders and/or File System Folders, then Save.`<br>`You will then be offered to create folders after saving and when Flame starts.` | After you click Confirm on the first-time question. | Set up the template in Setup, then Save. |
-| `Select the Workspace to add a library, or a library/folder to add a folder.` | **Add Lib/Folder** with nothing selected in the media panel tree. | Select an item first. |
-| `Template name can't be empty or the same as another template: <name>` | **Rename** with an empty name or the name of another template. | Rename again with another name. |
-| `The last template can't be deleted.` | **Delete** when there's only one template. | Change the template instead, or add another one first. |
-| `Delete template: <name>?` | **Delete**. | Confirm to delete the template (saved when you click Save), or cancel. |
-| `Template: <name>`<br>`Projects Path: Enter path where folders will be created.` | **Save** or **Manually Create** when a template with **Create Folders** on has an empty path. That template is shown. | Enter a Projects Path, or turn Create Folders off for it. |
-| `Neither File System Folders or Media Panel Libraries/Folders selected to create in any template.`<br>`No folders will be created.`<br>`Continue?` | **Save** or **Manually Create** when no template has a Create button on. | Confirm to save anyway (folders won't be offered at start-up or project load), or cancel and turn a Create button on. |
-| `Create Project Media Panel Libraries and/or File System Folders for current project?` | After **Save**, when a template has a Create button on. | **Confirm** opens the Create Project Folders window for the current project. |
-| `Create Project Libraries/Folders?`<br>`This will delete the Default Library.` | Media panel **Manually Create**. The second line only appears when the Default Library will be deleted. | Confirm to create, or cancel. |
-| `Libraries created:`<br>`<libraries, or None>`<br>`Folders added to existing libraries:`<br>`<folders, or None>` | After media panel **Manually Create**. The second part only appears when some libraries already existed. | Nothing; for information. |
-| `File system folders created.` | After file system **Manually Create**, when anything was created. | Nothing; for information. |
-| `Project folders won't be offered for this project at start-up again.`<br>`To create them later, use Flame Main Menu -> Logik -> Logik Portal Script Setup -> Create Project Folders Setup (Manually Create, or Save then Create).` | **Cancel** in the Create Project Folders window when it opened on its own. The project is now marked. | Nothing, or create the folders later from Setup. |
-| `This window was opened for project <earlier project>. The current project is now <current project>.`<br>`Nothing was created. Use Setup to create folders for the current project.` | **Create** in a Create Project Folders window left open from an earlier project. | Use Setup to create folders for the current project. |
-| `Project folder already exists:`<br>`<project folder>`<br>`These folders are missing:`<br>`<folders>`<br>`Create missing folders?` | Creating file system folders when the project folder exists but some template folders don't. | Confirm to create only the missing folders, or cancel. The project is marked either way. |
-| `These folders are missing from existing libraries:`<br>`<Library/Folder ...>`<br>`Create missing folders?` | Creating media panel libraries when some libraries exist but are missing template folders. | Confirm to add only the missing folders, or cancel. New libraries are created either way. |
-| `The file system path or a folder name has an empty part. A token such as <ProjectNickName> or <UserNickName> had no value (for example the project has no nickname).`<br>`Projects Path: <path as typed>`<br>`Resolved: <path with tokens filled in>`<br>`Empty folder names: <names>`<br>`No file system folders created.` | Creating file system folders when a token in the Projects Path or in a folder name filled in as nothing. The `Empty folder names` line only appears when a folder name is empty. Nothing is created for the file system. | Give the project (or user) a nickname, or change the template so it doesn't use that token. |
-| `A media panel library or folder name is empty. A token such as <ProjectNickName> or <UserNickName> had no value (for example the project has no nickname).`<br>`Empty names: <names>`<br>`No media panel libraries/folders created.` | Creating media panel libraries when a token in a library or folder name filled in as nothing. Nothing is created for the media panel. | Give the project (or user) a nickname, or change the template so it doesn't use that token. |
-| `Projects Path is not a valid folder path:`<br>`<path>`<br>`No file system folders created.` | The Projects Path (with tokens filled in) has no project folder or parent folder, for example `/`. | Fix the template's Projects Path in Setup. |
-| `Could not create file system folders.`<br>`<error>` | Flame couldn't create the folders. | Check that the volume is mounted and that you have permission to write there. |
-| `Could not create these file system folders:`<br>`<folders>` | Some folders were missing after creating. | Check permissions and free space, then use Manually Create again; only missing folders are offered. |
-| `Could not create media panel libraries/folders.`<br>`<error>` | Flame reported an error while creating libraries or folders. | Read the error. Some libraries may already have been created; use Manually Create again to add only what's missing. |
-
-### Console-only messages
-
-These appear in the console (the shell Flame was started from), not in a pop-up:
-
-| Message | Meaning |
-| --- | --- |
-| `Project Already Offered, Skipped: <project>` | The project was already offered during this project load. |
-| `Hook project name <name> is not the current project <current>. Using the current project.` | Flame reported a different project name than the one that is open. The script uses the open project. |
-| `Skipped Creating File System Folders and Media Panel Libraries/Folders` | The project is marked, so nothing was offered. |
-| `Project File System Folder Already Exists: <path>` | The project folder exists; only missing folders are offered. |
-| `All Project File System Folders Already Exist: <path>` | The project folder exists and nothing is missing. |
-| `Skipped Creating Missing File System Folders` / `Skipped Creating Missing Library Folders` | You cancelled the missing-folders message. |
-| `File System Folders Created` / `Media Panel Libraries/Folders Created` / `Missing Library Folders Created` | Folders were created. |
-| `Library Already Exists: <library>` | The library exists and wasn't created again. |
-| `Media Panel Libraries Already Exist` / `No Media Panel Libraries To Create` | Every template library already existed. |
-| `Default Library Deleted` | The Default Library was deleted. |
-| `Default Library Kept` | **Delete Default Lib** is off for the template. |
-| `Default Library Kept (in template)` | The template has its own library named `Default Library`, so it wasn't deleted. |
-| `Creating Media Panel Libraries/Folders Aborted` | You cancelled media panel Manually Create. The project is still marked. |
-| `Creating Project Folders Cancelled` | You cancelled the Create Project Folders window after Setup → Save → Create. |
-| `Template Window Closed, Project Changed Since It Opened` | You cancelled a Create Project Folders window left open from an earlier project. |
-| `Old Config Keys Removed: <keys>` | An older config was updated to the current format (once). |
-| `Could not remove old config keys from config file: <error>` | The config couldn't be updated to the current format. The script still works and tries again next time. |
-| `Cannot delete root folder from tree.` | You tried to delete **Workspace** or **Project Folder** in Setup. |
 
 ## Tips, Troubleshooting and FAQ
 

@@ -40,7 +40,6 @@ Copy script folder into /opt/Autodesk/shared/python
 - [The Setup Window](#the-setup-window)
 - [How Importing Works](#how-importing-works)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -190,27 +189,6 @@ To put it in the Batch shelf instead, choose **Import... → Import Open Clip to
 1. Open Setup.
 2. Type the names in **Schematic Reel Name** and **Batch Shelf Name**, for example `Comps` and `Renders`.
 3. Click **Save**. The next import creates the reels if the batch group doesn't have them.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `Open clip not found`<br>`Write node export path:`<br>`<path>` | **Import Open Clip to Batch**, when there is no `.clip` file at the path the script built. | Check that the node was rendered with **Create Open Clip** on, and that its open clip pattern only uses the tokens listed in [Finding the open clip](#finding-the-open-clip). |
-| `Open clip not found` | **Import Open Clip to Renders Reel**, for the same reason. This one doesn't show the path. | As above. The path is shown in the console (`Open clip translated path: ...`). |
-| `Script install path is incorrect:`<br>`<script folder path>`<br>`The name of the script folder should match the name of the main script file.`<br>`Script install path should be:`<br>`<correct path>` | Any menu, Setup, or after a Write File render in Batch, when the script folder isn't named `import_write_node`. A Python error follows in the console. | Rename the folder to `import_write_node` (or move it to the path shown) and rescan Python hooks. |
-| `Script folder is not writable.`<br>`Please check permissions and try again.` | Any menu, Setup, or after a Write File render in Batch, when Flame can't write to the script folder. A Python error follows in the console. | Fix the script folder's permissions. |
-
-### Console messages
-
-| Message | Meaning |
-| --- | --- |
-| `Open clip imported.` | Printed after either right-click import. It is also printed when the open clip wasn't found, so check for the pop-up message and the reel. |
-| `Imported write node image sequence.` | The automatic import ran after a render. |
-| `Import write node not enabled. Nothing Imported.` | A Write File render finished while **Enable Import** is off. Shown in red, but nothing is wrong; turn on Enable Import in Setup if you want renders imported. |
-| `Open clip path not found.` | No node was passed to the import. |
-| `Translating write node path...` followed by `media path:`, `pattern:` and `Open clip translated path:` | The values used to find the open clip. |
 
 ## Tips, Troubleshooting and FAQ
 

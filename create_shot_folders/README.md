@@ -45,7 +45,6 @@ Copy script folder into /opt/Autodesk/shared/python
 - [File System Path Tokens](#file-system-path-tokens)
 - [How Creating Works](#how-creating-works)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -307,35 +306,6 @@ Things to know:
 2. Right-click → **Create...** → **Shot Folders (From Segments)**.
 3. Set the options as for clips and click **Create**.
 4. While it runs you'll see a **Temp Clips Library** appear in the Media Panel. It holds clips matched out from the segments and is deleted at the end.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `All selected clips must have a Shot Name assigned.` | **Shot Folders (From Clips)** when a selected clip has no shot name. | Give every clip a shot name, or leave those clips out of the selection. |
-| `Must have a Segment selected to create shot folders` | **Shot Folders (From Segments)** when no video segment is selected (for example only audio). | Select video segments. |
-| `All selected segments must have a Shot Name assigned.` | **Shot Folders (From Segments)** when a selected video segment has no shot name. | Give every segment a shot name. |
-| `Saved export preset not found:`<br><br>`<preset>`<br><br>`Using first available preset.` | Opening the window when the saved export preset no longer exists. | Check the preset menu before clicking Create. See [When the saved export preset is missing](#when-the-saved-export-preset-is-missing). |
-| `Saved export preset not found:`<br><br>`<preset>`<br><br>`No presets available in <location> location.`<br><br>`Select a different Preset Type or save a preset in Flame.` | Opening the window when the saved export preset no longer exists and the location has no presets. | Choose another Export Preset location, or save an export preset in Flame. |
-| `Select at least one shot type to create.`<br><br>`Folders or File System Folders.` | **Create** with both **Folders** and **File System Folders** off. | Open the window again and turn one of them on. |
-| `Enter shot name pattern.`<br><br>`Examples`<br><br>`PYT_<ShotNum####>`<br>`PYT_<ShotNum####>`<br>`PYT_<ShotNum[0010, 0020, 0050-0090]>` | **Create** with an empty pattern. Also shown from clips when a folder or library was selected along with the clips (see [Tips](#tips-troubleshooting-and-faq)). | Open the window again and enter a pattern, or select only clips. |
-| `Unable to create folder:`<br><br>`<path>`<br><br>`Check folder path and permissions then try again.` | **Create** with File System Folders on, when the File System Path doesn't exist and can't be created. | Check the path in Setup, that the volume is mounted and that you can write to it. |
-| `File system folder destination not writable.`<br><br>`<path>` | **Create** with File System Folders on, when Flame can't write to the File System Path. | Fix the folder's permissions or choose another path in Setup. |
-| `Plate Folder must be a valid folder in the Media Panel folder structure.`<br><br>`Example: Shot_Folder/Plates` | **Save** in Setup when Plate Folder doesn't match a folder in the Media Panel template. | Correct the path (see [Rules](#rules)). |
-| `Plate Export Folder must be a valid folder in the File System folder structure.`<br><br>`Example: Shot_Folder/Plates` | **Save** in Setup when Plate Export Folder doesn't match a folder in the File System template. | Correct the path (see [Rules](#rules)). |
-
-The messages shown after **Create** appear after the window has closed. For "Select at least one shot type..." and "Enter shot name pattern..." your changes in the window weren't saved; open it again from the menu. For "Unable to create folder" and "File system folder destination not writable" the settings were already saved.
-
-### Console messages
-
-These appear in the console (the shell Flame was started from) and briefly in Flame's message bar, not in a pop-up:
-
-| Message | Meaning |
-| --- | --- |
-| `Shot Folder: <plate folder> Not Found` | A clip couldn't be copied because no shot folder with its shot name was found in the new Shot Folders library. |
-| `File System Shot Folders Created`, `Media Panel Shot Folders Created`, `Clips Export Complete`, `Temp Library Deleted` | Steps that finished. |
 
 ## Tips, Troubleshooting and FAQ
 

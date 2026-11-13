@@ -42,7 +42,6 @@ Copy script folder into /opt/Autodesk/shared/python
 - [Where to Find It](#where-to-find-it)
 - [How It Works](#how-it-works)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -169,32 +168,6 @@ If a node can't be converted, the script puts it back the way it was: the new no
 1. In Batch, go to the frame you want to hold.
 2. Select the Elbow nodes, right-click one of them and choose **Elbow -> Frozen MUX**.
 3. Every node after the new `freeze_frame_<frame>` Mux now sees that one frame.
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `Some nodes could not be converted.`<br><br>`<node>: <reason> (rolled back)` | A node couldn't be converted. It was put back the way it was. | Check the node and try again. Other selected nodes were still converted. |
-| `Some nodes could not be converted.`<br><br>`<node>: <reason> (rollback failed: <details>)` | A node couldn't be converted, and putting it back didn't fully work. | Check the links listed in the message and reconnect them by hand. If it says `created nodes left in place so <node> is not lost`, the new node is still in Batch, sitting on top of the original. Move it aside, and delete it once the original is reconnected. |
-| `A selected node no longer exists (Flame removes Elbows with no connections)` | Shown inside the failure message. An Elbow with no connections was removed by Flame before its turn. | Nothing to fix. Flame removes Elbows that have no links whenever a node is deleted. |
-| `Nodes with no connections were skipped:`<br><br>`<node>` | A selected Mux or Elbow had nothing connected to it. It wasn't changed. | Connect it first if you want it converted. |
-
-When there are failures and skipped nodes, both lists are in the same message.
-
-### Console-only messages
-
-| Message | Meaning |
-| --- | --- |
-| `<mux> replaced with <n> Elbow node(s)` | A Mux was converted. |
-| `<elbow> replaced with <mux>` | An Elbow was converted. |
-| `<elbow> replaced with <mux> frozen at frame <frame>` | An Elbow was converted to a frozen Mux (named `freeze_frame_<frame>`, plus `_1`, `_2`, ... if that name was taken). |
-| `Converted <n> node(s)` | The number of nodes converted in this run. |
-| `Skipped <node>: node has no connections` | The node had no links and was left alone. |
-| `Could not convert <node>: <reason>` | The node failed. The same text is in the pop-up message. |
-
-Each run also prints a title line first, for example `Muxed Elbows - MUX -> Elbow v1.0.0`.
 
 ## Tips, Troubleshooting and FAQ
 

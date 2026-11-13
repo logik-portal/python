@@ -40,7 +40,6 @@ Copy script folder into /opt/Autodesk/shared/python
 - [The Progress Window](#the-progress-window)
 - [How Rendering Works](#how-rendering-works)
 - [Workflows](#workflows)
-- [Messages and What to Do](#messages-and-what-to-do)
 - [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
 
 ## Overview
@@ -170,40 +169,6 @@ The renders finish normally, and the progress window shows the result. Click **D
 1. Select the batch groups on the Desktop in the Media Panel.
 2. Right-click and choose **Render Selected Batch Groups**.
 3. Rendering starts at once, with the settings last saved in the Multi Batch Render window. To change them, open the window from Batch, change them and render once (or render from the window instead).
-
-## Messages and What to Do
-
-### Pop-up messages
-
-| Message | When | What to do |
-| --- | --- | --- |
-| `Exit Flame when render is complete?` | **Render** in the window with **Exit Flame** on. | Confirm to render and exit Flame at the end, or cancel to go back to the window (nothing is rendered or saved). |
-| `Script install path is incorrect:`<br>`<script folder>`<br>`The name of the script folder should match the name of the main script file.`<br>`Script install path should be:`<br>`<correct path>` | Any menu, when the script folder has been renamed. A Python error follows in the console. | Rename the folder to `multi_batch_render` and rescan Python hooks. |
-| `Script folder is not writable.`<br>`Please check permissions and try again.` | Any menu, when Flame can't write to the script folder. A Python error follows in the console. | Fix the folder's permissions. |
-
-### Messages in the progress window
-
-| Message | Meaning |
-| --- | --- |
-| `These batch groups failed to render:` followed by names | These batch groups had no Render or Write File node. The names are written one after another with no space between them. |
-| `Render aborted.` | A Foreground render was stopped or failed. The batch groups after it were not rendered. |
-| `Failed to submit batch render to Background Reactor. Try rendering in Foreground.` | At least one batch group couldn't be sent to the Background Reactor. Check that it is running, or render in Foreground. |
-
-### Console messages
-
-These appear in the console (the shell Flame was started from), not in a pop-up:
-
-| Message | Meaning |
-| --- | --- |
-| `'<batch group>' has no render or write nodes. Skipping.` | The batch group has no Render or Write File node. It is skipped and listed as failed. |
-| `<batch group>: Could not switch Batch to this batch group - <details>` | Flame wouldn't show that batch group in Batch. It is still rendered. |
-| `<batch group>: Not shown in Batch, Render/Write nodes not replaced.` | Its Render and Write File nodes were left as they were, and it is rendered as it is. |
-| `<batch group>: Render failed - <details>` | A Foreground render was stopped or failed. The remaining batch groups are not rendered. |
-| `<batch group>: Submitted to Background Reactor` | The batch group was sent to the Background Reactor. |
-| `Rendering Complete` / `Submitting Renders Complete` | All the selected batch groups are done. |
-| `Render aborted.` | A Foreground render was stopped or failed. The batch groups after it were not rendered. |
-| `Exiting Flame` | Exit Flame was on; Flame is exiting. |
-| `Cancelled.` | The window was closed with Cancel or Escape. |
 
 ## Tips, Troubleshooting and FAQ
 
