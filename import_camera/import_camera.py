@@ -9,11 +9,11 @@
 
 """
 Script Name: Import Camera
-Script Version: 4.17.2
+Script Version: 4.18.0
 Flame Version: 2025.2
 Written by: Michael Vaglienty
 Creation Date: 06.02.18
-Update Date: 11.06.26
+Update Date: 11.26.26
 
 License: MIT License (MIT) - see LICENSE file for details
 
@@ -41,6 +41,19 @@ To install:
     Copy script into /opt/Autodesk/shared/python/import_camera
 
 Updates:
+
+    v4.18.0 11.26.26
+        - Updated to PyFlameLib v5.6.0.
+        - Added a Help button to the import window. It opens the Import Camera guide (README.md) in its own window.
+        - Added a Setup button to the import window. It opens Import Camera Setup over the import window.
+        - Added an error message when an import fails. Any nodes the import added to Batch are removed, along with the st_maps reel if the import created it.
+        - Fixed FBX and Alembic files with upper-case extensions (.FBX, .ABC) not being imported.
+        - Fixed Alembic Consolidate Geometry and Create Object Group being applied when their buttons were greyed out in the window.
+        - Fixed the import window disappearing when the ST Map warning was declined. The window now opens again so another setup can be picked or the import cancelled.
+        - Fixed Linearize Keyframes joining the next line onto each CurveOrder line in the camera setup.
+        - Fixed the redistort map search: the first map found is now used, and only EXR files are matched.
+        - Fixed the redistort map file browser title saying Undistort.
+        - Fixed Setup saving an empty Tokenized Import Path when Use Tokenized Path is selected. An error message now asks for a path.
 
     v4.17.2 11.06.26
         - Fixed Use Tokenized Path: the script called pyflame.resolve_path_tokens, which no longer exists in PyFlameLib. It now uses pyflame.resolve_tokens.
@@ -199,8 +212,9 @@ from lib.pyflame_lib_import_camera import *
 # ==============================================================================
 
 SCRIPT_NAME = 'Import Camera'
-SCRIPT_VERSION = 'v4.17.2'
+SCRIPT_VERSION = 'v4.18.0'
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+SCRIPT_URL = 'https://logik-portal.com/scripts/import_camera'
 
 class ImportCamera():
 
@@ -434,6 +448,11 @@ class ImportCamera():
         Returns:
         --------
             tuple: A tuple containing the undistort and redistort st map objects.
+
+        Raises:
+        -------
+            Exception:
+                If Flame does not import both maps.
         """
 
         undistort_map_path = None
@@ -471,10 +490,14 @@ class ImportCamera():
         for root, dirs, files in os.walk(undistort_map_path.rsplit('/', 1)[0]):
             for f in files:
                 if not f.startswith('.'):
-                    if re.search('redistort', f, re.I):
+                    if re.search('redistort', f, re.I) and f.lower().endswith('.exr'):
                         redistort_map_path = os.path.join(root, f)
                         pyflame.print('ST Redistort map found.', text_color=TextColor.GREEN)
                         break
+
+            # Stop searching once the first redistort map is found
+            if redistort_map_path:
+                break
 
         # If redistort map not found in search, browse for it
         if not redistort_map_path:
@@ -486,7 +509,7 @@ class ImportCamera():
 
             redistort_map_path = pyflame.file_browser(
                 path=undistort_map_path,
-                title='Load Undistort ST Map (EXR)',
+                title='Load Redistort ST Map (EXR)',
                 extension=['exr'],
                 )
 
@@ -511,11 +534,15 @@ class ImportCamera():
 
         # Create st maps schematic reel if it doesn't exist
         if 'st_maps' not in [reel.name for reel in flame.batch.reels]:
-            flame.batch.create_reel('st_maps')
+            self.st_maps_reel = flame.batch.create_reel('st_maps') # Kept so a failed import can remove the reel it created
 
         # Import maps
         undistort_map = flame.batch.import_clip(undistort_map_path, 'st_maps')
         redistort_map = flame.batch.import_clip(redistort_map_path, 'st_maps')
+
+        # Both maps are needed, so a map Flame did not import is a failed import
+        if not undistort_map or not redistort_map:
+            raise Exception('ST Maps could not be imported.')
 
         pyflame.print('ST Maps imported.', text_color=TextColor.GREEN)
 
@@ -586,7 +613,7 @@ class ImportCamera():
                     # Identify leading whitespace and preserve it
                     leading_whitespace = action_contents[i][:len(action_contents[i]) - len(action_contents[i].lstrip())]
                     # Set the entire line to "CurveOrder linear" with preserved leading whitespace
-                    action_contents[i] = leading_whitespace + "CurveOrder linear"
+                    action_contents[i] = leading_whitespace + "CurveOrder linear\n"
 
             # Write action node back to file
             action_file = open(action_save_path, 'w')
@@ -625,7 +652,7 @@ class ImportCamera():
             self.camera_action.pos_y = self.master_pos_y
 
         # Import FBX camera as either Import or Read
-        if self.camera_file_path.endswith('.fbx'):
+        if self.camera_file_path.lower().endswith('.fbx'):
             if self.settings.import_type == 'Action Objects':
                 self.camera_action.import_fbx(
                     file_path=self.camera_file_path,
@@ -648,12 +675,12 @@ class ImportCamera():
                     )
 
         # Import Alembic camera as either Import or Read
-        elif self.camera_file_path.endswith('.abc'):
+        elif self.camera_file_path.lower().endswith('.abc'):
             if self.settings.import_type == 'Action Objects':
                 self.camera_action.import_abc(
                     file_path=self.camera_file_path,
                     consolidate_geometry=self.settings.consolidate_geometry,
-                    create_object_group=self.settings.create_object_group,
+                    create_object_group=self.settings.consolidate_geometry and self.settings.create_object_group, # Only used when Consolidate Geometry is on, as in the window
                     models=self.settings.objects_models,
                     lights=self.settings.objects_lights,
                     cameras=self.settings.objects_cameras,
@@ -664,8 +691,8 @@ class ImportCamera():
             elif self.settings.import_type == 'Read File':
                 self.camera_action.read_abc(
                     file_path=self.camera_file_path,
-                    consolidate_geometry=self.settings.consolidate_geometry,
-                    create_object_group=self.settings.create_object_group,
+                    consolidate_geometry=False, # Alembic buttons are disabled for Read File
+                    create_object_group=False, # Alembic buttons are disabled for Read File
                     models=self.settings.objects_models,
                     lights=self.settings.objects_lights,
                     cameras=self.settings.objects_cameras,
@@ -1131,6 +1158,54 @@ class ImportCamera():
                     }
                 )
 
+        def remove_added_nodes(nodes_before: list) -> list:
+            """
+            Remove Added Nodes
+            ==================
+
+            Remove the nodes a failed import added to Batch. Nodes that were in Batch before the import are never touched.
+
+            Args
+            ----
+                nodes_before (list):
+                    Nodes that were in Batch before the import started.
+
+            Returns
+            -------
+                nodes_left (list): Names of added nodes that could not be removed.
+            """
+
+            added_nodes = [node for node in flame.batch.nodes if node not in nodes_before]
+
+            # Action Media nodes go with their Action, so remove them last and only if they are still there
+            added_nodes.sort(key=lambda node: str(node.type)[1:-1] == 'Action Media')
+
+            for node in added_nodes:
+                try:
+                    if node in flame.batch.nodes:
+                        node.delete()
+                except Exception:
+                    pass
+
+            return [str(node.name)[1:-1] for node in flame.batch.nodes if node not in nodes_before]
+
+        def remove_st_maps_reel() -> None:
+            """
+            Remove ST Maps Reel
+            ===================
+
+            Remove the 'st_maps' schematic reel a failed import created, if it is empty. A reel that was already in Batch is never touched.
+            """
+
+            if self.st_maps_reel is None:
+                return
+
+            try:
+                if not self.st_maps_reel.children:
+                    flame.delete(self.st_maps_reel, confirm=False)
+            except Exception:
+                pass
+
         def load() -> None:
             """
             Load
@@ -1138,40 +1213,78 @@ class ImportCamera():
 
             Saves settings and creates camera setup based on selected options then closes window and deletes temp folder.
 
-            Nodes are created based on selected options in main window.
+            Nodes are created based on selected options in main window. If the import fails, the nodes it added to Batch are removed, along with the 'st_maps' reel if the import created it.
             """
 
             save_config() # Save settings
 
             self.window.hide() # Hide window while loading
 
-            # Create nodes based on selected options in main window.
-            if self.action_node_only_push_button.checked:
-                camera_loaded = self.create_camera_action()
-            elif self.no_st_map_push_button.checked:
-                camera_loaded = self.create_no_st_map_setup()
-            elif self.st_map_matchbox_setup_button.checked:
-                if self.selection == '':
-                    confirm_import = PyFlameMessageWindow(
-                        message='For ST Map to be properly applied, be sure to have the background clip or node with background resolution selected when importing.\n\nContinue with import?',
-                        message_type=MessageType.WARNING,
-                        title='ST Map Camera Import',
-                        parent=None,
-                        )
-                    if not confirm_import.confirmed:
-                        return
-                camera_loaded = self.create_st_map_matchbox_setup()
-            elif self.st_map_node_setup_button.checked:
-                if self.selection == '':
-                    confirm_import = PyFlameMessageWindow(
-                        message='For ST Map to be properly applied, be sure to have the background clip or node with background resolution selected when importing.\n\nContinue with import?',
-                        message_type=MessageType.WARNING,
-                        title='ST Map Camera Import',
-                        parent=None,
-                        )
-                    if not confirm_import.confirmed:
-                        return
-                camera_loaded = self.create_st_map_node_setup()
+            # Nodes in Batch before the import, so nodes added by a failed import can be removed
+            nodes_before = list(flame.batch.nodes)
+
+            # Set when the import creates the 'st_maps' schematic reel
+            self.st_maps_reel = None
+
+            # Create nodes based on selected options in main window. On failure, report the error and remove the nodes added to Batch.
+            try:
+                if self.action_node_only_push_button.checked:
+                    camera_loaded = self.create_camera_action()
+                elif self.no_st_map_push_button.checked:
+                    camera_loaded = self.create_no_st_map_setup()
+                elif self.st_map_matchbox_setup_button.checked:
+                    if self.selection == '':
+                        confirm_import = PyFlameMessageWindow(
+                            message='For ST Map to be properly applied, be sure to have the background clip or node with background resolution selected when importing.\n\nContinue with import?',
+                            message_type=MessageType.WARNING,
+                            title='ST Map Camera Import',
+                            parent=None,
+                            )
+                        if not confirm_import.confirmed:
+                            self.window.show() # Show window again so another setup can be picked
+
+                            return
+                    camera_loaded = self.create_st_map_matchbox_setup()
+                elif self.st_map_node_setup_button.checked:
+                    if self.selection == '':
+                        confirm_import = PyFlameMessageWindow(
+                            message='For ST Map to be properly applied, be sure to have the background clip or node with background resolution selected when importing.\n\nContinue with import?',
+                            message_type=MessageType.WARNING,
+                            title='ST Map Camera Import',
+                            parent=None,
+                            )
+                        if not confirm_import.confirmed:
+                            self.window.show() # Show window again so another setup can be picked
+
+                            return
+                    camera_loaded = self.create_st_map_node_setup()
+            except Exception as e:
+                # Remove the nodes added to Batch, close window and report the error
+                try:
+                    nodes_left = remove_added_nodes(nodes_before)
+                    if nodes_left:
+                        nodes_message = f'These nodes could not be removed from Batch: {", ".join(nodes_left)}'
+                    else:
+                        nodes_message = 'Any nodes added by the import were removed from Batch.'
+                except Exception:
+                    nodes_message = 'Nodes added by the import could not be removed from Batch.'
+
+                remove_st_maps_reel()
+
+                self.remove_temp_folder()
+                self.window.close()
+                pyflame.print(f'{self.camera_type} import failed: {e}', text_color=TextColor.RED)
+                PyFlameMessageWindow(
+                    message=(
+                        f'{self.camera_type} import failed.\n\n'
+                        f'{e}\n\n'
+                        f'{nodes_message}'
+                        ),
+                    message_type=MessageType.ERROR,
+                    parent=None,
+                    )
+
+                return
 
             if camera_loaded:
                 self.window.close() # Close window
@@ -1190,6 +1303,50 @@ class ImportCamera():
 
             self.remove_temp_folder()
             self.window.close()
+
+        def show_help() -> None:
+            """
+            Show Help
+            =========
+
+            Open the Import Camera guide (README.md) in a help window. If one is already open, bring it to the front instead.
+            """
+
+            if self.help_window is not None and self.help_window.is_open():
+                self.help_window.show()
+
+                return
+
+            self.help_window = PyFlameHelpWindow(
+                readme_path=os.path.join(SCRIPT_PATH, 'README.md'),
+                script_url=SCRIPT_URL,
+                title=f'Import Camera Help <small>{SCRIPT_VERSION}</small>',
+                parent=self.window,
+                )
+
+        def open_setup() -> None:
+            """
+            Open Setup
+            ==========
+
+            Open the setup window over the import window. If one is already open, bring it to the front instead.
+
+            Setup saves through the same settings as this window, so the options set in this window are not changed.
+            """
+
+            # A closed setup window is deleted by Qt, so reading it can raise RuntimeError
+            try:
+                setup_open = self.setup_window is not None and self.setup_window.isVisible()
+            except RuntimeError:
+                setup_open = False
+
+            if setup_open:
+                self.setup_window.raise_()
+                self.setup_window.activateWindow()
+
+                return
+
+            self.setup(parent_window=self.window)
 
         def toggle_alembic_buttons() -> None:
             """
@@ -1251,12 +1408,18 @@ class ImportCamera():
                 self.st_map_node_setup_button.setChecked(False)
                 self.st_map_node_setup_button.setToolTip('ST Map node is only available in Flame 2025 and later.')
 
+        # Help window opened from the import window, if any
+        self.help_window = None
+
+        # Setup window opened from the import window, if any
+        self.setup_window = None
+
         self.window = PyFlameWindow(
             title=f'Import {self.camera_type} Camera <small>{SCRIPT_VERSION}',
             return_pressed=load,
             escape_pressed=cancel,
             grid_layout_columns=5,
-            grid_layout_rows=8,
+            grid_layout_rows=9,
             grid_layout_adjust_column_widths={2: 40},
             parent=None,
             )
@@ -1373,6 +1536,14 @@ class ImportCamera():
             )
 
         # Buttons
+        self.setup_button = PyFlameButton(
+            text='Setup',
+            connect=open_setup,
+            )
+        self.help_button = PyFlameButton(
+            text='Help',
+            connect=show_help,
+            )
         self.load_button = PyFlameButton(
             text='Load',
             connect=load,
@@ -1415,18 +1586,25 @@ class ImportCamera():
         self.window.grid_layout.addWidget(self.st_map_matchbox_setup_button, 3, 4)
         self.window.grid_layout.addWidget(self.st_map_node_setup_button, 4, 4)
 
-        self.window.grid_layout.addWidget(self.cancel_button, 7, 3)
-        self.window.grid_layout.addWidget(self.load_button, 7, 4)
+        self.window.grid_layout.addWidget(self.setup_button, 7, 0)
+        self.window.grid_layout.addWidget(self.help_button, 8, 0)
+        self.window.grid_layout.addWidget(self.cancel_button, 8, 3)
+        self.window.grid_layout.addWidget(self.load_button, 8, 4)
 
     # ------------------------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, parent_window=None) -> None:
         """
         Setup
         =====
 
         Setup window to select import method.
         Import Destinations can either be selected by opening a browser window for each import or automated with a custom tokenized import path.
+
+        Args
+        ----
+            parent_window (PyFlameWindow | None):
+                Window to open the setup window over. The import window passes itself, the Flame Main Menu passes nothing.
         """
 
         def toggle_custom_path() -> None:
@@ -1475,7 +1653,7 @@ class ImportCamera():
             Save settings to config file and close setup window.
             """
 
-            if self.import_method_menu.text == 'Use Custom Path' and not self.custom_import_path_entry.text:
+            if self.import_method_menu.text == 'Use Tokenized Path' and not self.custom_import_path_entry.text:
                 PyFlameMessageWindow(
                     message='Custom Import Path: Enter path before saving.',
                     message_type=MessageType.ERROR,
@@ -1507,8 +1685,12 @@ class ImportCamera():
             return_pressed=save,
             grid_layout_columns=6,
             grid_layout_rows=3,
-            parent=None,
+            parent=parent_window,
+            modal=parent_window is not None, # Block the import window while Setup is open over it
             )
+
+        # Keep the window so the import window can tell if Setup is already open
+        self.setup_window = setup_window
 
         # Labels
         self.import_path_label = PyFlameLabel(
@@ -1556,7 +1738,7 @@ class ImportCamera():
             connect=save,
             color=Color.BLUE,
             )
-        self.cancel_button = PyFlameButton(
+        self.setup_cancel_button = PyFlameButton(
             text='Cancel',
             connect=cancel,
             )
@@ -1575,7 +1757,7 @@ class ImportCamera():
         setup_window.grid_layout.addWidget(self.custom_import_path_token_menu, 1, 4)
         setup_window.grid_layout.addWidget(self.browse_button, 1, 5)
 
-        setup_window.grid_layout.addWidget(self.cancel_button, 3, 4)
+        setup_window.grid_layout.addWidget(self.setup_cancel_button, 3, 4)
         setup_window.grid_layout.addWidget(self.save_button, 3, 5)
 
 # ==============================================================================

@@ -9,10 +9,10 @@
 
 """
 PyFlame Library
-Version: 5.5.3
+Version: 5.6.0
 Written By: Michael Vaglienty
 Creation Date: 10.31.20
-Update Date: 10.16.26
+Update Date: 11.23.26
 
 Minimum Flame 2025.2
 
@@ -72,8 +72,12 @@ import os
 import platform
 import re
 import shutil
+import socket
 import subprocess
+import threading
 import traceback
+import urllib.parse
+import webbrowser
 import importlib.util
 from shiboken6 import isValid
 import xml.etree.ElementTree as ET
@@ -167,7 +171,7 @@ class Color(Enum):
     BORDER = 'rgb(90, 90, 90)'
     BORDER_BRIGHTER = 'rgb(120, 120, 120)'
 
-    UNDERLINE = 'rgb(40, 40, 40, 1)'
+    UNDERLINE = 'rgb(40, 40, 40)'
 
     ENTRY_GRAY = 'rgb(54, 54, 54)'
 
@@ -253,7 +257,7 @@ class Style(Enum):
             Text is underlined. Text is centered by default.
 
         `BORDER` (str):
-            Adds a white border around the label with a dark background. Text
+            Adds a gray border around the label. Text
             is centered by default.
 
         `BACKGROUND` (str):
@@ -327,8 +331,8 @@ class MessageType(Enum):
 
 class PrintType(Enum):
     """
-    MessageType
-    ===========
+    PrintType
+    =========
 
     Enum for pyflame.print types.
 
@@ -383,6 +387,9 @@ class TextStyle(Enum):
         `READ_ONLY` (str):
             Text is Read-Only.
 
+        `READ_ONLY_SELECTABLE` (str):
+            Text is Read-Only and can be selected.
+
         `UNSELECTABLE` (str):
             Text is Read-Only and cannot be highlighted.
     """
@@ -432,7 +439,7 @@ class _PyFlame:
         ```
         pyflame.print(
             text='Config not found.',
-            type=PrintType.ERROR
+            print_type=PrintType.ERROR
             )
         ```
     """
@@ -550,6 +557,9 @@ class _PyFlame:
                 package (str):
                     The name of the python package to install.
 
+                system_password (str | None):
+                    System password used to install the package.
+
             Returns
             -------
                 bool:
@@ -603,7 +613,7 @@ class _PyFlame:
         def get_system_password() -> str | None:
             """
             Get System Password
-            ==================
+            ===================
 
             Get system password from password window.
 
@@ -626,9 +636,9 @@ class _PyFlame:
 
         # Validate Arguments
         if not isinstance(package, (str, list)):
-            pyflame.raise_type_error('python_package_local_install', 'package', 'str|list[str]', package)
+            pyflame.raise_type_error('pyflame.python_package_local_install', 'package', 'str|list[str]', package)
         if isinstance(package, list) and not all(isinstance(item, str) for item in package):
-            pyflame.raise_type_error('python_package_local_install', 'package', 'str|list[str]', package)
+            pyflame.raise_type_error('pyflame.python_package_local_install', 'package', 'str|list[str]', package)
 
         system_password = None
 
@@ -714,7 +724,7 @@ class _PyFlame:
 
         # Validate Argument
         if not isinstance(text, str):
-            pyflame.raise_type_error('pyflame.print_title', 'text', 'str', value)
+            pyflame.raise_type_error('pyflame.print_title', 'text', 'str', text)
 
         text = f'====[ {text} ]===='
         line = text.center(80, "-")
@@ -762,6 +772,9 @@ class _PyFlame:
         ------
             TypeError:
                 If `folder_name` is not a string.
+            ValueError:
+                If `folder_name` does not lead to a folder inside the script folder, or leads to the
+                script's `lib`, `assets` or `config` folder.
 
         Example
         -------
@@ -777,6 +790,14 @@ class _PyFlame:
 
         # Temp folder path
         temp_folder_path = os.path.join(SCRIPT_PATH, folder_name)
+
+        # Refuse the script folder, its lib, assets and config folders, and anything outside it (symlinks resolved)
+        script_real_path = os.path.realpath(SCRIPT_PATH)
+        temp_real_path = os.path.realpath(temp_folder_path)
+        if temp_real_path == script_real_path or os.path.commonpath([script_real_path, temp_real_path]) != script_real_path:
+            pyflame.raise_value_error('pyflame.create_temp_folder', 'folder_name', 'a folder inside the script folder', folder_name)
+        if os.path.dirname(temp_real_path).lower() == script_real_path.lower() and os.path.basename(temp_real_path).lower() in ('lib', 'assets', 'config'):
+            pyflame.raise_value_error('pyflame.create_temp_folder', 'folder_name', 'a folder inside the script folder', folder_name)
 
         # Create temp folder. If folder already exists, delete it and recreate.
         try:
@@ -805,6 +826,14 @@ class _PyFlame:
             `folder_name` (str):
                 Name of the temporary folder to clear. Temp folder is added to <SCRIPT_PATH>/<folder_name>.
                 (Default: `temp`)
+
+        Raises
+        ------
+            TypeError:
+                If `folder_name` is not a string.
+            ValueError:
+                If `folder_name` does not lead to a folder inside the script folder, or leads to the
+                script's `lib`, `assets` or `config` folder.
         """
 
         # Validate Argument
@@ -813,6 +842,14 @@ class _PyFlame:
 
         # Temp folder path
         temp_folder_path = os.path.join(SCRIPT_PATH, folder_name)
+
+        # Refuse the script folder, its lib, assets and config folders, and anything outside it (symlinks resolved)
+        script_real_path = os.path.realpath(SCRIPT_PATH)
+        temp_real_path = os.path.realpath(temp_folder_path)
+        if temp_real_path == script_real_path or os.path.commonpath([script_real_path, temp_real_path]) != script_real_path:
+            pyflame.raise_value_error('pyflame.cleanup_temp_folder', 'folder_name', 'a folder inside the script folder', folder_name)
+        if os.path.dirname(temp_real_path).lower() == script_real_path.lower() and os.path.basename(temp_real_path).lower() in ('lib', 'assets', 'config'):
+            pyflame.raise_value_error('pyflame.cleanup_temp_folder', 'folder_name', 'a folder inside the script folder', folder_name)
 
         # Remove and recreate temp folder if it exists, if not, print message
         try:
@@ -873,7 +910,7 @@ class _PyFlame:
 
         # Validate Argument
         if not isinstance(additional_files, list):
-            pyflame.raise_type_error('verify_script_install.additional_files', 'list', f'{type(additional_files).__name__}', additional_files)
+            pyflame.raise_type_error('pyflame.verify_script_install', 'additional_files', 'list', additional_files)
 
         label = '--[ VALIDATING: Script Install ]'
         print(f'{label}{"-" * (80 - len(label))}')
@@ -945,8 +982,8 @@ class _PyFlame:
     @staticmethod
     def create_media_panel_libraries(library_structure: dict[str, Any]) -> None:
         """
-        Create Media Panel Library
-        ==========================
+        Create Media Panel Libraries
+        ============================
 
         Create libraries/folders in the media panel based on the provided library/folder structure.
 
@@ -994,7 +1031,7 @@ class _PyFlame:
 
         # Validate Argument
         if not isinstance(library_structure, dict):
-            pyflame.raise_type_error('pyflame.create_media_panel_libraries', 'library_structure', 'dict', value)
+            pyflame.raise_type_error('pyflame.create_media_panel_libraries', 'library_structure', 'dict', library_structure)
 
         # Validate that 'Workspace' is the only top-level key
         if set(library_structure.keys()) != {'Workspace'}:
@@ -1028,7 +1065,7 @@ class _PyFlame:
 
         Create a folder in the media panel based on the provided folder structure. Tokens can be used in folder names.
 
-        By default folders are tagged with the shot name token.
+        Folders whose name matches shot_name_tag are tagged with 'ShotName: <shot_name_tag>'.
 
         Args
         ----
@@ -1070,10 +1107,18 @@ class _PyFlame:
             pyflame.create_media_panel_folder(
                 folder_name='Shot001',
                 folder_structure=folder_structure,
-                dest=flame.projects.current_project.current_workspace,
+                dest=flame.projects.current_project.current_workspace.libraries[0],
                 shot_name_tag='Shot0010',
                 )
             ```
+
+            The above example will create the following folders:
+            ```
+            Shot001/SubFolder1
+            Shot001/SubFolder2/SubSubFolder1
+            ```
+
+            The top-level keys of `folder_structure` (`Folder1`, `Folder2`) are not created as folders: their contents are created inside `Shot001`.
         """
 
         # Validate Arguments
@@ -1095,7 +1140,7 @@ class _PyFlame:
 
             Args
             ----
-                `folder_structure` (dict):
+                `folders` (dict):
                     A dictionary representing the folder structure to be created.
 
                 `parent_folder` (Folder):
@@ -1181,9 +1226,11 @@ class _PyFlame:
             pyflame.create_media_panel_folders(
                 folder_list=folder_list,
                 folder_structure=folder_structure,
-                dest=flame.projects.current_project.current_workspace,
+                dest=flame.projects.current_project.current_workspace.libraries[0],
                 )
             ```
+
+            The top-level keys of `folder_structure` (`Folder1`, `Folder2`) are not created as folders: their contents (`SubFolder1`, `SubFolder2`) are created inside each folder in `folder_list`.
         """
 
         # Validate Arguments
@@ -1255,10 +1302,12 @@ class _PyFlame:
 
             The above example will create the following folder structure:
             ```
-            /path/to/dest/folder/Shot001/Folder1/SubFolder1
-            /path/to/dest/folder/Shot001/Folder1/SubFolder2/SubSubFolder1
-            /path/to/dest/folder/Shot001/Folder2
+            /path/to/dest/folder/Shot001/SubFolder1
+            /path/to/dest/folder/Shot001/SubFolder2/SubSubFolder1
             ```
+
+            The top-level keys of `folder_structure` (`Folder1`, `Folder2`) are not created as folders: their contents are created inside `Shot001`.
+            With `skip_existing=True`, only the first top-level key's contents are created, and none if `Shot001` already exists.
         """
 
         def create_sub_folders(value: dict, parent_folder: str) -> None:
@@ -1382,19 +1431,17 @@ class _PyFlame:
 
             The above example will create the following folder structure:
             ```
-            /dest/folder/path/PYT_0010/Folder1/SubFolder1
-            /dest/folder/path/PYT_0010/Folder1/SubFolder2/SubSubFolder1
-            /dest/folder/path/PYT_0010/Folder2
-            /dest/folder/path/PYT_0020/Folder1/SubFolder1
-            /dest/folder/path/PYT_0020/Folder1/SubFolder2/SubSubFolder1
-            /dest/folder/path/PYT_0020/Folder2
-            /dest/folder/path/PYT_0030/Folder1/SubFolder1
-            /dest/folder/path/PYT_0030/Folder1/SubFolder2/SubSubFolder1
-            /dest/folder/path/PYT_0030/Folder2
-            /dest/folder/path/PYT_0040/Folder1/SubFolder1
-            /dest/folder/path/PYT_0040/Folder1/SubFolder2/SubSubFolder1
-            /dest/folder/path/PYT_0040/Folder2
+            /path/to/dest/folder/PYT_0010/SubFolder1
+            /path/to/dest/folder/PYT_0010/SubFolder2/SubSubFolder1
+            /path/to/dest/folder/PYT_0020/SubFolder1
+            /path/to/dest/folder/PYT_0020/SubFolder2/SubSubFolder1
+            /path/to/dest/folder/PYT_0030/SubFolder1
+            /path/to/dest/folder/PYT_0030/SubFolder2/SubSubFolder1
+            /path/to/dest/folder/PYT_0040/SubFolder1
+            /path/to/dest/folder/PYT_0040/SubFolder2/SubSubFolder1
             ```
+
+            The top-level keys of `folder_structure` (`Folder1`, `Folder2`) are not created as folders: their contents are created inside each folder in `folder_list`.
         """
 
         # Validate Arguments
@@ -1533,8 +1580,7 @@ class _PyFlame:
             If `time` is not an integer.
             If `script_name` is not a string.
             If `text_color` is not a TextColor.
-        ValueError:
-            If `type` is not a valid PrintType.
+            If `print_type` is not a PrintType.
 
         Example
         -------
@@ -1656,7 +1702,7 @@ class _PyFlame:
                 }
 
             pyflame.print_dict(
-                data_dict=dictionary,
+                dict_data=dictionary,
                 indent=0,
                 )
             ```
@@ -1664,11 +1710,11 @@ class _PyFlame:
             Output:
             ```
             Key1
-                SubKey1: Value1
-                SubKey2: Value2
+              SubKey1
+              SubKey2
             Key2
-                SubKey1: Value1
-                SubKey2: Value2
+              SubKey1
+              SubKey2
             ```
         """
 
@@ -1777,7 +1823,7 @@ class _PyFlame:
     def print_list(list_name: str, list_items: list, indent=0, time: int=3, script_name: str=SCRIPT_NAME) -> None:
         """
         Print List
-        ===========
+        ==========
 
         Print a list of items to the terminal and Flame message area.
 
@@ -1811,9 +1857,6 @@ class _PyFlame:
                 If `time` is not an integer.
                 If `script_name` is not a string.
 
-            ValueError:
-                If `list_items` is not a list of strings.
-
         Example
         -------
             To print a list of items:
@@ -1831,7 +1874,7 @@ class _PyFlame:
 
         # Validate Arguments
         if not isinstance(list_name, str):
-            pyflame.raise_type_error('pyflame.print_list', 'text', 'str', text)
+            pyflame.raise_type_error('pyflame.print_list', 'list_name', 'str', list_name)
         if not isinstance(list_items, list):
             pyflame.raise_type_error('pyflame.print_list', 'list_items', 'list', list_items)
         for item in list_items:
@@ -1850,7 +1893,7 @@ class _PyFlame:
         print('\n', end='')
 
         # Print list name to Flame message area
-        flame.messages.show_in_console(f'{script_name}: {list_name}:', 'info', 3)
+        flame.messages.show_in_console(f'{script_name}: {list_name}:', 'info', time)
 
         # Print list to terminal, indenting each item by 4 spaces if indent is True
         for item in list_items:
@@ -1861,7 +1904,7 @@ class _PyFlame:
 
         # Print list items to Flame message area. List items are not indented in the Flame message area.
         for item in list_items:
-            flame.messages.show_in_console(f'{script_name}: {item}', 'info', 3)
+            flame.messages.show_in_console(f'{script_name}: {item}', 'info', time)
 
     @staticmethod
     def generate_unique_node_names(node_names: list[str], existing_node_names: list[str]) -> list[str]:
@@ -1891,7 +1934,6 @@ class _PyFlame:
             TypeError:
                 If `node_names` is not a list.
                 If `existing_node_names` is not a list.
-            ValueError:
                 If any element in `node_names` is not a string.
                 If any element in `existing_node_names` is not a string.
 
@@ -1899,7 +1941,7 @@ class _PyFlame:
         -------
             To generate unique node names for a list of nodes:
             ```
-            generate_unique_node_names(
+            pyflame.generate_unique_node_names(
                 node_names=[
                     'Node1',
                     'Node2',
@@ -1948,11 +1990,11 @@ class _PyFlame:
     @staticmethod
     def generate_unique_name(value: str, existing_names: list[str]) -> str:
         """
-        Generate Unique Names
-        =====================
+        Generate Unique Name
+        ====================
 
-        Generate unique names based on the provided list of names, ensuring that each new name does not conflict with names in a given list of existing names.
-        If a conflict is found, the function appends an incrementing number to the original name until a unique name is created.
+        Generate a unique name based on the provided value, ensuring that the new name does not conflict with names in a given list of existing names.
+        If a conflict is found, the function appends ' Copy' to the name until a unique name is created.
 
         Args
         ----
@@ -1978,7 +2020,7 @@ class _PyFlame:
         -------
             To generate a unique name:
             ```
-            generate_unique_name(
+            pyflame.generate_unique_name(
                 value='Thing',
                 existing_names=[
                     'Thing1',
@@ -2043,7 +2085,7 @@ class _PyFlame:
     def get_flame_python_packages_path(print_path: bool=True) -> str:
         """
         Get Flame Python Packages Path
-        ===============================
+        ==============================
 
         Get path to Flame's python packages folder.
 
@@ -2060,6 +2102,8 @@ class _PyFlame:
 
         Raises
         ------
+            TypeError:
+                If `print_path` is not a boolean.
             FileNotFoundError:
                 If no python3.* folder is found in the python lib path.
 
@@ -2067,7 +2111,7 @@ class _PyFlame:
         -------
             To get the path to Flame's python packages folder:
             ```
-            python_packages_path = pyflame.pyflame_get_flame_python_packages_path()
+            python_packages_path = pyflame.get_flame_python_packages_path()
             ```
         """
 
@@ -2114,7 +2158,7 @@ class _PyFlame:
 
             `title` (str):
                 File browser window title.
-                If `None`, the title will be set to 'Select Directory' or 'Select File' based on the `extension` and `select_directory` arguments.
+                If `None`, the title will be set to 'Select Directory' or 'Select File' based on the `extension` argument.
                 (Default: `None`)
 
             `extension` (str | list):
@@ -2147,13 +2191,13 @@ class _PyFlame:
         -------
             `path` (str, list):
                 Path to selected file or directory as a string.
-                When `multi_selection` is enabled, the file browser will return a list.
+                When `multi_selection` is enabled with the Flame browser, a list is returned. Returns None if nothing is selected.
 
         Example
         -------
             To open a file browser:
             ```
-            path = pyflame_file_browser(
+            path = pyflame.file_browser(
                 path=self.undistort_map_path,
                 title='Load Undistort ST Map(EXR)',
                 extension=['exr'],
@@ -2164,8 +2208,8 @@ class _PyFlame:
         # Validate Arguments
         if not isinstance(path, str):
             pyflame.raise_type_error('pyflame.file_browser', 'path', 'str', path)
-        if not isinstance(title, str):
-            pyflame.raise_type_error('pyflame.file_browser', 'title', 'str', title)
+        if title is not None and not isinstance(title, str):
+            pyflame.raise_type_error('pyflame.file_browser', 'title', 'str | None', title)
         if extension is not None and not isinstance(extension, (str, list)):
             pyflame.raise_type_error('pyflame.file_browser', 'extension', 'str or list', extension)
         if not isinstance(select_directory, bool):
@@ -2281,7 +2325,7 @@ class _PyFlame:
     def raise_type_error(source_name: str | None=None, arg_name: str | None=None, expected_type: str | None=None, actual_value: Any=None, error_message: str | None=None, time: int=10) -> None:
         """
         Raise Type Error
-        =================
+        ================
 
         Print error message to Flame and Terminal/Shell then raise TypeError.
 
@@ -2415,8 +2459,8 @@ class _PyFlame:
     @staticmethod
     def resolve_tokens(tokenized_string: str, flame_pyobject=None, date=None, shot_name_tag: str = 'ShotName') -> str:
         """
-        Resolve Path Tokens
-        ===================
+        Resolve Tokens
+        ==============
 
         Resolves strings containing tokens.
 
@@ -2433,11 +2477,15 @@ class _PyFlame:
                 Date/time to use for token translation. If None is passed datetime value will be gotten each time function is run.
                 (Default: `None`)
 
+            `shot_name_tag` (str, optional):
+                Tag name used to find the shot name on a PyBatch, e.g. 'ShotName' for 'ShotName: PYT_0010'.
+                (Default: `'ShotName'`)
+
         Supported tokens:
         ----------------
             <ProjectName>, <ProjectNickName>, <UserName>, <UserNickName>, <YYYY>, <YY>, <MM>, <DD>, <Hour>, <Minute>, <AMPM>, <ampm>
 
-            Additional tokens available when Flame PyObjects as passed in the flame_pyobject argument:
+            Additional tokens available when Flame PyObjects are passed in the flame_pyobject argument:
                 PyClip and PySegment:
                     <ShotName>, <SeqName>, <SEQNAME>, <ClipName>, <Resolution>, <ClipHeight>, <ClipWidth>, <TapeName>
                 PyBatch:
@@ -2457,7 +2505,7 @@ class _PyFlame:
         -------
             To resolve path tokens:
             ```
-            export_path = pyflame.translate_path_tokens(
+            export_path = pyflame.resolve_tokens(
                 tokenized_string=custom_export_path,
                 flame_pyobject=clip,
                 date=date
@@ -2471,7 +2519,7 @@ class _PyFlame:
 
         def get_seq_name(name):
             """
-            Get sequence name abreviation from shot name
+            Get sequence name abbreviation from shot name
             """
 
             seq_name = re.split('[^a-zA-Z]', name)[0]
@@ -2503,11 +2551,11 @@ class _PyFlame:
         ampm_caps = date.strftime('%p')
         ampm = str(date.strftime('%p')).lower()
 
-        # Replace tokens in path
-        resolved_path = re.sub('<ProjectName>', flame.projects.current_project.name, tokenized_string)
-        resolved_path = re.sub('<ProjectNickName>', flame.projects.current_project.nickname, resolved_path)
-        resolved_path = re.sub('<UserName>', flame.users.current_user.name, resolved_path)
-        resolved_path = re.sub('<UserNickName>', flame.users.current_user.nickname, resolved_path)
+        # Replace tokens in path. Names go through a lambda so backslashes in them are kept as typed
+        resolved_path = re.sub('<ProjectName>', lambda match: flame.projects.current_project.name, tokenized_string)
+        resolved_path = re.sub('<ProjectNickName>', lambda match: flame.projects.current_project.nickname, resolved_path)
+        resolved_path = re.sub('<UserName>', lambda match: flame.users.current_user.name, resolved_path)
+        resolved_path = re.sub('<UserNickName>', lambda match: flame.users.current_user.nickname, resolved_path)
         resolved_path = re.sub('<YYYY>', yyyy, resolved_path)
         resolved_path = re.sub('<YY>', yy, resolved_path)
         resolved_path = re.sub('<MM>', mm, resolved_path)
@@ -2520,7 +2568,7 @@ class _PyFlame:
         # Get Batch Group Name - Only works when a PyBatch object is passed as the flame_pyobject argument.
         if flame_pyobject:
             if '<BatchGroupName>' in tokenized_string and isinstance(flame_pyobject, flame.PyBatch):
-                resolved_path = re.sub('<BatchGroupName>', str(flame_pyobject.name)[1:-1], resolved_path)
+                resolved_path = re.sub('<BatchGroupName>', lambda match: str(flame_pyobject.name)[1:-1], resolved_path)
 
         # Resolve tokens for flame pyobjects
         if flame_pyobject:
@@ -2552,14 +2600,14 @@ class _PyFlame:
                     seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
                     # Replace clip tokens in path
-                    resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
-                    resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
-                    resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
-                    resolved_path = re.sub('<ClipName>', str(clip.name)[1:-1], resolved_path)
-                    resolved_path = re.sub('<Resolution>', str(clip.width) + 'x' + str(clip.height), resolved_path)
-                    resolved_path = re.sub('<ClipHeight>', str(clip.height), resolved_path)
-                    resolved_path = re.sub('<ClipWidth>', str(clip.width), resolved_path)
-                    resolved_path = re.sub('<TapeName>', tape_name, resolved_path)
+                    resolved_path = re.sub('<ShotName>', lambda match: shot_name, resolved_path)
+                    resolved_path = re.sub('<SeqName>', lambda match: seq_name, resolved_path)
+                    resolved_path = re.sub('<SEQNAME>', lambda match: seq_name.upper(), resolved_path)
+                    resolved_path = re.sub('<ClipName>', lambda match: str(clip.name)[1:-1], resolved_path)
+                    resolved_path = re.sub('<Resolution>', lambda match: str(clip.width) + 'x' + str(clip.height), resolved_path)
+                    resolved_path = re.sub('<ClipHeight>', lambda match: str(clip.height), resolved_path)
+                    resolved_path = re.sub('<ClipWidth>', lambda match: str(clip.width), resolved_path)
+                    resolved_path = re.sub('<TapeName>', lambda match: tape_name, resolved_path)
 
                     return resolved_path
 
@@ -2606,14 +2654,14 @@ class _PyFlame:
                     seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
                     # Replace segment tokens in path
-                    resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
-                    resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
-                    resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
-                    resolved_path = re.sub('<ClipName>', segment_name, resolved_path)
+                    resolved_path = re.sub('<ShotName>', lambda match: shot_name, resolved_path)
+                    resolved_path = re.sub('<SeqName>', lambda match: seq_name, resolved_path)
+                    resolved_path = re.sub('<SEQNAME>', lambda match: seq_name.upper(), resolved_path)
+                    resolved_path = re.sub('<ClipName>', lambda match: segment_name, resolved_path)
                     resolved_path = re.sub('<Resolution>', 'Unable to Resolve', resolved_path)
                     resolved_path = re.sub('<ClipHeight>', 'Unable to Resolve', resolved_path)
                     resolved_path = re.sub('<ClipWidth>', 'Unable to Resolve', resolved_path)
-                    resolved_path = re.sub('<TapeName>', tape_name, resolved_path)
+                    resolved_path = re.sub('<TapeName>', lambda match: tape_name, resolved_path)
 
                     return resolved_path
 
@@ -2654,7 +2702,8 @@ class _PyFlame:
                             print('Batch Tags:', batch.tags.get_value())
                             for tag in batch.tags.get_value():
                                 if tag.startswith(f'{shot_name_tag}:'):
-                                    shot_name = tag.split(': ')[1]
+                                    # Get text after the colon, with or without a space after it
+                                    shot_name = tag[len(shot_name_tag) + 1:].strip()
                                     print(f'Batch Shot Name Tag Found: {shot_name}')
                                     return shot_name
                         else:
@@ -2702,9 +2751,9 @@ class _PyFlame:
                     seq_name = get_seq_name(shot_name) # Get Seq Name from shot name
 
                     # Replace tokens in path
-                    resolved_path = re.sub('<ShotName>', shot_name, resolved_path)
-                    resolved_path = re.sub('<SeqName>', seq_name, resolved_path)
-                    resolved_path = re.sub('<SEQNAME>', seq_name.upper(), resolved_path)
+                    resolved_path = re.sub('<ShotName>', lambda match: shot_name, resolved_path)
+                    resolved_path = re.sub('<SeqName>', lambda match: seq_name, resolved_path)
+                    resolved_path = re.sub('<SEQNAME>', lambda match: seq_name.upper(), resolved_path)
 
                     print(f'Resolved Path: {resolved_path}')
 
@@ -2817,7 +2866,7 @@ class _PyFlame:
             `untar_path` (str):
                 Untar destination path.
 
-            `sudo_password` (bool, optional):
+            `sudo_password` (str | None, optional):
                 Password for sudo.
                 (Default: `None`)
 
@@ -2829,7 +2878,7 @@ class _PyFlame:
         -------
             To untar a file:
             ```
-            pyflame.unzip('/home/user/file.tar', '/home/user/untarred')
+            pyflame.untar('/home/user/file.tar', '/home/user/untarred')
             ```
         """
 
@@ -2839,11 +2888,10 @@ class _PyFlame:
         if not isinstance(untar_path, str):
             pyflame.raise_type_error('pyflame.untar', 'untar_path', 'str', untar_path)
         if sudo_password is not None and not isinstance(sudo_password, str):
-            pyflame.raise_type_error('pyflame.untar', 'None | sudo_password', 'str', sudo_password)
+            pyflame.raise_type_error('pyflame.untar', 'sudo_password', 'str | None', sudo_password)
 
-        # Untar
-        untar_command = f'tar -xvf {tar_file_path} -C {untar_path}'
-        untar_command = untar_command.split()
+        # Untar. Command is a list so paths with spaces stay whole
+        untar_command = ['tar', '-xvf', tar_file_path, '-C', untar_path]
 
         if sudo_password:
             process = Popen(['sudo', '-S'] + untar_command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
@@ -2852,6 +2900,16 @@ class _PyFlame:
                 print(stderr)
         else:
             process = Popen(untar_command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
+            stdout, stderr = process.communicate()
+
+            # Print errors only, not the list of extracted files
+            if process.returncode != 0 and stderr:
+                print(stderr)
+
+        # Stop if tar or sudo failed
+        if process.returncode != 0:
+            print('--> Untar failed.\n')
+            return False
 
         # Check if files exist in untar_path
         files_exist = False
@@ -2930,11 +2988,8 @@ class _PyFlame:
         ===========
 
         Provides scaling for fonts to be used in Qt UI elements.
-        Fonts are first scaled with the gui_resize method. Then if the
-        current display is a High DPI display(Retina Displays) the
-        result is returned. If the current display is not a High DPI
-        display the the value is scaled further by 0.8 so fonts don't
-        appear to big.
+        On macOS, fonts are scaled with the gui_resize method. On other
+        systems the value is returned unscaled.
 
         Args
         ----
@@ -2950,7 +3005,7 @@ class _PyFlame:
         -------
             To resize a font:
             ```
-            font.setPointSize(pyflame.font_resize(13)
+            font.setPointSize(pyflame.font_resize(13))
             ```
         """
 
@@ -2972,7 +3027,7 @@ class _PyFlame:
     def get_export_preset_version(preset_path: str) -> Tuple[str, str]:
         """
         Get Export Preset Version
-        ==========================
+        =========================
 
         Get current export preset version and current Flame preset export version.
         This should be updated with each new version of Flame.
@@ -2988,7 +3043,7 @@ class _PyFlame:
                 Version of current preset export.
 
             `export_version` (str):
-                Export preset version for currernt version of Flame.
+                Export preset version for current version of Flame.
 
         Example
         -------
@@ -3179,8 +3234,13 @@ class _PyFlame:
 
         print('Getting Export Presets:\n')
 
-        project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
-        project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
+        # Get Project export preset paths from Flame, fall back to the old fixed paths if Flame can't give them
+        try:
+            project_file_sequence_path = str(flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Image_Sequence))
+            project_movie_export_path = str(flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Movie))
+        except Exception:
+            project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
+            project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
 
         # Get Shared File Sequence Export Presets
         if os.path.isdir(SHARED_FILE_SEQUENCE_PATH):
@@ -3227,7 +3287,7 @@ class _PyFlame:
         Convert Export Preset Name to Path
         ==================================
 
-        Convert Export Preset Name from Preset Menus(PyFlamePushButtonMenu) to Path.
+        Convert Export Preset Name from a preset menu (PyFlameMenu) to Path.
 
         Preset Menu names should be in the following format:
             Shared: File Sequence: Jpeg (8-bit)
@@ -3263,7 +3323,7 @@ class _PyFlame:
 
             export_preset_path will be:
             ```
-            /opt/Autodesk/shared/presets/file_sequence/Jpeg (8-bit).xml
+            /opt/Autodesk/shared/export/presets/file_sequence/Jpeg (8-bit).xml
             ```
         """
 
@@ -3271,24 +3331,29 @@ class _PyFlame:
         if not isinstance(export_preset_name, str):
             pyflame.raise_type_error('pyflame.convert_export_preset_name_to_path', 'export_preset_name', 'str', export_preset_name)
 
-        project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
-        project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
+        # Get Project export preset paths from Flame, fall back to the old fixed paths if Flame can't give them
+        try:
+            project_file_sequence_path = str(flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Image_Sequence))
+            project_movie_export_path = str(flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.Project, flame.PyExporter.PresetType.Movie))
+        except Exception:
+            project_file_sequence_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/file_sequence')
+            project_movie_export_path = os.path.join('/opt/Autodesk/', f'{flame.projects.current_project.name}', 'export/presets/flame/movie_file')
 
         # Convert export preset name to path
         if export_preset_name == '':
             return ''
         elif 'Shared: File Sequence:' in export_preset_name:
-            print('Shared: File Sequence:',os.path.join(SHARED_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(SHARED_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ")[2]}.xml')
+            print('Shared: File Sequence:',os.path.join(SHARED_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ", 2)[2]}.xml'))
+            return os.path.join(SHARED_FILE_SEQUENCE_PATH, f'{export_preset_name.split(": ", 2)[2]}.xml')
         elif 'Shared: Movie:' in export_preset_name:
-            print('Shared: Movie:', os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ")[2]}.xml')
+            print('Shared: Movie:', os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ", 2)[2]}.xml'))
+            return os.path.join(SHARED_MOVIE_EXPORT_PATH, f'{export_preset_name.split(": ", 2)[2]}.xml')
         elif 'Project: File Sequence:' in export_preset_name:
-            print('Project: File Sequence:', os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ")[2]}.xml')
+            print('Project: File Sequence:', os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ", 2)[2]}.xml'))
+            return os.path.join(project_file_sequence_path, f'{export_preset_name.split(": ", 2)[2]}.xml')
         elif 'Project: Movie:' in export_preset_name:
-            print('Project: Movie:', os.path.join(project_movie_export_path, f'{export_preset_name.split(": ")[2]}.xml'))
-            return os.path.join(project_movie_export_path, f'{export_preset_name.split(":")[2]}.xml')
+            print('Project: Movie:', os.path.join(project_movie_export_path, f'{export_preset_name.split(": ", 2)[2]}.xml'))
+            return os.path.join(project_movie_export_path, f'{export_preset_name.split(": ", 2)[2]}.xml')
         else:
             return ''
 
@@ -3313,6 +3378,10 @@ class _PyFlame:
             append (bool, optional):
                 Append shot name tag to existing tags.
                 (Default: False)
+
+            shot_name_tag (str, optional):
+                Name of the shot name tag, e.g. 'ShotName' for 'ShotName: PYT_0010'.
+                (Default: 'ShotName')
 
         Raises
         ------
@@ -3351,7 +3420,7 @@ class _PyFlame:
             pyobject.tags = [f'{shot_name_tag}: {shot_name}'] # Set tag directly
 
     @staticmethod
-    def find_by_tag(pyobject: flame.PyLibrary | flame.PyDesktop | flame.PyFolder, target_tag: str, sorted: bool=True):
+    def find_by_tag(pyobject: list[flame.PyLibrary | flame.PyDesktop | flame.PyFolder], target_tag: str, sorted: bool=True):
         """
         Find By Tag
         ===========
@@ -3365,13 +3434,18 @@ class _PyFlame:
         For instance, if searching a folder, the folder's immediate contained objects (subfolders and clips) must
         be sorted by the tag being searched for.
 
+        If the binary search finds nothing (for example when some PyObjects are untagged or not sorted), a linear search is
+        run as well, so a tagged PyObject is always found.
+
         If `sorted` is False, performs a linear search through the PyObjects contained within the given PyObject. This can be slower
         for large lists of PyObjects.
 
         Args
         ----
-            pyobject (flame.PyLibrary, flame.PyDesktop, or flame.PyFolder):
-                Flame PyObject (Library, Desktop, or Folder) that will be searched for item with target tag.
+            pyobject (list[flame.PyLibrary | flame.PyDesktop | flame.PyFolder]):
+                List of Flame PyObjects (Libraries, Desktops, or Folders) that will be searched for item with target tag,
+                such as the folders of a Library (`<PyLibraryObject>.folders`). A Library, Desktop, or Folder cannot be
+                passed directly.
 
             target_tag (str):
                 Tag to search for. If contains ':', will match against tag_type:value format.
@@ -3389,16 +3463,16 @@ class _PyFlame:
         --------
             Find a shot folder by tag where PyObjects are sorted by tag:
             ```
-            find_by_tag(
-                pyobject=<PyLibraryObject>,
+            pyflame.find_by_tag(
+                pyobject=<PyLibraryObject>.folders,
                 target_tag='ShotName: PYT_0010',
                 )
             ```
 
-            Find a clip by tag where PyObjects are not sorted by tag:
+            Find a shot folder by tag where PyObjects are not sorted by tag:
             ```
-            find_by_tag(
-                pyobject=<PyLibraryObject>,
+            pyflame.find_by_tag(
+                pyobject=<PyLibraryObject>.folders,
                 target_tag='ShotName: PYT_0010',
                 sorted=False
                 )
@@ -3417,14 +3491,11 @@ class _PyFlame:
         if not isinstance(sorted, bool):
             pyflame.raise_type_error('pyflame.find_by_tag', 'sorted', 'bool', sorted)
 
-        # If sorted is True, perform binary search other wise perform a linear search
+        # If sorted is True, perform binary search. Linear search below runs if sorted is False or binary search finds nothing
         if sorted:
             print('Performing Binary Tag Search')
-            # Split target tag at ': ' to get tag_type if ':' is present
-            if ':' in target_tag:
-                tag_type = target_tag.split(': ', 1)[0]
-            else:
-                tag_type = target_tag
+            # Get tag type, the part of the target tag before the first ':'
+            tag_type = target_tag.split(':', 1)[0]
 
             # Perform binary search
             start, end = 0, len(pyobject) - 1
@@ -3435,7 +3506,7 @@ class _PyFlame:
                 # Loop through folder_tags to fing tag starting with tag_type
                 pyobject_tag = None
                 for tag in pyobject_tags:
-                    if tag.startswith(tag_type):
+                    if tag == tag_type or tag.startswith(f'{tag_type}:'):
                         pyobject_tag = tag
                         break
 
@@ -3453,13 +3524,14 @@ class _PyFlame:
                     start = mid + 1
                 else:
                     end = mid - 1
-        else:
-            # Perform linear search
-            print('Performing Linear Tag Search')
-            for pyobject_item in pyobject:
-                if target_tag in pyobject_item.tags.get_value():
-                    print(f'Found Tagged PyObject: {pyobject_item.name}\n')
-                    return pyobject_item
+
+        # Perform linear search. Also run when the binary search finds nothing, since untagged
+        # or unsorted PyObjects can hide a match from it.
+        print('Performing Linear Tag Search')
+        for pyobject_item in pyobject:
+            if target_tag in pyobject_item.tags.get_value():
+                print(f'Found Tagged PyObject: {pyobject_item.name}\n')
+                return pyobject_item
 
         print(f'Tagged PyObject: {target_tag} Not Found\n')
 
@@ -3477,6 +3549,10 @@ class _PyFlame:
         ----
             clip (flame.PyClip):
                 Clip to get shot name from
+
+            shot_name_tag (str, optional):
+                Name of the shot name tag, e.g. 'ShotName' for 'ShotName: PYT_0010'.
+                (Default: 'ShotName')
 
         Returns
         -------
@@ -3508,7 +3584,11 @@ class _PyFlame:
             clip_tags = clip.tags.get_value()
             shot_name_tag_value = [tag for tag in clip_tags if tag.startswith(f'{shot_name_tag}:')]
             if shot_name_tag_value:
-                shot_name = shot_name_tag_value[0].split(': ')[1]
+                # Get text after the colon, with or without a space after it
+                if ': ' in shot_name_tag_value[0]:
+                    shot_name = shot_name_tag_value[0].split(': ')[1]
+                else:
+                    shot_name = shot_name_tag_value[0][len(shot_name_tag) + 1:].strip()
                 pyflame.print(f'Shot Name Tag Found: {shot_name}', text_color=TextColor.GREEN)
                 return shot_name
 
@@ -3528,16 +3608,17 @@ class _PyFlame:
             # combine first two parts (e.g. "Shot" + "01" -> "Shot01")
             # Otherwise combine first three parts to handle separators
             # (e.g. "Shot" + "_" + "01" -> "Shot_01")
-            if shot_name_split[1].isalnum():
-                shot_name = shot_name_split[0] + shot_name_split[1]
+            # Names with fewer parts (e.g. "0010") use the parts there are
+            if len(shot_name_split) < 2 or shot_name_split[1].isalnum():
+                shot_name = ''.join(shot_name_split[:2])
             else:
-                shot_name = shot_name_split[0] + shot_name_split[1] + shot_name_split[2]
+                shot_name = ''.join(shot_name_split[:3])
         else:
             shot_name = clip_name
 
         # Tag clip with shot name, pass if Flame 2025 or older
         try:
-            pyflame.set_shot_tagging(clip, shot_name)
+            pyflame.set_shot_tagging(clip, shot_name, append=True, shot_name_tag=shot_name_tag)
         except:
             pass
 
@@ -3558,6 +3639,10 @@ class _PyFlame:
             batch_group (flame.PyBatch):
                 Batch group to get shot name from
 
+            shot_name_tag (str, optional):
+                Name of the shot name tag, e.g. 'ShotName' for 'ShotName: PYT_0010'.
+                (Default: 'ShotName')
+
         Returns
         -------
             shot_name (str):
@@ -3565,9 +3650,8 @@ class _PyFlame:
 
         Notes
         -----
-            - Check if batch group has assigned Shot Name.
             - Check if batch group is tagged with ShotName (shot_name_tag: PYT_0010)
-            - If no Shot Name is assigned or tagged, extract shot name from batch group name.
+            - If the batch group is not tagged, extract shot name from batch group name.
         """
 
         # Validate Argument
@@ -3581,7 +3665,11 @@ class _PyFlame:
             batch_group_tags = batch_group.tags.get_value()
             shot_name_tag_value = [tag for tag in batch_group_tags if tag.startswith(f'{shot_name_tag}:')]
             if shot_name_tag_value:
-                shot_name = shot_name_tag_value[0].split(': ')[1]
+                # Get text after the colon, with or without a space after it
+                if ': ' in shot_name_tag_value[0]:
+                    shot_name = shot_name_tag_value[0].split(': ')[1]
+                else:
+                    shot_name = shot_name_tag_value[0][len(shot_name_tag) + 1:].strip()
                 pyflame.print(f'Shot Name Tag Found: {shot_name}', text_color=TextColor.GREEN)
                 return shot_name
 
@@ -3590,7 +3678,7 @@ class _PyFlame:
 
         # Tag batch group with shot name, pass if Flame 2025 or older
         try:
-            pyflame.set_shot_tagging(batch_group, shot_name)
+            pyflame.set_shot_tagging(batch_group, shot_name, append=True, shot_name_tag=shot_name_tag)
         except:
             pass
 
@@ -3601,8 +3689,8 @@ class _PyFlame:
     @staticmethod
     def get_media_panel_shot_folder(shot_name: str, pyobject: flame.PyClip | flame.PyBatch | flame.PyDesktop, search_location: flame.PyLibrary | flame.PyFolder, dest_folder_path: str) -> flame.PyFolder | None:
         """
-        Get Media Panel Folder
-        ======================
+        Get Media Panel Shot Folder
+        ===========================
 
         Recursively find Media Panel shot folder from path. Path can be a single folder or a nested folder.
 
@@ -3619,7 +3707,7 @@ class _PyFlame:
                 Name of shot
 
             pyobject (flame.PyClip | flame.PyBatch | flame.PyDesktop):
-                PyClip, PyBatch, or PyDesktop to move to shot folder.
+                PyClip, PyBatch, or PyDesktop that will be moved or copied to the shot folder (not used by this function).
 
             search_location (flame.PyLibrary | flame.PyFolder):
                 Media Panel Library or Folder to search through for shot folder.
@@ -3630,14 +3718,14 @@ class _PyFlame:
 
         Returns
         -------
-            dest_folder (flame.PyFolder):
-                Destination folder object.
+            dest_folder (flame.PyFolder | None):
+                Destination folder object, or None if no shot folder is tagged with the shot name.
 
         Examples
         --------
             Get shot folder from path:
             ```
-            get_media_panel_shot_folder(
+            pyflame.get_media_panel_shot_folder(
                 shot_name='PYT_0010',
                 pyobject=<PyClipObject>,
                 search_location=<PyLibraryObject>,
@@ -3682,10 +3770,14 @@ class _PyFlame:
             def find_next_folder(folder: flame.PyFolder, folder_list: list) -> flame.PyFolder:
                 """
                 Find Next Folder
-                ===============
+                ================
 
                 Recursively find next folder in folder list.
                 """
+
+                # Stop when every folder in the path has been found
+                if not folder_list:
+                    return folder
 
                 for sub_folder in folder.folders:
                     if sub_folder.name == folder_list[0]:
@@ -3706,8 +3798,8 @@ class _PyFlame:
         # Search through search_location(flame.PyLibrary or flame.PyFolder) for shot folder with matching target tag
         shot_folder = pyflame.find_by_tag(search_location.folders, target_tag)
 
-        # If dest_folder_path is a single folder, return shot_folder
-        if '/' not in dest_folder_path:
+        # If dest_folder_path is a single folder or no shot folder was found, return shot_folder
+        if '/' not in dest_folder_path or shot_folder is None:
             dest_folder = shot_folder
         else:
             # If dest_folder_path is a nested folder, recursively find the destination folder
@@ -3748,7 +3840,7 @@ class _PyFlame:
         --------
             Move to shot folder:
             ```
-            move_to_shot_folder(
+            pyflame.move_to_shot_folder(
                 shot_name='PYT_0010',
                 pyobject=<PyClipObject>,
                 search_location=<PyLibraryObject>,
@@ -3817,7 +3909,7 @@ class _PyFlame:
         -------
             Copy to shot folder:
             ```
-            copy_to_shot_folder(
+            pyflame.copy_to_shot_folder(
                 shot_name='PYT_0010',
                 pyobject=<PyClipObject>,
                 search_location=<PyLibraryObject>,
@@ -3864,11 +3956,6 @@ def _load_font():
     Load font from path for use in all PyFlame QT Widgets.
 
     If font is not found, Discreet font is used as a fallback.
-
-    Args
-    ----
-        font_path (dict):
-            Name and path to font in dictionary form.
 
     Returns
     -------
@@ -3929,6 +4016,572 @@ def _load_font():
 
 FONT, FONT_SIZE, MARKDOWN_FONT_FAMILY = _load_font()
 
+def _prepare_markdown(text: str) -> str:
+    """
+    Prepare Markdown
+    ================
+
+    Fix raw HTML in Markdown text that makes Qt's Markdown reader (`setMarkdown`) drop text. Used by
+    `PyFlameTextEdit` and `PyFlameTextBrowser` before Markdown text is set.
+
+    Qt holds back raw HTML until every tag it counted as opened is closed again. It counts each `<`
+    followed by a letter as an opened tag, and each `</` and `/>` as a closed one. If the count
+    isn't back to zero at the end of the text, everything after the point where it last left zero is
+    lost: for example after a `<br>` or `<img ...>` that isn't self-closed, a `<Token>` written as
+    plain text, a closing tag with no opening tag, or a comment with a tag in it.
+
+    Qt itself decides if anything is lost: the text, followed by an end marker, is read into a
+    scratch document. If the end marker is shown, the text is returned unchanged. So text that Qt
+    already shows in full is never changed.
+
+    When the end marker is lost, the tags Qt can't close are first dropped in a scratch copy. If that
+    shows nothing more than the original did (other than spaces), only the end marker was being lost,
+    for example to an unclosed tag at the very end with nothing after it, and the text is returned
+    unchanged.
+
+    Otherwise a fixed copy is made (see `_fix_markdown_html()`). It is used only if Qt shows its end
+    marker, what the original showed is still shown in the same order (word by word, or character by
+    character where Qt groups words differently), and it has no fewer links, images or tables. If
+    not, a copy with only the unclosed void elements made self-closing is tried the same way, and if
+    that fails too, the text is returned unchanged.
+
+    Text over 1,000,000 characters, and text with no `<` that could start HTML, is returned
+    unchanged without being checked. Text is also returned unchanged if checking and fixing it takes
+    more than a quarter of a second (checked while fixing and before each Qt read after the first),
+    or its HTML has more than 5000 tags or tags nested more than 200 deep. Never raises: if anything
+    goes wrong the text is returned unchanged.
+
+    Args
+    ----
+        `text` (str):
+            Markdown text.
+
+    Returns
+    -------
+        str:
+            The text, or a fixed copy that Qt shows in full.
+    """
+
+    try:
+        # Nothing Qt could count as raw HTML, or too long to check quickly
+        if not isinstance(text, str) or len(text) > 1000000 or not re.search(r'<[A-Za-z/!?]', text):
+            return text
+
+        # End marker that can't come from the text itself
+        letters = re.sub(r'[^A-Za-z]', '', text)
+        end_marker = 'PyFlameMarkdownEnd'
+        while end_marker in letters:
+            end_marker += 'X'
+
+        timer = QtCore.QElapsedTimer()
+        timer.start()
+        original = _markdown_render_info(text, end_marker)
+        if original['complete']:
+            return text
+
+        # The end marker is lost. If dropping the tags Qt can't close shows nothing more of the text
+        # itself, only the marker was being lost (an unclosed tag at the very end): leave the text as it is
+        try:
+            dropped = _fix_markdown_html(text, 'drop', timer)
+        except TimeoutError:
+            return text
+        if timer.elapsed() > 250:
+            return text
+        dropped_info = _markdown_render_info(dropped, end_marker)
+        if dropped_info['complete'] and ''.join(dropped_info['plain'].split()) == ''.join(original['plain'].split()):
+            return text
+
+        # Text is being lost: try a fixed copy, then a copy with only void elements fixed
+        original_words = original['plain'].split()
+        original_counts = None
+        for mode in ('escape', 'void'):
+            try:
+                candidate = _fix_markdown_html(text, mode, timer)
+            except TimeoutError:
+                return text
+            if candidate == text:
+                continue
+            if timer.elapsed() > 250:
+                return text
+            fixed = _markdown_render_info(candidate, end_marker)
+            if not fixed['complete']:
+                continue
+
+            # What the original showed must still be shown, in the same order: each word, or if Qt
+            # joined or split words differently, each character other than spaces
+            if not _markdown_shown_in_order(original_words, fixed['plain']):
+                continue
+
+            # No fewer links, images or tables
+            if original_counts is None:
+                original_counts = _markdown_counts(original['document'])
+            fixed_counts = _markdown_counts(fixed['document'])
+            if all(fixed_counts[key] >= original_counts[key] for key in original_counts):
+                return candidate
+
+        return text
+    except Exception:
+        return text
+
+def _markdown_shown_in_order(original_words: list, plain: str) -> bool:
+    """
+    Markdown Shown In Order
+    =======================
+
+    Check that text shown by Qt still shows everything another text showed, in the same order.
+    Used by `_prepare_markdown()`.
+
+    Args
+    ----
+        `original_words` (list):
+            Words the original text showed, in order.
+
+        `plain` (str):
+            Text shown now.
+
+    Returns
+    -------
+        bool:
+            True if every word is found in order, or else every character other than spaces is.
+    """
+
+    position = 0
+    for word in original_words:
+        position = plain.find(word, position)
+        if position < 0:
+            break
+        position += len(word)
+    else:
+        return True
+
+    position = 0
+    for character in ''.join(original_words):
+        position = plain.find(character, position)
+        if position < 0:
+            return False
+        position += 1
+
+    return True
+
+def _markdown_render_info(text: str, end_marker: str) -> dict:
+    """
+    Markdown Render Info
+    ====================
+
+    Read Markdown text, followed by an end marker paragraph, into a scratch document the way
+    `setMarkdown` does, without showing or laying it out (no images are loaded). Used by
+    `_prepare_markdown()`.
+
+    Args
+    ----
+        `text` (str):
+            Markdown text.
+
+        `end_marker` (str):
+            Word that is added as the last paragraph.
+
+    Returns
+    -------
+        dict:
+            `complete` (bool): True if the end marker is shown, so nothing was lost.
+            `plain` (str): Text shown, without the end marker.
+            `document` (QtGui.QTextDocument): The scratch document.
+    """
+
+    document = QtGui.QTextDocument()
+    document.setMarkdown(text + '\n\n' + end_marker + '\n')
+    plain = document.toPlainText().rstrip()
+    complete = plain.endswith(end_marker)
+    if complete:
+        plain = plain[:-len(end_marker)]
+
+    return {'complete': complete, 'plain': plain, 'document': document}
+
+def _markdown_counts(document: QtGui.QTextDocument) -> dict:
+    """
+    Markdown Counts
+    ===============
+
+    Count the links, images and tables in a document read by `_markdown_render_info()`. Used by
+    `_prepare_markdown()`.
+
+    Args
+    ----
+        `document` (QtGui.QTextDocument):
+            Scratch document.
+
+    Returns
+    -------
+        dict:
+            Number of `links`, `images` and `tables`.
+    """
+
+    links = 0
+    tables = 0
+    last_link = None
+    block = document.begin()
+    while block.isValid():
+        fragments = block.begin()
+        while not fragments.atEnd():
+            char_format = fragments.fragment().charFormat()
+            link = char_format.anchorHref() if char_format.isAnchor() else None
+            if link and link != last_link:
+                links += 1
+            last_link = link
+            fragments += 1
+        block = block.next()
+    frames = [document.rootFrame()]
+    while frames:
+        frame = frames.pop()
+        if isinstance(frame, QtGui.QTextTable):
+            tables += 1
+        frames.extend(frame.childFrames())
+
+    return {'links': links, 'images': document.toPlainText().count(chr(0xfffc)), 'tables': tables}  # Qt shows an image as U+FFFC
+
+def _fix_markdown_html(text: str, mode: str, timer: QtCore.QElapsedTimer) -> str:
+    """
+    Fix Markdown HTML
+    =================
+
+    Make a copy of Markdown text with the raw HTML fixed that Qt can't close: void elements that are
+    never closed (`<br>`, `<img ...>`, ...) are made self-closing, other opening tags that are never
+    closed and closing tags with no opening tag are shown as written (`<` becomes `&lt;`), comments,
+    processing instructions and CDATA sections with a tag in them are removed, a stray `<` before a
+    letter in a raw HTML block becomes `&lt;`, and `<` / `>` in quoted attribute values of a tag Qt
+    counts wrong become `&lt;` / `&gt;`. Code spans, fenced code and indented code (also in lists and
+    block quotes) are left as they are.
+
+    Used by `_prepare_markdown()`, which checks the result with Qt before using it.
+
+    Args
+    ----
+        `text` (str):
+            Markdown text.
+
+        `mode` (str):
+            `'escape'`: fix everything as above.
+            `'void'`: only make void elements self-closing.
+            `'drop'`: as `'escape'`, but remove the tags instead of showing them as written.
+
+        `timer` (QtCore.QElapsedTimer):
+            Started timer. Gives up once it passes a quarter of a second.
+
+    Returns
+    -------
+        str:
+            Fixed copy.
+
+    Raises
+    ------
+        TimeoutError:
+            If the timer passes a quarter of a second, or the HTML has too many tags (over 5000) or
+            tags nested too deep (over 200) for Qt to read it quickly.
+    """
+
+    tag_name = r'[A-Za-z][A-Za-z0-9-]*'
+    attribute = r'(?:\s+[A-Za-z_:][A-Za-z0-9_.:-]*(?:\s*=\s*(?:[^\s"\'=<>`]+|\'[^\']*\'|"[^"]*"))?)'
+    open_pattern = re.compile(r'<(' + tag_name + r')' + attribute + r'*\s*(/?)>')
+    close_pattern = re.compile(r'</(' + tag_name + r')\s*>')
+    declaration_pattern = re.compile(r'<![A-Za-z][^>]*>')
+    autolink_pattern = re.compile(r'<[A-Za-z][A-Za-z0-9.+-]{1,31}:[^\s<>]*>|<[A-Za-z0-9.!#$%&\'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?>')
+    counted_open_pattern = re.compile(r'<(?=[A-Za-z])')
+    quote_pattern = re.compile(r'(?: {0,3}> ?)*')
+    list_pattern = re.compile(r' {0,3}(?:[-+*]|\d{1,9}[.)])(?: {1,4}(?! )|$)')
+    fence_pattern = re.compile(r'(`{3,}|~{3,})')
+    block_start_pattern = re.compile(
+        r'(?:'
+        r'(?P<raw><(?:script|pre|style|textarea)(?:\s|>|$))'
+        r'|(?P<comment><!--)'
+        r'|(?P<pi><\?)'
+        r'|(?P<decl><![A-Za-z])'
+        r'|(?P<cdata><!\[CDATA\[)'
+        r'|(?P<block></?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|/?>|$))'
+        r')',
+        re.IGNORECASE,
+        )
+    block_ends = {
+        'raw': re.compile(r'</(?:script|pre|style|textarea)>', re.IGNORECASE),
+        'comment': re.compile(r'-->'),
+        'pi': re.compile(r'\?>'),
+        'decl': re.compile(r'>'),
+        'cdata': re.compile(r'\]\]>'),
+        }
+    void_elements = ('area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr')
+    max_tag_length = 10000
+
+    # Qt takes seconds to read HTML with many thousands of tags, or tags nested hundreds deep
+    max_items = 5000
+    max_depth = 200
+
+    def tag_count(html: str) -> int:
+        """
+        Tag Count
+        =========
+
+        Count raw HTML the way Qt does: each `<` followed by a letter opens a tag, each `</` and `/>` closes one.
+        """
+
+        return len(counted_open_pattern.findall(html)) - html.count('</') - html.count('/>')
+
+    def check_time() -> None:
+        """
+        Check Time
+        ==========
+
+        Give up once the timer passes a quarter of a second.
+        """
+
+        if timer.elapsed() > 250:
+            raise TimeoutError
+
+    def find_html(start: int, end: int, html_block: bool) -> None:
+        """
+        Find HTML
+        =========
+
+        Add the raw HTML in a paragraph or a raw HTML block line to `items`, skipping code spans,
+        escapes and autolinks. In a raw HTML block, the text between tags is counted too.
+        """
+
+        segment = text[start:end]
+
+        # Code spans: a run of backticks closed by the next run of the same length
+        code_ends = {}
+        if not html_block and '`' in segment:
+            runs = [(run.start(), run.end()) for run in re.finditer(r'`+', segment)]
+            next_same = {}
+            for run_start, run_end in reversed(runs):
+                length = run_end - run_start
+                code_ends[run_start] = next_same.get(length)
+                next_same[length] = run_end
+
+        last_gt = segment.rfind('>')
+        last_ends = {'<!--': segment.rfind('-->'), '<?': segment.rfind('?>'), '<![CDATA[': segment.rfind(']]>')}
+        index = 0
+        text_start = 0
+        steps = 0
+        for marker in re.finditer(r'[<`\\]', segment):
+            steps += 1
+            if not steps % 4096:
+                check_time()
+            if marker.start() < index:
+                continue
+            index = marker.start()
+            character = segment[index]
+            if character == '\\':
+                index += 2
+                continue
+            if character == '`':
+                index = code_ends.get(index) or index + len(re.match(r'`+', segment[index:index + max_tag_length]).group())
+                continue
+            if index > last_gt:
+                break
+
+            # Find what starts here, never searching for an end that isn't there
+            match_end = None
+            kind = ''
+            name = ''
+            self_close = False
+            for opening, closing in (('<!--', '-->'), ('<?', '?>'), ('<![CDATA[', ']]>')):
+                if segment.startswith(opening, index):
+                    kind = 'comment' if opening == '<!--' else 'other'
+                    if opening == '<!--' and (segment.startswith('<!-->', index) or segment.startswith('<!--->', index)):
+                        match_end = segment.find('>', index) + 1
+                    elif last_ends[opening] >= index + len(opening):
+                        match_end = segment.find(closing, index + len(opening)) + len(closing)
+                    break
+            if not kind:
+                window_end = min(len(segment), index + max_tag_length)
+                autolink = autolink_pattern.match(segment, index, window_end)
+                if autolink and not html_block:
+                    index = autolink.end()
+                    continue
+                for pattern, pattern_kind in ((close_pattern, 'close'), (open_pattern, 'open'), (declaration_pattern, 'other')):
+                    match = pattern.match(segment, index, window_end)
+                    if match:
+                        kind = pattern_kind
+                        match_end = match.end()
+                        if pattern_kind != 'other':
+                            name = match.group(1).lower()
+                        self_close = pattern_kind == 'open' and bool(match.group(2))
+                        break
+
+            if match_end is None:
+                index += 1
+                continue
+
+            if html_block and index > text_start:
+                items.append({'kind': 'block_text', 'start': start + text_start, 'end': start + index, 'count': tag_count(segment[text_start:index]), 'name': '', 'self_close': False})
+            items.append({'kind': kind, 'start': start + index, 'end': start + match_end, 'count': tag_count(segment[index:match_end]), 'name': name, 'self_close': self_close})
+            index = text_start = match_end
+
+        if html_block and len(segment) > text_start:
+            items.append({'kind': 'block_text', 'start': start + text_start, 'end': end, 'count': tag_count(segment[text_start:]), 'name': '', 'self_close': False})
+
+    # Go through the text a line at a time, keeping track of code, raw HTML blocks, lists and paragraphs
+    items = []
+    position = 0
+    fence = ''
+    html_block = ''
+    block_start = 0
+    paragraph_start = None
+    paragraph_end = 0
+    previous_blank = True
+    list_indent = None
+
+    for line in text.splitlines(keepends=True):
+        check_time()
+        line_start = position
+        position += len(line)
+        content = line.rstrip('\r\n')
+        line_end = line_start + len(content)
+
+        # Block quote markers come first; the rest of the line is what counts
+        quote_end = quote_pattern.match(content).end()
+        rest = content[quote_end:]
+        expanded = rest.expandtabs(4)
+        indent = len(expanded) - len(expanded.lstrip(' '))
+        stripped = expanded.strip()
+        blank = not stripped
+
+        # Inside a fenced code block
+        if fence:
+            if stripped.startswith(fence) and not stripped.strip(fence[0]):
+                fence = ''
+            continue
+
+        # Inside a raw HTML block
+        if html_block:
+            if html_block in ('block', 'tag') and blank:
+                html_block = ''
+            else:
+                if html_block != 'comment':
+                    find_html(line_start, line_end, True)
+                if html_block in block_ends and block_ends[html_block].search(content):
+                    if html_block == 'comment':
+                        items.append({'kind': 'comment', 'start': block_start, 'end': line_end, 'count': tag_count(text[block_start:line_end]), 'name': '', 'self_close': False})
+                    html_block = ''
+                continue
+
+        if blank:
+            if paragraph_start is not None:
+                find_html(paragraph_start, paragraph_end, False)
+                paragraph_start = None
+            previous_blank = True
+            continue
+
+        # List items: their content is indented to the item's text
+        list_match = list_pattern.match(expanded)
+        if list_match and not (paragraph_start is not None and indent >= (list_indent or 0) + 4):
+            list_indent = len(list_match.group())
+            expanded = ' ' * list_indent + expanded[list_indent:]
+            indent = len(expanded) - len(expanded.lstrip(' '))
+            stripped = expanded.strip()
+        elif list_indent is not None and indent < list_indent and previous_blank:
+            list_indent = None
+        base_indent = list_indent if list_indent is not None and indent >= list_indent else 0
+
+        # Indented code
+        if paragraph_start is None and indent >= base_indent + 4 and stripped:
+            previous_blank = False
+            continue
+
+        # Fenced code, raw HTML blocks and headings end a paragraph
+        fence_match = fence_pattern.match(stripped)
+        block_match = block_start_pattern.match(stripped)
+        block_type = block_match.lastgroup if block_match else ''
+        if not block_type and paragraph_start is None:
+            whole_tag = open_pattern.fullmatch(stripped) or close_pattern.fullmatch(stripped)
+            if whole_tag:
+                block_type = 'tag'
+        if fence_match and not (fence_match.group()[0] == '`' and '`' in stripped[fence_match.end():]):
+            block_type = 'fence'
+        if block_type or stripped.startswith('#'):
+            if paragraph_start is not None:
+                find_html(paragraph_start, paragraph_end, False)
+                paragraph_start = None
+
+        if block_type == 'fence':
+            fence = fence_match.group()
+        elif block_type:
+            block_start = line_start + content.find(stripped[:1]) if stripped else line_start
+            ended = block_type in block_ends and block_ends[block_type].search(stripped)
+            if block_type != 'comment' or ended:
+                find_html(block_start, line_end, True)
+            if not ended:
+                html_block = block_type
+        elif stripped.startswith('#'):
+            find_html(line_start, line_end, False)
+        else:
+            if paragraph_start is None:
+                paragraph_start = line_start
+            paragraph_end = line_end
+        previous_blank = False
+
+    if paragraph_start is not None:
+        find_html(paragraph_start, paragraph_end, False)
+
+    # Pair opening and closing tags by name. Whatever is left over is what Qt can't close
+    changes = {}
+    open_tags = []
+    open_counts = {}
+    if len(items) > max_items:
+        raise TimeoutError
+    for item_index, item in enumerate(items):
+        kind = item['kind']
+        if kind in ('open', 'close') and item['count'] != {'open': 0 if item['self_close'] else 1, 'close': -1}[kind]:
+            changes.setdefault(item_index, set()).add('attribute')
+        if kind == 'open' and not item['self_close']:
+            open_tags.append(item_index)
+            if len(open_tags) > max_depth:
+                raise TimeoutError
+            open_counts[item['name']] = open_counts.get(item['name'], 0) + 1
+        elif kind == 'close':
+            if open_counts.get(item['name']):
+                while open_tags:
+                    open_index = open_tags.pop()
+                    open_counts[items[open_index]['name']] -= 1
+                    if items[open_index]['name'] == item['name']:
+                        break
+                    changes.setdefault(open_index, set()).add('unclosed')
+            else:
+                changes.setdefault(item_index, set()).add('unmatched')
+        elif kind in ('comment', 'other') and item['count']:
+            changes.setdefault(item_index, set()).add('comment')
+        elif kind == 'block_text' and item['count']:
+            changes.setdefault(item_index, set()).add(kind)
+    for open_index in open_tags:
+        changes.setdefault(open_index, set()).add('unclosed')
+
+    # Put the text back together with the changes
+    pieces = []
+    piece_start = 0
+    for item_index in sorted(changes):
+        item = items[item_index]
+        item_changes = changes[item_index]
+        html = text[item['start']:item['end']]
+        void = item['name'] in void_elements
+        if mode == 'void':
+            if not ('unclosed' in item_changes and void):
+                continue
+        elif 'attribute' in item_changes:
+            html = html[0] + re.sub(r'"[^"]*"|\'[^\']*\'', lambda value: value.group().replace('<', '&lt;').replace('>', '&gt;'), html[1:])
+        if 'unclosed' in item_changes and void:
+            html = html[:-1].rstrip() + ' />'
+        elif item_changes & {'unclosed', 'unmatched'}:
+            html = '' if mode == 'drop' else '&lt;' + html[1:]
+        elif 'comment' in item_changes:
+            html = '\n' * html.count('\n')
+        elif 'block_text' in item_changes:
+            html = counted_open_pattern.sub('&lt;', html)
+        pieces.append(text[piece_start:item['start']])
+        pieces.append(html)
+        piece_start = item['end']
+    pieces.append(text[piece_start:])
+
+    return ''.join(pieces)
+
 # ==============================================================================
 # [Misc Classes]
 # ==============================================================================
@@ -3942,7 +4595,7 @@ class PyFlameToolTip:
 
     Add this line to the widget __init__ method to create the widget tooltip:
         ```
-        self.tooltip = PyFlameToolTip(self)
+        self.tooltip_popup = PyFlameToolTip(parent_widget=self)
         ```
 
     Add Tooltip Properties(Reference existing widgets for these properties):
@@ -3950,7 +4603,7 @@ class PyFlameToolTip:
         tooltip_delay - set time before tooltip shows
         tooltip_duration - set time tooltip shows for
 
-    Add Tooltip Event Handler methods to widget(Reference existng widgets for these methods):
+    Add Tooltip Event Handler methods to widget(Reference existing widgets for these methods):
         enterEvent()
         leaveEvent()
 
@@ -3960,7 +4613,8 @@ class PyFlameToolTip:
             Parent widget to display tooltip.
 
         `text` (str):
-            Text to display in tooltip.
+            Text to display in tooltip. Text wider than about 60 characters is word wrapped
+            onto more lines. Use `\\n` to force a line break.
             (Default: '')
 
         `delay` (int):
@@ -3981,11 +4635,11 @@ class PyFlameToolTip:
             (Default: '')
 
         `delay` (int):
-            Get or set tooltip delay in seconds.
+            Set tooltip delay in whole seconds. Get returns the delay in milliseconds.
             (Default: 3)
 
         `duration` (int):
-            Get or set tooltip duration in seconds.
+            Set tooltip duration in whole seconds. Get returns the duration in milliseconds.
             (Default: 5)
 
     Methods
@@ -4009,6 +4663,9 @@ class PyFlameToolTip:
         self._label = PyFlameLabel()
         self._label.setWindowFlags(QtCore.Qt.ToolTip | QtCore.Qt.FramelessWindowHint)
         self._label.hide()
+
+        # Let the label grow taller than one line so multi-line tooltip text is not cut off
+        self._label.setMaximumHeight(16777215)
 
         self._label.setStyleSheet(f"""
                 QLabel {{
@@ -4039,8 +4696,12 @@ class PyFlameToolTip:
         Stop timers when the helper is deleted to avoid lingering signals.
         """
 
-        self._show_timer.stop()
-        self._hide_timer.stop()
+        # Timers can already be deleted by Qt when Python exits
+        try:
+            self._show_timer.stop()
+            self._hide_timer.stop()
+        except RuntimeError:
+            pass
 
     #-------------------------------------
     # [Properties]
@@ -4079,7 +4740,7 @@ class PyFlameToolTip:
         if isValid(self._label):
             self._label.setText(value or '')
             if value != '':
-                self._label.adjustSize()
+                self._fit_label()
             else:
                 self._label.hide()
 
@@ -4149,6 +4810,30 @@ class PyFlameToolTip:
     # [Internal Methods]
     #-------------------------------------
 
+    def _fit_label(self):
+        """
+        Fit Label
+        =========
+
+        Size the tooltip label to its text. Text wider than about 60 characters is word wrapped
+        onto more lines. Shorter text stays on one line. Line breaks in the text are kept.
+        """
+
+        # Widest the tooltip can be before the text is wrapped
+        max_width = self._label.fontMetrics().horizontalAdvance('n' * 60)
+
+        # Measure the text on one line
+        self._label.setWordWrap(False)
+        self._label.setMinimumWidth(0)
+        self._label.setMaximumWidth(16777215)
+
+        # Wrap the text when it is too wide
+        if self._label.sizeHint().width() > max_width:
+            self._label.setWordWrap(True)
+            self._label.setFixedWidth(max_width)
+
+        self._label.adjustSize()
+
     def _show_tooltip(self):
         """
         Show Tooltip
@@ -4156,10 +4841,10 @@ class PyFlameToolTip:
 
         Show tooltip when mouse enters widget.
         """
-        print('Duration:', self.duration)
+
         if self.text and isValid(self._label):
             self._label.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-            self._label.adjustSize()
+            self._fit_label()
             pos = self.widget.mapToGlobal(self.widget.rect().bottomLeft())
             self._label.move(pos)
             self._label.show()
@@ -4631,7 +5316,7 @@ class PyFlameButton(QtWidgets.QPushButton):
 
     Methods
     -------
-        `connect(callback: Callable)`:
+        `connect_callback(callback: Callable)`:
             Connects a function to the button's click event.
 
     Examples
@@ -4765,6 +5450,8 @@ class PyFlameButton(QtWidgets.QPushButton):
         ------
             TypeError:
                 If the provided `value` is not a Color Enum.
+            ValueError:
+                If the provided `value` is not Color.GRAY, Color.BLUE or Color.RED.
 
         Examples
         --------
@@ -4863,7 +5550,7 @@ class PyFlameButton(QtWidgets.QPushButton):
         Returns
         -------
             `int`:
-                The current width of the button in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -4977,8 +5664,8 @@ class PyFlameButton(QtWidgets.QPushButton):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the button.
+            str:
+                The tooltip text to display when hovering over the button (empty string if none).
 
         Set
         ---
@@ -5017,9 +5704,8 @@ class PyFlameButton(QtWidgets.QPushButton):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameButton', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -5051,11 +5737,12 @@ class PyFlameButton(QtWidgets.QPushButton):
             print(button.tooltip_delay)
 
             # Set tooltip delay
-            button.tooltip_delay = 0.5
+            button.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -5107,7 +5794,8 @@ class PyFlameButton(QtWidgets.QPushButton):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -5165,7 +5853,7 @@ class PyFlameButton(QtWidgets.QPushButton):
         Args
         ---
             `color` (Color):
-                The color to set for the button: `Color.GRAY`, `Color.Blue`, `Color.RED`
+                The color to set for the button: `Color.GRAY`, `Color.BLUE`, `Color.RED`
 
         Raises
         -----
@@ -5245,6 +5933,664 @@ class PyFlameButton(QtWidgets.QPushButton):
     #-------------------------------------
     # [Tooltip Event Handlers]
     #-------------------------------------
+
+    def enterEvent(self, event):
+        self.tooltip_popup.enter_event()
+
+    def leaveEvent(self, event):
+        self.tooltip_popup.leave_event()
+
+class PyFlameCheckBox(QtWidgets.QCheckBox):
+    """
+    PyFlameCheckBox
+    ===============
+
+    Custom QT Flame Check Box Widget Subclass
+
+    Args
+    ----
+        `text` (str):
+            Text displayed to the right of the check box.
+            (Default: `""`)
+
+        `checked` (bool, optional):
+            Whether the check box is checked.
+            (Default: `False`)
+
+        `connect` (callable, optional):
+            Function to be called when the check box is clicked.
+            (Default: `None`)
+
+        `enabled` (bool, optional):
+            Whether the check box is enabled.
+            (Default: `True`)
+
+        `width` (int, optional):
+            Width of the check box in pixels. If `None`, it expands to fit the layout. Minimum width is 25.
+            (Default: `None`)
+
+        `height` (int, optional):
+            Height of the check box in pixels. If `None`, defaults to 28.
+            (Default: `None`)
+
+        `tooltip` (str, optional):
+            Tooltip text shown on hover.
+            (Default: `None`)
+
+        `tooltip_delay` (int, optional):
+            Delay in seconds before the tooltip is shown.
+            (Default: `3`)
+
+        `tooltip_duration` (int, optional):
+            Duration in seconds the tooltip remains visible.
+            (Default: `5`)
+
+    Properties
+    ----------
+        `text` (str):
+            Text displayed to the right of the check box.
+            (Default: `""`)
+
+        `checked` (bool):
+            Whether the check box is currently checked.
+            (Default: `False`)
+
+        `enabled` (bool):
+            Get or set whether the widget is enabled.
+            (Default: `True`)
+
+        `width` (int | None):
+            Get or set the widget width.
+            (Default: `None`)
+
+        `height` (int | None):
+            Get or set the widget height.
+            (Default: `None`)
+
+        `tooltip` (str | None):
+            Get or set the tooltip text.
+            (Default: `None`)
+
+        `tooltip_delay` (int):
+            Get or set the tooltip delay in seconds.
+            (Default: `3`)
+
+        `tooltip_duration` (int):
+            Get or set the tooltip duration in seconds.
+            (Default: `5`)
+
+    Methods
+    -------
+        `connect_callback(callback) -> None`:
+            Connect a function to the check box click event.
+
+    Examples
+    --------
+        To create a PyFlameCheckBox:
+        ```
+        check_box = PyFlameCheckBox(
+            text='Check Box Name',
+            checked=False,
+            )
+        ```
+
+        To set or get any check box property:
+        ```
+        # Set property
+        check_box.text = 'New Check Box Name'
+
+        # Get property
+        print(check_box.text)
+        ```
+    """
+
+    def __init__(self,
+                 text: str='',
+                 checked: bool=False,
+                 connect: Callable[..., Any] | None=None,
+                 enabled: bool=True,
+                 width: int | None=None,
+                 height: int | None=None,
+                 tooltip: str | None=None,
+                 tooltip_delay: int=3,
+                 tooltip_duration: int=5,
+                 ) -> None:
+        super().__init__()
+
+        # Setup Check Box
+        self.setFont(FONT)
+        self.setTristate(False)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        # Create Widget Tooltip
+        self.tooltip_popup = PyFlameToolTip(parent_widget=self)
+
+        # Set Properties
+        self.text = text
+        self.checked = checked
+        self.enabled = enabled
+        self.width = width
+        self.height = height
+        self.tooltip = tooltip
+        self.tooltip_delay = tooltip_delay
+        self.tooltip_duration = tooltip_duration
+
+        # Connect Callback
+        self.connect_callback(connect)
+
+        # Set Stylesheet
+        self._set_stylesheet()
+
+    #-----------------------
+    # Properties
+    #-----------------------
+
+    @property
+    def text(self) -> str:
+        """
+        Text
+        ====
+
+        Get or set the check box text.
+
+        Returns
+        -------
+            str:
+                The text of the check box.
+
+        Set
+        ---
+            `value` (str):
+                The text to set for the check box.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a string.
+
+        Examples
+        --------
+            ```
+            # Get check box text
+            print(check_box.text)
+
+            # Set check box text
+            check_box.text = 'Overwrite'
+            ```
+        """
+
+        return super().text()
+
+    @text.setter
+    def text(self, value: str) -> None:
+        """
+        Text
+        ====
+
+        Set check box text.
+        """
+
+        # Validate Argument
+        if not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameCheckBox', 'text', 'str', value)
+
+        # Set text
+        self.setText(value)
+
+    @property
+    def checked(self) -> bool:
+        """
+        Checked
+        =======
+
+        Get or set whether the check box is checked.
+
+        Setting the checked state from code does not call the `connect` function.
+
+        Returns
+        -------
+            bool:
+                True if the check box is checked, False otherwise.
+
+        Set
+        ---
+            `value` (bool):
+                True to check the check box, False to uncheck it.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get check box checked state
+            print(check_box.checked)
+
+            # Set check box checked state
+            check_box.checked = True
+            ```
+        """
+
+        return self.isChecked()
+
+    @checked.setter
+    def checked(self, value: bool) -> None:
+        """
+        Checked
+        =======
+
+        Set the checked state of the check box.
+        """
+
+        # Validate Argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameCheckBox', 'checked', 'bool', value)
+
+        # Set checked state, setChecked doesn't emit clicked so connect isn't called
+        self.setChecked(value)
+
+    @property
+    def enabled(self) -> bool:
+        """
+        Enabled
+        =======
+
+        Get or set check box enabled state.
+
+        Returns
+        -------
+            bool: `True` if the check box is enabled, `False` if disabled.
+
+        Set
+        ---
+            `value` (bool):
+                True to enable, False to disable.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get check box enabled state
+            print(check_box.enabled)
+
+            # Set check box enabled state
+            check_box.enabled = False
+            ```
+        """
+
+        return self.isEnabled()
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """
+        Enabled
+        =======
+
+        Enable or disable the check box.
+        """
+
+        # Validate Argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameCheckBox', 'enabled', 'bool', value)
+
+        # Set enabled state
+        self.setEnabled(value)
+
+    @property
+    def width(self) -> int:
+        """
+        Width
+        =====
+
+        Get or set the check box width.
+
+        Returns
+        -------
+            `int`:
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
+
+        Set
+        ---
+            `value` (int | None):
+                If `None`, the check box expands to fit the maximum width set by the layout. Minimum width is 25 pixels.
+                If an integer, the check box is given a fixed width.
+
+        Raises
+        ------
+            TypeError:
+                If `value` is not `None` or an integer.
+
+        Examples
+        --------
+            ```
+            # Get the current width
+            print(check_box.width)
+
+            # Set a fixed width
+            check_box.width = 140
+            ```
+        """
+
+        return self._width
+
+    @width.setter
+    def width(self, value: int | None) -> None:
+        """
+        Width
+        =====
+
+        Set check box width.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, int):
+            pyflame.raise_type_error('PyFlameCheckBox', 'width', 'None | int', value)
+
+        # Set width
+        if value is not None:
+            self._width = pyflame.gui_resize(value)
+            self.setFixedWidth(self._width)
+        else:
+            self._width = pyflame.gui_resize(5000)
+            self.setMinimumWidth(pyflame.gui_resize(25))
+            self.setMaximumWidth(self._width)
+
+    @property
+    def height(self) -> int:
+        """
+        Height
+        ======
+
+        Get or set the check box height.
+
+        Returns
+        -------
+            `int`:
+                The current height of the check box in pixels (after scaling).
+
+        Set
+        ---
+            `value` (int | None):
+                If `None`, the check box uses the default height of 28.
+                If an integer, the check box is given a fixed height.
+
+        Raises
+        ------
+            TypeError:
+                If `value` is not `None` or an integer.
+
+        Examples
+        --------
+            ```
+            # Get check box height
+            print(check_box.height)
+
+            # Set check box height
+            check_box.height = 40
+            ```
+        """
+
+        return self._height
+
+    @height.setter
+    def height(self, value: int | None) -> None:
+        """
+        Height
+        ======
+
+        Set check box height.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, int):
+            pyflame.raise_type_error('PyFlameCheckBox', 'height', 'None | int', value)
+
+        # Set height
+        if value is not None:
+            self._height = pyflame.gui_resize(value)
+            self.setFixedHeight(self._height)
+        else:
+            self._height = pyflame.gui_resize(28)
+            self.setFixedHeight(self._height)
+
+    @property
+    def tooltip(self) -> str | None:
+        """
+        Tooltip
+        =======
+
+        Get or set check box tooltip.
+
+        Returns
+        -------
+            str:
+                The tooltip text to display when hovering over the check box (empty string if none).
+
+        Set
+        ---
+            `value` (str | None):
+                The tooltip text to display when hovering over the check box.
+                If `None`, no tooltip will be shown.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a str | None.
+
+        Examples
+        --------
+            ```
+            # Get check box tooltip
+            print(check_box.tooltip)
+
+            # Set check box tooltip
+            check_box.tooltip = 'Overwrite existing files'
+            ```
+        """
+
+        return self.tooltip_popup.text
+
+    @tooltip.setter
+    def tooltip(self, value: str | None) -> None:
+        """
+        Tooltip
+        =======
+
+        Set the tooltip text for the check box.
+        """
+
+        # Validate Argument
+        if value is not None and not isinstance(value, str):
+            pyflame.raise_type_error('PyFlameCheckBox', 'tooltip', 'None | str', value)
+
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
+
+    @property
+    def tooltip_delay(self) -> int:
+        """
+        Tooltip Delay
+        =============
+
+        Get or set tooltip delay (in seconds).
+
+        Returns
+        -------
+            int:
+                The tooltip delay in seconds.
+
+        Set
+        ---
+            `value` (int):
+                The tooltip delay in seconds.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not an integer.
+
+        Examples
+        --------
+            ```
+            # Get tooltip delay
+            print(check_box.tooltip_delay)
+
+            # Set tooltip delay
+            check_box.tooltip_delay = 1
+            ```
+        """
+
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
+
+    @tooltip_delay.setter
+    def tooltip_delay(self, value: int) -> None:
+        """
+        Tooltip Delay
+        =============
+
+        Set tooltip delay.
+        """
+
+        # Validate Argument
+        if not isinstance(value, int):
+            pyflame.raise_type_error('PyFlameCheckBox', 'tooltip_delay', 'int', value)
+
+        # Update Tooltip Delay
+        self.tooltip_popup.delay = value
+
+    @property
+    def tooltip_duration(self) -> int:
+        """
+        Tooltip Duration
+        ================
+
+        Get or set tooltip duration (in seconds).
+
+        Returns
+        -------
+            int:
+                The tooltip duration in seconds.
+
+        Set
+        ---
+            `value` (int):
+                The tooltip duration in seconds.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not an integer.
+
+        Examples
+        --------
+            ```
+            # Get tooltip duration
+            print(check_box.tooltip_duration)
+
+            # Set tooltip duration
+            check_box.tooltip_duration = 5
+            ```
+        """
+
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
+
+    @tooltip_duration.setter
+    def tooltip_duration(self, value: int) -> None:
+        """
+        Tooltip Duration
+        ================
+
+        Set tooltip duration (in seconds).
+        """
+
+        # Validate Argument
+        if not isinstance(value, int):
+            pyflame.raise_type_error('PyFlameCheckBox', 'tooltip_duration', 'int', value)
+
+        # Update Tooltip Duration
+        self.tooltip_popup.duration = value
+
+    #-------------------------------------
+    # [Methods]
+    #-------------------------------------
+
+    def connect_callback(self, callback: Callable | None) -> None:
+        """
+        Connect Callback
+        ================
+
+        Connect a callback function to the check box click event.
+
+        Args
+        ----
+            callback (Callable):
+                The function to call when the check box is clicked.
+
+        Raises
+        ------
+            TypeError:
+                If `callback` is not callable.
+        """
+
+        if callback is not None and not callable(callback):
+            pyflame.raise_type_error('PyFlameCheckBox.connect_callback', 'callback', 'callable', callback)
+
+        if callback:
+            self.clicked.connect(callback)
+
+    #-------------------------------------
+    # [Stylesheet]
+    #-------------------------------------
+
+    def _set_stylesheet(self) -> None:
+        """
+        Set Stylesheet
+        ==============
+        """
+
+        # Indicator matches the PyFlameTreeWidget check box
+        self.setStyleSheet(f"""
+            QCheckBox{{
+                color: {Color.TEXT.value};
+                background-color: transparent;
+                spacing: {pyflame.gui_resize(5)}px;
+                outline: none;
+                }}
+            QCheckBox:disabled{{
+                color: {Color.TEXT_DISABLED.value};
+                }}
+            QCheckBox::indicator{{
+                width: {pyflame.gui_resize(10)}px;
+                height: {pyflame.gui_resize(10)}px;
+                border: 1px solid {Color.BORDER.value};
+                background-color: rgb(18, 21, 24);
+                }}
+            QCheckBox::indicator:checked{{
+                background-color: {Color.PUSHBUTTON_BLUE_CHECKED.value};
+                }}
+            QCheckBox::indicator:hover{{
+                border: 1px solid {Color.BORDER_BRIGHTER.value};
+                }}
+            QCheckBox::indicator:disabled{{
+                border: 1px solid {Color.TEXT_BORDER.value};
+                background-color: rgb(34, 34, 34);
+                }}
+            QCheckBox::indicator:checked:disabled{{
+                background-color: {Color.PUSHBUTTON_BLUE.value};
+                }}
+            """)
+
+    #-------------------------------------------
+    # [Tooltip Event Handlers]
+    #-------------------------------------------
 
     def enterEvent(self, event):
         self.tooltip_popup.enter_event()
@@ -5422,8 +6768,8 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         self.width = width
         self.height = height
         self.tooltip = tooltip
-        self.tooltip_delay = tooltip_delay * 1000
-        self.tooltip_duration = tooltip_duration * 1000
+        self.tooltip_delay = tooltip_delay
+        self.tooltip_duration = tooltip_duration
 
         self.text_changed(text_changed)
 
@@ -5537,18 +6883,18 @@ class PyFlameEntry(QtWidgets.QLineEdit):
 
         Returns
         -------
-            str:
+            str | None:
                 The placeholder text for the entry.
 
         Set
         ---
-            `value` (str):
+            `value` (str | None):
                 The placeholder text for the entry.
 
         Raises
         ------
             TypeError:
-                If the provided `value` is not a string.
+                If the provided `value` is not a string or None.
 
         Examples
         --------
@@ -5576,10 +6922,9 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameEntry', 'placeholder_text', 'str | None', value)
 
-        # Set placeholder text
+        # Set placeholder text (an empty string or None clears it)
         self._placeholder_text = value
-        if value:
-            self.setPlaceholderText(value)
+        self.setPlaceholderText(value or '')
 
     @property
     def read_only(self) -> bool:
@@ -5630,9 +6975,10 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         if not isinstance(value, bool):
             pyflame.raise_type_error('PyFlameEntry', 'read_only', 'bool', value)
 
-        # Set read-only
+        # Set read-only and the matching stylesheet
         self._read_only = value
         self.setReadOnly(value)
+        self._set_stylesheet(value)
 
     @property
     def password_echo(self) -> bool:
@@ -5653,11 +6999,6 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         ---
             `value` (bool):
                 True to enable password echo, False to disable.
-
-        Raises
-        ------
-            TypeError:
-                If the provided `value` is not a boolean.
 
         Examples
         --------
@@ -5749,7 +7090,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         Returns
         -------
             `int`:
-                The current width of the entry in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -5863,8 +7204,8 @@ class PyFlameEntry(QtWidgets.QLineEdit):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the entry.
+            str:
+                The tooltip text to display when hovering over the entry (empty string if none).
 
         Set
         ---
@@ -5903,9 +7244,8 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameEntry', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -5934,14 +7274,15 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         --------
             ```
             # Get tooltip delay
-            print(button.tooltip_delay)
+            print(entry.tooltip_delay)
 
             # Set tooltip delay
-            button.tooltip_delay = 0.5
+            entry.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -5986,14 +7327,15 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         --------
             ```
             # Get tooltip duration
-            print(button.tooltip_duration)
+            print(entry.tooltip_duration)
 
             # Set tooltip duration
-            button.tooltip_duration = 5
+            entry.tooltip_duration = 5
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -6063,7 +7405,7 @@ class PyFlameEntry(QtWidgets.QLineEdit):
         Args
         ----
             `read_only` (bool):
-                Indicates whether the PyFlameLineEdit is read-only.
+                Indicates whether the PyFlameEntry is read-only.
 
         Raises
         ------
@@ -6162,7 +7504,10 @@ class PyFlameEntry(QtWidgets.QLineEdit):
     #-------------------------------------
 
     def enterEvent(self, event):
-        self.tooltip_popup.enter_event()
+
+        # Don't start the tooltip while the Alt full text label is showing
+        if self.full_entry_text_label is None:
+            self.tooltip_popup.enter_event()
 
     def leaveEvent(self, event):
         self.tooltip_popup.leave_event()
@@ -6222,6 +7567,9 @@ class PyFlameEntry(QtWidgets.QLineEdit):
             pos = self.mapToGlobal(self.rect().bottomLeft())
             self.full_entry_text_label.move(pos)
             self.full_entry_text_label.show()
+
+            # Hide the tooltip and stop its timer so it doesn't show over the full text label
+            self.tooltip_popup.leave_event()
 
             # Copy full entry text to clipboard
             pyflame.copy_to_clipboard(full_text)
@@ -6363,10 +7711,10 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         Set or get Properties
         ```
         # Set property
-        entry.path = '/opt/Autodesk'
+        path_entry.path = '/opt/Autodesk'
 
         # Get property
-        print(entry.path)
+        print(path_entry.path)
         ```
     """
 
@@ -6481,24 +7829,24 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
     def placeholder_text(self) -> str | None:
         """
         Placeholder Text
-        =================
+        ================
 
         Get or set the placeholder text for the entry.
 
         Returns
         -------
-            str:
+            str | None:
                 The placeholder text for the entry.
 
         Set
         ---
-            `value` (str):
+            `value` (str | None):
                 The placeholder text for the entry.
 
         Raises
         ------
             TypeError:
-                If the provided `value` is not a string.
+                If the provided `value` is not a string or None.
 
         Examples
         --------
@@ -6517,7 +7865,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
     def placeholder_text(self, value: str | None) -> None:
         """
         Placeholder Text
-        =================
+        ================
 
         Set the placeholder text for the entry.
         """
@@ -6526,10 +7874,9 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameEntryBrowser', 'placeholder_text', 'str | None', value)
 
-        # Set placeholder text
+        # Set placeholder text (an empty string or None clears it)
         self._placeholder_text = value
-        if value:
-            self.setPlaceholderText(value)
+        self.setPlaceholderText(value or '')
 
     @property
     def enabled(self) -> bool:
@@ -6592,7 +7939,7 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         Returns
         -------
             `int`:
-                The current width of the entry in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -6706,8 +8053,8 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the entry.
+            str:
+                The tooltip text to display when hovering over the entry (empty string if none).
 
         Set
         ---
@@ -6746,9 +8093,8 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameEntryBrowser', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -6777,14 +8123,15 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         --------
             ```
             # Get tooltip delay
-            print(button.tooltip_delay)
+            print(entry.tooltip_delay)
 
             # Set tooltip delay
-            button.tooltip_delay = 0.5
+            entry.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -6829,14 +8176,15 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         --------
             ```
             # Get tooltip duration
-            print(button.tooltip_duration)
+            print(entry.tooltip_duration)
 
             # Set tooltip duration
-            button.tooltip_duration = 5
+            entry.tooltip_duration = 5
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -6863,12 +8211,12 @@ class PyFlameEntryBrowser(QtWidgets.QLineEdit):
         Connect Callback
         ================
 
-        Connect a callback function to the button click event.
+        Connect a callback function to the entry click event.
 
         Args
         ----
             callback (Callable):
-                The function to call when the button is clicked.
+                The function to call when the entry is clicked (after the file browser closes).
 
         Raises
         ------
@@ -7022,11 +8370,11 @@ class PyFlameImageWidget(QtWidgets.QWidget):
             (Default: `None`)
 
         show_info (bool):
-            Enable to show image filename and resolution at the botttom of the widget.
+            Enable to show image filename and resolution at the bottom of the widget.
             (Default: `False`)
 
         show_border (bool):
-            Draws a 1-pixel border around the image area.
+            Draws a 1-pixel border around the image area until the mouse first leaves it. The border is always shown while the mouse is over the widget.
             (Default: `False`)
 
         popup_viewer (bool):
@@ -7201,10 +8549,8 @@ class PyFlameImageWidget(QtWidgets.QWidget):
 
         Raises
         ------
-            FileNotFoundError:
-                If a str path points to a missing file.
             ValueError:
-                If the file exists but cannot be loaded as an image.
+                If the file does not exist or cannot be loaded as an image.
             TypeError:
                 If the value is not str, QPixmap, or None.
 
@@ -7288,7 +8634,7 @@ class PyFlameImageWidget(QtWidgets.QWidget):
         Returns
         -------
             Optional[str]:
-                Absolute path to the loaded image file, or ``None``.
+                Path to the loaded image file as it was given, or ``None``.
 
         Examples
         --------
@@ -7605,8 +8951,8 @@ class PyFlameImageWidget(QtWidgets.QWidget):
         ===========
 
         Draws:
-          1. A 1-pixel border around the image area (Color.BORDER).
-          2. A dark grey background fill inside the border (Color.DARK_GRAY).
+          1. A 1-pixel border around the image area (``border_color``), only while the border is shown.
+          2. A background fill inside the border (``background_color``).
           3. The image, scaled to fit inside the border while preserving the
              original aspect ratio, centered within the inner area.
 
@@ -8063,7 +9409,7 @@ class PyFlameImageGallery(QtWidgets.QWidget):
     Scrollable image gallery widget that displays images from a folder in a
     grid, built on top of PyFlameImageWidget.
 
-    Exactly one of ``columns`` or ``rows`` must be provided. Providing both
+    At most one of ``columns`` or ``rows`` may be provided. Providing both
     raises a ``ValueError``.
 
     When ``columns`` is set the grid has a fixed number of columns and images
@@ -8738,7 +10084,7 @@ class PyFlameImageGallery(QtWidgets.QWidget):
         Returns
         -------
             Optional[str]:
-                Absolute path to the selected image file, or None.
+                Full path to the selected image file (folder joined with the filename), or None.
 
         Examples
         --------
@@ -8980,12 +10326,15 @@ class PyFlameImageGallery(QtWidgets.QWidget):
         if self._folder is None or not os.path.isdir(self._folder):
             return
 
+        # Compare extensions in lower case so '.PNG' and '.png' are the same
+        extensions = {ext.lower() for ext in self._extensions if isinstance(ext, str)}
+
         paths = []
         for entry in os.scandir(self._folder):
             if not entry.is_file():
                 continue
             ext = os.path.splitext(entry.name)[1].lower()
-            if ext in self._extensions:
+            if ext in extensions:
                 paths.append(entry.path)
 
         paths.sort(
@@ -9160,7 +10509,7 @@ class PyFlameLabel(QtWidgets.QLabel):
             Style Options
                 `Style.NORMAL`: Standard label without styling (left-aligned).
                 `Style.UNDERLINE`: Underlines the text (centered).
-                `Style.BORDER`: White border with dark background (centered).
+                `Style.BORDER`: Gray border around the label (centered).
                 `Style.BACKGROUND`: Darker background (left-aligned).
                 `Style.BACKGROUND_THIN`: Dark background with thin font weight (left-aligned).
 
@@ -9176,8 +10525,8 @@ class PyFlameLabel(QtWidgets.QLabel):
 
         `underline_color` (Color, optional):
             Color of underline when using `Style.UNDERLINE`.
-            Can be a `Color` enum or an (R, G, B, A) tuple.
-            (Default: `Color.TEXT_UNDERLINE.value`)
+            Must be a `Color` enum.
+            (Default: `Color.TEXT_UNDERLINE`)
 
         `enabled` (bool, optional):
             Whether the label is enabled.
@@ -9215,8 +10564,8 @@ class PyFlameLabel(QtWidgets.QLabel):
 
         `underline_color` (Color, optional):
             Get or set the underline color.
-            Accepts a `Color` enum or RGBA tuple.
-            (Default: `Color.TEXT_UNDERLINE.value`)
+            Accepts a `Color` enum.
+            (Default: `Color.TEXT_UNDERLINE`)
 
         `enabled` (bool):
             Get or set whether the widget is enabled.
@@ -9549,7 +10898,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         Enabled
         =======
 
-        Set whether the lable is enabled or disabled.
+        Set whether the label is enabled or disabled.
         """
 
         # Validate Argument
@@ -9570,7 +10919,7 @@ class PyFlameLabel(QtWidgets.QLabel):
         Returns
         -------
             `int`:
-                The current width of the label in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -9716,7 +11065,7 @@ class PyFlameLabel(QtWidgets.QLabel):
     def font_size(self, value: int | None) -> None:
         """
         Font Size
-        ========
+        =========
 
         Set label font size.
         """
@@ -9756,7 +11105,7 @@ class PyFlameLabel(QtWidgets.QLabel):
             self.setStyleSheet(f"""
                 QLabel{{
                     color: {Color.TEXT.value};
-                    border: 1px solid rgb{Color.TEXT_BORDER.value};
+                    border: 1px solid {Color.TEXT_BORDER.value};
                     }}
                 QLabel:disabled{{
                     color: {Color.TEXT_DISABLED.value};
@@ -9828,8 +11177,12 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             Enable alternating row background colors.
             (Default: `True`)
 
+        `multi_selection` (bool, optional):
+            Allow more than one item to be selected. If `False`, only one item can be selected.
+            (Default: `True`)
+
         `enabled` (bool, optional):
-            Whether the list wideggt is enabled.
+            Whether the list widget is enabled.
             (Default: `True`)
 
         `width` (int, optional):
@@ -9837,7 +11190,7 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             (Default: `None`)
 
         `height` (int, optional):
-            Height of the list widget in pixels. If `None`, it expands to fit the layour. Minimum height is 28.
+            Height of the list widget in pixels. If `None`, it expands to fit the layout. Minimum height is 28.
             (Default: `None`)
 
         `tooltip` (str, optional):
@@ -9851,6 +11204,25 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         `tooltip_duration` (int, optional):
             Duration in seconds the tooltip remains visible.
             (Default: `5`)
+
+        `draggable` (bool, optional):
+            Whether items can be dragged out of the list onto another widget. Drag only: the
+            dragged items are copied, never removed from the list, and the list does not
+            accept drops.
+            (Default: `False`)
+
+        `drag_end_connect` (callable, optional):
+            Function to call when a drag that started in the list has ended, whether it was
+            dropped or cancelled. Only used when `draggable` is `True`.
+            (Default: `None`)
+
+        `context_menu` (Dict[str, callable], optional):
+            Right-click menu for the list. Each key is the text of a menu item and its value is
+            the function to call, with no arguments, when that item is chosen. Items are shown
+            in dict order. A right-click on an item that can be selected selects it first, so
+            the function can read the clicked item from the list. If `None` or empty, there is
+            no menu and a right-click does what it always has.
+            (Default: `None`)
 
     Properties
     ----------
@@ -9867,11 +11239,15 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             `Align.RIGHT`).
             (Default: `Align.CENTER`)
 
-        `selected_items` (List[str]):
+        `selected_items` (List[QListWidgetItem]):
             Get the currently selected items.
 
         `alternating_row_colors` (bool):
             Enable or disable alternating row colors.
+            (Default: `True`)
+
+        `multi_selection` (bool):
+            Get or set whether more than one item can be selected.
             (Default: `True`)
 
         `enabled` (bool):
@@ -9897,6 +11273,19 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         `tooltip_duration` (int):
             Get or set the tooltip duration in seconds.
             (Default: `5`)
+
+        `draggable` (bool):
+            Get or set whether items can be dragged out of the list onto another widget.
+            (Default: `False`)
+
+        `drag_end_connect_callback` (Callable | None):
+            Get or set the function called when a drag that started in the list has ended.
+            (Default: `None`)
+
+        `context_menu` (Dict[str, Callable] | None):
+            Get or set the right-click menu: menu item text mapped to the function to call.
+            Set to `None` to remove the menu.
+            (Default: `None`)
 
     Methods
     -------
@@ -9974,6 +11363,46 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             ]
         )
         ```
+
+        Create a PyFlameListWidget that items can be dragged out of:
+        ```
+        list_widget = PyFlameListWidget(
+            items=[
+                'item1',
+                'item2',
+                'item3'
+            ],
+            draggable=True,
+            drag_end_connect=lambda: print('Drag ended'),
+        )
+        ```
+
+        Create a PyFlameListWidget with a right-click menu. The menu functions take no
+        arguments and read the right-clicked item from the list, which selects it first:
+        ```
+        def print_selected():
+            print([item.text() for item in list_widget.selected_items])
+
+        list_widget = PyFlameListWidget(
+            items=[
+                'item1',
+                'item2',
+                'item3'
+            ],
+            context_menu={
+                'Print Selected': print_selected,
+            },
+        )
+        ```
+
+        Read the dragged items in the widget they are dropped on. The drag comes from the
+        list widget, and the dragged items are its selected items:
+        ```
+        def dropEvent(self, event):
+            if event.source() is list_widget:
+                dragged_items = [item.text() for item in list_widget.selected_items]
+                event.acceptProposedAction()
+        ```
     """
     def __init__(self,
                  items: List[str]=[],
@@ -9986,7 +11415,10 @@ class PyFlameListWidget(QtWidgets.QListWidget):
                  height: int | None=None,
                  tooltip: str | None=None,
                  tooltip_delay: int=3,
-                 tooltip_duration: int=5) -> None:
+                 tooltip_duration: int=5,
+                 draggable: bool=False,
+                 drag_end_connect: Callable[..., Any] | None=None,
+                 context_menu: Dict[str, Callable[..., Any]] | None=None) -> None:
         super().__init__()
 
         self.setFont(FONT)
@@ -10030,6 +11462,9 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         self.tooltip = tooltip
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
+        self.draggable = draggable
+        self.drag_end_connect_callback = drag_end_connect
+        self.context_menu = context_menu
 
         # Set stylesheet
         self._set_stylesheet()
@@ -10431,7 +11866,7 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         Returns
         -------
             `int`:
-                The current width of the List Widget in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -10506,11 +11941,11 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         Examples
         --------
             ```
-            # Get the current width
-            print(list_widget.width)
+            # Get the current height
+            print(list_widget.height)
 
-            # Set a fixed width
-            list_widget.width = 140
+            # Set a fixed height
+            list_widget.height = 140
             ```
         """
 
@@ -10547,8 +11982,8 @@ class PyFlameListWidget(QtWidgets.QListWidget):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the List Widget.
+            str:
+                The tooltip text to display when hovering over the List Widget, or an empty string if there is none.
 
         Set
         ---
@@ -10587,9 +12022,8 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameListWidget', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -10621,11 +12055,12 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             print(list_widget.tooltip_delay)
 
             # Set tooltip delay
-            list_widget.tooltip_delay = 0.5
+            list_widget.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -10677,7 +12112,8 @@ class PyFlameListWidget(QtWidgets.QListWidget):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -10694,6 +12130,223 @@ class PyFlameListWidget(QtWidgets.QListWidget):
 
         # Update Tooltip Duration
         self.tooltip_popup.duration = value
+
+    @property
+    def draggable(self) -> bool:
+        """
+        Draggable
+        =========
+
+        Get or set whether items can be dragged out of the list onto another widget.
+
+        When set to `True` every enabled, selectable item can be dragged. The list is a drag
+        source only: a drag always copies, so the dragged items are never removed from the
+        list, and the list does not accept drops. Clicking and selecting items work as before,
+        except that dragging the mouse over the items starts a drag instead of extending the
+        selection. When set to `False` the list goes back to how it was before dragging was
+        turned on.
+
+        The widget a drag is dropped on can tell where it came from with `event.source()`,
+        which is this list widget. The dragged items are its selected items
+        (`selected_items`). Qt's standard item data is also on the drag.
+
+        Returns
+        -------
+            bool: `True` if items can be dragged out of the list, `False` if not.
+
+        Set
+        ---
+            `value` (bool): `True` to let items be dragged out of the list, `False` to turn it off.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get draggable
+            print(list_widget.draggable)
+
+            # Set draggable
+            list_widget.draggable = True
+            ```
+        """
+
+        return self._draggable
+
+    @draggable.setter
+    def draggable(self, value: bool) -> None:
+        """
+        Draggable
+        =========
+
+        Set whether items can be dragged out of the list.
+        """
+
+        # Validate Argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameListWidget', 'draggable', 'bool', value)
+
+        # Nothing to change if the setting is not changing. This also keeps lists that never
+        # use dragging untouched.
+        if value == getattr(self, '_draggable', False):
+            self._draggable = value
+
+            return
+
+        # Set draggable
+        self._draggable = value
+
+        if value:
+            # Keep the current drag settings so they can be put back when dragging is turned off
+            self._drag_settings_before = (self.dragEnabled(), self.dragDropMode(), self.defaultDropAction())
+
+            # Drag only, copy only
+            self.setDragEnabled(True)
+            self.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+            self.setDefaultDropAction(QtCore.Qt.CopyAction)
+        else:
+            # Put back the drag settings the list had before dragging was turned on
+            drag_enabled, drag_drop_mode, default_drop_action = self._drag_settings_before
+            self.setDragDropMode(drag_drop_mode)
+            self.setDragEnabled(drag_enabled)
+            self.setDefaultDropAction(default_drop_action)
+
+    @property
+    def drag_end_connect_callback(self) -> Callable[..., Any] | None:
+        """
+        Drag End Connect Callback
+        =========================
+
+        Get or set the callback function to be called when a drag that started in the list
+        has ended.
+
+        The callback is called with no arguments as soon as the drag has ended, whether the
+        items were dropped on another widget or the drag was cancelled. When the items were
+        dropped, the target widget's drop event has already run by the time it is called. Only used when
+        `draggable` is `True`.
+
+        Returns
+        -------
+            callable:
+                The callback function to be called when a drag has ended.
+
+        Set
+        ---
+            `value` (callable):
+                The callback function to be called when a drag has ended.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a callable.
+
+        Examples
+        --------
+            ```
+            # Get drag end connect callback
+            print(list_widget.drag_end_connect_callback)
+
+            # Set drag end connect callback
+            list_widget.drag_end_connect_callback = lambda: print('Drag ended')
+            ```
+        """
+
+        return self._drag_end_connect_callback
+
+    @drag_end_connect_callback.setter
+    def drag_end_connect_callback(self, value: Callable[..., Any] | None) -> None:
+        """
+        Drag End Connect Callback
+        =========================
+
+        Set the callback function to be called when a drag that started in the list has ended.
+        """
+
+        # Validate Argument
+        if value is not None and not callable(value):
+            pyflame.raise_type_error('PyFlameListWidget', 'drag_end_connect_callback', 'callable | None', value)
+
+        # Set the callback
+        self._drag_end_connect_callback = value
+
+    @property
+    def context_menu(self) -> Dict[str, Callable[..., Any]] | None:
+        """
+        Context Menu
+        ============
+
+        Get or set the right-click menu of the list.
+
+        Each key is the text of a menu item and its value is the function to call when that
+        item is chosen. The function is called with no arguments. Items are shown in dict
+        order. Setting a new dict replaces the menu. Set to `None` (or an empty dict) to remove
+        it; a right-click then does what it does without a menu.
+
+        A right-click on an item that can be selected makes it the current, selected item
+        before the menu is shown, so the function acts on the item that was clicked. Read it
+        from the list (`selected_items` or `currentItem()`). A right-click on an item that
+        cannot be selected, or on empty space, leaves the selection as it is and still shows
+        the menu.
+
+        Returns
+        -------
+            Dict[str, callable] | None:
+                Menu item text mapped to the function to call, or `None` if there is no menu.
+
+        Set
+        ---
+            `value` (Dict[str, callable] | None):
+                Menu item text mapped to the function to call, or `None` for no menu.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a dict or `None`, a key is not a string, or a
+                value is not callable.
+
+        Examples
+        --------
+            ```
+            # Get context menu
+            print(list_widget.context_menu)
+
+            # Set context menu
+            list_widget.context_menu = {
+                'Rename': rename_item,
+                'Delete': delete_item,
+                }
+
+            # Remove context menu
+            list_widget.context_menu = None
+            ```
+        """
+
+        return self._context_menu
+
+    @context_menu.setter
+    def context_menu(self, value: Dict[str, Callable[..., Any]] | None) -> None:
+        """
+        Context Menu
+        ============
+
+        Set the right-click menu of the list.
+        """
+
+        # Validate argument
+        if value is not None:
+            if not isinstance(value, dict):
+                pyflame.raise_type_error('PyFlameListWidget', 'context_menu', 'dict | None', value)
+            for text, function in value.items():
+                if not isinstance(text, str):
+                    pyflame.raise_type_error(error_message=f'PyFlameListWidget: All keys in context_menu must be strings. Invalid key: {text}')
+                if not callable(function):
+                    pyflame.raise_type_error(error_message=f'PyFlameListWidget: All values in context_menu must be callable. Invalid value for key "{text}": {function}')
+
+        # Set context menu. A copy is kept so later changes to the dict passed in do not change the menu.
+        self._context_menu = dict(value) if value is not None else None
 
     #-------------------------------------
     # [Methods]
@@ -10733,9 +12386,9 @@ class PyFlameListWidget(QtWidgets.QListWidget):
 
         # Validate Argument
         if not isinstance(items, list):
-            pyflame.raise_type_error('PyFlameListWidget.add_items: items', 'items', 'list', items)
+            pyflame.raise_type_error('PyFlameListWidget.add_items', 'items', 'list', items)
         if not all(isinstance(item, str) for item in items):
-            pyflame.raise_type_error('PyFlameListWidget.add_items: items', 'items', 'list of strings', items)
+            pyflame.raise_type_error('PyFlameListWidget.add_items', 'items', 'list of strings', items)
 
         # Append items
         self.addItems(items)
@@ -10787,6 +12440,32 @@ class PyFlameListWidget(QtWidgets.QListWidget):
     #-------------------------------------
     # [Stylesheet]
     #-------------------------------------
+
+    def _set_menu_stylesheet(self) -> str:
+        """
+        Set Menu Stylesheet
+        ===================
+
+        PyFlameListWidget right-click menu stylesheet. Same look as the PyFlameTable right-click menus.
+        """
+
+        return f"""
+            QMenu {{
+                background-color: rgb(44, 54, 68);  /* Menu background */
+                color: rgb(170, 170, 170);  /* Text color */
+                border: 1px solid rgb(35, 43, 54); /* Menu border */
+                padding: {pyflame.gui_resize(4)}px;
+                }}
+            QMenu::item {{
+                background-color: transparent;  /* Default item background */
+                color: rgb(170, 170, 170);  /* Item text color */
+                padding: {pyflame.gui_resize(4)}px {pyflame.gui_resize(8)}px; /* Padding around menu items */
+                }}
+            QMenu::item:selected {{
+                background-color: rgb(73, 86, 99);  /* Hovered item background */
+                color: rgb(220, 220, 220);  /* Hovered item text color */
+                }}
+            """
 
     def _set_stylesheet(self) -> None:
         """
@@ -10889,14 +12568,158 @@ class PyFlameListWidget(QtWidgets.QListWidget):
         =================
 
         Prevents items in list from being deselected when clicking off list.
+
+        When the list has a `context_menu`, a right-click on an item that cannot be selected
+        also leaves the selection and the current item as they are.
         """
 
         item = self.itemAt(event.pos())
+
+        # Right-click with a menu on an item that cannot be selected: leave the selection alone
+        if (event.button() == QtCore.Qt.RightButton and getattr(self, '_context_menu', None)
+                and item and not self._item_selectable(item)):
+            return
+
         if item:
             super().mousePressEvent(event)
         else:
             # Click outside items: ignore deselection
             event.ignore()
+
+    def startDrag(self, supported_actions: QtCore.Qt.DropAction) -> None:
+        """
+        Start Drag
+        ==========
+
+        Start a drag of the selected items. Called by Qt when the user starts dragging.
+
+        When `draggable` is `False` this is Qt's default behavior, unchanged.
+
+        When `draggable` is `True` the drag is started with `CopyAction` as its only action.
+        The list's model also offers a move, and Qt removes the dragged items from the list
+        after a move, so the move is never offered. Once the drag has ended (dropped or
+        cancelled) the `drag_end_connect` callback is called. Nothing happens when no
+        selected item can be dragged.
+
+        Args
+        ----
+            `supported_actions` (QtCore.Qt.DropAction):
+                The drop actions the list offers, as passed by Qt. Not used when `draggable`
+                is `True`.
+        """
+
+        if not getattr(self, '_draggable', False):
+            super().startDrag(supported_actions)
+
+            return
+
+        # No drag when no selected item can be dragged
+        if not any(item.flags() & QtCore.Qt.ItemIsDragEnabled for item in self.selectedItems()):
+            return
+
+        # Copy only, so the dragged items are never removed from the list. Returns when the
+        # drag has ended.
+        super().startDrag(QtCore.Qt.CopyAction)
+
+        # Call the drag end callback if it is set
+        if self.drag_end_connect_callback:
+            self.drag_end_connect_callback()
+
+    #-------------------------------------
+    # [Context Menu Event Handlers]
+    #-------------------------------------
+
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+        """
+        Context Menu Event
+        ==================
+
+        Show the `context_menu` right-click menu at the cursor.
+
+        When there is no menu (`context_menu` is `None` or empty) this is Qt's default
+        behavior, unchanged.
+
+        A right-click on an item that can be selected makes it the current, selected item
+        first, so the menu functions act on the item that was clicked. Qt has normally done
+        this already when the right mouse button was pressed on it (as a left-click would);
+        this covers context menu events that come without a mouse press. When that item is
+        already selected along with others, the selection is kept and it only becomes the
+        current item. A right-click on an item that cannot be selected, or on empty space,
+        leaves the selection as it is.
+
+        Args
+        ----
+            `event` (QtGui.QContextMenuEvent):
+                The context menu event.
+        """
+
+        if not getattr(self, '_context_menu', None):
+            super().contextMenuEvent(event)
+
+            return
+
+        # Make the right-clicked item current first. Keyboard menu events have no clicked item.
+        if event.reason() == QtGui.QContextMenuEvent.Reason.Mouse:
+            item = self.itemAt(event.pos())
+            if self._item_selectable(item):
+                if not item.isSelected():
+                    self.setCurrentItem(item)
+                elif item is not self.currentItem():
+                    self.setCurrentItem(item, QtCore.QItemSelectionModel.NoUpdate)
+
+        self._show_context_menu(event.globalPos())
+        event.accept()
+
+    def _show_context_menu(self, global_position: QtCore.QPoint) -> None:
+        """
+        Show Context Menu
+        =================
+
+        Build the `context_menu` right-click menu and show it. Returns when the menu has
+        closed. The function of the chosen item is called with no arguments.
+
+        Args
+        ----
+            `global_position` (QtCore.QPoint):
+                Screen position to show the menu at.
+        """
+
+        menu = QtWidgets.QMenu(self)
+        menu.setStyleSheet(self._set_menu_stylesheet())
+
+        for text, function in self._context_menu.items():
+            action = QtGui.QAction(text, menu)
+            action.triggered.connect(lambda checked=False, function=function: function())
+            action.setFont(FONT)
+            menu.addAction(action)
+
+        menu.exec(global_position)
+        menu.deleteLater()
+
+    def _item_selectable(self, item) -> bool:
+        """
+        Item Selectable
+        ===============
+
+        Whether `item` can be selected. A right-click with a `context_menu` selects such an
+        item before the menu is shown.
+
+        An item can be selected when it is enabled and has the `ItemIsSelectable` flag.
+
+        Args
+        ----
+            `item` (QtWidgets.QListWidgetItem | None):
+                The item under the cursor, or `None` for empty space.
+
+        Returns
+        -------
+            bool: `True` if the item can be selected, `False` if not or if `item` is `None`.
+        """
+
+        if item is None:
+            return False
+
+        return bool(item.flags() & QtCore.Qt.ItemIsSelectable) and bool(item.flags() & QtCore.Qt.ItemIsEnabled)
 
     #-------------------------------------
     # [Tooltip Event Handlers]
@@ -10918,7 +12741,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
     Args
     ----
         `text` (str):
-            Text displated on button.
+            Text displayed on button.
             (Default: `""`)
 
         `checked` (bool, optional):
@@ -10998,7 +12821,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         ```
         push_button = PyFlamePushButton(
             text='Button Name',
-            button_checked=False,
+            checked=False,
             )
         ```
 
@@ -11219,7 +13042,7 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         Returns
         -------
             `int`:
-                The current width of the push button in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -11335,8 +13158,8 @@ class PyFlamePushButton(QtWidgets.QPushButton):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the pushbutton.
+            str:
+                The tooltip text to display when hovering over the push button (empty string if none).
 
         Set
         ---
@@ -11375,9 +13198,8 @@ class PyFlamePushButton(QtWidgets.QPushButton):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlamePushButton', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -11409,11 +13231,12 @@ class PyFlamePushButton(QtWidgets.QPushButton):
             print(push_button.tooltip_delay)
 
             # Set tooltip delay
-            push_button.tooltip_delay = 0.5
+            push_button.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -11465,7 +13288,8 @@ class PyFlamePushButton(QtWidgets.QPushButton):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -11662,13 +13486,23 @@ class PyFlameMenu(QtWidgets.QPushButton):
             Get or set the tooltip duration in seconds.
             (Default: `5`)
 
+        `connect_callback` (callable | None):
+            Get or set the function called when a menu item is selected. `None` disconnects it.
+            (Default: `None`)
+
     Methods
     -------
         `update_menu(text, menu_options, connect)`:
-            Use to update an existing button menu.
+            Use to update an existing button menu. Without `connect`, the current function is kept.
 
         `refresh_menu()`:
             Use to refresh the menu after a change has been made to the menu options.
+
+    Notes
+    -----
+        Each time the menu options are set (constructor, `menu_options`, `update_menu()` or `refresh_menu()`):
+        with two or more options, menu text that is not one of the options (a placeholder or an old saved
+        choice) is replaced by the first option. With zero or one option, the menu shows that option (or is empty).
 
     Examples
     --------
@@ -11686,9 +13520,9 @@ class PyFlameMenu(QtWidgets.QPushButton):
             )
         ```
 
-        To update an existing PyFlamePushButtonMenu:
+        To update an existing PyFlameMenu:
         ```
-        menu_push_button.update_menu(
+        menu.update_menu(
             text='Current Menu Selection',
             menu_options=[
                 'Item 5',
@@ -11758,6 +13592,10 @@ class PyFlameMenu(QtWidgets.QPushButton):
         ====
 
         Get or set the selected menu text.
+
+        When the menu options are set later (`menu_options`, `update_menu()` or `refresh_menu()`) and there are
+        two or more, text that is not one of the options is replaced by the first option. With zero or one
+        option, the text becomes that option (or empty).
 
         Returns
         -------
@@ -11854,6 +13692,10 @@ class PyFlameMenu(QtWidgets.QPushButton):
         # Set alignment
         self._align = value
 
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_button_stylesheet()
+
     @property
     def menu_options(self) -> List[str]:
         """
@@ -11863,6 +13705,9 @@ class PyFlameMenu(QtWidgets.QPushButton):
         Get the current list of menu option labels.
 
         To update menu options with a connect signal use the update_menu() method.
+
+        With two or more options, menu text that is not one of the options is replaced by the first option.
+        With zero or one option, the menu text becomes that option (or empty).
 
         Returns
         -------
@@ -11973,6 +13818,10 @@ class PyFlameMenu(QtWidgets.QPushButton):
         # Set menu indicator
         self._menu_indicator = value
 
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_button_stylesheet()
+
     @property
     def enabled(self) -> bool:
         """
@@ -12035,7 +13884,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
         Returns
         -------
             `int`:
-                The current width of the menu in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -12151,8 +14000,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the menu.
+            str:
+                The tooltip text to display when hovering over the menu (empty string if none).
 
         Set
         ---
@@ -12176,7 +14025,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
             ```
         """
 
-        return self._tooltip
+        return self.tooltip_popup.text
 
     @tooltip.setter
     def tooltip(self, value: str | None) -> None:
@@ -12191,9 +14040,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameMenu', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -12225,11 +14073,12 @@ class PyFlameMenu(QtWidgets.QPushButton):
             print(menu.tooltip_delay)
 
             # Set tooltip delay
-            menu.tooltip_delay = 0.5
+            menu.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -12281,7 +14130,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -12299,6 +14149,71 @@ class PyFlameMenu(QtWidgets.QPushButton):
         # Update Tooltip Duration
         self.tooltip_popup.duration = value
 
+    @property
+    def connect_callback(self) -> Callable[..., Any] | None:
+        """
+        Connect Callback
+        ================
+
+        Get or set the function called when a menu item is selected. `None` disconnects it.
+
+        Returns
+        -------
+            callable | None:
+                The function called when a menu item is selected.
+
+        Set
+        ---
+            `value` (callable | None):
+                The function to call when a menu item is selected. `None` disconnects it.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not callable or `None`.
+
+        Examples
+        --------
+            ```
+            # Get current callback
+            print(menu.connect_callback)
+
+            # Set callback to a function
+            menu.connect_callback = my_function
+
+            # Disconnect the callback
+            menu.connect_callback = None
+            ```
+        """
+
+        return self._connect_callback
+
+    @connect_callback.setter
+    def connect_callback(self, value: Callable[..., Any] | None) -> None:
+        """
+        Connect Callback
+        ================
+
+        Set the function called when a menu item is selected. `None` disconnects it.
+        """
+
+        # Validate Argument
+        if value is not None and not callable(value):
+            pyflame.raise_type_error('PyFlameMenu', 'connect_callback', 'callable | None', value)
+
+        # Keep new callback so later rebuilds use it
+        self._connect_callback = value
+
+        # Rebuild menu items so they call the new callback, menu text is not changed
+        self.menu.clear()
+
+        for menu_label in self._menu_options:
+            action = self.menu.addAction(
+                menu_label,
+                partial(self._create_menu, menu_label, self._connect_callback)
+                )
+            action.setFont(FONT)
+
     #-------------------------------------
     # [Methods]
     #-------------------------------------
@@ -12310,6 +14225,9 @@ class PyFlameMenu(QtWidgets.QPushButton):
 
         Add or update menu with items including a connect signal when an item is selected.
 
+        With two or more options, a `text` that is not one of the options is replaced by the first option.
+        With zero or one option, the menu text becomes that option (or empty).
+
         Args
         ----
             `text` (str):
@@ -12319,7 +14237,8 @@ class PyFlameMenu(QtWidgets.QPushButton):
                 List of option strings to populate the menu.
 
             `connect` (callable, optional):
-                Function called when the menu is changed.
+                Function called when the menu is changed. If `None`, the function already
+                connected to the menu (from the constructor or an earlier `update_menu`) is kept.
                 (Default: `None`)
 
         Raises
@@ -12358,6 +14277,10 @@ class PyFlameMenu(QtWidgets.QPushButton):
         # Keep internal options in sync for refresh_menu()
         self._menu_options = menu_options
 
+        # Keep new connect so later rebuilds use it, None keeps the current one
+        if connect is not None:
+            self._connect_callback = connect
+
         # Set button text
         self.text = text
 
@@ -12366,7 +14289,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
 
         # Add new menu options
         for menu in menu_options:
-            new_menu = self.menu.addAction(menu, partial(self._create_menu, menu, connect))
+            new_menu = self.menu.addAction(menu, partial(self._create_menu, menu, self._connect_callback))
             new_menu.setFont(FONT)  # Apply font to menu item
 
         self._update_dropdown_visibility()
@@ -12465,12 +14388,15 @@ class PyFlameMenu(QtWidgets.QPushButton):
                 {menu_indicator_style} # Insert menu indicator style
             """)
 
+        # Let the setters update the stylesheet from now on
+        self._stylesheet_initialized = True
+
     def _set_menu_stylesheet(self) -> None:
         """
         Set Stylesheet
         ==============
 
-        This private method sets the PyFlamePushButtonMenu stylesheet.
+        This private method sets the PyFlameMenu menu stylesheet.
 
         Example
         -------
@@ -12505,7 +14431,7 @@ class PyFlameMenu(QtWidgets.QPushButton):
 class PyFlameColorMenu(QtWidgets.QPushButton):
     """
     PyFlameColorMenu
-    ==========================
+    ================
 
     Custom QT Flame Color Menu Widget Subclass
 
@@ -12565,7 +14491,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
     Properties
     ----------
-        `color_options` (Dict[float, float, float, float], optional):
+        `color_options` (Dict[str, Tuple[float, float, float, float]], optional):
             Get or set dictionary of available color names and RGBA values.
             (Default:
                 `{
@@ -12625,14 +14551,14 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         `_set_color(color: str)`:
             Set the color of the PyFlameColorMenu.
 
-        `_generate_color_icon(color: Tuple[float, float, float, float])`:
+        `_generate_color_icon(color_value: Tuple[float, float, float, float])`:
             Generate a color icon.
 
-        `_create_menu(color: str)`:
+        `_create_menu(color_name: str)`:
             Create a menu.
 
         `_match_push_button_width()`:
-            Match the width of the push button to the width of the menu.
+            Match the width of the menu to the width of the push button.
 
     Examples
     --------
@@ -12817,10 +14743,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get selected color
-            print(menu.color)
+            print(color_menu.color)
 
             # Set selected menu text
-            menu.color = 'Red'
+            color_menu.color = 'Red'
             ```
         """
 
@@ -12840,6 +14766,12 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
             pyflame.raise_type_error('PyFlameColorMenu', 'color', 'str', value)
 
         self.setText(value)
+
+        # Update the swatch icon, when the color is one of the color options
+        if value in self.color_options:
+            icon = self._generate_color_icon(self.color_options[value])
+            self.setIcon(icon)
+            self.setIconSize(QtCore.QSize(FONT_SIZE, FONT_SIZE))
 
     @property
     def color_value(self) -> Tuple[float, float, float, float]:
@@ -12884,10 +14816,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get current menu indicator
-            print(menu.menu_indicator)
+            print(color_menu.menu_indicator)
 
             # Set menu indicator
-            menu.menu_indicator = True
+            color_menu.menu_indicator = True
             ```
         """
 
@@ -12906,8 +14838,9 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         if not isinstance(value, bool):
             pyflame.raise_type_error('PyFlameColorMenu', 'menu_indicator', 'bool', value)
 
-        # Set menu indicator
+        # Set menu indicator and re-apply the button stylesheet so the arrow changes
         self._menu_indicator = value
+        self._set_button_stylesheet(value)
 
     @property
     def enabled(self) -> bool:
@@ -12935,10 +14868,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get menu enabled state
-            print(menu.enabled)
+            print(color_menu.enabled)
 
             # Set menu enabled state
-            menu.enabled = False
+            color_menu.enabled = False
             ```
         """
 
@@ -12955,7 +14888,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
         # Validate Argument
         if not isinstance(value, bool):
-            pyflame.raise_type_error('PyFlameMenu', 'enabled', 'bool', value)
+            pyflame.raise_type_error('PyFlameColorMenu', 'enabled', 'bool', value)
 
         # Set enabled state
         self.setEnabled(value)
@@ -12971,7 +14904,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         Returns
         -------
             `int`:
-                The current width of the menu in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -12988,10 +14921,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get the current width
-            print(menu.width)
+            print(color_menu.width)
 
             # Set a fixed width
-            menu.width = 140
+            color_menu.width = 140
             ```
         """
 
@@ -13047,10 +14980,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get menu height
-            print(menu.height)
+            print(color_menu.height)
 
             # Set menu height
-            menu.height = 40
+            color_menu.height = 40
             ```
         """
 
@@ -13087,8 +15020,8 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the menu.
+            str:
+                The tooltip text to display when hovering over the menu (empty string if none).
 
         Set
         ---
@@ -13105,10 +15038,10 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get menu tooltip
-            print(menu.tooltip)
+            print(color_menu.tooltip)
 
             # Set menu tooltip
-            menu.tooltip = 'Click to save changes'
+            color_menu.tooltip = 'Click to save changes'
             ```
         """
 
@@ -13127,9 +15060,8 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameColorMenu', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -13158,14 +15090,15 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get tooltip delay
-            print(menu.tooltip_delay)
+            print(color_menu.tooltip_delay)
 
             # Set tooltip delay
-            menu.tooltip_delay = 0.5
+            color_menu.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -13178,7 +15111,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
         # Validate Argument
         if not isinstance(value, int):
-            pyflame.raise_type_error('PyFlameColorMenu', 'tooltip', 'int', value)
+            pyflame.raise_type_error('PyFlameColorMenu', 'tooltip_delay', 'int', value)
 
         # Update Tooltip Delay
         self.tooltip_popup.delay = value
@@ -13210,14 +15143,15 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get tooltip duration
-            print(menu.tooltip_duration)
+            print(color_menu.tooltip_duration)
 
             # Set tooltip duration
-            menu.tooltip_duration = 5
+            color_menu.tooltip_duration = 5
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -13259,7 +15193,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         -------
             Set the color of the PyFlameColorMenu to 'Red':
             ```
-            button.set_color('Red')
+            button._set_color('Red')
             ```
         """
 
@@ -13284,8 +15218,8 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
         Args
         ----
-            `color_value` (Tuple[float, float, float]):
-                The RGB color value, where each float is between 0 and 1.
+            `color_value` (Tuple[float, float, float, float]):
+                The RGBA color value, where each float is between 0 and 1.
 
         Returns
         -------
@@ -13297,13 +15231,13 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
             TypeError:
                 If `color_value` is not a tuple.
             ValueError:
-                If `color_value` does not contain exactly three float values between 0 and 1.
+                If `color_value` does not contain exactly four float values between 0 and 1.
 
         Example
         -------
             Generate an icon for the color red:
             ```
-            red_icon = widget._generate_color_icon((1.0, 0.0, 0.0))
+            red_icon = widget._generate_color_icon((1.0, 0.0, 0.0, 1.0))
             ```
         """
 
@@ -13311,7 +15245,7 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
         if not isinstance(color_value, tuple):
             raise TypeError(f'_generate_color_icon: Invalid type for color_value: {type(color_value)}. Must be a tuple.')
         if len(color_value) != 4 or not all(isinstance(c, float) and 0 <= c <= 1 for c in color_value):
-           raise ValueError(f'_generate_color_icon: Invalid value for color_value: {color_value}. Must be a tuple of three floats between 0 and 1.')
+           raise ValueError(f'_generate_color_icon: Invalid value for color_value: {color_value}. Must be a tuple of four floats between 0 and 1.')
 
         # Create the pixmap and fill with the given color
         pixmap = QtGui.QPixmap(FONT_SIZE, FONT_SIZE)  # Size of the color square
@@ -13339,9 +15273,9 @@ class PyFlameColorMenu(QtWidgets.QPushButton):
 
         Example
         -------
-            Update the button to reflect the color 'red':
+            Update the button to reflect the color 'Red':
             ```
-            button._create_menu('red')
+            button._create_menu('Red')
             ```
         """
 
@@ -13468,7 +15402,7 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
             (Default: `None`)
 
         `token_dest` (PyFlameEntry, optional):
-            PyFlameEntry that token value will be applied to.
+            PyFlameEntry that token value will be applied to. If `None`, picking a token does nothing.
             (Default: `None`)
 
         `clear_dest` (bool, optional):
@@ -13747,18 +15681,18 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
 
         Returns
         -------
-            PyFlameEntry:
+            PyFlameEntry | None:
                 The token destination.
 
         Set
         ---
-            `value` (PyFlameEntry):
-                The token destination.
+            `value` (PyFlameEntry | None):
+                The token destination. If `None`, picking a token does nothing.
 
         Raises
         ------
             TypeError:
-                If `value` is not a PyFlameEntry.
+                If `value` is not a PyFlameEntry or None.
 
         Examples
         --------
@@ -13903,7 +15837,7 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
         Returns
         -------
             `int`:
-                The current width of the Token Menu in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -14018,8 +15952,8 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the Token Menu.
+            str:
+                The tooltip text to display when hovering over the Token Menu (empty string if none).
 
         Set
         ---
@@ -14058,9 +15992,8 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameTokenMenu', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -14089,14 +16022,15 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get tooltip delay
-            print(button.tooltip_delay)
+            print(token_push_button.tooltip_delay)
 
             # Set tooltip delay
-            button.tooltip_delay = 0.5
+            token_push_button.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -14141,14 +16075,15 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
         --------
             ```
             # Get tooltip duration
-            print(button.tooltip_duration)
+            print(token_push_button.tooltip_duration)
 
             # Set tooltip duration
-            button.tooltip_duration = 5
+            token_push_button.tooltip_duration = 5
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -14175,19 +16110,18 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
             Add Menu Options
             ================
 
-            Clears existing PyFlameTokenMenu menu and creats new menu from `new_options`.
+            Clears existing PyFlameTokenMenu menu and creates new menu from `new_options`.
 
             Args
             ----
                 `new_options` (dict):
                     Dictionary of new token options to add. The key is the name of the token to display in the menu, and the
-                    value is the token to insert into the destination PyFlameLineEdit.
+                    value is the token to insert into the destination PyFlameEntry.
 
             Raises
             ------
                 TypeError:
                     If `new_options` is not a dictionary
-                    If the dictionary does not contain strings as keys and values.
 
             Example
             -------
@@ -14218,6 +16152,10 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
                         The token to insert into the destination PyFlameEntry.
                 """
 
+                # No destination entry, nothing to insert into
+                if self._token_dest is None:
+                    return
+
                 if self._clear_dest:
                     self._token_dest.setText('')
                 for key, value in self._token_dict.items():
@@ -14225,9 +16163,9 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
                         token_name = value
                         self._token_dest.insert(token_name)
 
-            # Clear existing token menu and dictionary
+            # Clear existing token menu and start a new dictionary, so a dict passed in by the script is never emptied
             self.token_menu.clear()
-            self._token_dict.clear()
+            self._token_dict = {}
 
             # Add new menu options
             for key, value in new_options.items():
@@ -14250,6 +16188,11 @@ class PyFlameTokenMenu(QtWidgets.QPushButton):
         self.token_menu.clear()
 
         def insert_token(token):
+
+            # No destination entry, nothing to insert into
+            if self.token_dest is None:
+                return
+
             if self.clear_dest:
                 self.token_dest.setText('')
             if token in self._token_dict:
@@ -14387,10 +16330,6 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             Get or set the Slider sensitivity rate.
             (Default: `10`)
 
-        `connect` (callable):
-            Get or set the function to be called when the Slider value is changed.
-            (Default: `None`)
-
         `enabled` (bool):
             Get or set whether the widget is enabled.
             (Default: `True`)
@@ -14441,6 +16380,9 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         ```
     """
 
+    # Number of handle positions on the bar of a float slider
+    _SLIDER_BAR_STEPS = 1000
+
     def __init__(self: 'PyFlameSlider',
                  min_value: int=0,
                  max_value: int=100,
@@ -14465,6 +16407,9 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
         # Create Widget Tooltip
         self.tooltip_popup = PyFlameToolTip(parent_widget=self)
+
+        # Bar under the number is built at the end of __init__, after the properties are first set
+        self._slider_bar = None
 
         # Set Properties
         self.min_value = min_value
@@ -14523,10 +16468,18 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                 self.raise_()
 
         def set_slider():
-            slider.setValue(float(self.text()))
+            if self.spinbox_type == 'Float':
+                slider.setValue(self._slider_bar_position())
+            else:
+                slider.setValue(float(self.text()))
             slider.setFont(self.font)
 
-        slider = Slider(start_value, min_value, max_value, pyflame.gui_resize(self.width))
+        # Float sliders use a fixed bar range so the handle moves in fine steps
+        if self.spinbox_type == 'Float':
+            slider = Slider(self._slider_bar_position(), 0, self._SLIDER_BAR_STEPS, pyflame.gui_resize(self.width))
+        else:
+            slider = Slider(start_value, min_value, max_value, pyflame.gui_resize(self.width))
+        self._slider_bar = slider
         self.textChanged.connect(set_slider)
 
         self.vbox = QtWidgets.QVBoxLayout(self)
@@ -14564,6 +16517,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             self.spinbox_type = 'Integer'
 
         self._min_value = value
+        self._update_slider_bar_range()
 
     @property
     def max_value(self) -> int | float:
@@ -14590,6 +16544,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             pyflame.raise_value_error('PyFlameSlider', 'max_value', 'value greater than min_value', value)
 
         self._max_value = value
+        self._update_slider_bar_range()
 
     @property
     def value(self) -> int | float:
@@ -14647,17 +16602,17 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         Returns
         -------
             `float`:
-                The current sensitivity rate of the Slider.
+                The current sensitivity rate of the Slider, scaled by 0.1 (setting 5 returns 0.5).
 
         Set
         ---
-            `value` (float):
+            `value` (int | float):
                 The sensitivity rate of the Slider.
 
         Raises
         ------
             TypeError:
-                If the provided `value` is not a float.
+                If the provided `value` is not an int or float.
             ValueError:
                 If the provided `value` is not between 1 and 10.
 
@@ -14752,7 +16707,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         Returns
         -------
             `int`:
-                The current width of the Slider in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -14867,8 +16822,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
         Returns
         -------
-            str | None:
-                The tooltip text to display when hovering over the Slider.
+            str:
+                The tooltip text to display when hovering over the Slider (empty string if none).
 
         Set
         ---
@@ -14907,9 +16862,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameSlider', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -14941,11 +16895,12 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             print(slider.tooltip_delay)
 
             # Set tooltip delay
-            slider.tooltip_delay = 0.5
+            slider.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -14997,7 +16952,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -15024,12 +16980,12 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         Connect Callback
         ================
 
-        Connect a callback function to the button click event.
+        Connect a callback function to the Slider value change event.
 
         Args
         ----
             callback (Callable):
-                The function to call when the button is clicked.
+                The function to call, with no arguments, when the Slider value is changed.
 
         Raises
         ------
@@ -15041,7 +16997,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             pyflame.raise_type_error('PyFlameSlider.connect_callback', 'callback', 'callable', callback)
 
         if callback:
-            self.clicked.connect(callback)
+            self.textChanged.connect(lambda: callback())
 
     #-------------------------------------
     # [Internal Methods]
@@ -15065,31 +17021,38 @@ class PyFlameSlider(QtWidgets.QLineEdit):
         def plus_minus():
 
             if calc_entry.text:
-                calc_entry.setText(str(float(calc_entry.text) * -1))
+                try:
+                    calc_entry.setText(str(float(calc_entry.text) * -1))
+                except ValueError:
+                    # Entry holds a calculation, negate its result. Do nothing if it isn't a valid calculation.
+                    calc_num = evaluate(calc_entry.text)
+                    if calc_num is not None:
+                        calc_entry.setText(str(float(calc_num) * -1))
 
         def add_sub(key):
 
             if calc_entry.text == '':
                 calc_entry.setText('0')
 
-            if '**' not in calc_entry.text:
-                try:
-                    calc_num = eval(calc_entry.text.lstrip('0'))
+            calc_num = evaluate(calc_entry.text)
 
-                    calc_entry.setText(str(calc_num))
+            # Leave everything as it is if the entry isn't a valid calculation
+            if calc_num is None:
+                return
 
-                    calc_num = float(calc_entry.text)
+            calc_entry.setText(str(calc_num))
 
-                    if calc_num == 0:
-                        calc_num = 1
-                    if key == 'add':
-                        self.setValue(float(self.text()) + float(calc_num))
-                    else:
-                        self.setValue(float(self.text()) - float(calc_num))
+            # Adding or subtracting zero changes nothing, but Enter still just closes the calculator
+            if calc_num == 0:
+                self.clean_line = True
+                return
 
-                    self.clean_line = True
-                except:
-                    pass
+            if key == 'add':
+                set_slider_value(float(self.text()) + float(calc_num))
+            else:
+                set_slider_value(float(self.text()) - float(calc_num))
+
+            self.clean_line = True
 
         def enter():
 
@@ -15097,17 +17060,31 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                 return calc_window.close()
 
             if calc_entry.text:
-                try:
 
-                    # If only single number set slider value to that number
+                # Entry starting with + adds its result to the current slider value
+                if calc_entry.text[0] == '+':
+                    calc_num = evaluate(calc_entry.text[1:])
+                    try:
+                        new_value = None if calc_num is None else float(self.text()) + calc_num
+                    except OverflowError:
+                        # Number too big to add, treat it as an invalid entry
+                        new_value = None
+                # Entry starting with * or / is applied to the current slider value
+                elif calc_entry.text[0] in '*/':
+                    new_value = evaluate(self.text() + calc_entry.text)
+                else:
+                    try:
+                        # If only single number set slider value to that number
+                        new_value = float(calc_entry.text)
+                    except ValueError:
+                        # Do math
+                        new_value = evaluate(calc_entry.text)
 
-                    self.setValue(float(calc_entry.text))
-                except:
+                # Keep calculator open and slider value unchanged if the entry isn't a valid calculation
+                if new_value is None:
+                    return
 
-                    # Do math
-
-                    new_value = calculate_entry()
-                    self.setValue(float(new_value))
+                set_slider_value(new_value)
 
             close_calc()
 
@@ -15116,64 +17093,214 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             if calc_entry.text == '':
                 calc_entry.setText('0')
 
-            if calc_entry.text != '0':
+            # Entry starting with + is added to the slider value by enter, so keep the + in front of the result
+            if calc_entry.text[0] == '+':
+                calc = evaluate(calc_entry.text[1:])
 
-                calc_line = calc_entry.text.lstrip('0')
-            else:
-                calc_line = calc_entry.text
+                # Leave entry unchanged if it isn't a valid calculation, or the result is shown in a form enter can't read (1e-05)
+                if calc is not None and evaluate(str(calc)) is not None:
+                    calc_entry.setText('+' + str(calc))
+                return
 
-            if '**' not in calc_entry.text:
-                try:
-                    calc = eval(calc_line)
-                except:
-                    calc = 0
+            calc = evaluate(calc_entry.text)
 
+            # Leave entry unchanged if it isn't a valid calculation
+            if calc is not None:
                 calc_entry.setText(str(calc))
-            else:
-                calc_entry.setText('1')
 
-        def calculate_entry():
+        def evaluate(calc_line: str) -> int | float | None:
+            """
+            Evaluate
+            ========
 
-            calc_line = calc_entry.text.lstrip('0')
+            Calculate the result of a calculator line. Only `+ - * /`, numbers and leading `+`/`-` signs are allowed.
+            Numbers with leading zeros are read as decimal numbers (`010` is 10).
 
-            if '**' not in calc_entry.text:
-                try:
-                    if calc_line.startswith('+'):
-                        calc = float(self.text()) + eval(calc_line[-1:])
-                    elif calc_line.startswith('-'):
-                        calc = float(self.text()) - eval(calc_line[-1:])
-                    elif calc_line.startswith('*'):
-                        calc = float(self.text()) * eval(calc_line[-1:])
-                    elif calc_line.startswith('/'):
-                        calc = float(self.text()) / eval(calc_line[-1:])
+            Args
+            ----
+                calc_line (str): Calculator line to evaluate.
+
+            Returns
+            -------
+                result (int | float | None): Result of the calculation. None if the line isn't a valid calculation.
+            """
+
+            tokens = re.findall(r'[0-9._]+|.', calc_line)
+            index = 0
+
+            def read_number() -> int | float:
+                """
+                Read Number
+                ===========
+
+                Read the next number, with any `+`/`-` signs in front of it.
+
+                Returns
+                -------
+                    number (int | float): Number read.
+
+                Raises
+                ------
+                    ValueError:
+                        If the next token isn't a number.
+                """
+
+                nonlocal index
+
+                sign = 1
+                while index < len(tokens) and tokens[index] in ('+', '-'):
+                    if tokens[index] == '-':
+                        sign = -sign
+                    index += 1
+
+                token = tokens[index] if index < len(tokens) else ''
+                index += 1
+
+                if '.' in token:
+                    return sign * float(token)
+
+                return sign * int(token)
+
+            def read_term() -> int | float:
+                """
+                Read Term
+                =========
+
+                Read numbers joined by `*` and `/`.
+
+                Returns
+                -------
+                    term (int | float): Result of the term.
+                """
+
+                nonlocal index
+
+                term = read_number()
+                while index < len(tokens) and tokens[index] in ('*', '/'):
+                    operator = tokens[index]
+                    index += 1
+                    if operator == '*':
+                        term = term * read_number()
                     else:
-                        calc = eval(calc_line)
-                except:
-                    calc = 0
-            else:
-                calc = 1
+                        term = term / read_number()
 
-            calc_entry.setText(str(float(calc)))
+                return term
 
-            return calc
+            try:
+                result = read_term()
+                while index < len(tokens) and tokens[index] in ('+', '-'):
+                    operator = tokens[index]
+                    index += 1
+                    if operator == '+':
+                        result = result + read_term()
+                    else:
+                        result = result - read_term()
+            except (ValueError, ZeroDivisionError, OverflowError):
+                return None
+
+            # Anything left over means the line isn't a valid calculation
+            if index != len(tokens):
+                return None
+
+            return result
+
+        def set_slider_value(value: int | float) -> None:
+            """
+            Set Slider Value
+            ================
+
+            Set the slider value from the calculator. Integer sliders round to the nearest whole number, halves away from zero.
+
+            Args
+            ----
+                value (int | float): Value to set.
+            """
+
+            if self.spinbox_type == 'Integer':
+                # Clamp the same way setValue does
+                if self.min_value is not None:
+                    value = max(value, self.min_value)
+                if self.max_value is not None:
+                    value = min(value, self.max_value)
+                if value >= 0:
+                    value = int(value + 0.5)
+                else:
+                    value = -int(-value + 0.5)
+
+            self.setValue(float(value))
+
+        def entry_key_press(event) -> None:
+            """
+            Entry Key Press
+            ===============
+
+            After Add or Sub, typing in the entry starts a new entry, the same as pressing a calculator button.
+            Backspace or Delete that edits the shown number keeps the edit as a normal entry, so Enter applies it.
+
+            Args
+            ----
+                event (QKeyEvent): Key press event in the entry.
+            """
+
+            if self.clean_line == True and event.text() and event.text() in '0123456789.+-*/=_,':
+                calc_entry.setText('')
+                self.clean_line = False
+
+            # Only count Backspace or Delete when it removes text, so a key that does nothing leaves Enter closing the calculator
+            if self.clean_line == True and event.key() in (QtCore.Qt.Key_Backspace, QtCore.Qt.Key_Delete):
+                cursor = calc_entry.cursorPosition()
+                if calc_entry.hasSelectedText() or (event.key() == QtCore.Qt.Key_Backspace and cursor > 0) or (event.key() == QtCore.Qt.Key_Delete and cursor < len(calc_entry.text)):
+                    self.clean_line = False
+
+        def reset_slider_stylesheet() -> None:
+            """
+            Reset Slider Stylesheet
+            =======================
+
+            Set the slider back to its normal look when the calculator closes.
+            Skipped when a newer calculator has been opened from the slider or the slider is being clicked or dragged,
+            so the slider stays highlighted.
+            """
+
+            # Slider may already be deleted when its window was closed first
+            try:
+                if self._calc_window is not calc_window or self.pos_at_press is not None:
+                    return
+                self.setStyleSheet(f"""
+                    QLineEdit{{
+                        color: {Color.TEXT.value};
+                        background-color: rgb(55, 65, 75);
+                        selection-color: {Color.TEXT.value};
+                        selection-background-color: rgb(55, 65, 75);
+                        border: none;
+                        padding-left: 5px;
+                        }}
+                    QLineEdit:hover{{
+                        border: 1px solid {Color.BORDER.value};
+                        }}
+                    """)
+            except RuntimeError:
+                pass
 
         def close_calc():
 
+            # Slider stylesheet is reset in the calculator window's closeEvent
             calc_window.close()
 
-            self.setStyleSheet(f"""
-                QLineEdit{{
-                    color: {Color.TEXT.value};
-                    background-color: rgb(55, 65, 75);
-                    selection-color: {Color.TEXT.value};
-                    selection-background-color: rgb(55, 65, 75);
-                    border: none;
-                    padding-left: 5px;
-                    }}
-                QLineEdit:hover{{
-                    border: 1px solid {Color.BORDER.value};
-                    }}
-                """)
+        class EntryKeyFilter(QtCore.QObject):
+            """
+            Entry Key Filter
+            ================
+
+            Passes key presses in the calculator entry to entry_key_press before the entry handles them.
+            """
+
+            def eventFilter(self, watched, event) -> bool:
+
+                if event.type() == QtCore.QEvent.KeyPress:
+                    entry_key_press(event)
+
+                return False
 
         self.clean_line = False
 
@@ -15198,6 +17325,7 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
             def closeEvent(self, event):
                 self._close_check_timer.stop()
+                reset_slider_stylesheet()
                 super().closeEvent(event)
 
             def focusOutEvent(self, event):
@@ -15226,8 +17354,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                 key = event.key()
                 text = event.text()
 
-                # Number keys 0-9
-                if text in '0123456789':
+                # Number keys 0-9. Keys with no text (Shift, arrows...) are not numbers.
+                if text and text in '0123456789':
                     button_press(text)
                 # Operators and decimal point
                 elif text == '+':
@@ -15242,6 +17370,8 @@ class PyFlameSlider(QtWidgets.QLineEdit):
                     button_press('.')
                 # Backspace to delete last character
                 elif key == QtCore.Qt.Key_Backspace:
+                    # After Add or Sub, keep the edit as a normal entry the same way as in the entry
+                    entry_key_press(event)
                     calc_entry.backspace()
                 else:
                     # Pass unhandled keys to the parent class
@@ -15255,19 +17385,48 @@ class PyFlameSlider(QtWidgets.QLineEdit):
             grid_layout_columns=4,
             grid_layout_rows=6,
             grid_layout_column_width=40,
+            window_margins=0,
             return_pressed=enter,
             escape_pressed=close_calc,
-            parent=self.window(),
+            parent=self.window() if isinstance(self.window(), PyFlameWindow) else None, # PyFlameWindow only accepts a PyFlameWindow or None as parent
             )
+
+        # Remember the newest calculator so an older one closing doesn't reset the slider stylesheet
+        self._calc_window = calc_window
         calc_window.move(QtGui.QCursor.pos().x() - 110, QtGui.QCursor.pos().y() - 320)
         calc_window.setWindowFlags(calc_window.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
         calc_window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
+        # Close button (X) at the far right of the calculator title area
+        close_button = QtWidgets.QPushButton('X')
+        close_button.setFont(FONT)
+        close_button.setFocusPolicy(QtCore.Qt.NoFocus) # Keep keyboard focus on the calculator entry
+        close_button.setFixedSize(pyflame.gui_resize(26), pyflame.gui_resize(26))
+        close_button.clicked.connect(close_calc)
+        close_button.setStyleSheet(f"""
+            QPushButton{{
+                color: {Color.TEXT.value};
+                background-color: rgb(30, 30, 30);
+                border: none;
+                }}
+            QPushButton:hover{{
+                color: rgb(255, 255, 255);
+                }}
+            QPushButton:pressed{{
+                color: {Color.TEXT.value};
+                }}
+            """)
+        calc_window.title_text_hbox.setSpacing(0) # No gap between the title and the close button
+        calc_window.title_text_hbox.addWidget(close_button)
 
         # Entry
         calc_entry = PyFlameEntry(
             text='',
             )
-        calc_entry.returnPressed.connect(enter)
+
+        # Return in the entry is passed on to the calculator window's return_pressed, so enter isn't connected to the entry as well
+        entry_key_filter = EntryKeyFilter(calc_entry)
+        calc_entry.installEventFilter(entry_key_filter)
 
         regex = QRegularExpression('[0-9_,=,/,*,+,\\-,.]+')
         validator = QValidator(regex)
@@ -15422,6 +17581,58 @@ class PyFlameSlider(QtWidgets.QLineEdit):
 
         calc_window.activateWindow()
         calc_entry.setFocus()
+
+    def _slider_bar_position(self) -> int:
+        """
+        Slider Bar Position
+        ===================
+
+        Get the handle position of the bar under the number of a float slider, from 0 (min_value) to _SLIDER_BAR_STEPS (max_value).
+
+        Returns
+        -------
+            position (int): Handle position.
+        """
+
+        value_range = self.max_value - self.min_value
+
+        # Keep handle at the start while min_value is not below max_value
+        if value_range <= 0:
+            return 0
+
+        position = (float(self.text()) - self.min_value) / value_range
+        position = min(max(position, 0.0), 1.0)
+
+        return round(position * self._SLIDER_BAR_STEPS)
+
+    def _update_slider_bar_range(self) -> None:
+        """
+        Update Slider Bar Range
+        =======================
+
+        Update the range and handle position of the bar under the number after min_value or max_value changes.
+        """
+
+        # Bar is built at the end of __init__, after the properties are first set
+        if self._slider_bar is None:
+            return
+
+        # Work out the bar values, leave the bar as it was if they can't be made (inf or nan)
+        try:
+            if self.spinbox_type == 'Float':
+                bar_values = (0, self._SLIDER_BAR_STEPS, self._slider_bar_position())
+            else:
+                bar_values = (int(self.min_value), int(self.max_value), int(float(self.text())))
+        except (OverflowError, ValueError):
+            return
+
+        # Leave the bar as it was if QSlider can't hold the values (32-bit integers only)
+        if not all(-2 ** 31 <= bar_value < 2 ** 31 for bar_value in bar_values):
+            return
+
+        self._slider_bar.setMinimum(bar_values[0])
+        self._slider_bar.setMaximum(bar_values[1])
+        self._slider_bar.setValue(bar_values[2])
 
     def _value_changed(self):
 
@@ -15620,8 +17831,8 @@ class PyFlameTable(QtWidgets.QTableView):
 
     Properties
     ----------
-        `csv_file_path` (str):
-            Get or set the file path to the loaded CSV file.
+        `csv_file_path` (str | None):
+            Get the file path to the loaded CSV file. Read only, it is set by `load_csv`.
             (Default: `None`)
 
         `alternating_row_colors` (bool):
@@ -15733,6 +17944,14 @@ class PyFlameTable(QtWidgets.QTableView):
 
         # Prevent selecting all column items when clicking on header
         self.horizontalHeader().mousePressEvent = self._block_column_selection
+
+        # Nothing loaded yet and no files refused for not being UTF-8
+        self._csv_file_path = None
+        self._refused_csv_file_paths = []
+
+        # Whether the last loaded file started with a UTF-8 BOM or was empty, so saving gives them back
+        self._csv_file_has_bom = False
+        self._csv_file_empty = False
 
         # Load CSV file
         self.load_csv(csv_file_path)
@@ -15869,7 +18088,7 @@ class PyFlameTable(QtWidgets.QTableView):
         Returns
         -------
             `int`:
-                The current width of the Table in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -16025,9 +18244,8 @@ class PyFlameTable(QtWidgets.QTableView):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameTable', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -16059,11 +18277,12 @@ class PyFlameTable(QtWidgets.QTableView):
             print(table.tooltip_delay)
 
             # Set tooltip delay
-            table.tooltip_delay = 0.5
+            table.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -16115,7 +18334,8 @@ class PyFlameTable(QtWidgets.QTableView):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -16144,6 +18364,15 @@ class PyFlameTable(QtWidgets.QTableView):
 
         Load CSV file into the table.
 
+        The file must be saved as UTF-8 (with or without a BOM). A file that isn't is not loaded: an error
+        message is shown and the table, its headers and `csv_file_path` stay as they were. `save_csv_file`
+        then won't save over that file (or any other refused file) until a file is loaded.
+
+        Columns in data rows past the end of the header row get an empty header.
+
+        With an empty path nothing is loaded and nothing changes. With `None` nothing is loaded and
+        `csv_file_path` is set to `None`.
+
         Args
         ----
             csv_file_path: str
@@ -16166,31 +18395,68 @@ class PyFlameTable(QtWidgets.QTableView):
         if csv_file_path is not None and not isinstance(csv_file_path, str):
             pyflame.raise_type_error('PyFlameTable.load_csv', 'csv_file_path', 'str', csv_file_path)
 
-        self._csv_file_path = csv_file_path  # Save the path after successful load
-
+        # Nothing to load. None clears the path, an empty path keeps it.
         if not csv_file_path:
+            if csv_file_path is None:
+                self._csv_file_path = csv_file_path
             return
+
+        # Read the whole file before changing the table, so a file that isn't UTF-8 leaves the table as it is.
+        # A BOM at the start is kept out of the first header and noted, so save_csv_file can write it again.
+        try:
+            with open(csv_file_path, 'rb') as file:
+                csv_file_has_bom = file.read(3) == b'\xef\xbb\xbf'
+            with open(csv_file_path, 'r', encoding='utf-8-sig') as file:
+                data = list(csv.reader(file))
+        except UnicodeDecodeError:
+            if os.path.realpath(csv_file_path) not in self._refused_csv_file_paths:
+                self._refused_csv_file_paths.append(os.path.realpath(csv_file_path))
+            PyFlameMessageWindow(
+                message=(
+                    f'Can\'t open {os.path.basename(csv_file_path)} because it isn\'t saved as UTF-8.\n\n'
+                    'Open it in a spreadsheet app, save it again as "CSV UTF-8", then open it again.'
+                    ),
+                message_type=MessageType.ERROR,
+                parent=self.window() if isinstance(self.window(), PyFlameWindow) else None,
+                )
+            return
+        except Exception:
+            # Any other error clears the table and keeps the path before it is raised, as before
+            self._csv_file_path = csv_file_path
+            self._csv_file_has_bom = False
+            self._csv_file_empty = False
+            self.model.clear()
+            raise
+
+        self._csv_file_path = csv_file_path  # Save the path after successful load
+        self._refused_csv_file_paths = []
+        self._csv_file_has_bom = csv_file_has_bom
+        self._csv_file_empty = not data
 
         # Clear table
         self.model.clear()
 
-        # Read CSV file
-        with open(csv_file_path, "r", encoding="utf-8", errors='replace') as file:
-            reader = csv.reader(file)
-            data = list(reader)
+        # If data is not empty, set column count and header labels
+        if data:
+            self.model.setColumnCount(len(data[0]))
+            self.model.setHorizontalHeaderLabels(data[0])
 
-            # If data is not empty, set column count and header labels
-            if data:
-                self.model.setColumnCount(len(data[0]))
-                self.model.setHorizontalHeaderLabels(data[0])
-
-                # Append rows
-                for row in data[1:]:
+            # Append rows. A blank line is an empty row marked so it is saved as a blank line again.
+            for row in data[1:]:
+                if row:
                     items = [QtGui.QStandardItem(cell) for cell in row]
-                    self.model.appendRow(items)
+                else:
+                    items = [QtGui.QStandardItem('') for column in range(len(data[0]))]
+                    for item in items:
+                        item.setData(True, QtCore.Qt.UserRole)
+                self.model.appendRow(items)
 
-                # Resize columns to fit
-                self.resizeColumnsToContents()
+            # Give columns past the end of the header row an empty header instead of a number
+            for column in range(len(data[0]), self.model.columnCount()):
+                self.model.setHeaderData(column, QtCore.Qt.Horizontal, '')
+
+            # Resize columns to fit
+            self.resizeColumnsToContents()
 
     def save_csv_file(self, csv_file_path: str) -> None:
         """
@@ -16198,6 +18464,11 @@ class PyFlameTable(QtWidgets.QTableView):
         =============
 
         Save the CSV file to the given path.
+
+        A cell that is still being edited is saved with its new text and its editor is closed first.
+
+        A file that `load_csv` refused because it isn't UTF-8 is not saved over: an error message is shown
+        and nothing is written, until a file is loaded.
 
         Args
         ----
@@ -16221,17 +18492,51 @@ class PyFlameTable(QtWidgets.QTableView):
         if not isinstance(csv_file_path, str):
             pyflame.raise_type_error('PyFlameTable.save_csv_file', 'csv_file_path', 'str', csv_file_path)
 
-        # Open file for writing
+        # Put the text of a cell that is still being edited into the table and close its editor
+        if self.state() == QtWidgets.QAbstractItemView.EditingState:
+            editor = self.indexWidget(self.currentIndex())
+            if editor:
+                self.commitData(editor)
+                self.closeEditor(editor, QtWidgets.QAbstractItemDelegate.NoHint)
+
+        # Don't save over a file that wasn't loaded because it isn't UTF-8, it would lose its contents.
+        # Compare files, not path names, so a different case or a hard link to it is caught too.
+        for refused_path in self._refused_csv_file_paths:
+            try:
+                same_file = os.path.samefile(csv_file_path, refused_path)
+            except OSError:
+                same_file = os.path.realpath(csv_file_path) == refused_path
+            if not same_file:
+                continue
+
+            PyFlameMessageWindow(
+                message=(
+                    f'{os.path.basename(csv_file_path)} was not loaded because it isn\'t UTF-8, so it can\'t be saved over.\n\n'
+                    'Choose a different file name.'
+                    ),
+                message_type=MessageType.ERROR,
+                parent=self.window() if isinstance(self.window(), PyFlameWindow) else None,
+                )
+            return
+
+        # Open file for writing, with a BOM if the loaded file had one (also when nothing else is written)
         with open(csv_file_path, "w", newline="", encoding="utf-8") as file:
+            if self._csv_file_has_bom:
+                file.write('\ufeff')
             writer = csv.writer(file)
 
-            # Write headers
+            # Write headers. A table still empty from an empty file is saved as an empty file.
             headers = [self.model.headerData(col, QtCore.Qt.Horizontal) for col in range(self.model.columnCount())]
-            writer.writerow(headers)
+            if not (self._csv_file_empty and self.model.columnCount() == 0 and self.model.rowCount() == 0):
+                writer.writerow(headers)
 
             # Write rows
             for row in range(self.model.rowCount()):
                 row_data = [self.model.item(row, col).text() if self.model.item(row, col) else "" for col in range(self.model.columnCount())]
+
+                # Save a row that was a blank line in the loaded file as a blank line while it has no text
+                if not any(row_data) and any(self.model.item(row, col) and self.model.item(row, col).data(QtCore.Qt.UserRole) for col in range(self.model.columnCount())):
+                    row_data = []
                 writer.writerow(row_data)
 
     #-------------------------------------
@@ -16254,6 +18559,10 @@ class PyFlameTable(QtWidgets.QTableView):
         if not isinstance(index, int):
             pyflame.raise_type_error('PyFlameTable._rename_column_header', 'index', 'int', index)
 
+        # Do nothing when there is no column at the index, such as the empty header area past the last column
+        if index < 0 or index >= self.model.columnCount():
+            return
+
         # Get current header text
         current_header_text = self.model.headerData(index, QtCore.Qt.Horizontal)
 
@@ -16261,7 +18570,7 @@ class PyFlameTable(QtWidgets.QTableView):
         rename_column_header_input_dialog = PyFlameInputDialog(
             text=current_header_text,
             title='Rename Column Header',
-            parent = self.parentWidget() if isinstance(self.parentWidget(), PyFlameWindow) else None
+            parent=self.window() if isinstance(self.window(), PyFlameWindow) else None
             )
 
         header_text = rename_column_header_input_dialog.text
@@ -16291,7 +18600,7 @@ class PyFlameTable(QtWidgets.QTableView):
             label_text='Enter New Value',
             text=item.text(),
             title='Rename Selected Cells',
-            parent = self.parentWidget() if isinstance(self.parentWidget(), PyFlameWindow) else None
+            parent=self.window() if isinstance(self.window(), PyFlameWindow) else None
             )
 
         # If the user confirmed, rename the selected cells
@@ -16318,18 +18627,26 @@ class PyFlameTable(QtWidgets.QTableView):
         menu = QtWidgets.QMenu(self)
         menu.setStyleSheet(self._set_menu_stylesheet())
 
-        add_row_action = QtGui.QAction("Add Row", self)
+        add_row_action = QtGui.QAction("Add Row", menu)
         add_row_action.triggered.connect(self._add_row)
         add_row_action.setFont(FONT)
 
-        delete_row_action = QtGui.QAction("Delete Row", self)
-        delete_row_action.triggered.connect(self._delete_selected_rows)
+        # Row under the cursor, -1 in the empty area past the last row
+        logical_index = self.verticalHeader().logicalIndexAt(position)
+
+        delete_row_action = QtGui.QAction("Delete Row", menu)
+        delete_row_action.triggered.connect(lambda: self._delete_selected_rows(logical_index))
         delete_row_action.setFont(FONT)
 
         menu.addAction(add_row_action)
         menu.addAction(delete_row_action)
 
         menu.exec(self.verticalHeader().mapToGlobal(position))
+
+        # Free the menu and its actions once it has closed and its action has run, unless the table
+        # was deleted while the menu was open, which deletes the menu too
+        if isValid(menu):
+            menu.deleteLater()
 
     def _show_column_menu(self, position: tuple) -> None:
         """
@@ -16347,24 +18664,34 @@ class PyFlameTable(QtWidgets.QTableView):
         menu = QtWidgets.QMenu(self)
         menu.setStyleSheet(self._set_menu_stylesheet())
 
-        add_column_action = QtGui.QAction("Add Column", self)
+        add_column_action = QtGui.QAction("Add Column", menu)
         add_column_action.triggered.connect(self._add_column)
         add_column_action.setFont(FONT)
 
-        delete_column_action = QtGui.QAction("Delete Column", self)
-        delete_column_action.triggered.connect(self._delete_selected_columns)
+        # Column under the cursor, -1 in the empty area past the last column
+        logical_index = self.horizontalHeader().logicalIndexAt(position)
+
+        delete_column_action = QtGui.QAction("Delete Column", menu)
+        delete_column_action.triggered.connect(lambda: self._delete_selected_columns(logical_index))
         delete_column_action.setFont(FONT)
 
-        rename_header_action = QtGui.QAction("Rename Column Header", self)
-        logical_index = self.horizontalHeader().logicalIndexAt(position)
+        rename_header_action = QtGui.QAction("Rename Column Header", menu)
         rename_header_action.triggered.connect(lambda: self._rename_column_header(logical_index))
         rename_header_action.setFont(FONT)
 
         menu.addAction(add_column_action)
         menu.addAction(delete_column_action)
-        menu.addAction(rename_header_action)
+
+        # Only offer to rename when there is a column under the cursor
+        if logical_index != -1:
+            menu.addAction(rename_header_action)
 
         menu.exec(self.horizontalHeader().mapToGlobal(position))
+
+        # Free the menu and its actions once it has closed and its action has run, unless the table
+        # was deleted while the menu was open, which deletes the menu too
+        if isValid(menu):
+            menu.deleteLater()
 
     def _add_row(self) -> None:
         """
@@ -16378,15 +18705,28 @@ class PyFlameTable(QtWidgets.QTableView):
         insert_row = selected_rows[-1] + 1 if selected_rows else self.model.rowCount()
         self.model.insertRow(insert_row)
 
-    def _delete_selected_rows(self) -> None:
+    def _delete_selected_rows(self, row: int=-1) -> None:
         """
         Delete Selected Rows
-        ===================
+        ====================
 
-        Delete selected rows.
+        Delete the right-clicked row. If it is one of the selected rows, delete all selected rows.
+        With no row given (-1), delete the selected rows.
+
+        Args
+        ----
+            row: int
+                The right-clicked row, or -1 for none.
+                (Default: `-1`)
         """
 
         selected_indexes = self.selectionModel().selectedRows()
+
+        # Delete only the right-clicked row when it isn't one of the selected rows
+        if row != -1 and row not in [index.row() for index in selected_indexes]:
+            self.model.removeRow(row)
+            return
+
         for index in sorted(selected_indexes, key=lambda x: x.row(), reverse=True):
             self.model.removeRow(index.row())
 
@@ -16405,15 +18745,28 @@ class PyFlameTable(QtWidgets.QTableView):
         # Set default header label
         self.model.setHeaderData(insert_column, QtCore.Qt.Horizontal, 'NEW COLUMN')
 
-    def _delete_selected_columns(self) -> None:
+    def _delete_selected_columns(self, column: int=-1) -> None:
         """
         Delete Selected Columns
         =======================
 
-        Delete selected columns.
+        Delete the right-clicked column. If it is one of the selected columns, delete all selected columns.
+        With no column given (-1), delete the selected columns.
+
+        Args
+        ----
+            column: int
+                The right-clicked column, or -1 for none.
+                (Default: `-1`)
         """
 
         selected_indexes = self.selectionModel().selectedColumns()
+
+        # Delete only the right-clicked column when it isn't one of the selected columns
+        if column != -1 and column not in [index.column() for index in selected_indexes]:
+            self.model.removeColumn(column)
+            return
+
         for index in sorted(selected_indexes, key=lambda x: x.column(), reverse=True):
             self.model.removeColumn(index.column())
 
@@ -16520,7 +18873,7 @@ class PyFlameTable(QtWidgets.QTableView):
     def _set_menu_stylesheet(self) -> str:
         """
         Set Menu Stylesheet
-        ==================
+        ===================
 
         PyFlameTable menu stylesheet
         """
@@ -16599,27 +18952,27 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
             Names of tabs to add.
             (Default: `[]`)
 
-        columns (int):
+        grid_layout_columns (int):
             Number of columns for the tab layout.
             (Default: `4`, optional)
 
-        rows (int):
+        grid_layout_rows (int):
             Number of rows for the tab layout.
             (Default: `3`, optional)
 
-        column_width (int):
+        grid_layout_column_width (int):
             Default width of each column.
             (Default: `150`, optional)
 
-        row_height (int):
+        grid_layout_row_height (int):
             Default height of each row.
             (Default: `28`, optional)
 
-        adjust_column_widths (dict[int, int]):
+        grid_layout_adjust_column_widths (dict[int, int]):
             Optional column width overrides.
             (Default: `{}`, optional)
 
-        adjust_row_heights (dict[int, int]):
+        grid_layout_adjust_row_heights (dict[int, int]):
             Optional row height overrides.
             (Default: `{}`, optional)
 
@@ -16754,6 +19107,10 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
             self.widget.tab_label_width = parent_tab_widget.tab_label_width
             self.widget.tab_label_height = parent_tab_widget.tab_label_height
 
+            # Disable the tab page if the parent tab widget was created disabled
+            if parent_tab_widget.enabled is False:
+                self.widget.setEnabled(False)
+
             # Inherit layout settings from parent tab widget
             self.grid_layout = PyFlameGridLayout(
                 columns=parent_tab_widget.grid_layout_columns,
@@ -16771,8 +19128,8 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         @property
         def enabled(self) -> bool:
             """
-            Enable
-            ======
+            Enabled
+            =======
 
             Get or set the enable state of the tab widget.
 
@@ -16795,10 +19152,10 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
             --------
                 ```
                 # Get the enable state of the tab widget
-                tab_widget.enabled
+                tab_widget.tab_pages['Tab 1'].enabled
 
                 # Set the enable state of the tab widget
-                tab_widget.enabled = True
+                tab_widget.tab_pages['Tab 1'].enabled = True
                 ```
             """
 
@@ -16807,8 +19164,8 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         @enabled.setter
         def enabled(self, value: bool) -> None:
             """
-            Enable
-            ======
+            Enabled
+            =======
 
             Set the enable state of the tab widget.
             """
@@ -16870,7 +19227,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         Tab Names
         =========
 
-        Get or set the names of the tabs in the tab widget.
+        Get the names of the tabs, or add tabs by setting a list of names (existing tabs are kept).
 
         Returns
         -------
@@ -16880,7 +19237,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         Set
         ---
             `value` (list[str]):
-                The names of the tabs to set.
+                Names of tabs to add (existing tabs are kept).
 
 
         Raises
@@ -16907,7 +19264,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         Tab Names
         =========
 
-        Set the names of the tabs in the tab widget.
+        Add a tab for each name in the list (existing tabs are kept).
         """
 
         # Validate Argument
@@ -17028,7 +19385,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
     def grid_layout_column_width(self) -> int:
         """
         Grid Layout Column Width
-        =========================
+        ========================
 
         Get or set the width of the columns in the grid layout.
 
@@ -17064,7 +19421,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
     def grid_layout_column_width(self, value: int) -> None:
         """
         Grid Layout Column Width
-        =========================
+        ========================
 
         Set the width of the columns in the grid layout.
         """
@@ -17279,6 +19636,10 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
 
         self._tab_label_width = value
 
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_stylesheet()
+
     @property
     def tab_label_height(self) -> int:
         """
@@ -17331,6 +19692,10 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         # Set the height of the tab labels
         self._tab_label_height = value
 
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_stylesheet()
+
     #-------------------------------------
     # [Methods]
     #-------------------------------------
@@ -17376,7 +19741,7 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
         Returns
         -------
             `str | None`:
-                The name (label) of the currently selected tab, | None if no tab is selected.
+                The name (label) of the currently selected tab, or None if no tab is selected.
         """
 
         index = self.currentIndex()
@@ -17473,6 +19838,9 @@ class PyFlameTabWidget(QtWidgets.QTabWidget):
                 border-top: 1px solid {Color.TAB_PANE.value};
                 }}
             """)
+
+        # Let the setters update the stylesheet from now on
+        self._stylesheet_initialized = True
 
 class PyFlameTextEdit(QtWidgets.QTextEdit):
     """
@@ -17765,7 +20133,8 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         if self.text_type == TextType.PLAIN:
             self.setPlainText(value)
         elif self.text_type == TextType.MARKDOWN:
-            self.setMarkdown(value)
+            # Fix raw HTML that would make Qt drop the rest of the text. See `_prepare_markdown()`
+            self.setMarkdown(_prepare_markdown(value))
             self._style_markdown_text()
         elif self.text_type == TextType.HTML:
             self.setHtml(value)
@@ -17776,7 +20145,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Text String
         ===========
 
-        Set or get text as a plain text string no matter what text type is set.
+        Get text as a plain text string no matter what text type is set, or set text (read as the current text_type).
 
         Returns
         -------
@@ -17786,7 +20155,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Set
         ---
             `value` (str):
-                The text to set for the text edit as a plain text string.
+                The text to set for the text edit (read as the current text_type).
 
         Raises
         ------
@@ -17797,10 +20166,10 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         --------
             ```
             # Get text edit text as a plain text string
-            print(text_browser.text_str)
+            print(text_edit.text_str)
 
-            # Set text edit text as a plain text string
-            text_browser.text_str = 'Some text here'
+            # Set text edit text
+            text_edit.text_str = 'Some text here'
             ```
         """
 
@@ -17812,7 +20181,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Text String
         ===========
 
-        Set text edit text as a plain text string no matter what text type is set.
+        Set text edit text. The text is read as the current text_type, like the text property.
         """
 
         if not isinstance(value, str):
@@ -17853,7 +20222,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         --------
             ```
             # Get text edit text style
-            print(text_exit.text_style)
+            print(text_edit.text_style)
 
             # Set text edit text style
             text_edit.text_style = TextStyle.READ_ONLY
@@ -17952,7 +20321,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Returns
         -------
             `int`:
-                The current width of the text edit in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -17969,10 +20338,10 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         --------
             ```
             # Get the current width
-            print(text_browser.width)
+            print(text_edit.width)
 
             # Set a fixed width
-            text_browser.width = 140
+            text_edit.width = 140
             ```
         """
 
@@ -18016,7 +20385,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Set
         ---
             `value` (int | None):
-                If `None`, the text edit uses the default height of 28.
+                If `None`, the text edit expands to fit the maximum height set by the layout. Minimum height is 28 pixels.
                 If an integer, the text edit is given a fixed height.
 
         Raises
@@ -18108,9 +20477,8 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameTextEdit', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -18139,14 +20507,15 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         --------
             ```
             # Get tooltip delay
-            print(text_browser.tooltip_delay)
+            print(text_edit.tooltip_delay)
 
             # Set tooltip delay
-            text_browser.tooltip_delay = 0.5
+            text_edit.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -18191,14 +20560,15 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         --------
             ```
             # Get tooltip duration
-            print(text_browser.tooltip_duration)
+            print(text_edit.tooltip_duration)
 
             # Set tooltip duration
-            text_browser.tooltip_duration = 5
+            text_edit.tooltip_duration = 5
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -18225,7 +20595,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         Set Focus
         =========
 
-        Set widget focus to the entry widget.
+        Set widget focus to the text edit.
         """
 
         self.setFocus()
@@ -18237,7 +20607,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
     def _style_markdown_text(self) -> None:
         """
         Style Markdown Text
-        ====================
+        ===================
 
         Apply PyFlame's Markdown look to the widget's rendered Markdown document.
         Called automatically by the `text` setter whenever `text_type` is set to
@@ -18294,9 +20664,12 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
         document_cursor.select(QtGui.QTextCursor.Document)
         document_cursor.mergeCharFormat(base_format)
 
-        # Header look (gold). Merging preserves the Markdown heading font sizes.
+        # Header look (gold, regular weight). Merging preserves the Markdown heading
+        # font sizes. Headers don't use the light weight of the body text: it is drawn
+        # with the Thin face, which at header sizes loses its upright strokes (i, l).
         header_format = QtGui.QTextCharFormat()
         header_format.setForeground(QtGui.QColor(232, 160, 32))
+        header_format.setFontWeight(QtGui.QFont.Normal)
 
         # Becomes True once the first header is reached so only body text under a
         # header is indented.
@@ -18352,7 +20725,7 @@ class PyFlameTextEdit(QtWidgets.QTextEdit):
     def _markdown_code_span_rects(self, start: int, end: int) -> list:
         """
         Markdown Code Span Rects
-        =========================
+        ========================
 
         Return one viewport-space bounding rectangle per line for the document
         range `start` to `end`, built from cursor rects so scrolling, margins,
@@ -18512,11 +20885,12 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             (Default: `TextType.PLAIN`)
 
         `text_style` (TextStyle, optional):
-            Text style.
+            Text style. This only sets the look: the text browser is always read only and its text can always be selected.
             Options:
-                `TextStyle.EDITABLE`: Editable text.
-                `TextStyle.READ_ONLY`: Read only text.
-                `TextStyle.UNSELECTABLE`: Unselectable text.
+                `TextStyle.EDITABLE`: Editable text look.
+                `TextStyle.READ_ONLY`: Read only text look.
+                `TextStyle.UNSELECTABLE`: Unselectable text look.
+                `TextStyle.READ_ONLY_SELECTABLE`: Accepted, but does not change the look.
             (Default: `TextStyle.EDITABLE`)
 
         `open_external_links` (bool, optional):
@@ -18561,7 +20935,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             (Default: `TextType.PLAIN`)
 
         `text_style` (TextStyle):
-            Get or set text style.
+            Get or set text style. This only sets the look: the text browser is always read only.
             (Default: `TextStyle.EDITABLE`)
 
         `open_external_links` (bool):
@@ -18772,7 +21146,8 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         if self.text_type == TextType.PLAIN:
             self.setPlainText(value)
         elif self.text_type == TextType.MARKDOWN:
-            self.setMarkdown(value)
+            # Fix raw HTML that would make Qt drop the rest of the text. See `_prepare_markdown()`
+            self.setMarkdown(_prepare_markdown(value))
         elif self.text_type == TextType.HTML:
             self.setHtml(value)
 
@@ -18782,7 +21157,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         Text String
         ===========
 
-        Set or get text as a plain text string no matter what text type is set.
+        Get text as a plain text string no matter what text type is set, or set text (read as the current text_type).
 
         Returns
         -------
@@ -18792,7 +21167,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         Set
         ---
             `value` (str):
-                The text to set for the text browser as a plain text string.
+                The text to set for the text browser (read as the current text_type).
 
         Raises
         ------
@@ -18805,7 +21180,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             # Get text browser text as a plain text string
             print(text_browser.text_str)
 
-            # Set text browser text as a plain text string
+            # Set text browser text
             text_browser.text_str = 'Some text here'
             ```
         """
@@ -18818,7 +21193,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         Text String
         ===========
 
-        Set text browser text as a plain text string no matter what text type is set.
+        Set text browser text. The text is read as the current text_type, like the text property.
         """
 
         if not isinstance(value, str):
@@ -18834,10 +21209,13 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
 
         Get or set the text browser text style. Uses TextStyle enum.
 
+        This only sets the look: the text browser is always read only and its text can always be selected.
+
         Text Style Options
-            `TextStyle.EDITABLE`: Editable text.
-            `TextStyle.READ_ONLY`: Read only text.
-            `TextStyle.UNSELECTABLE`: Unselectable text.
+            `TextStyle.EDITABLE`: Editable text look.
+            `TextStyle.READ_ONLY`: Read only text look.
+            `TextStyle.UNSELECTABLE`: Unselectable text look.
+            `TextStyle.READ_ONLY_SELECTABLE`: Accepted, but does not change the look.
 
         Returns
         -------
@@ -18994,7 +21372,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         Returns
         -------
             `int`:
-                The current width of the text browser in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -19058,7 +21436,7 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         Set
         ---
             `value` (int | None):
-                If `None`, the text browser uses the default height of 28.
+                If `None`, the text browser expands to fit the maximum height set by the layout. Minimum height is 28 pixels.
                 If an integer, the text browser is given a fixed height.
 
         Raises
@@ -19150,9 +21528,8 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameTextBrowser', 'tooltip', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -19184,11 +21561,12 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             print(text_browser.tooltip_delay)
 
             # Set tooltip delay
-            text_browser.tooltip_delay = 0.5
+            text_browser.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -19240,7 +21618,8 @@ class PyFlameTextBrowser(QtWidgets.QTextBrowser):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -19353,12 +21732,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         `tree_dict` (Dict[str, Dict[str, str]], optional):
             Dictionary of items to populate the tree widget. Useful when dealing with folder trees.
-            (Default: `None`)
+            (Default: `{}`)
 
         `tree_list` (List[str], optional):
             List of items to populate the tree widget. Useful when dealing with batch group schematic reels shelf reels
             and desktop reels.
-            (Default: `None`)
+            (Default: `[]`)
 
         `top_level_item` (str, optional):
             Name of the root item that `tree_list` items are placed under. Only used together
@@ -19399,7 +21778,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             Whether top-level items are allowed to be collapsed by the user.
             When `False`, top-level items are kept expanded (collapsing one re-expands it).
             When `True`, top-level items can be collapsed, allowing them to be used as
-            collapsible category headers. In this mode top-level items are always drawn with a
+            collapsible category headers. Top-level items are always drawn with a
             fixed darker-grey background, and their child rows keep alternating row colors.
             (Default: `False`)
 
@@ -19449,6 +21828,36 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `tooltip_duration` (int, optional):
             Tooltip duration in seconds. Duration tooltip is shown.
             (Default: `5`)
+
+        `checkable` (bool, optional):
+            Whether every item in the tree shows a checkbox in the first column. New items
+            start checked. Checking or unchecking an item does not change its child items.
+            (Default: `False`)
+
+        `check_connect` (callable, optional):
+            Function to call when a checkbox is checked or unchecked. Only used when
+            `checkable` is `True`.
+            (Default: `None`)
+
+        `draggable` (bool, optional):
+            Whether items can be dragged out of the tree onto another widget. Drag only: the
+            dragged item is copied, never removed from the tree, and the tree does not accept
+            drops. An item can be dragged if it can be selected, so with
+            `top_level_selectable=False` the top-level items cannot be dragged.
+            (Default: `False`)
+
+        `drag_end_connect` (callable, optional):
+            Function to call when a drag that started in the tree has ended, whether it was
+            dropped or cancelled. Only used when `draggable` is `True`.
+            (Default: `None`)
+
+        `context_menu` (Dict[str, callable], optional):
+            Right-click menu for the tree. Each key is the text of a menu item and its value is
+            the function to call, with no arguments, when that item is chosen. Items are shown
+            in dict order. A right-click on an item that can be selected selects it first, so
+            the function can read the clicked item from the tree. If `None` or empty, there is
+            no menu and a right-click does what it always has.
+            (Default: `None`)
 
     Properties
     ----------
@@ -19518,6 +21927,31 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `set_column_widths` (Dict[str, int]):
             A dictionary mapping column names to their width in pixels.
 
+        `checkable` (bool):
+            Whether every item in the tree shows a checkbox in the first column. Checking or
+            unchecking an item does not change its child items.
+
+        `check_connect_callback` (Callable):
+            A callback function that is called when a checkbox is checked or unchecked.
+
+        `draggable` (bool):
+            Whether items can be dragged out of the tree onto another widget. An item can be
+            dragged if it can be selected.
+
+        `drag_end_connect_callback` (Callable):
+            A callback function that is called when a drag that started in the tree has ended.
+
+        `context_menu` (Dict[str, Callable] | None):
+            Get or set the right-click menu: menu item text mapped to the function to call.
+            Set to `None` to remove the menu.
+            (Default: `None`)
+
+        `checked_items` (List[QTreeWidgetItem]):
+            Get all checked items, in tree order. Empty when `checkable` is `False`.
+
+        `unchecked_items` (List[QTreeWidgetItem]):
+            Get all unchecked items, in tree order. Empty when `checkable` is `False`.
+
         `all_item_paths` (List[str]):
             Get the recursive paths of all items in the tree.
 
@@ -19542,10 +21976,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             Fill the PyFlameTreeWidget with the provided list.
 
         `add_item(item_name: str)`:
-            Add a new item as a child of the currently selected item in the tree, or as a child of the top-level item if no item is selected.
+            Add a new item as a child of the currently selected item in the tree (or after it, as a sibling, when `allow_children` is `False` and it is not a top-level item), or as a child of the top-level item if no item is selected.
 
-        `add_item_with_columns(item_name: str, column_entries: List[str])`:
+        `add_item_with_columns(item: List[str], parent: QTreeWidgetItem=None, checked: bool=True)`:
             Add a new item to a tree with tree column entries.
+            When `checkable` is `True`, pass `checked=False` to add the item unchecked.
 
         `delete_item()`:
             Delete the selected item in the PyFlameTreeWidget.
@@ -19555,8 +21990,20 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         `sort_items()`:
             Sort all items in the tree while maintaining the structure and keeping the tree expanded.
 
-        `color_item(item: QTreeWidgetItem, color: QColor)`:
-            Color item in tree with supplied QColor value.
+        `color_item(item: QTreeWidgetItem, color: str)`:
+            Color item in tree with supplied color name (e.g. '#555555').
+
+        `set_item_checked(item: QTreeWidgetItem, checked: bool)`:
+            Check or uncheck an item. Does nothing when `checkable` is `False`.
+
+        `is_item_checked(item: QTreeWidgetItem)`:
+            Whether an item is checked. Always `False` when `checkable` is `False`.
+
+        `check_all()`:
+            Check every item in the tree. Does nothing when `checkable` is `False`.
+
+        `uncheck_all()`:
+            Uncheck every item in the tree. Does nothing when `checkable` is `False`.
 
         `clear()`:
             Clear all items from the PyFlameTreeWidget.
@@ -19641,9 +22088,93 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             )
         ```
 
+        To create a PyFlameTreeWidget with a checkbox on every item:
+        ```
+        tree_widget = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                'Notes',
+                ],
+            checkable=True,
+            check_connect=lambda: print(tree_widget.checked_items),
+            )
+        ```
+
+        To create a PyFlameTreeWidget that items can be dragged out of. The top-level items
+        cannot be selected, so only their child items can be dragged:
+        ```
+        tree_widget = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                ],
+            tree_dict={
+                'Shots': {
+                    'Shot_0010': {},
+                    'Shot_0020': {},
+                    }
+                },
+            top_level_selectable=False,
+            draggable=True,
+            drag_end_connect=lambda: print('Drag ended'),
+            )
+        ```
+
+        Read the dragged item in the widget it is dropped on. The drag comes from the tree
+        widget, and the dragged item is its current item:
+        ```
+        def dropEvent(self, event):
+            if event.source() is tree_widget:
+                dragged_item = tree_widget.currentItem()
+                event.acceptProposedAction()
+        ```
+
+        To create a PyFlameTreeWidget with a right-click menu. The menu functions take no
+        arguments and read the right-clicked item from the tree, which selects it first:
+        ```
+        def rename_shot():
+            print(f'Rename {tree_widget.selected_item}')
+
+        def delete_shot():
+            item = tree_widget.currentItem()
+            print(f'Delete {item.text(0)}')
+
+        tree_widget = PyFlameTreeWidget(
+            column_names=[
+                'Name',
+                ],
+            tree_dict={
+                'Shots': {
+                    'Shot_0010': {},
+                    'Shot_0020': {},
+                    }
+                },
+            context_menu={
+                'Rename Shot': rename_shot,
+                'Delete Shot': delete_shot,
+                },
+            )
+        ```
+
         Add a new item to the tree:
         ```
         tree_widget.add_item(item_name='New Item')
+        ```
+
+        Add an unchecked item to a checkable tree, then check it:
+        ```
+        item = tree_widget.add_item_with_columns(['Shot_0010', 'Notes'], checked=False)
+        tree_widget.set_item_checked(item, True)
+        ```
+
+        Check or uncheck every item in a checkable tree:
+        ```
+        tree_widget.check_all()
+        tree_widget.uncheck_all()
+        ```
+
+        Get all checked items in a checkable tree:
+        ```
+        tree_widget.checked_items
         ```
 
         Prevent the top-level items from being selected:
@@ -19710,6 +22241,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                  tooltip: str | None=None,
                  tooltip_delay: int=3,
                  tooltip_duration: int=5,
+                 checkable: bool=False,
+                 check_connect: Callable[..., Any] | None=None,
+                 draggable: bool=False,
+                 drag_end_connect: Callable[..., Any] | None=None,
+                 context_menu: Dict[str, Callable[..., Any]] | None=None,
                  ) -> None:
         super().__init__()
 
@@ -19719,6 +22255,16 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.setFocusPolicy(QtCore.Qt.NoFocus)
         self.itemCollapsed.connect(self._on_item_collapsed)  # Prevent top-level item from collapsing
         self.itemExpanded.connect(self._on_item_expanded)  # Animate top-level disclosure triangle
+        self.model().dataChanged.connect(self._on_check_state_changed)  # Call check_connect when a checkbox is toggled
+
+        # Set while checkboxes are added, removed or changed by the widget itself (filling the
+        # tree, `check_all`...), so `_on_check_state_changed` does not call the check callback
+        # once per item.
+        self._check_callback_paused = False
+
+        # Drag state (only used when draggable is True)
+        self._drag_flag_added_items = {}  # Items `_apply_draggable` added the drag flag to, keyed by id(item)
+        self._drag_blocked = False  # True while the mouse is held down on an item that cannot be dragged
 
         # Disclosure triangle animation state (only used when top_level_collapsible is True)
         self._branch_angles = {}  # Maps a top-level item to its current triangle rotation angle
@@ -19758,6 +22304,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.column_resizable = column_resizable
         self.column_names = column_names
         self.sort = sort
+        # checkable is set before the tree is filled so the items created from
+        # `tree_dict`/`tree_list` get their checkboxes.
+        self.checkable = checkable
         self.tree_dict = tree_dict
         self.tree_list = tree_list
         self.top_level_editable = top_level_editable
@@ -19773,9 +22322,15 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         self.tooltip_delay = tooltip_delay
         self.tooltip_duration = tooltip_duration
         self.set_column_widths = set_column_widths
+        # draggable is set after the tree is filled and `top_level_selectable` is applied, so
+        # the items already in the tree get their drag flag from their final selectable state.
+        self.draggable = draggable
 
         self.connect_callback = connect
         self.update_connect_callback = update_connect
+        self.check_connect_callback = check_connect
+        self.drag_end_connect_callback = drag_end_connect
+        self.context_menu = context_menu
         self.top_level_item = top_level_item
 
         # Enable the sliding expand/collapse animation for collapsible category headers
@@ -19797,6 +22352,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         # Set Stylesheet
         self._set_stylesheet()
+
+        # The checkbox size comes from the stylesheet, so size the columns again now that it
+        # is applied. Only done for checkable trees; other trees are left exactly as they were.
+        if self.checkable:
+            self._fit_columns_to_contents()
 
     #-------------------------------------
     # [Properties]
@@ -19820,11 +22380,6 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             `value` (list):
                 List of names to be used as column names
 
-        Raises
-        ------
-            TypeError:
-                If the provided `value` is not a list.
-
         Examples
         --------
             ```
@@ -19832,7 +22387,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             print(tree_widget.column_names)
 
             # Set tree widget column names
-            tree_widget.column_names[
+            tree_widget.column_names = [
                 column_01,
                 column_02,
                 column_03,
@@ -19976,7 +22531,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             # Get tree widget sorting state
             print(tree_widget.sort)
 
-            # Set tree widget enabled state
+            # Set tree widget sorting state
             tree_widget.sort = True
             ```
         """
@@ -20063,14 +22618,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         def get_items_recursively():
             """
             Get Items Recursively
-            ======================
+            =====================
 
             Recursively traverse the PyFlameTreeWidget and collect paths of all items.
-
-            Args
-            -----
-                `item` (QTreeWidgetItem, optional):
-                    The tree item to start traversal from. Defaults to None.
 
             Returns
             --------
@@ -20303,6 +22853,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         if value is not None and not callable(value):
             pyflame.raise_type_error('PyFlameTreeWidget', 'connect_callback', 'callable | None', value)
 
+        # Disconnect the current callback so only the new one is called. Ignore a callback the script already disconnected
+        current_callback = getattr(self, '_connect_callback', None)
+        if current_callback is not None:
+            try:
+                self.clicked.disconnect(current_callback)
+            except (RuntimeError, TypeError):
+                pass
+
         # Set callback
         if value is not None:
             self.clicked.connect(value)
@@ -20358,12 +22916,386 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         if value is not None and not callable(value):
             pyflame.raise_type_error('PyFlameTreeWidget', 'update_connect_callback', 'callable | None', value)
 
+        # Disconnect the current callback so only the new one is called. Ignore a callback the script already disconnected
+        current_callback = getattr(self, '_update_connect_callback', None)
+        if current_callback is not None:
+            try:
+                self.itemChanged.disconnect(current_callback)
+            except (RuntimeError, TypeError):
+                pass
+
         # Set callback
         if value is not None:
             self.itemChanged.connect(value)
 
         # Set the callback
         self._update_connect_callback = value
+
+    @property
+    def check_connect_callback(self) -> Callable[..., Any] | None:
+        """
+        Check Connect Callback
+        ======================
+
+        Get or set the callback function to be called when a checkbox is checked or unchecked.
+
+        The callback is called with no arguments when the user clicks a checkbox, and once
+        each time checkboxes are changed through `set_item_checked`, `check_all` or
+        `uncheck_all`. It is not called while the tree is being filled or when `checkable` is
+        turned on or off. Only used when `checkable` is `True`.
+
+        Returns
+        -------
+            callable:
+                The callback function to be called when a checkbox is checked or unchecked.
+
+        Set
+        ---
+            `value` (callable):
+                The callback function to be called when a checkbox is checked or unchecked.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a callable.
+
+        Examples
+        --------
+            ```
+            # Get check connect callback
+            print(tree_widget.check_connect_callback)
+
+            # Set check connect callback
+            tree_widget.check_connect_callback = lambda: print('Checkbox changed')
+            ```
+        """
+
+        return self._check_connect_callback
+
+    @check_connect_callback.setter
+    def check_connect_callback(self, value: Callable[..., Any] | None) -> None:
+        """
+        Check Connect Callback
+        ======================
+
+        Set the callback function to be called when a checkbox is checked or unchecked.
+        """
+
+        # Validate argument
+        if value is not None and not callable(value):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'check_connect_callback', 'callable | None', value)
+
+        # Set the callback
+        self._check_connect_callback = value
+
+    @property
+    def checkable(self) -> bool:
+        """
+        Checkable
+        =========
+
+        Get or set whether every item in the tree shows a checkbox in the first column.
+
+        When set to `True` a checkbox is added to every item already in the tree, and to every
+        item added afterwards through `fill_tree_dict`, `fill_tree_list`, `add_item`,
+        `add_item_with_columns`, `tree_dict` or `tree_list`. New items start checked. When set
+        to `False` the checkboxes are removed; turning it back on starts with every item
+        checked again.
+
+        Clicking a checkbox checks or unchecks that item only. The row does not need to be
+        selected first, and checking or unchecking an item does not change its child items
+        (there is no partially checked state).
+
+        Returns
+        -------
+            bool: `True` if items show a checkbox, `False` if not.
+
+        Set
+        ---
+            `value` (bool): `True` to show a checkbox on every item, `False` to remove them.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get checkable
+            print(tree_widget.checkable)
+
+            # Set checkable
+            tree_widget.checkable = True
+            ```
+        """
+
+        return self._checkable
+
+    @checkable.setter
+    def checkable(self, value: bool) -> None:
+        """
+        Checkable
+        =========
+
+        Set whether every item in the tree shows a checkbox.
+        """
+
+        # Validate argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'checkable', 'bool', value)
+
+        # Nothing to add or remove if the setting is not changing. This also keeps trees that
+        # never use checkboxes untouched.
+        if value == getattr(self, '_checkable', False):
+            self._checkable = value
+            return
+
+        # Set checkable
+        self._checkable = value
+
+        # Add or remove the checkbox on every item already in the tree.
+        self._apply_checkable()
+
+        # Re-apply the stylesheet so the checkbox styling is added/removed. Guarded so it is
+        # skipped until the first `_set_stylesheet` has run during construction (the
+        # constructor applies the stylesheet once afterward regardless).
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_stylesheet()
+
+        # Size columns to the new contents so the first column has room for the checkbox.
+        self._fit_columns_to_contents()
+
+    @property
+    def draggable(self) -> bool:
+        """
+        Draggable
+        =========
+
+        Get or set whether items can be dragged out of the tree onto another widget.
+
+        When set to `True` an item can be dragged if it can be selected. With
+        `top_level_selectable` set to `False` the top-level items cannot be dragged and their
+        child items can. This holds for the items already in the tree and for every item added
+        afterwards through `fill_tree_dict`, `fill_tree_list`, `add_item`,
+        `add_item_with_columns`, `tree_dict` or `tree_list`. It is checked again each time the
+        mouse is pressed in the tree, so it also holds for items whose flags were changed
+        directly with `setFlags`: remove `ItemIsSelectable` from an item to stop it from being
+        dragged. No other item flag is changed, and the selection mode is not changed.
+
+        Items that cannot be selected keep their flags as they are; they are kept from being
+        dragged when the mouse is pressed on them.
+
+        The tree is a drag source only: a drag always copies, so the dragged item is never
+        removed from the tree, and the tree does not accept drops. When set to `False` the
+        tree goes back to how it was before dragging was turned on, and the drag flag is
+        removed again from the items it was added to.
+
+        The widget a drag is dropped on can tell where it came from with `event.source()`,
+        which is this tree widget. The dragged item is its current item (`currentItem()`).
+        Qt's standard item data is also on the drag.
+
+        Returns
+        -------
+            bool: `True` if items can be dragged out of the tree, `False` if not.
+
+        Set
+        ---
+            `value` (bool): `True` to let items be dragged out of the tree, `False` to turn it off.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a boolean.
+
+        Examples
+        --------
+            ```
+            # Get draggable
+            print(tree_widget.draggable)
+
+            # Set draggable
+            tree_widget.draggable = True
+            ```
+        """
+
+        return self._draggable
+
+    @draggable.setter
+    def draggable(self, value: bool) -> None:
+        """
+        Draggable
+        =========
+
+        Set whether items can be dragged out of the tree.
+        """
+
+        # Validate argument
+        if not isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'draggable', 'bool', value)
+
+        # Nothing to change if the setting is not changing. This also keeps trees that never
+        # use dragging untouched.
+        if value == getattr(self, '_draggable', False):
+            self._draggable = value
+
+            return
+
+        # Set draggable
+        self._draggable = value
+
+        if value:
+            # Keep the current drag settings so they can be put back when dragging is turned off
+            self._drag_settings_before = (self.dragEnabled(), self.dragDropMode(), self.defaultDropAction())
+
+            # Drag only, copy only
+            self.setDragEnabled(True)
+            self.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+            self.setDefaultDropAction(QtCore.Qt.CopyAction)
+        else:
+            # Put back the drag settings the tree had before dragging was turned on
+            drag_enabled, drag_drop_mode, default_drop_action = self._drag_settings_before
+            self.setDragDropMode(drag_drop_mode)
+            self.setDragEnabled(drag_enabled)
+            self.setDefaultDropAction(default_drop_action)
+            self._drag_blocked = False
+
+        # Add the drag flag to every selectable item already in the tree, or remove it from the items it was added to.
+        self._apply_draggable()
+
+    @property
+    def drag_end_connect_callback(self) -> Callable[..., Any] | None:
+        """
+        Drag End Connect Callback
+        =========================
+
+        Get or set the callback function to be called when a drag that started in the tree
+        has ended.
+
+        The callback is called with no arguments as soon as the drag has ended, whether the
+        item was dropped on another widget or the drag was cancelled. When the item was
+        dropped, the target widget's drop event has already run by the time it is called. Only used when
+        `draggable` is `True`.
+
+        Returns
+        -------
+            callable:
+                The callback function to be called when a drag has ended.
+
+        Set
+        ---
+            `value` (callable):
+                The callback function to be called when a drag has ended.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a callable.
+
+        Examples
+        --------
+            ```
+            # Get drag end connect callback
+            print(tree_widget.drag_end_connect_callback)
+
+            # Set drag end connect callback
+            tree_widget.drag_end_connect_callback = lambda: print('Drag ended')
+            ```
+        """
+
+        return self._drag_end_connect_callback
+
+    @drag_end_connect_callback.setter
+    def drag_end_connect_callback(self, value: Callable[..., Any] | None) -> None:
+        """
+        Drag End Connect Callback
+        =========================
+
+        Set the callback function to be called when a drag that started in the tree has ended.
+        """
+
+        # Validate argument
+        if value is not None and not callable(value):
+            pyflame.raise_type_error('PyFlameTreeWidget', 'drag_end_connect_callback', 'callable | None', value)
+
+        # Set the callback
+        self._drag_end_connect_callback = value
+
+    @property
+    def context_menu(self) -> Dict[str, Callable[..., Any]] | None:
+        """
+        Context Menu
+        ============
+
+        Get or set the right-click menu of the tree.
+
+        Each key is the text of a menu item and its value is the function to call when that
+        item is chosen. The function is called with no arguments. Items are shown in dict
+        order. Setting a new dict replaces the menu. Set to `None` (or an empty dict) to remove
+        it; a right-click then does what it does without a menu.
+
+        A right-click on an item that can be selected makes it the current, selected item
+        before the menu is shown, so the function acts on the item that was clicked. Read it
+        from the tree (`currentItem()`, `selected_item` or `item_path`). A right-click on an
+        item that cannot be selected, or on empty space, leaves the selection as it is and
+        still shows the menu.
+
+        Returns
+        -------
+            Dict[str, callable] | None:
+                Menu item text mapped to the function to call, or `None` if there is no menu.
+
+        Set
+        ---
+            `value` (Dict[str, callable] | None):
+                Menu item text mapped to the function to call, or `None` for no menu.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not a dict or `None`, a key is not a string, or a
+                value is not callable.
+
+        Examples
+        --------
+            ```
+            # Get context menu
+            print(tree_widget.context_menu)
+
+            # Set context menu
+            tree_widget.context_menu = {
+                'Rename': rename_item,
+                'Delete': delete_item,
+                }
+
+            # Remove context menu
+            tree_widget.context_menu = None
+            ```
+        """
+
+        return self._context_menu
+
+    @context_menu.setter
+    def context_menu(self, value: Dict[str, Callable[..., Any]] | None) -> None:
+        """
+        Context Menu
+        ============
+
+        Set the right-click menu of the tree.
+        """
+
+        # Validate argument
+        if value is not None:
+            if not isinstance(value, dict):
+                pyflame.raise_type_error('PyFlameTreeWidget', 'context_menu', 'dict | None', value)
+            for text, function in value.items():
+                if not isinstance(text, str):
+                    pyflame.raise_type_error(error_message=f'PyFlameTreeWidget: All keys in context_menu must be strings. Invalid key: {text}')
+                if not callable(function):
+                    pyflame.raise_type_error(error_message=f'PyFlameTreeWidget: All values in context_menu must be callable. Invalid value for key "{text}": {function}')
+
+        # Set context menu. A copy is kept so later changes to the dict passed in do not change the menu.
+        self._context_menu = dict(value) if value is not None else None
 
     @property
     def alternating_row_colors(self) -> bool:
@@ -20659,6 +23591,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             else:
                 top_item.setFlags(top_item.flags() & ~QtCore.Qt.ItemIsSelectable)
 
+        # Only selectable items can be dragged, so bring the drag flags in sync when the tree
+        # is draggable. The methods that fill the tree end up here too.
+        if getattr(self, '_draggable', False):
+            self._apply_draggable()
+
     def _reapply_top_level_flags(self) -> None:
         """
         Reapply Top Level Flags
@@ -20695,7 +23632,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         Returns
         -------
-            bool: `True` if the tree widget is enabled, `False` if disabled.
+            bool: `True` if text is not elided, `False` if long text is elided with '...'.
 
         Set
         ---
@@ -20711,10 +23648,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         --------
             ```
             # Get tree widget elide state
-            print(tree_widget.enabled)
+            print(tree_widget.elide_text)
 
             # Set tree widget elide state
-            tree_widget.enabled = False
+            tree_widget.elide_text = True
             ```
         """
 
@@ -20738,6 +23675,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Set enabled state
         if self._elide_text:
             self.setTextElideMode(QtCore.Qt.ElideNone)
+        else:
+            self.setTextElideMode(QtCore.Qt.ElideRight)
 
     @property
     def set_column_widths(self) -> Dict[str, int]:
@@ -20892,7 +23831,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Returns
         -------
             `int`:
-                The current width of the tree widget in pixels (after scaling).
+                The fixed width in pixels (after scaling), or the scaled maximum width (5000) when the width is set to `None`.
 
         Set
         ---
@@ -20946,7 +23885,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Height
         ======
 
-        Get or set the List Widget height.
+        Get or set the tree widget height.
 
         Returns
         -------
@@ -20967,11 +23906,11 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Examples
         --------
             ```
-            # Get the current width
-            print(tree_widget.width)
+            # Get the current height
+            print(tree_widget.height)
 
-            # Set a fixed width
-            tree_widget.width = 140
+            # Set a fixed height
+            tree_widget.height = 140
             ```
         """
 
@@ -21048,9 +23987,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         if value is not None and not isinstance(value, str):
             pyflame.raise_type_error('PyFlameTreeWidget.tooltip', 'value', 'None | str', value)
 
-        # Set Tooltip Text
-        if value is not None:
-            self.tooltip_popup.text = value
+        # Set Tooltip Text, None clears it
+        self.tooltip_popup.text = value if value is not None else ''
 
     @property
     def tooltip_delay(self) -> int:
@@ -21082,11 +24020,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             print(tree_widget.tooltip_delay)
 
             # Set tooltip delay
-            tree_widget.tooltip_delay = 0.5
+            tree_widget.tooltip_delay = 1
             ```
         """
 
-        return self.tooltip_popup.delay
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.delay // 1000
 
     @tooltip_delay.setter
     def tooltip_delay(self, value: int) -> None:
@@ -21138,7 +24077,8 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             ```
         """
 
-        return self.tooltip_popup.duration
+        # Tooltip stores milliseconds, return seconds
+        return self.tooltip_popup.duration // 1000
 
     @tooltip_duration.setter
     def tooltip_duration(self, value: int) -> None:
@@ -21312,6 +24252,60 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         return self.currentItem().text(0)
 
+    @property
+    def checked_items(self) -> List[QtWidgets.QTreeWidgetItem]:
+        """
+        Checked Items
+        =============
+
+        Get all checked items in the tree, in tree order (each item is followed by its child
+        items, top to bottom).
+
+        Returns
+        -------
+            List[QtWidgets.QTreeWidgetItem]:
+                The checked items. Empty list when `checkable` is `False`.
+
+        Example
+        -------
+            ```
+            # Get the names of all checked items
+            names = [item.text(0) for item in tree_widget.checked_items]
+            ```
+        """
+
+        if not self.checkable:
+            return []
+
+        return [item for item in self._all_items() if item.checkState(0) == QtCore.Qt.Checked]
+
+    @property
+    def unchecked_items(self) -> List[QtWidgets.QTreeWidgetItem]:
+        """
+        Unchecked Items
+        ===============
+
+        Get all unchecked items in the tree, in tree order (each item is followed by its child
+        items, top to bottom).
+
+        Returns
+        -------
+            List[QtWidgets.QTreeWidgetItem]:
+                The unchecked items. Empty list when `checkable` is `False`.
+
+        Example
+        -------
+            ```
+            # Get the names of all unchecked items
+            names = [item.text(0) for item in tree_widget.unchecked_items]
+            ```
+        """
+
+        if not self.checkable:
+            return []
+
+        return [item for item in self._all_items() if item.checkState(0) != QtCore.Qt.Checked]
+
     #-------------------------------------
     # [Methods]
     #-------------------------------------
@@ -21327,11 +24321,12 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         ----
             `tree_dict` (Dict[str, str | Dict]):
                 Dictionary to populate the PyFlameTreeWidget.
-                The keys and values should be strings representing item names and
-                nested dictionaries in string format respectively.
+                The keys should be strings representing item names and the values
+                nested dictionaries of child items.
 
             `editable` (bool, optional):
-                Whether the items in the tree should be editable.
+                Has no effect: child items are always editable and top-level items follow `top_level_editable`.
+                To stop items being edited, use `tree_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)`.
                 (Default: False)
 
         Raises
@@ -21339,16 +24334,16 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
             TypeError:
                 If `tree_dict` is not a dictionary.
                 If `editable` is not a boolean.
+                If any top-level key or value in `tree_dict` is not a string or dictionary.
 
             ValueError:
-                If any key or value in `tree_dict` is not a string.
-                If any value cannot be evaluated as a dictionary.
+                If a nested key in `tree_dict` is not a string.
 
         Example
         -------
             Populate the PyFlameTreeWidget with items from a dictionary:
             ```
-            tree_widget.fill_tree(
+            tree_widget.fill_tree_dict(
                 tree_dict={
                     'Shot_Folder': {
                         'Elements': {},
@@ -21419,6 +24414,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Bring the newly created top-level items in sync with the top-level flag settings.
         self._reapply_top_level_flags()
 
+        # Give the new items a checkbox when the tree is checkable.
+        if getattr(self, '_checkable', False):
+            self._apply_checkable()
+
         # Size columns to the new contents (widths then stay stable across expand/collapse).
         self._fit_columns_to_contents()
 
@@ -21466,6 +24465,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Bring the newly created top-level items in sync with the top-level flag settings.
         self._reapply_top_level_flags()
 
+        # Give the new items a checkbox when the tree is checkable.
+        if getattr(self, '_checkable', False):
+            self._apply_checkable()
+
         # Size columns to the new contents (widths then stay stable across expand/collapse).
         self._fit_columns_to_contents()
 
@@ -21474,7 +24477,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Add Item
         ========
 
-        Add a new item as a child of the currently selected item in the PyFlameTreeWidget,
+        Add a new item as a child of the currently selected item in the PyFlameTreeWidget (after it, as a sibling, when `allow_children` is `False` and it is not a top-level item),
         or as a child of the top-level item if no item is selected.
 
         The new item will have the following flags:
@@ -21552,6 +24555,10 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Bring any new top-level item in sync with the top-level flag settings.
         self._reapply_top_level_flags()
 
+        # Give the new item a checkbox when the tree is checkable.
+        if getattr(self, '_checkable', False):
+            self._apply_checkable([new_item])
+
         # Size columns to the new contents (widths then stay stable across expand/collapse).
         self._fit_columns_to_contents()
 
@@ -21570,7 +24577,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         pyflame.print(f'Added item: {item_name}', text_color=TextColor.GREEN)
 
-    def add_item_with_columns(self, item: list[str], parent: QtWidgets.QTreeWidgetItem | None=None) -> QtWidgets.QTreeWidgetItem:
+    def add_item_with_columns(self, item: list[str], parent: QtWidgets.QTreeWidgetItem | None=None, checked: bool=True) -> QtWidgets.QTreeWidgetItem:
         """
         Add Item With Columns
         =====================
@@ -21588,27 +24595,40 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 as a top-level item. Useful for grouping items under collapsible category headers.
                 (Default: `None`)
 
+            `checked` (bool, optional):
+                Whether the new item's checkbox starts checked. Only used when `checkable` is
+                `True`.
+                (Default: `True`)
+
         Returns
         -------
-            Qt.Widgets.QTreeWidgetItem:
+            QtWidgets.QTreeWidgetItem:
                 Newly added item in tree
 
         Raises
         ------
             TypeError:
-                If `item_name` is not a string.
+                If `item` is not a list.
+                If `checked` is not a boolean.
 
         Example
         -------
             Add a new item to the PyFlameTreeWidget:
             ```
-            tree_widget.add_item(item_name='New Item')
+            tree_widget.add_item_with_columns(['New Item', 'Notes'])
+            ```
+
+            Add a new unchecked item to a checkable PyFlameTreeWidget:
+            ```
+            tree_widget.add_item_with_columns(['Shot_0010', 'Notes'], checked=False)
             ```
         """
 
         # Validate the argument type
         if not isinstance(item, list):
             pyflame.raise_type_error('PyFlameTreeWidget.add_item_with_columns', 'item', 'list', item)
+        if not isinstance(checked, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget.add_item_with_columns', 'checked', 'bool', checked)
 
         # Add item with columns to tree. Attach under parent if provided, otherwise as a top-level item.
         tree_item = QtWidgets.QTreeWidgetItem(parent if parent is not None else self, item)
@@ -21616,6 +24636,14 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Bring a new top-level item (parent is None) in sync with the top-level flag settings.
         if parent is None:
             self._reapply_top_level_flags()
+
+        # Give the new item a checkbox when the tree is checkable.
+        if self.checkable:
+            self._apply_checkable([tree_item], checked=checked)
+
+        # Let the new item be dragged when the tree is draggable.
+        if self.draggable:
+            self._apply_draggable([tree_item])
 
         # Size columns to the new contents (widths then stay stable across expand/collapse).
         self._fit_columns_to_contents()
@@ -21755,15 +24783,15 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Color Item
         ==========
 
-        Color item in tree with supplied QColor value.
+        Color item in tree with supplied color name (e.g. '#555555').
 
         Args
         ----
             `item` (QTreeWidgetItem):
                 QTreeWidgetItem to have color added.
 
-            'color' (QColor):
-                QColor value to be applied to item
+            `color` (str):
+                Color name to be applied to item, such as '#555555'.
 
         Raises
         ------
@@ -21771,7 +24799,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 If `item` is not a QTreeWidgetItem(PyFlameTreeWidgetItem).
 
             ValueError:
-                If 'color' is not a QColor value.
+                If `color` is not a valid color name.
 
         Example
         -------
@@ -21794,6 +24822,142 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         for column in range(columns):
             item.setForeground(column, QtGui.QColor(color))
 
+    def set_item_checked(self, item: QtWidgets.QTreeWidgetItem, checked: bool) -> None:
+        """
+        Set Item Checked
+        ================
+
+        Check or uncheck an item in the tree. Child items are not changed.
+
+        The `check_connect` callback is called if the item's checkbox changed. Does nothing
+        when `checkable` is `False`.
+
+        Args
+        ----
+            `item` (QTreeWidgetItem):
+                QTreeWidgetItem to check or uncheck, such as the item returned by
+                `add_item_with_columns`.
+
+            `checked` (bool):
+                `True` to check the item, `False` to uncheck it.
+
+        Raises
+        ------
+            TypeError:
+                If `item` is not a QTreeWidgetItem.
+                If `checked` is not a boolean.
+
+        Example
+        -------
+            Uncheck an item in the tree:
+            ```
+            tree_widget.set_item_checked(item, False)
+            ```
+        """
+
+        # Validate arguments
+        if not isinstance(item, QtWidgets.QTreeWidgetItem):
+            pyflame.raise_type_error('PyFlameTreeWidget.set_item_checked', 'item', 'QTreeWidgetItem', item)
+        if not isinstance(checked, bool):
+            pyflame.raise_type_error('PyFlameTreeWidget.set_item_checked', 'checked', 'bool', checked)
+
+        if not self.checkable:
+            return
+
+        # Trigger the check callback function if the checkbox changed
+        if self._set_check_states([item], checked):
+            self._trigger_check_callback()
+
+    def is_item_checked(self, item: QtWidgets.QTreeWidgetItem) -> bool:
+        """
+        Is Item Checked
+        ===============
+
+        Get whether an item in the tree is checked.
+
+        Args
+        ----
+            `item` (QTreeWidgetItem):
+                QTreeWidgetItem to look at.
+
+        Returns
+        -------
+            bool:
+                `True` if the item is checked, `False` if not. Always `False` when `checkable`
+                is `False`.
+
+        Raises
+        ------
+            TypeError:
+                If `item` is not a QTreeWidgetItem.
+
+        Example
+        -------
+            Print whether an item is checked:
+            ```
+            print(tree_widget.is_item_checked(item))
+            ```
+        """
+
+        # Validate argument
+        if not isinstance(item, QtWidgets.QTreeWidgetItem):
+            pyflame.raise_type_error('PyFlameTreeWidget.is_item_checked', 'item', 'QTreeWidgetItem', item)
+
+        if not self.checkable:
+            return False
+
+        return item.checkState(0) == QtCore.Qt.Checked
+
+    def check_all(self) -> None:
+        """
+        Check All
+        =========
+
+        Check every item in the tree.
+
+        The `check_connect` callback is called once, after all items are checked, if any
+        checkbox changed. Does nothing when `checkable` is `False`.
+
+        Example
+        -------
+            Check every item in the tree:
+            ```
+            tree_widget.check_all()
+            ```
+        """
+
+        if not self.checkable:
+            return
+
+        # Trigger the check callback function once if any checkbox changed
+        if self._set_check_states(self._all_items(), True):
+            self._trigger_check_callback()
+
+    def uncheck_all(self) -> None:
+        """
+        Uncheck All
+        ===========
+
+        Uncheck every item in the tree.
+
+        The `check_connect` callback is called once, after all items are unchecked, if any
+        checkbox changed. Does nothing when `checkable` is `False`.
+
+        Example
+        -------
+            Uncheck every item in the tree:
+            ```
+            tree_widget.uncheck_all()
+            ```
+        """
+
+        if not self.checkable:
+            return
+
+        # Trigger the check callback function once if any checkbox changed
+        if self._set_check_states(self._all_items(), False):
+            self._trigger_check_callback()
+
     def set_fixed_column_headers(self) -> None:
         """
         Set Fixed Column Headers
@@ -21805,7 +24969,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         -------
             Set tree column headers to a fixed length
             ```
-            tree_widget.color_item(item, color='#555555')
+            tree_widget.set_fixed_column_headers()
             ```
         """
 
@@ -21823,6 +24987,9 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         """
 
         super().clear()
+
+        # The items are gone, so forget the ones the drag flag was added to
+        self._drag_flag_added_items = {}
 
     def update(self) -> None:
         """
@@ -21848,6 +25015,217 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
 
         if self.update_connect_callback:
             self.update_connect_callback()
+
+    def _trigger_check_callback(self) -> None:
+        """
+        Trigger Check Callback
+        ======================
+
+        Trigger the check callback function if it is set.
+        """
+
+        if self.check_connect_callback:
+            self.check_connect_callback()
+
+    def _on_check_state_changed(self, top_left: QtCore.QModelIndex, bottom_right: QtCore.QModelIndex, roles: List[int]=[]) -> None:
+        """
+        On Check State Changed
+        ======================
+
+        Trigger the check callback when an item's checkbox is toggled, for example by the user
+        clicking it.
+
+        Connected to the model's `dataChanged` signal. Does nothing when `checkable` is
+        `False`, while the widget itself is changing checkboxes (`_check_callback_paused`), or
+        when the change is not a check state change.
+
+        Args
+        -----
+            `top_left` (QtCore.QModelIndex):
+                The first changed index, as supplied by `dataChanged`.
+
+            `bottom_right` (QtCore.QModelIndex):
+                The last changed index, as supplied by `dataChanged`.
+
+            `roles` (List[int], optional):
+                The data roles that changed, as supplied by `dataChanged`.
+                (Default: `[]`)
+        """
+
+        if not getattr(self, '_checkable', False) or self._check_callback_paused:
+            return
+
+        if QtCore.Qt.CheckStateRole in roles:
+            self._trigger_check_callback()
+
+    def _all_items(self) -> List[QtWidgets.QTreeWidgetItem]:
+        """
+        All Items
+        =========
+
+        Get every item in the tree, in tree order (each item is followed by its child items,
+        top to bottom).
+
+        Returns
+        -------
+            List[QtWidgets.QTreeWidgetItem]:
+                All items in the tree.
+        """
+
+        def get_items(item):
+
+            # Recursively add each child item followed by its own children
+            for i in range(item.childCount()):
+                child = item.child(i)
+                items.append(child)
+                get_items(child)
+
+        items = []
+        get_items(self.invisibleRootItem())
+
+        return items
+
+    def _apply_checkable(self, items: List[QtWidgets.QTreeWidgetItem] | None=None, checked: bool=True) -> None:
+        """
+        Apply Checkable
+        ===============
+
+        Bring items in sync with the `checkable` setting.
+
+        When `checkable` is `True`, items that have no checkbox yet are given one (and the
+        `ItemIsUserCheckable` flag if it is missing); items that already have a checkbox keep
+        their state. When `checkable` is `False`, the checkbox is removed from items that have
+        one. An item shows a checkbox when it holds a check state in the first column, so the
+        other item flags are never changed and `_reapply_top_level_flags` does not affect it.
+
+        The `itemChanged` signal and the check callback are held back while this runs, so
+        filling the tree does not call `update_connect` or `check_connect` once per item.
+
+        Args
+        -----
+            `items` (List[QtWidgets.QTreeWidgetItem], optional):
+                The items to bring in sync. If `None`, every item in the tree.
+                (Default: `None`)
+
+            `checked` (bool, optional):
+                Whether a newly added checkbox starts checked.
+                (Default: `True`)
+        """
+
+        if items is None:
+            items = self._all_items()
+
+        callback_paused = self._check_callback_paused
+        self._check_callback_paused = True
+        signals_blocked = self.blockSignals(True)
+        try:
+            for item in items:
+                has_checkbox = item.data(0, QtCore.Qt.CheckStateRole) is not None
+                if self._checkable and not has_checkbox:
+                    if not (item.flags() & QtCore.Qt.ItemIsUserCheckable):
+                        item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+                    item.setCheckState(0, QtCore.Qt.Checked if checked else QtCore.Qt.Unchecked)
+                elif not self._checkable and has_checkbox:
+                    item.setData(0, QtCore.Qt.CheckStateRole, None)
+        finally:
+            self.blockSignals(signals_blocked)
+            self._check_callback_paused = callback_paused
+
+    def _apply_draggable(self, items: List[QtWidgets.QTreeWidgetItem] | None=None) -> None:
+        """
+        Apply Draggable
+        ===============
+
+        Bring the `ItemIsDragEnabled` flag of items in sync with the `draggable` setting.
+
+        Qt only starts a drag from an item that has the drag flag. When `draggable` is `True`,
+        every item that can be selected (see `_item_selectable`) and has no drag flag is given
+        one, and remembered. The drag flag is never removed: items that cannot be selected are
+        kept from being dragged by `mousePressEvent` and `startDrag` instead, so their flags
+        are left exactly as the tree or the script set them. No other flag is changed.
+
+        When `draggable` is `False`, the drag flag is removed again from the remembered items
+        that still have it, and items that were never changed are left alone.
+
+        Called when `draggable` or `top_level_selectable` is set, when items are added, and
+        each time the mouse is pressed in a draggable tree, so selectable items can still be
+        dragged after their flags were changed directly with `setFlags`. A pass over the whole
+        tree also forgets remembered items that are no longer in it.
+
+        The `itemChanged` signal is held back while this runs.
+
+        Args
+        ----
+            `items` (List[QtWidgets.QTreeWidgetItem], optional):
+                The items to bring in sync. If `None`, every item in the tree.
+                (Default: `None`)
+        """
+
+        whole_tree = items is None
+        if items is None:
+            items = self._all_items()
+
+        signals_blocked = self.blockSignals(True)
+        try:
+            for item in items:
+                has_drag_flag = bool(item.flags() & QtCore.Qt.ItemIsDragEnabled)
+                if self._draggable:
+                    if not has_drag_flag and self._item_selectable(item):
+                        item.setFlags(item.flags() | QtCore.Qt.ItemIsDragEnabled)
+                        self._drag_flag_added_items[id(item)] = item
+                elif has_drag_flag and id(item) in self._drag_flag_added_items:
+                    item.setFlags(item.flags() & ~QtCore.Qt.ItemIsDragEnabled)
+        finally:
+            self.blockSignals(signals_blocked)
+
+        if not self._draggable:
+            # Nothing left to put back once dragging is turned off
+            self._drag_flag_added_items = {}
+        elif whole_tree:
+            # Forget items that are no longer in the tree
+            in_tree = {id(item) for item in items}
+            self._drag_flag_added_items = {key: item for key, item in self._drag_flag_added_items.items() if key in in_tree}
+
+    def _set_check_states(self, items: List[QtWidgets.QTreeWidgetItem], checked: bool) -> bool:
+        """
+        Set Check States
+        ================
+
+        Check or uncheck the given items without calling the check callback for each one.
+
+        The `itemChanged` signal and the check callback are held back while this runs; the
+        caller triggers the check callback once afterwards.
+
+        Args
+        -----
+            `items` (List[QtWidgets.QTreeWidgetItem]):
+                The items to check or uncheck.
+
+            `checked` (bool):
+                `True` to check the items, `False` to uncheck them.
+
+        Returns
+        -------
+            bool:
+                `True` if the checkbox of at least one item changed, `False` if not.
+        """
+
+        state = QtCore.Qt.Checked if checked else QtCore.Qt.Unchecked
+        changed = False
+
+        callback_paused = self._check_callback_paused
+        self._check_callback_paused = True
+        signals_blocked = self.blockSignals(True)
+        try:
+            for item in items:
+                if item.checkState(0) != state:
+                    item.setCheckState(0, state)
+                    changed = True
+        finally:
+            self.blockSignals(signals_blocked)
+            self._check_callback_paused = callback_paused
+
+        return changed
 
     def _on_item_collapsed(self, item) -> None:
         """
@@ -22207,7 +25585,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         Only the newly inserted rows are styled, so per-item colors applied afterward (for
         example via `color_item` to grey out an entry) are preserved.
 
-        Connected to the model's `rowsInserted` signal. Does nothing for non-collapsible
+        Not connected at the moment (the `rowsInserted` connection in `__init__` is commented out). Does nothing for non-collapsible
         trees, keeping existing trees unaffected.
 
         Args
@@ -22296,6 +25674,32 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
     # [Stylesheet]
     #-------------------------------------
 
+    def _set_menu_stylesheet(self) -> str:
+        """
+        Set Menu Stylesheet
+        ===================
+
+        PyFlameTreeWidget right-click menu stylesheet. Same look as the PyFlameTable right-click menus.
+        """
+
+        return f"""
+            QMenu {{
+                background-color: rgb(44, 54, 68);  /* Menu background */
+                color: rgb(170, 170, 170);  /* Text color */
+                border: 1px solid rgb(35, 43, 54); /* Menu border */
+                padding: {pyflame.gui_resize(4)}px;
+                }}
+            QMenu::item {{
+                background-color: transparent;  /* Default item background */
+                color: rgb(170, 170, 170);  /* Item text color */
+                padding: {pyflame.gui_resize(4)}px {pyflame.gui_resize(8)}px; /* Padding around menu items */
+                }}
+            QMenu::item:selected {{
+                background-color: rgb(73, 86, 99);  /* Hovered item background */
+                color: rgb(220, 220, 220);  /* Hovered item text color */
+                }}
+            """
+
     @staticmethod
     def _rgb_to_qcolor(rgb: str) -> QtGui.QColor:
         """
@@ -22345,6 +25749,33 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # else:
         #     tree_background_colors = f"""
         #         background-color: {base_background_color};"""
+
+        # Checkbox styling, only added when `checkable` is `True` so the stylesheet of every
+        # other tree stays exactly as it was. A small square: dark when unchecked, the
+        # PyFlamePushButton checked blue when checked.
+        if getattr(self, '_checkable', False):
+            checkbox_style = f"""QTreeWidget::indicator{{
+                width: {pyflame.gui_resize(10)}px;
+                height: {pyflame.gui_resize(10)}px;
+                border: 1px solid {Color.BORDER.value};
+                background-color: rgb(18, 21, 24);
+                }}
+            QTreeWidget::indicator:checked{{
+                background-color: {Color.PUSHBUTTON_BLUE_CHECKED.value};
+                }}
+            QTreeWidget::indicator:hover{{
+                border: 1px solid {Color.BORDER_BRIGHTER.value};
+                }}
+            QTreeWidget::indicator:disabled{{
+                border: 1px solid {Color.TEXT_BORDER.value};
+                background-color: rgb(34, 34, 34);
+                }}
+            QTreeWidget::indicator:checked:disabled{{
+                background-color: {Color.PUSHBUTTON_BLUE.value};
+                }}
+            """
+        else:
+            checkbox_style = ''
 
         self.setStyleSheet(f"""
             QTreeWidget{{
@@ -22434,7 +25865,7 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
                 color: {Color.TEXT_DISABLED.value};
                 background-color: {Color.SELECTED_GRAY.value};
                 }}
-            """)
+            {checkbox_style}""")
 
         # This custom line edit controls the color of the text when selected/highlighted
         class CustomItemDelegate(QtWidgets.QStyledItemDelegate):
@@ -22458,6 +25889,196 @@ class PyFlameTreeWidget(QtWidgets.QTreeWidget):
         # Mark the stylesheet as applied so the `alternating_row_colors` setter may re-apply
         # it on later changes (it is skipped during construction, before this first run).
         self._stylesheet_initialized = True
+
+    #-------------------------------------
+    # [Drag Event Handlers]
+    #-------------------------------------
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        """
+        Mouse Press Event
+        =================
+
+        When `draggable` is `True`, bring the item drag flags in sync before Qt reads them, and
+        note whether the pressed item can be dragged. Without that, pressing on an item that
+        cannot be dragged (for example an unselectable top-level item) and moving the mouse
+        would drag the item that is still selected.
+
+        When `draggable` is `False` this is Qt's default behavior, unchanged.
+
+        When the tree has a `context_menu`, a right-click on an item that cannot be selected, or
+        on empty space, leaves the selection and the current item as they are. Without a menu a
+        right-click is Qt's default behavior, unchanged.
+        """
+
+        if getattr(self, '_draggable', False):
+            self._apply_draggable()
+            item = self.itemAt(event.pos())
+            self._drag_blocked = item is not None and not (self._item_selectable(item) and item.flags() & QtCore.Qt.ItemIsDragEnabled)
+
+        # Right-click with a menu on an item that cannot be selected or on empty space: leave the selection alone
+        if (event.button() == QtCore.Qt.RightButton and getattr(self, '_context_menu', None)
+                and not self._item_selectable(self.itemAt(event.pos()))):
+            return
+
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        """
+        Mouse Release Event
+        ===================
+
+        Forget whether the last pressed item could be dragged (see `mousePressEvent`).
+        """
+
+        self._drag_blocked = False
+
+        super().mouseReleaseEvent(event)
+
+    def startDrag(self, supported_actions: QtCore.Qt.DropAction) -> None:
+        """
+        Start Drag
+        ==========
+
+        Start a drag of the selected item. Called by Qt when the user starts dragging.
+
+        When `draggable` is `False` this is Qt's default behavior, unchanged.
+
+        When `draggable` is `True` the drag is started with `CopyAction` as its only action.
+        The tree's model also offers a move, and Qt removes the dragged item from the tree
+        after a move, so the move is never offered. Once the drag has ended (dropped or
+        cancelled) the `drag_end_connect` callback is called. Nothing happens when no
+        selected item can be dragged, or when the mouse was pressed on an item that cannot be
+        dragged.
+
+        Args
+        ----
+            `supported_actions` (QtCore.Qt.DropAction):
+                The drop actions the tree offers, as passed by Qt. Not used when `draggable`
+                is `True`.
+        """
+
+        if not getattr(self, '_draggable', False):
+            super().startDrag(supported_actions)
+
+            return
+
+        # No drag when the mouse was pressed on an item that cannot be dragged
+        if self._drag_blocked:
+            return
+
+        # No drag when no selected item can be dragged
+        if not any(self._item_selectable(item) and item.flags() & QtCore.Qt.ItemIsDragEnabled for item in self.selectedItems()):
+            return
+
+        # Copy only, so the dragged item is never removed from the tree. Returns when the
+        # drag has ended.
+        super().startDrag(QtCore.Qt.CopyAction)
+
+        # Call the drag end callback if it is set
+        if self.drag_end_connect_callback:
+            self.drag_end_connect_callback()
+
+    #-------------------------------------
+    # [Context Menu Event Handlers]
+    #-------------------------------------
+
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+        """
+        Context Menu Event
+        ==================
+
+        Show the `context_menu` right-click menu at the cursor.
+
+        When there is no menu (`context_menu` is `None` or empty) this is Qt's default
+        behavior, unchanged.
+
+        A right-click on an item that can be selected makes it the current, selected item
+        first, so the menu functions act on the item that was clicked. Qt has normally done
+        this already when the right mouse button was pressed on it (as a left-click would);
+        this covers context menu events that come without a mouse press. When that item is
+        already selected along with others, the selection is kept and it only becomes the
+        current item. A right-click on an item that cannot be selected, or on empty space,
+        leaves the selection as it is.
+
+        Args
+        ----
+            `event` (QtGui.QContextMenuEvent):
+                The context menu event.
+        """
+
+        if not getattr(self, '_context_menu', None):
+            super().contextMenuEvent(event)
+
+            return
+
+        # Make the right-clicked item current first. Keyboard menu events have no clicked item.
+        if event.reason() == QtGui.QContextMenuEvent.Reason.Mouse:
+            item = self.itemAt(event.pos())
+            if self._item_selectable(item):
+                if not item.isSelected():
+                    self.setCurrentItem(item)
+                elif item is not self.currentItem():
+                    self.setCurrentItem(item, 0, QtCore.QItemSelectionModel.NoUpdate)
+
+        self._show_context_menu(event.globalPos())
+        event.accept()
+
+    def _show_context_menu(self, global_position: QtCore.QPoint) -> None:
+        """
+        Show Context Menu
+        =================
+
+        Build the `context_menu` right-click menu and show it. Returns when the menu has
+        closed. The function of the chosen item is called with no arguments.
+
+        Args
+        ----
+            `global_position` (QtCore.QPoint):
+                Screen position to show the menu at.
+        """
+
+        menu = QtWidgets.QMenu(self)
+        menu.setStyleSheet(self._set_menu_stylesheet())
+
+        for text, function in self._context_menu.items():
+            action = QtGui.QAction(text, menu)
+            action.triggered.connect(lambda checked=False, function=function: function())
+            action.setFont(FONT)
+            menu.addAction(action)
+
+        menu.exec(global_position)
+        menu.deleteLater()
+
+    def _item_selectable(self, item) -> bool:
+        """
+        Item Selectable
+        ===============
+
+        Whether `item` can be selected. A right-click with a `context_menu` selects such an
+        item before the menu is shown.
+
+        An item can be selected when it is enabled and has the `ItemIsSelectable` flag. With
+        `top_level_selectable` set to `False` the top-level items cannot be selected, whatever
+        their flags (the same rule as `selectionCommand`). When `draggable` is `True` only these
+        items can be dragged.
+
+        Args
+        ----
+            `item` (QtWidgets.QTreeWidgetItem | None):
+                The item under the cursor, or `None` for empty space.
+
+        Returns
+        -------
+            bool: `True` if the item can be selected, `False` if not or if `item` is `None`.
+        """
+
+        if item is None:
+            return False
+        if item.parent() is None and not getattr(self, '_top_level_selectable', True):
+            return False
+
+        return bool(item.flags() & QtCore.Qt.ItemIsSelectable) and bool(item.flags() & QtCore.Qt.ItemIsEnabled)
 
     #-------------------------------------
     # [Tooltip Event Handlers]
@@ -22538,18 +26159,6 @@ class PyFlameProgressBarWidget(QtWidgets.QProgressBar):
 
         # Widget Settings
         self.setTextVisible(False)
-
-        # Set Style Sheet
-        self.setStyleSheet(f"""
-            QProgressBar {{
-                color: {Color.TEXT.value};
-                background-color: rgb(45, 45, 45);
-                border: none;
-            }}
-            QProgressBar::chunk {{
-                background-color: {self.bar_color.value};
-            }}
-        """)
 
     #-------------------------------------
     # [Properties]
@@ -22657,6 +26266,8 @@ class PyFlameProgressBarWidget(QtWidgets.QProgressBar):
         if not isinstance(value, int):
             pyflame.raise_type_error('PyFlameProgressBarWidget', 'processing_task', 'integer', value)
 
+        self._processing_task = value
+
         # Adjust value for progress bar
         if value > 0:
             value = value - 1
@@ -22664,8 +26275,6 @@ class PyFlameProgressBarWidget(QtWidgets.QProgressBar):
         # Set progress bar value
         self.setValue(value)
         QtWidgets.QApplication.processEvents()
-
-        self._processing_take = value
 
     @property
     def bar_color(self) -> Color:
@@ -22717,6 +26326,18 @@ class PyFlameProgressBarWidget(QtWidgets.QProgressBar):
             pyflame.raise_type_error('PyFlameProgressBarWidget', 'bar_color', 'Color', value)
 
         self._bar_color = value
+
+        # Set the stylesheet, the bar color is the only part that changes
+        self.setStyleSheet(f"""
+            QProgressBar {{
+                color: {Color.TEXT.value};
+                background-color: rgb(45, 45, 45);
+                border: none;
+            }}
+            QProgressBar::chunk {{
+                background-color: {self.bar_color.value};
+            }}
+        """)
 
     @property
     def bar_height(self) -> int:
@@ -22841,7 +26462,7 @@ class PyFlameButtonGroup(QtWidgets.QButtonGroup):
         --------
             ```
             # Get the buttons in the button group
-            button_group = button_group.button_group
+            buttons = button_group.button_group
 
             # Set the buttons in the button group
             button_group.button_group = [
@@ -22912,7 +26533,7 @@ class PyFlameButtonGroup(QtWidgets.QButtonGroup):
             ```
         """
 
-        return self.isExclusive()
+        return self.exclusive()
 
     @set_exclusive.setter
     def set_exclusive(self, value: bool) -> None:
@@ -22929,6 +26550,493 @@ class PyFlameButtonGroup(QtWidgets.QButtonGroup):
 
         # Set Exclusive
         self.setExclusive(value)
+
+class PyFlameCheckBoxGroup(QtWidgets.QButtonGroup):
+    """
+    PyFlameCheckBoxGroup
+    ====================
+
+    Custom QT Flame Check Box Group Subclass
+
+    Groups PyFlameCheckBox widgets and limits how many of them the user can check.
+    The group is non-exclusive. The check boxes stay normal widgets that the script
+    places in its own layout.
+
+    A click (or Space / Select key press) that would leave fewer than `min_checked`
+    boxes checked, or more than `max_checked` boxes checked, is ignored: the box keeps
+    its state, nothing is emitted, and neither the box's own `connect` function nor the
+    group's `connect` function is called.
+
+    The limits apply to user input only. Setting a box's `checked` property from code
+    is never blocked, and the group never changes any box's state itself, not when it
+    is created and not when the limits are changed. The script sets the starting state
+    of the boxes (for example at least `min_checked` boxes checked).
+
+    Keep a reference to the group for as long as its window is open (for example
+    `self.check_box_group = PyFlameCheckBoxGroup(...)`). A group that is only held in a
+    local variable is deleted when the function ends, and the limits and the group's
+    `connect` function then stop working.
+
+    Args
+    ----
+        `check_box_group` (list):
+            List of PyFlameCheckBox objects to be part of the group.
+
+        `min_checked` (int, optional):
+            Fewest check boxes that must stay checked. `0` means no minimum.
+            (Default: `1`)
+
+        `max_checked` (int | None, optional):
+            Most check boxes that can be checked. `None` means no maximum.
+            (Default: `None`)
+
+        `connect` (callable, optional):
+            Function called, with no arguments, after the user clicks any check box in the
+            group and its state changes.
+            (Default: `None`)
+
+    Properties
+    ----------
+        `check_box_group` (list):
+            Get or set the check boxes in the group.
+
+        `min_checked` (int):
+            Get or set the fewest check boxes that must stay checked.
+            (Default: `1`)
+
+        `max_checked` (int | None):
+            Get or set the most check boxes that can be checked.
+            (Default: `None`)
+
+        `connect_callback` (callable | None):
+            Get or set the function called after the user changes a check box in the group.
+            (Default: `None`)
+
+        `checked_check_boxes` (list):
+            Get the checked check boxes, in group order. Read only.
+
+        `checked_text` (list[str]):
+            Get the text of each checked check box, in group order. Read only.
+
+    Example
+    -------
+        To create a check box group where at least one box stays checked:
+        ```
+        check_box_group = PyFlameCheckBoxGroup(
+            check_box_group=[
+                self.red_check_box,
+                self.green_check_box,
+                self.blue_check_box,
+                ],
+            min_checked=1,
+            )
+        ```
+
+        To create a check box group where one or two boxes can be checked:
+        ```
+        check_box_group = PyFlameCheckBoxGroup(
+            check_box_group=[
+                self.red_check_box,
+                self.green_check_box,
+                self.blue_check_box,
+                ],
+            min_checked=1,
+            max_checked=2,
+            connect=self.update_channels,
+            )
+        ```
+    """
+
+    def __init__(self: 'PyFlameCheckBoxGroup',
+                 check_box_group: list,
+                 min_checked: int=1,
+                 max_checked: int | None=None,
+                 connect: Callable[..., Any] | None=None,
+                 ) -> None:
+        super().__init__()
+
+        # Setup Group, limits only apply through the event filter
+        self.setExclusive(False)
+
+        # Start with no limits so the min/max setters can't raise a false error
+        self._check_boxes = []
+        self._check_box_group = []
+        self._min_checked = 0
+        self._max_checked = None
+        self._connect_callback = None
+
+        # Set Properties, max first so min is checked against the real max
+        self.max_checked = max_checked
+        self.min_checked = min_checked
+        self.connect_callback = connect
+        self.check_box_group = check_box_group
+
+    #-----------------------
+    # Properties
+    #-----------------------
+
+    @property
+    def check_box_group(self) -> list:
+        """
+        Check Box Group
+        ===============
+
+        Get or set the check boxes in the check box group.
+
+        Setting the check boxes releases the old ones first, so no check box is connected twice.
+        The check boxes' checked states are not changed.
+
+        Returns
+        -------
+            list:
+                The check boxes in the check box group.
+
+        Set
+        ---
+            `value` (list):
+                List of PyFlameCheckBox objects.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not a list of PyFlameCheckBox objects.
+
+        Examples
+        --------
+            ```
+            # Get the check boxes in the check box group
+            check_boxes = check_box_group.check_box_group
+
+            # Set the check boxes in the check box group
+            check_box_group.check_box_group = [
+                self.red_check_box,
+                self.green_check_box,
+                self.blue_check_box,
+                ]
+            ```
+        """
+
+        return self._check_box_group
+
+    @check_box_group.setter
+    def check_box_group(self, value: list) -> None:
+        """
+        Check Box Group
+        ===============
+
+        Set the check boxes in the check box group.
+        """
+
+        # Validate Argument
+        if not isinstance(value, list):
+            pyflame.raise_type_error('PyFlameCheckBoxGroup', 'check_box_group', 'list', value)
+        if not all(isinstance(check_box, PyFlameCheckBox) for check_box in value):
+            pyflame.raise_type_error('PyFlameCheckBoxGroup', 'check_box_group', 'PyFlameCheckBox', value)
+
+        # Release old check boxes
+        for check_box in self._check_boxes:
+            try:
+                check_box.removeEventFilter(self)
+                check_box.clicked.disconnect(self._check_box_clicked)
+                self.removeButton(check_box)
+            except (RuntimeError, TypeError):
+                pass
+
+        # Keep each check box once, in group order
+        self._check_box_group = value
+        self._check_boxes = []
+        for check_box in value:
+            if check_box not in self._check_boxes:
+                self._check_boxes.append(check_box)
+
+        # Add check boxes to group
+        for check_box in self._check_boxes:
+            self.addButton(check_box)
+            check_box.installEventFilter(self)
+            check_box.clicked.connect(self._check_box_clicked)
+
+    @property
+    def min_checked(self) -> int:
+        """
+        Min Checked
+        ===========
+
+        Get or set the fewest check boxes that must stay checked. `0` means no minimum.
+
+        Only user clicks are limited. Check box states are not changed when this is set.
+
+        Returns
+        -------
+            int:
+                The fewest check boxes that must stay checked.
+
+        Set
+        ---
+            `value` (int):
+                The fewest check boxes that must stay checked. Must be `0` or more, and not more than `max_checked`.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not an int.
+            ValueError:
+                If the value is negative or greater than `max_checked`.
+
+        Examples
+        --------
+            ```
+            # Get the minimum
+            print(check_box_group.min_checked)
+
+            # Set the minimum
+            check_box_group.min_checked = 1
+            ```
+        """
+
+        return self._min_checked
+
+    @min_checked.setter
+    def min_checked(self, value: int) -> None:
+        """
+        Min Checked
+        ===========
+
+        Set the fewest check boxes that must stay checked.
+        """
+
+        # Validate Argument
+        if not isinstance(value, int) or isinstance(value, bool):
+            pyflame.raise_type_error('PyFlameCheckBoxGroup', 'min_checked', 'int', value)
+        if value < 0:
+            pyflame.raise_value_error('PyFlameCheckBoxGroup', 'min_checked', 'value equal to or greater than 0', value)
+        if self._max_checked is not None and value > self._max_checked:
+            pyflame.raise_value_error('PyFlameCheckBoxGroup', 'min_checked', 'value equal to or less than max_checked', value)
+
+        self._min_checked = value
+
+    @property
+    def max_checked(self) -> int | None:
+        """
+        Max Checked
+        ===========
+
+        Get or set the most check boxes that can be checked. `None` means no maximum.
+
+        Only user clicks are limited. Check box states are not changed when this is set.
+
+        Returns
+        -------
+            int | None:
+                The most check boxes that can be checked, or `None` for no maximum.
+
+        Set
+        ---
+            `value` (int | None):
+                The most check boxes that can be checked. Must be `1` or more, and not less than `min_checked`. `None` removes the maximum.
+
+        Raises
+        ------
+            TypeError:
+                If the value is not an int or `None`.
+            ValueError:
+                If the value is less than 1 or less than `min_checked`.
+
+        Examples
+        --------
+            ```
+            # Get the maximum
+            print(check_box_group.max_checked)
+
+            # Set the maximum
+            check_box_group.max_checked = 2
+
+            # Remove the maximum
+            check_box_group.max_checked = None
+            ```
+        """
+
+        return self._max_checked
+
+    @max_checked.setter
+    def max_checked(self, value: int | None) -> None:
+        """
+        Max Checked
+        ===========
+
+        Set the most check boxes that can be checked.
+        """
+
+        # Validate Argument
+        if value is not None:
+            if not isinstance(value, int) or isinstance(value, bool):
+                pyflame.raise_type_error('PyFlameCheckBoxGroup', 'max_checked', 'int | None', value)
+            if value < 1:
+                pyflame.raise_value_error('PyFlameCheckBoxGroup', 'max_checked', 'value equal to or greater than 1', value)
+            if value < self._min_checked:
+                pyflame.raise_value_error('PyFlameCheckBoxGroup', 'max_checked', 'value equal to or greater than min_checked', value)
+
+        self._max_checked = value
+
+    @property
+    def connect_callback(self) -> Callable[..., Any] | None:
+        """
+        Connect Callback
+        ================
+
+        Get or set the function called, with no arguments, after the user changes a check box in the group. `None` disconnects it.
+
+        Returns
+        -------
+            callable | None:
+                The function called after the user changes a check box in the group.
+
+        Set
+        ---
+            `value` (callable | None):
+                The function to call after the user changes a check box in the group. `None` disconnects it.
+
+        Raises
+        ------
+            TypeError:
+                If the provided `value` is not callable or `None`.
+
+        Examples
+        --------
+            ```
+            # Get current callback
+            print(check_box_group.connect_callback)
+
+            # Set callback to a function
+            check_box_group.connect_callback = my_function
+
+            # Disconnect the callback
+            check_box_group.connect_callback = None
+            ```
+        """
+
+        return self._connect_callback
+
+    @connect_callback.setter
+    def connect_callback(self, value: Callable[..., Any] | None) -> None:
+        """
+        Connect Callback
+        ================
+
+        Set the function called after the user changes a check box in the group. `None` disconnects it.
+        """
+
+        # Validate Argument
+        if value is not None and not callable(value):
+            pyflame.raise_type_error('PyFlameCheckBoxGroup', 'connect_callback', 'callable | None', value)
+
+        self._connect_callback = value
+
+    @property
+    def checked_check_boxes(self) -> list:
+        """
+        Checked Check Boxes
+        ===================
+
+        Get the checked check boxes, in group order. Read only.
+
+        Returns
+        -------
+            list:
+                The checked PyFlameCheckBox objects.
+
+        Examples
+        --------
+            ```
+            # Get the checked check boxes
+            checked = check_box_group.checked_check_boxes
+            ```
+        """
+
+        return [check_box for check_box in self._check_boxes if check_box.isChecked()]
+
+    @property
+    def checked_text(self) -> list[str]:
+        """
+        Checked Text
+        ============
+
+        Get the text of each checked check box, in group order. Read only.
+
+        Returns
+        -------
+            list[str]:
+                The text of each checked check box.
+
+        Examples
+        --------
+            ```
+            # Get the text of the checked check boxes
+            print(check_box_group.checked_text)
+            ```
+        """
+
+        return [check_box.text for check_box in self.checked_check_boxes]
+
+    #-----------------------
+    # Methods
+    #-----------------------
+
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        """
+        Event Filter
+        ============
+
+        Ignore a user click or Space / Select key press on a check box in the group when the
+        toggle it would cause breaks `min_checked` or `max_checked`.
+
+        Args
+        ----
+            `watched` (QtCore.QObject):
+                Object the event was sent to.
+
+            `event` (QtCore.QEvent):
+                The event.
+
+        Returns
+        -------
+            bool:
+                True if the event is ignored, otherwise the result of the base class event filter.
+        """
+
+        # Only check enabled check boxes in this group
+        if watched in self._check_boxes and watched.isEnabled():
+            event_type = event.type()
+
+            # Find user input that would toggle the check box
+            is_click = (
+                event_type in (QtCore.QEvent.MouseButtonPress, QtCore.QEvent.MouseButtonDblClick) and
+                event.button() == QtCore.Qt.LeftButton
+                )
+            is_key = (
+                event_type == QtCore.QEvent.KeyPress and
+                event.key() in (QtCore.Qt.Key_Space, QtCore.Qt.Key_Select)
+                )
+
+            # Ignore the toggle if it breaks a limit
+            if is_click or is_key:
+                checked_count = len(self.checked_check_boxes)
+                if watched.isChecked() and checked_count <= self._min_checked:
+                    return True
+                if not watched.isChecked() and self._max_checked is not None and checked_count >= self._max_checked:
+                    return True
+
+        return super().eventFilter(watched, event)
+
+    def _check_box_clicked(self) -> None:
+        """
+        Check Box Clicked
+        =================
+
+        Call the group's connect function after the user changes a check box in the group.
+        """
+
+        if self._connect_callback is not None:
+            self._connect_callback()
 
 class PyFlameHorizontalLine(QtWidgets.QFrame):
     """
@@ -22977,7 +27085,7 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
     --------
         Create a blue horizontal line:
         ```
-        line = PyFlameHorizontalLine(color=Color.Blue)
+        line = PyFlameHorizontalLine(color=Color.BLUE)
         ```
 
         To set or get any property:
@@ -23043,7 +27151,7 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
             print(line.color)
 
             # Set line color
-            line.color = COLOR.GRAY
+            line.color = Color.GRAY
             ```
         """
 
@@ -23065,6 +27173,10 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
         # Set style
         self._color = value
 
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_stylesheet()
+
     @property
     def width(self) -> int:
         """
@@ -23076,7 +27188,7 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
         Returns
         -------
             `int`:
-                The current width of the line in pixels (after scaling).
+                The fixed width of the line in pixels (after scaling), or the maximum width (5000, scaled) if it expands to fit the layout.
 
         Set
         ---
@@ -23197,6 +27309,9 @@ class PyFlameHorizontalLine(QtWidgets.QFrame):
                 }}
             """)
 
+        # Let the setters update the stylesheet from now on
+        self._stylesheet_initialized = True
+
 class PyFlameVerticalLine(QtWidgets.QFrame):
     """
     PyFlameVerticalLine
@@ -23244,7 +27359,7 @@ class PyFlameVerticalLine(QtWidgets.QFrame):
     --------
         Create a blue vertical line:
         ```
-        line = PyFlameVerticalLine(color=Color.Blue)
+        line = PyFlameVerticalLine(color=Color.BLUE)
         ```
 
         To set or get any property:
@@ -23310,7 +27425,7 @@ class PyFlameVerticalLine(QtWidgets.QFrame):
             print(line.color)
 
             # Set line color
-            line.color = COLOR.GRAY
+            line.color = Color.GRAY
             ```
         """
 
@@ -23331,6 +27446,10 @@ class PyFlameVerticalLine(QtWidgets.QFrame):
 
         # Set style
         self._color = value
+
+        # Update the stylesheet once the widget is built (__init__ applies it itself)
+        if getattr(self, '_stylesheet_initialized', False):
+            self._set_style_sheet()
 
     @property
     def width(self) -> int:
@@ -23401,7 +27520,7 @@ class PyFlameVerticalLine(QtWidgets.QFrame):
         Returns
         -------
             `int`:
-                The current height of the line in pixels (after scaling).
+                The fixed height of the line in pixels (after scaling), or the maximum height (5000, scaled) if it expands to fit the layout.
 
         Set
         ---
@@ -23463,6 +27582,9 @@ class PyFlameVerticalLine(QtWidgets.QFrame):
                 min-width: {self.width}px;
                 }}
             """)
+
+        # Let the setters update the stylesheet from now on
+        self._stylesheet_initialized = True
 
 # ==============================================================================
 # [PyFlame Layout Classes]
@@ -23539,10 +27661,10 @@ class PyFlameGridLayout(QtWidgets.QGridLayout):
             Keys are row indices (0-based), and values are heights in pixels.
             (Default: `{}`)
 
-    Raises
-    ------
-        TypeError:
-            If any argument is not of the expected type.
+    Notes
+    -----
+        The grid values above are plain attributes: they are not type checked, and changing them after
+        the layout is created does not change the grid. Widgets are added with Qt's own `addWidget`.
 
     Example
     -------
@@ -24073,7 +28195,7 @@ class PyFlameHBoxLayout(QtWidgets.QHBoxLayout):
 
         # Validate Argument types
         if not isinstance(spacing, int):
-            pyflame.raise_type_error('PyFlameHBoxLayout.setSpacing', 'spacing', 'int', spacing)
+            pyflame.raise_type_error('PyFlameHBoxLayout.addSpacing', 'spacing', 'int', spacing)
 
         # Add Spacing
         super().addSpacing(pyflame.gui_resize(spacing))
@@ -24208,7 +28330,7 @@ class PyFlameVBoxLayout(QtWidgets.QVBoxLayout):
 
         # Validate Argument types
         if not isinstance(spacing, int):
-            pyflame.raise_type_error('PyFlameVBoxLayout', 'setSpacing', 'int', spacing)
+            pyflame.raise_type_error('PyFlameVBoxLayout.setSpacing', 'spacing', 'int', spacing)
 
         # Set Spacing
         super().setSpacing(pyflame.gui_resize(spacing))
@@ -24324,7 +28446,7 @@ class PyFlameWindow(QtWidgets.QDialog):
 
     Creates a custom QT window with a colored bar on the left side of the window.
 
-    The windows uses a grid layout to place widgets. See example below.
+    The window uses a grid layout to place widgets. See example below.
 
     Setting a parent window is required to avoid window layering problems in linux.
 
@@ -24337,15 +28459,15 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         `title` (str):
             Text displayed in top left corner of window.
-            (Default: `Python Script`)
+            (Default: `''`)
 
         `title_style` (Style):
             Style of title text. Use `Style` Enum to set style.
-            (Default: `Style.BACKGROUND`)
+            (Default: `Style.BACKGROUND_THIN`)
 
             Style Options
                 `Style.BACKGROUND`: For background style.
-                `Style.BACKGROUND_THIN`: For background style with thin border.
+                `Style.BACKGROUND_THIN`: For background style with thin font.
                 `Style.NORMAL`: For normal style.
                 `Style.UNDERLINE`: For underline style.
 
@@ -24407,19 +28529,19 @@ class PyFlameWindow(QtWidgets.QDialog):
             (Default: `None`)
 
         `grid_layout_columns` (int):
-            Number of columns in grid layout. Only used if `grid_layout` is `True`.
+            Number of columns in grid layout.
             (Default: `4`)
 
         `grid_layout_rows` (int):
-            Number of rows in grid layout. Only used if `grid_layout` is `True`.
+            Number of rows in grid layout.
             (Default: `3`)
 
         `grid_layout_column_width` (int):
-            Width of columns in grid layout. Only used if `grid_layout` is `True`.
+            Width of columns in grid layout.
             (Default: `150`)
 
         `grid_layout_row_height` (int):
-            Height of rows in grid layout. Only used if `grid_layout` is `True`.
+            Height of rows in grid layout.
             (Default: `28`)
 
         `grid_layout_adjust_column_widths` (dict, optional):
@@ -24435,15 +28557,21 @@ class PyFlameWindow(QtWidgets.QDialog):
             and bottom; or pass a tuple of four ints for (left, top, right, bottom). Values are scaled by `pyflame.gui_resize()`.
             (Default: `15`)
 
+        `modal` (bool):
+            When set to `True`, the window blocks its parent window and stays above it until the window is closed.
+            Only takes effect when `parent` is given and showing when the window is created. While the window is open,
+            every other PyFlame window that is open is blocked too. Can't be changed after the window is created.
+            (Default: `False`)
+
     Properties
     ----------
         `title` (str):
             Get or set the title of the window.
-            (Default: `Python Script`)
+            (Default: `''`)
 
         `title_style` (Style):
             Get or set the style of the title.
-            (Default: `Style.BACKGROUND`)
+            (Default: `Style.BACKGROUND_THIN`)
 
         `title_align` (Align):
             Get or set the alignment of the title.
@@ -24482,27 +28610,27 @@ class PyFlameWindow(QtWidgets.QDialog):
             (Default: `None`)
 
         `grid_layout_columns` (int):
-            Get or set the number of columns in the grid layout.
+            Get or set the number of columns in the grid layout. Setting it after the window is created has no effect.
             (Default: `4`)
 
         `grid_layout_rows` (int):
-            Get or set the number of rows in the grid layout.
+            Get or set the number of rows in the grid layout. Setting it after the window is created has no effect.
             (Default: `3`)
 
         `grid_layout_column_width` (int):
-            Get or set the width of the columns in the grid layout.
+            Get or set the width of the columns in the grid layout. Setting it after the window is created has no effect.
             (Default: `150`)
 
         `grid_layout_row_height` (int):
-            Get or set the height of the rows in the grid layout.
+            Get or set the height of the rows in the grid layout. Setting it after the window is created has no effect.
             (Default: `28`)
 
         `grid_layout_adjust_column_widths` (dict):
-            Get or set the dictionary of column widths to adjust.
+            Get or set the dictionary of column widths to adjust. Setting it after the window is created has no effect.
             (Default: `{}`)
 
         `grid_layout_adjust_row_heights` (dict):
-            Get or set the dictionary of row heights to adjust.
+            Get or set the dictionary of row heights to adjust. Setting it after the window is created has no effect.
             (Default: `{}`)
 
         `window_margins` (int | tuple[int, int, int, int]):
@@ -24521,7 +28649,8 @@ class PyFlameWindow(QtWidgets.QDialog):
         To create a new window with some widgets:
         ```
         window = PyFlameWindow(
-            title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION},
+            parent=None,
+            title=f'{SCRIPT_NAME} <small>{SCRIPT_VERSION}',
             return_pressed=confirm,
             escape_pressed=cancel,
             grid_layout_columns=6,
@@ -24548,10 +28677,19 @@ class PyFlameWindow(QtWidgets.QDialog):
         ```
         window.title = 'New Title'
         ```
+
+        To create a window that blocks its parent window until it is closed:
+        ```
+        child_window = PyFlameWindow(
+            title='Child Window',
+            parent=window,
+            modal=True,
+            )
+        ```
     """
 
     def __init__(self: 'PyFlameWindow',
-                 parent: QtWidgets.QWidget | None,
+                 parent: PyFlameWindow | None,
                  title: str='',
                  title_style: Style=Style.BACKGROUND_THIN,
                  title_align: Align=Align.LEFT,
@@ -24570,11 +28708,16 @@ class PyFlameWindow(QtWidgets.QDialog):
                  grid_layout_adjust_column_widths: dict[int, int]={},
                  grid_layout_adjust_row_heights: dict[int, int]={},
                  window_margins: int | tuple[int, int, int, int]=15,
+                 modal: bool=False,
                  ) -> None:
 
         # Validate Parent
         if not isinstance(parent, (type(None), PyFlameWindow)):
             pyflame.raise_type_error('PyFlameWindow', 'parent', 'PyFlameWindow | None', parent)
+
+        # Validate Modal
+        if not isinstance(modal, bool):
+            pyflame.raise_type_error('PyFlameWindow', 'modal', 'bool', modal)
 
         super().__init__(parent)
 
@@ -24583,6 +28726,9 @@ class PyFlameWindow(QtWidgets.QDialog):
 
         # Window Title Label
         self.title_label = PyFlameLabel()
+
+        # Let clicks on the title pass through to the window so it can be dragged from the title area
+        self.title_label.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 
         # Window message bar
         self.message_bar_label = PyFlameLabel(
@@ -24622,6 +28768,9 @@ class PyFlameWindow(QtWidgets.QDialog):
         # Set Window Flags
         self.setWindowFlags(QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
+        # Keep the window showing on macOS when Flame is not the active application. Must be set before the window is first shown. Does nothing on Linux.
+        self.setAttribute(QtCore.Qt.WA_MacAlwaysShowToolWindow)
 
         # Return/Escape Key Events
         self.return_pressed = return_pressed
@@ -24665,6 +28814,11 @@ class PyFlameWindow(QtWidgets.QDialog):
             )
 
         self.center_layout.addLayout(self.grid_layout, 0, 0)
+
+        # Block the parent window and stay above it until closed. Must be set before the window is first shown.
+        # Only when the parent is showing, so a window given a hidden or closed parent works as before.
+        if modal and parent is not None and parent.isVisible():
+            self.setWindowModality(QtCore.Qt.ApplicationModal)
 
         # Show Window
         self.show()
@@ -24722,7 +28876,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def line_color(self, value: Color) -> None:
         """
         Line Color
-        ===========
+        ==========
 
         Set the color of the line in the window.
         """
@@ -24773,7 +28927,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def title(self, value: str) -> None:
         """
         Title
-        ====
+        =====
 
         Set the title of the window.
         """
@@ -25271,7 +29425,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         Grid Layout Columns
         ===================
 
-        Get or set the number of columns in the grid layout.
+        Get or set the number of columns in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25320,9 +29474,9 @@ class PyFlameWindow(QtWidgets.QDialog):
     def grid_layout_rows(self) -> int:
         """
         Grid Layout Rows
-        =================
+        ================
 
-        Get or set the number of rows in the grid layout.
+        Get or set the number of rows in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25356,7 +29510,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def grid_layout_rows(self, value: int) -> None:
         """
         Grid Layout Rows
-        =================
+        ================
 
         Set the number of rows in the grid layout.
         """
@@ -25373,7 +29527,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         Grid Layout Column Width
         ========================
 
-        Get or set the width of the columns in the grid layout.
+        Get or set the width of the columns in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25424,7 +29578,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         Grid Layout Row Height
         ======================
 
-        Get or set the height of the rows in the grid layout.
+        Get or set the height of the rows in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25475,7 +29629,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         Grid Layout Adjust Column Widths
         ================================
 
-        Get or set the widths of the columns in the grid layout.
+        Get or set the widths of the columns in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25509,7 +29663,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def grid_layout_adjust_column_widths(self, value: dict[int, int]) -> None:
         """
         Grid Layout Adjust Column Widths
-        ===============================
+        ================================
 
         Set the widths of the columns in the grid layout.
         """
@@ -25526,7 +29680,7 @@ class PyFlameWindow(QtWidgets.QDialog):
         Grid Layout Adjust Row Heights
         ==============================
 
-        Get or set the heights of the rows in the grid layout.
+        Get or set the heights of the rows in the grid layout. Setting it after the window is created has no effect.
 
         Returns
         -------
@@ -25575,7 +29729,7 @@ class PyFlameWindow(QtWidgets.QDialog):
     def window_margins(self) -> tuple[int, int, int, int]:
         """
         Window Margins
-        =====================
+        ==============
 
         Get or set the margin in pixels around the main content area.
 
@@ -25762,16 +29916,22 @@ class PyFlameWindow(QtWidgets.QDialog):
         Adds colored line to the left edge of the window.
         """
 
-        painter = QtGui.QPainter(self)
         # Get the RGB string from parent's line_color
         rgb_str = self.line_color.value
-        # Extract RGB values using string manipulation
-        rgb_values = rgb_str.strip('rgb()').split(',')
-        r, g, b = map(int, rgb_values)
+        # Extract RGB values, plus alpha (0-1) if given: rgb(r, g, b), rgba(r, g, b, a) or rgb(r, g, b, a)
+        rgb_values = rgb_str[rgb_str.index('(') + 1:rgb_str.rindex(')')].split(',')
+        r, g, b = map(int, rgb_values[:3])
         # Create QColor with the RGB values
         color = QtGui.QColor(r, g, b)
-        painter.setPen(QtGui.QPen(color, pyflame.gui_resize(2)))
-        painter.drawLine(0, 0, 0, 5000)
+        if len(rgb_values) > 3:
+            color.setAlphaF(float(rgb_values[3]))
+        # Create painter after the color is parsed and always end it, so it is never left active
+        painter = QtGui.QPainter(self)
+        try:
+            painter.setPen(QtGui.QPen(color, pyflame.gui_resize(2)))
+            painter.drawLine(0, 0, 0, 5000)
+        finally:
+            painter.end()
 
 # ==============================================================================
 # [PyFlame Window Classes]
@@ -25797,6 +29957,7 @@ class PyFlameOptionWindow:
     ----
         `parent` (PyFlameWindow | None):
             This window's parent window. Set to `None` if no parent window.
+            When a parent window is given and showing, this window blocks it and stays above it until closed.
 
         `message` (str):
             Text displayed in the body of the window.
@@ -25887,7 +30048,7 @@ class PyFlameOptionWindow:
 
         `selected` (str):
             Get the text of the pressed button. Empty string if the window was closed
-            without a button press. Read-only.
+            without a button press.
 
         `confirmed` (bool):
             Get or set the confirmed status of the window.
@@ -26023,6 +30184,7 @@ class PyFlameOptionWindow:
             grid_layout_column_width=110,
             message_bar=message_bar,
             parent=parent,
+            modal=True,
             )
 
         self.option_window_text_edit = PyFlameTextEdit(
@@ -26299,7 +30461,7 @@ class PyFlameOptionWindow:
 
         Returns
         -------
-            `Color | None`:
+            `Color`:
                 Option window line color.
 
         Set
@@ -26452,8 +30614,8 @@ class PyFlameOptionWindow:
 
     def _message_print(self, message: str, title: str, duration: int):
         """
-        Print
-        =====
+        Message Print
+        =============
 
         Print message to the terminal/shell and Flame's console area.
         """
@@ -26521,6 +30683,7 @@ class PyFlameInputDialog:
     ----
         `parent` (PyFlameWindow | None):
             This windows parent window. Set to `None` if no parent window.
+            When a parent window is given and showing, this window blocks it and stays above it until closed.
 
         `text` (str, optional):
             Input entry text.
@@ -26536,7 +30699,7 @@ class PyFlameInputDialog:
 
         `title_style` (Style, optional):
             The style of the title text using the Style Enum.
-            (Default: `Style.BACKGROUND`)
+            (Default: `Style.BACKGROUND_THIN`)
 
         `title_align` (Align, optional):
             The alignment of the title text using the Align Enum.
@@ -26560,7 +30723,7 @@ class PyFlameInputDialog:
             Get or set text in message bar.
             (Default: `""`)
 
-        'label_text` (str):
+        `label_text` (str):
             Get or set entry label text. Displayed above entry.
             (Default: `"Enter New Value"`)
 
@@ -26607,7 +30770,7 @@ class PyFlameInputDialog:
 
         # Validate Parent
         if not isinstance(parent, (type(None), PyFlameWindow)):
-            pyflame.raise_type_error('PyFlameInputWindow', 'parent', 'PyFlameWindow | None', parent)
+            pyflame.raise_type_error('PyFlameInputDialog', 'parent', 'PyFlameWindow | None', parent)
 
         # Print to Terminal/Shell
         print(
@@ -26630,6 +30793,7 @@ class PyFlameInputDialog:
             grid_layout_column_width=110,
             message_bar=message_bar,
             parent=parent,
+            modal=True,
             )
 
         # Label
@@ -26657,6 +30821,9 @@ class PyFlameInputDialog:
         self.input_window.grid_layout.addWidget(self.ok_button, 3, 3)
 
         #-------------------------------------
+
+        # Input text stays None unless Ok is pressed
+        self._input_text = None
 
         # Set Properties
         self.text = text
@@ -26701,10 +30868,9 @@ class PyFlameInputDialog:
         Examples
         --------
             ```
-            dialog = SimpleInputDialog()
-            dialog.text = 'Default Value'  # Set initial text
+            dialog = PyFlameInputDialog(parent=None, text='Default Value')  # Show dialog with initial text
 
-            result = dialog.text           # Show dialog and get input
+            result = dialog.text           # Get input
             if result is not None:
                 print('User input:', result)
             else:
@@ -26770,7 +30936,7 @@ class PyFlameInputDialog:
         """
 
         if not isinstance(value, str):
-            pyflame.raise_type_error('PyFlameInputWindow', 'message_bar_text', 'str', value)
+            pyflame.raise_type_error('PyFlameInputDialog', 'message_bar_text', 'str', value)
 
         # Set Message Bar Text
         self.input_window.message_bar_text = value
@@ -26805,10 +30971,10 @@ class PyFlameInputDialog:
         --------
             ```
             # Get Input Dialog input label Text
-            print(window._label_text)
+            print(window.label_text)
 
-            # Set window title
-            window._label_text = 'Enter Input'
+            # Set Input Dialog input label Text
+            window.label_text = 'Enter Input'
             ```
         """
 
@@ -26886,7 +31052,7 @@ class PyFlameInputDialog:
         Title Style
         ===========
 
-        Get or set the style to be used for the Input Dialog window tite.
+        Get or set the style to be used for the Input Dialog window title.
 
         Must be a Style Enum.
 
@@ -26913,6 +31079,7 @@ class PyFlameInputDialog:
 
             # Set title style
             window.title_style = Style.BACKGROUND_THIN
+            ```
         """
 
         return self.input_window.title_style
@@ -27031,7 +31198,7 @@ class PyFlameInputDialog:
         if not isinstance(value, Color):
             pyflame.raise_type_error('PyFlameInputDialog', 'line_color', 'Color Enum', value)
 
-        self.input_window.line_color
+        self.input_window.line_color = value
 
     #-------------------------------------
     # [Internal Methods]
@@ -27042,7 +31209,7 @@ class PyFlameInputDialog:
         Confirm
         =======
 
-        Called when the user presses OK. Stores the input and sets `self.confirm = True`.
+        Called when the user presses OK. Stores the input in `text` and closes the window.
         """
 
         self._input_text = self.input_entry.text
@@ -27053,7 +31220,7 @@ class PyFlameInputDialog:
         Cancel
         ======
 
-        Called when the user presses Cancel. Sets `self.confirm = False`.
+        Called when the user presses Cancel. Sets `text` to `None` and closes the window.
         """
 
         self._input_text = None
@@ -27074,6 +31241,7 @@ class PyFlameMessageWindow:
     ----
         `parent` (PyFlameWindow | None):
             This windows parent window. Set to `None` if no parent window.
+            When a parent window is given and showing, this window blocks it and stays above it until closed.
 
         `message` (str):
             Text displayed in the body of the window.
@@ -27094,7 +31262,7 @@ class PyFlameMessageWindow:
                     Buttons: Ok
                 `MessageType.CONFIRM`
                     Title: SCRIPT_NAME: Confirm Operation
-                    Window lines: Grey
+                    Window lines: Blue
                     Buttons: Confirm, Cancel
                     Returns bool value.
                 `MessageType.ERROR`
@@ -27124,16 +31292,16 @@ class PyFlameMessageWindow:
 
         `title_align` (Align, optional):
             Alignment of title text. Providing a value will override the default alignment for the `title_style`.
-            (Default: `Align.LEFT`)
+            (Default: `None`)
 
             Align Options
                 `Align.LEFT`: Left aligned.
                 `Align.CENTER`: Centered.
                 `Align.RIGHT`: Right aligned.
 
-        `line_color` (WindowBarColor):
+        `line_color` (Color | None, optional):
             Color of bar on left side of window. Providing a value will override the default color for the `message_type`.
-            (Default: `Color.BLUE`)
+            (Default: `None`)
 
             Color Options
                 `Color.GRAY`: Gray line.
@@ -27162,19 +31330,19 @@ class PyFlameMessageWindow:
             (Default: `MessageType.INFO`)
 
         `title` (str):
-            Get or set the title of the progress window.
+            Get or set the title of the message window.
             (Default: `""`)
 
         `title_style` (Style):
-            Get or set the title style of the progress window.
+            Get or set the title style of the message window.
             (Default: `Style.BACKGROUND_THIN`)
 
         `title_align` (Align):
-            Get or set the title alignment of the progress window.
+            Get or set the title alignment of the message window.
             (Default: `Align.LEFT`)
 
         `line_color` (Color):
-            Get or set the line color of the progress window.
+            Get or set the line color of the message window.
             (Default: `Color.BLUE`)
 
         `message_bar_text` (str):
@@ -27258,6 +31426,7 @@ class PyFlameMessageWindow:
             grid_layout_column_width=110,
             message_bar=message_bar,
             parent=parent,
+            modal=True,
             )
 
         self.message_window_text_edit = PyFlameTextEdit(
@@ -27348,10 +31517,10 @@ class PyFlameMessageWindow:
         --------
             ```
             # Get message text
-            print(message_window.title)
+            print(message_window.message)
 
             # Set message text
-            message_window.title = 'Message Window'
+            message_window.message = 'Message text'
             ```
         """
 
@@ -27410,7 +31579,7 @@ class PyFlameMessageWindow:
             # Get message type
             print(message_window.message_type)
 
-            # Set message text
+            # Set message type
             message_window.message_type = MessageType.CONFIRM
             ```
         """
@@ -27462,7 +31631,7 @@ class PyFlameMessageWindow:
             # Get title text
             print(message_window.title)
 
-            # Set title style
+            # Set title text
             message_window.title = 'Message Window'
             ```
         """
@@ -27502,7 +31671,7 @@ class PyFlameMessageWindow:
     def title_style(self) -> Style:
         """
         Title Style
-        ============
+        ===========
 
         Get or set the message window title style.
 
@@ -27538,7 +31707,7 @@ class PyFlameMessageWindow:
     def title_style(self, value: Style) -> None:
         """
         Title Style
-        ============
+        ===========
 
         Set the message window title style.
         """
@@ -27553,7 +31722,7 @@ class PyFlameMessageWindow:
     def title_align(self) -> Align | None:
         """
         Title Align
-        ============
+        ===========
 
         Get or set the message window title alignment.
 
@@ -27589,7 +31758,7 @@ class PyFlameMessageWindow:
     def title_align(self, value: Align | None) -> None:
         """
         Title Align
-        ============
+        ===========
 
         Set the message window title alignment.
         """
@@ -27615,7 +31784,7 @@ class PyFlameMessageWindow:
 
         Returns
         -------
-            `Color | None`:
+            `Color`:
                 Message window line color.
 
         Set
@@ -27761,8 +31930,8 @@ class PyFlameMessageWindow:
     @duration.setter
     def duration(self, value: int) -> None:
         """
-        Title Style
-        ============
+        Duration
+        ========
 
         Set the duration of the message in the Flame Message Area.
         """
@@ -27802,8 +31971,8 @@ class PyFlameMessageWindow:
 
     def _message_print(self, message: str, title: str, duration: int):
         """
-        Print
-        =====
+        Message Print
+        =============
 
         Print message to the terminal/shell and Flame's console area.
         """
@@ -27895,12 +32064,13 @@ class PyFlamePasswordWindow:
     ----
         `parent` (PyFlameWindow | None):
             This windows parent window. Set to `None` if no parent window.
+            When a parent window is given and showing, this window blocks it and stays above it until closed.
 
         `text` (str):
             The text to be displayed in the window.
             The default text of either `'Enter system password'` or `'Enter username and password'` will be used based
             on `user_name_prompt` argument.
-            (Default: `'Enter system password'`)
+            (Default: `'Enter System Password'`)
 
         `user_name_prompt` (bool):
             If set to True, the window will prompt for both username and password.
@@ -27908,7 +32078,7 @@ class PyFlamePasswordWindow:
 
         `title` (str, optional):
             The title text shown in the top left of the window.
-            The default title of either `'Enter Password'` or `'Enter Username and Password'` will be used based on
+            The default title of either `'Enter System Password'` or `'Enter Username and Password'` will be used based on
             `user_name_prompt` argument.
             (Default: `'Enter System Password'`)
 
@@ -27969,7 +32139,7 @@ class PyFlamePasswordWindow:
     Private Methods
     ---------------
         `_test_password` -> str | None:
-            Test the password value as sudo and close the window. If the password is incorrect,
+            Test the password value as sudo. If the password is incorrect,
             the user will be prompted to try again.
 
         `_confirm` -> None:
@@ -27977,13 +32147,13 @@ class PyFlamePasswordWindow:
             the password will not be tested as sudo.
 
         `_cancel` -> None:
-            Close the window.
+            Close the window. With `user_name_prompt`, `username` and `password` are set to `None`.
 
     Examples
     --------
         For a password prompt only:
         ```
-        password_window = PyFlamePasswordWindow()
+        password_window = PyFlamePasswordWindow(parent=None)
 
         # Get password
         password = password_window.password
@@ -27993,6 +32163,7 @@ class PyFlamePasswordWindow:
         ```
         password_window = PyFlamePasswordWindow(
             user_name_prompt=True,
+            parent=None,
             )
 
         # Get username and password
@@ -28048,6 +32219,7 @@ class PyFlamePasswordWindow:
             grid_layout_column_width=110,
             message_bar=message_bar,
             parent=parent,
+            modal=True,
             )
 
         self.password_label = PyFlameLabel(
@@ -28202,7 +32374,7 @@ class PyFlamePasswordWindow:
             # Get title text
             print(password_window.title)
 
-            # Set title style
+            # Set title text
             password_window.title = 'Password Window'
             ```
         """
@@ -28228,7 +32400,7 @@ class PyFlamePasswordWindow:
     def title_style(self) -> Style:
         """
         Title Style
-        ============
+        ===========
 
         Get or set the Password window title style.
 
@@ -28264,7 +32436,7 @@ class PyFlamePasswordWindow:
     def title_style(self, value: Style) -> None:
         """
         Title Style
-        ============
+        ===========
 
         Set the Password window title style.
         """
@@ -28279,7 +32451,7 @@ class PyFlamePasswordWindow:
     def title_align(self) -> Align | None:
         """
         Title Align
-        ============
+        ===========
 
         Get or set the Password window title alignment.
 
@@ -28315,7 +32487,7 @@ class PyFlamePasswordWindow:
     def title_align(self, value: Align | None) -> None:
         """
         Title Align
-        ============
+        ===========
 
         Set the Password window title alignment.
         """
@@ -28438,7 +32610,7 @@ class PyFlamePasswordWindow:
 
         Returns
         -------
-            str:
+            str | None:
                 Password.
 
         Set
@@ -28489,7 +32661,7 @@ class PyFlamePasswordWindow:
 
         Returns
         -------
-            str:
+            str | None:
                 Username
 
         Set
@@ -28539,14 +32711,15 @@ class PyFlamePasswordWindow:
         Test Password
         =============
 
-        Test the password value and close the window. If the password is incorrect,
+        Test the password value as sudo. If the password is incorrect,
         the user will be prompted to try again.
         """
 
         password = self.password_entry.text
 
         if password:
-            command = ['sudo', '-S', 'echo', 'Testing sudo password']
+            # -k ignores cached sudo credentials so the typed password is always checked
+            command = ['sudo', '-k', '-S', 'echo', 'Testing sudo password']
             try:
                 # Run the command with sudo and pass the password through stdin
                 process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -28589,6 +32762,7 @@ class PyFlamePasswordWindow:
                 return
             self.username = self.user_name_entry.text
             self.password = self.password_entry.text
+            self.password_window.close()
         else:
             if not self.password_entry.text or self.password_entry.text == '':
                 PyFlameMessageWindow(
@@ -28615,12 +32789,15 @@ class PyFlamePasswordWindow:
         Cancel
         ======
 
-        Close window and print message to console.
+        Close window and print message to console. With `user_name_prompt`, `username` and `password` are set to `None`.
         """
 
         self.password_window.close()
 
         if self.user_name_prompt:
+            # Don't return credentials from a cancelled window
+            self.username = None
+            self.password = None
             pyflame.print('Username and Password Entry Cancelled', text_color=TextColor.RED)
         else:
             pyflame.print('Password Entry Cancelled', text_color=TextColor.RED)
@@ -28644,6 +32821,10 @@ class PyFlameProgressWindow:
         `total_tasks` (int):
             Total number of operations to be completed.
             (Default: `100`)
+
+        `task_progress_message` (str, optional):
+            Text shown in the window for each task. Placeholders: `{task}`, `{processing_task}`, `{total_tasks}`, `{progress}`.
+            (Default: `'{task}: [{processing_task} of {total_tasks}] ({progress:.1f}%)'`)
 
         `title` (str, optional):
             text shown in top left of window ie. Rendering...
@@ -28669,7 +32850,7 @@ class PyFlameProgressWindow:
                 `Align.CENTER`: Centered.
                 `Align.RIGHT`: Right aligned.
 
-        `line_color` (WindowBarColor):
+        `line_color` (Color, optional):
             Color of bar on left side of window.
             (Default: `Color.BLUE`)
 
@@ -28702,7 +32883,7 @@ class PyFlameProgressWindow:
         `current_task` (int):
             Get or set the number of the current task being processed.
             Updating this value will update the progress bar and the text in the progress window.
-            (Default: `1`)
+            (Default: `0`)
 
         `title` (str):
             Get or set the title of the progress window.
@@ -28748,7 +32929,7 @@ class PyFlameProgressWindow:
             )
         ```
 
-        To create progress bar window with custom progress messagge:
+        To create progress bar window with custom progress message:
         ```
         progress_window = PyFlameProgressWindow(
             total_tasks=10,
@@ -28762,9 +32943,9 @@ class PyFlameProgressWindow:
         progress_window.current_task = 2
         ```
 
-        To enable or disable done button:
+        To enable done button:
         ```
-        progress_window.tasks_complete = True
+        progress_window.enable_done_button()
         ```
 
         To set the title text:
@@ -28799,7 +32980,7 @@ class PyFlameProgressWindow:
         if not isinstance(parent, (type(None), PyFlameWindow)):
             pyflame.raise_type_error('PyFlameProgressWindow', 'parent', 'PyFlameWindow | None', parent)
         if not isinstance(task_progress_message, str):
-            pyflame.raise_type_error('PyFlameProgressWindow', 'task_progress_message', 'str', parent)
+            pyflame.raise_type_error('PyFlameProgressWindow', 'task_progress_message', 'str', task_progress_message)
 
         print(
             f'{TextColor.BLUE.value}' + # Set text color
@@ -28870,7 +33051,7 @@ class PyFlameProgressWindow:
     @property
     def text(self) -> str:
         """
-        Task
+        Text
         ====
 
         Get or set text in progress window.
@@ -29083,14 +33264,14 @@ class PyFlameProgressWindow:
         # Update Current Task
         self._current_task = value
 
-        # Update Progress Text
-        self.text_edit.text = self.task_progress_message.format(task=self.task, processing_task=value, total_tasks=self.total_tasks, progress=self.progress)
-
-        # Update Progress Text
+        # Update Progress Percentage
         if value > 0:
             self.progress = (value / self.total_tasks) * 100
         else:
             self.progress = value
+
+        # Update Progress Text
+        self.text_edit.text = self.task_progress_message.format(task=self.task, processing_task=value, total_tasks=self.total_tasks, progress=self.progress)
 
         # Pause for UI update
         pyflame.pause()
@@ -29124,7 +33305,7 @@ class PyFlameProgressWindow:
             # Get title text
             print(progress_window.title)
 
-            # Set title style
+            # Set title text
             progress_window.title = 'Progress Window'
             ```
         """
@@ -29150,7 +33331,7 @@ class PyFlameProgressWindow:
     def title_style(self) -> Style:
         """
         Title Style
-        ============
+        ===========
 
         Get or set the Progress Window title style.
 
@@ -29186,7 +33367,7 @@ class PyFlameProgressWindow:
     def title_style(self, value: Style) -> None:
         """
         Title Style
-        ============
+        ===========
 
         Set the Progress Window title style.
         """
@@ -29201,7 +33382,7 @@ class PyFlameProgressWindow:
     def title_align(self) -> Align | None:
         """
         Title Align
-        ============
+        ===========
 
         Get or set the Progress Window title alignment.
 
@@ -29237,7 +33418,7 @@ class PyFlameProgressWindow:
     def title_align(self, value: Align | None) -> None:
         """
         Title Align
-        ============
+        ===========
 
         Set the Progress Window title alignment.
         """
@@ -29446,3 +33627,634 @@ class PyFlameProgressWindow:
 
         if done_button_enabled:
             self.enable_done_button()
+
+class PyFlameHelpWindow(QtCore.QObject):
+    """
+    PyFlameHelpWindow
+    =================
+
+    Custom QT Flame Help Window.
+
+    Shows a Markdown file, such as a script's README.md, fully rendered: headings, bold text,
+    `code`, lists, tables and images. Images wider than the text area are scaled down to fit it.
+    A link to a heading in the same file scrolls to that heading, and http, https and mailto
+    links open in the web browser. Other links do nothing.
+
+    The window is not modal, so it can stay open beside other windows. Done, Return or Escape
+    close it.
+
+    If `script_url` is given, a Logik Portal button that opens it in the web browser is shown at
+    the bottom left of the window once a check in the background has reached the web address.
+    Without a connection the button never appears. Opening the window never waits for the check.
+
+    If the Markdown file can't be read, an error message is shown instead of the window.
+
+    The window stays open without a reference being kept to it. Keep one anyway to close it or
+    bring it to the front later.
+
+    Args
+    ----
+        `readme_path` (str):
+            Path of the Markdown file to show. Image paths in it are relative to the folder the
+            file is in.
+
+        `script_url` (str | None, optional):
+            Web address of the script on the Logik Portal. No Logik Portal button if `None` or empty.
+            (Default: `None`)
+
+        `title` (str, optional):
+            Window title.
+            (Default: `'Help'`)
+
+        `parent` (PyFlameWindow | None, optional):
+            This window's parent window. Set to `None` if no parent window.
+            (Default: `None`)
+
+    Properties
+    ----------
+        `window` (PyFlameWindow | None):
+            The help window. `None` if the Markdown file could not be read.
+
+        `text_edit` (PyFlameTextEdit | None):
+            Text edit showing the rendered Markdown. `None` if the Markdown file could not be read.
+
+    Methods
+    -------
+        `is_open()`:
+            Returns True if the help window is showing.
+
+        `show()`:
+            Show the help window and bring it to the front. Doesn't take keyboard focus.
+
+        `close()`:
+            Close the help window.
+
+    Examples
+    --------
+        To show a script's README.md:
+        ```
+        self.help_window = PyFlameHelpWindow(
+            readme_path=os.path.join(SCRIPT_PATH, 'README.md'),
+            script_url='https://logik-portal.com/scripts/script_name',
+            title=f'Script Name Help <small>{SCRIPT_VERSION}</small>',
+            parent=self.setup_window,
+            )
+        ```
+
+        To bring an open help window to the front instead of opening another:
+        ```
+        if self.help_window.is_open():
+            self.help_window.show()
+        ```
+    """
+
+    # Result of the connection check, sent from the check's thread to the UI thread
+    connection_checked = QtCore.Signal(bool)
+
+    # Help windows that are open. Keeps each one from being deleted while it is open, even
+    # if the caller doesn't keep a reference to it
+    _open_windows = set()
+
+    def __init__(self: 'PyFlameHelpWindow',
+                 readme_path: str,
+                 script_url: str | None=None,
+                 title: str='Help',
+                 parent: PyFlameWindow | None=None,
+                 ) -> None:
+
+        super().__init__()
+
+        # Validate Arguments
+        if not isinstance(readme_path, str):
+            pyflame.raise_type_error('PyFlameHelpWindow', 'readme_path', 'str', readme_path)
+        if not isinstance(script_url, (type(None), str)):
+            pyflame.raise_type_error('PyFlameHelpWindow', 'script_url', 'str | None', script_url)
+        if not isinstance(title, str):
+            pyflame.raise_type_error('PyFlameHelpWindow', 'title', 'str', title)
+        if not isinstance(parent, (type(None), PyFlameWindow)):
+            pyflame.raise_type_error('PyFlameHelpWindow', 'parent', 'PyFlameWindow | None', parent)
+
+        self.readme_path = readme_path
+        self.script_url = script_url.strip() if script_url else ''
+        self.window = None
+        self.text_edit = None
+        self.logik_portal_button = None
+
+        # Link under the cursor when the mouse button was pressed
+        self._pressed_link = ''
+
+        # Read the Markdown file. Without it there is nothing to show
+        try:
+            with open(readme_path, 'r', encoding='utf-8') as readme_file:
+                markdown_text = readme_file.read()
+        except Exception as e:
+            PyFlameMessageWindow(
+                message=f'The help file could not be found or read.\n\n{readme_path}\n\n{e}',
+                message_type=MessageType.ERROR,
+                parent=parent,
+                )
+
+            return
+
+        #-------------------------------------
+        # [Build Help Window]
+        #-------------------------------------
+
+        self.window = PyFlameWindow(
+            title=title,
+            return_pressed=self.close,
+            escape_pressed=self.close,
+            grid_layout_columns=7,
+            grid_layout_rows=3,
+            grid_layout_adjust_row_heights={0: 800},
+            message_bar=False,
+            parent=parent,
+            )
+
+        self.text_edit = PyFlameTextEdit(
+            text='',
+            text_type=TextType.MARKDOWN,
+            text_style=TextStyle.READ_ONLY_SELECTABLE,
+            )
+
+        # Scroll bar always shown, so the text width doesn't change once the images are fitted to it
+        self.text_edit.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+
+        # Image paths in the Markdown are relative to the folder of the Markdown file
+        readme_folder = os.path.dirname(os.path.abspath(readme_path))
+        self.text_edit.document().setBaseUrl(QtCore.QUrl.fromLocalFile(readme_folder + os.sep))
+
+        self.done_button = PyFlameButton(
+            text='Done',
+            connect=self.close,
+            color=Color.BLUE,
+            )
+
+        if self.script_url:
+            self.logik_portal_button = PyFlameButton(
+                text='Logik Portal',
+                connect=self._open_script_url,
+                )
+
+        #-------------------------------------
+        # [Window Layout]
+        #-------------------------------------
+
+        self.window.grid_layout.addWidget(self.text_edit, 0, 0, 1, 7)
+        self.window.grid_layout.addWidget(self.done_button, 2, 6)
+
+        # The Logik Portal button stays hidden until the connection check finds the web address
+        if self.logik_portal_button is not None:
+            self.window.grid_layout.addWidget(self.logik_portal_button, 2, 0)
+            self.logik_portal_button.hide()
+
+        # Lay out the window now, so the text width is final before the images are fitted to it
+        for widget in [self.window] + self.window.findChildren(QtWidgets.QWidget):
+            QtWidgets.QApplication.sendPostedEvents(widget)
+        self.window.grid_layout.activate()
+        self.window.layout().activate()
+
+        #-------------------------------------
+        # [Show Markdown]
+        #-------------------------------------
+
+        self.text_edit.text = markdown_text
+        self._style_headings()
+        self._style_links()
+        self._fit_images()
+
+        # Links: headings in the file scroll, web links open in the browser
+        self.text_edit.viewport().setMouseTracking(True)
+        self.text_edit.viewport().installEventFilter(self)
+
+        # Keep the window from being deleted while it is open
+        PyFlameHelpWindow._open_windows.add(self)
+        self.window.destroyed.connect(self._window_destroyed)
+
+        # Check the connection in the background, the window never waits for it
+        if self.logik_portal_button is not None:
+            self.connection_checked.connect(self._connection_checked)
+            self._start_connection_check()
+
+    #-------------------------------------
+    # [Methods]
+    #-------------------------------------
+
+    def is_open(self) -> bool:
+        """
+        Is Open
+        =======
+
+        Check if the help window is showing. Never raises.
+
+        Returns
+        -------
+            bool:
+                True if the help window is showing.
+
+        Examples
+        --------
+            ```
+            if help_window.is_open():
+                help_window.show()
+            ```
+        """
+
+        try:
+            return self.window is not None and self.window.isVisible()
+        except RuntimeError:
+            return False
+
+    def show(self) -> None:
+        """
+        Show
+        ====
+
+        Show the help window and bring it to the front. Doesn't take keyboard focus. Does
+        nothing if the window was closed.
+
+        Examples
+        --------
+            ```
+            help_window.show()
+            ```
+        """
+
+        try:
+            if self.window is not None:
+                self.window.show()
+                self.window.raise_()
+        except RuntimeError:
+            pass
+
+    def close(self) -> None:
+        """
+        Close
+        =====
+
+        Close the help window. Does nothing if it was already closed.
+
+        Examples
+        --------
+            ```
+            help_window.close()
+            ```
+        """
+
+        try:
+            if self.window is not None:
+                self.window.close()
+        except RuntimeError:
+            pass
+
+    #-------------------------------------
+    # [Markdown]
+    #-------------------------------------
+
+    def _style_headings(self) -> None:
+        """
+        Style Headings
+        ==============
+
+        Show headings at the font's normal letter widths. The text edit's own font is
+        condensed, which makes large headings look squeezed.
+        """
+
+        heading_format = QtGui.QTextCharFormat()
+        heading_format.setFontStretch(100)
+
+        block = self.text_edit.document().begin()
+        while block.isValid():
+            if block.blockFormat().headingLevel():
+                cursor = QtGui.QTextCursor(block)
+                cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+                cursor.mergeCharFormat(heading_format)
+            block = block.next()
+
+    def _style_links(self) -> None:
+        """
+        Style Links
+        ===========
+
+        Show links in a light blue, underlined, so they can be read on the dark background. Qt's
+        default link color is a dark blue. Links that are `code` keep the code color.
+        """
+
+        document = self.text_edit.document()
+
+        link_format = QtGui.QTextCharFormat()
+        link_format.setForeground(QtGui.QColor(110, 175, 235))
+        link_format.setFontUnderline(True)
+
+        link_ranges = []
+        block = document.begin()
+        while block.isValid():
+            fragments = block.begin()
+            while not fragments.atEnd():
+                fragment = fragments.fragment()
+                if fragment.isValid() and fragment.charFormat().isAnchor() and not fragment.charFormat().fontFixedPitch():
+                    link_ranges.append((fragment.position(), fragment.position() + fragment.length()))
+                fragments += 1
+            block = block.next()
+
+        for start, end in link_ranges:
+            cursor = QtGui.QTextCursor(document)
+            cursor.setPosition(start)
+            cursor.setPosition(end, QtGui.QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(link_format)
+
+    def _fit_images(self) -> None:
+        """
+        Fit Images
+        ==========
+
+        Scale down images that are wider than the text, keeping their shape. Images are scaled
+        smoothly once, at the screen's pixel ratio, and never scaled up. Images in a list are
+        fitted to the narrower width of the list.
+        """
+
+        document = self.text_edit.document()
+        pixel_ratio = self.text_edit.devicePixelRatioF() or 1.0
+        text_width = self.text_edit.viewport().width() - 2 * document.documentMargin()
+
+        # Find every image first, changing formats while walking the document could skip some
+        images = []
+        block = document.begin()
+        while block.isValid():
+            fragments = block.begin()
+            while not fragments.atEnd():
+                fragment = fragments.fragment()
+                if fragment.isValid() and fragment.charFormat().isImageFormat():
+                    images.append((fragment.position(), fragment.length(), fragment.charFormat().toImageFormat(), block))
+                fragments += 1
+            block = block.next()
+
+        for position, length, image_format, block in images:
+            url = document.baseUrl().resolved(QtCore.QUrl(image_format.name()))
+
+            # Load the image
+            resource = document.resource(QtGui.QTextDocument.ImageResource, url)
+            if isinstance(resource, QtGui.QImage):
+                image = resource
+            elif isinstance(resource, QtGui.QPixmap):
+                image = resource.toImage()
+            elif isinstance(resource, (bytes, bytearray, QtCore.QByteArray)):
+                image = QtGui.QImage.fromData(resource)
+            else:
+                image = QtGui.QImage(url.toLocalFile())
+            if image.isNull():
+                continue
+
+            # Space the image has: the text width less the indents of its paragraph and list
+            block_format = block.blockFormat()
+            indent = block_format.leftMargin() + block_format.rightMargin() + max(block_format.textIndent(), 0) + block_format.indent() * document.indentWidth()
+            if block.textList() is not None:
+                indent += block.textList().format().indent() * document.indentWidth()
+            available_width = int(text_width - indent) - 4
+
+            image_width = image.width() / image.devicePixelRatio()
+            image_height = image.height() / image.devicePixelRatio()
+            if available_width < 1 or image_width <= available_width:
+                continue
+
+            width = available_width
+            height = max(1, round(image_height * width / image_width))
+
+            # Swap in a smoothly scaled image and show it at the fitted size
+            scaled_image = image.scaled(
+                round(width * pixel_ratio),
+                round(height * pixel_ratio),
+                QtCore.Qt.IgnoreAspectRatio,
+                QtCore.Qt.SmoothTransformation,
+                )
+            scaled_image.setDevicePixelRatio(pixel_ratio)
+            document.addResource(QtGui.QTextDocument.ImageResource, url, scaled_image)
+
+            size_format = QtGui.QTextImageFormat()
+            size_format.setWidth(width)
+            size_format.setHeight(height)
+            cursor = QtGui.QTextCursor(document)
+            cursor.setPosition(position)
+            cursor.setPosition(position + length, QtGui.QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(size_format)
+
+    #-------------------------------------
+    # [Links]
+    #-------------------------------------
+
+    def eventFilter(self, watched, event) -> bool:
+        """
+        Event Filter
+        ============
+
+        Open a link clicked in the text and show a pointing hand over links. A click is only a
+        click on a link when the mouse button is pressed and released on the same link and no
+        text was selected. Events are never stopped, so selecting and scrolling work as usual.
+
+        Args
+        ----
+            `watched` (QObject):
+                The text edit's viewport.
+
+            `event` (QEvent):
+                Qt event.
+
+        Returns
+        -------
+            bool:
+                Always False.
+        """
+
+        try:
+            event_type = event.type()
+
+            if event_type == QtCore.QEvent.MouseButtonPress and event.button() == QtCore.Qt.LeftButton:
+                self._pressed_link = self.text_edit.anchorAt(event.position().toPoint())
+
+            elif event_type == QtCore.QEvent.MouseButtonRelease and event.button() == QtCore.Qt.LeftButton:
+                link = self.text_edit.anchorAt(event.position().toPoint())
+                if link and link == self._pressed_link and not self.text_edit.textCursor().hasSelection():
+                    self._open_link(link)
+                self._pressed_link = ''
+
+            elif event_type == QtCore.QEvent.MouseMove:
+                if self.text_edit.anchorAt(event.position().toPoint()):
+                    watched.setCursor(QtCore.Qt.PointingHandCursor)
+                else:
+                    watched.setCursor(QtCore.Qt.IBeamCursor)
+        except Exception:
+            pass
+
+        return False
+
+    def _open_link(self, link: str) -> None:
+        """
+        Open Link
+        =========
+
+        Scroll to the heading a `#heading` link points to, or open an http, https or mailto
+        link in the web browser. Other links do nothing.
+
+        Args
+        ----
+            `link` (str):
+                Link target.
+        """
+
+        if link.startswith('#'):
+            self._scroll_to_heading(urllib.parse.unquote(link[1:]))
+
+            return
+
+        if urllib.parse.urlparse(link).scheme.lower() in ('http', 'https', 'mailto'):
+            try:
+                webbrowser.open(link)
+            except Exception as e:
+                pyflame.print(f'Could not open {link}: {e}', print_type=PrintType.ERROR)
+
+    def _scroll_to_heading(self, anchor: str) -> None:
+        """
+        Scroll To Heading
+        =================
+
+        Scroll so the heading with this anchor is at the top. Anchors are made from heading
+        text the way GitHub makes them: lower case, spaces to hyphens, punctuation removed, and
+        `-1`, `-2`... added to repeated headings.
+
+        Args
+        ----
+            `anchor` (str):
+                Anchor of the heading, without the `#`.
+        """
+
+        document = self.text_edit.document()
+        anchor = anchor.strip().lower()
+        anchors_used = {}
+
+        block = document.begin()
+        while block.isValid():
+            if block.blockFormat().headingLevel():
+                heading_anchor = re.sub(r'[^\w\- ]', '', block.text().strip().lower()).replace(' ', '-')
+                repeat = anchors_used.get(heading_anchor, 0)
+                anchors_used[heading_anchor] = repeat + 1
+                if repeat:
+                    heading_anchor = f'{heading_anchor}-{repeat}'
+
+                if heading_anchor == anchor:
+                    top = document.documentLayout().blockBoundingRect(block).top()
+                    self.text_edit.verticalScrollBar().setValue(int(top))
+
+                    return
+            block = block.next()
+
+    #-------------------------------------
+    # [Logik Portal]
+    #-------------------------------------
+
+    def _open_script_url(self) -> None:
+        """
+        Open Script URL
+        ===============
+
+        Open the script's Logik Portal page in the web browser.
+        """
+
+        try:
+            webbrowser.open(self.script_url)
+        except Exception as e:
+            pyflame.print(f'Could not open {self.script_url}: {e}', print_type=PrintType.ERROR)
+
+    @staticmethod
+    def _check_connection(url: str) -> bool:
+        """
+        Check Connection
+        ================
+
+        Check if the web address can be reached: a connection to its host is made, with a
+        2 second timeout. Runs in a background thread.
+
+        Args
+        ----
+            `url` (str):
+                Web address.
+
+        Returns
+        -------
+            bool:
+                True if the host could be reached.
+        """
+
+        parsed_url = urllib.parse.urlparse(url)
+        if not parsed_url.hostname:
+            return False
+
+        port = parsed_url.port or (80 if parsed_url.scheme.lower() == 'http' else 443)
+
+        try:
+            connection = socket.create_connection((parsed_url.hostname, port), timeout=2)
+            connection.close()
+        except Exception:
+            return False
+
+        return True
+
+    def _start_connection_check(self) -> None:
+        """
+        Start Connection Check
+        ======================
+
+        Check the connection to the script's web address in a background thread. The result is
+        sent to the UI thread with the `connection_checked` signal.
+        """
+
+        def check() -> None:
+            """
+            Check
+            =====
+
+            Run the check and send the result. Nothing is sent if the help window is already gone.
+            """
+
+            try:
+                connected = bool(self._check_connection(self.script_url))
+            except Exception:
+                connected = False
+
+            try:
+                self.connection_checked.emit(connected)
+            except RuntimeError:
+                pass
+
+        threading.Thread(target=check, daemon=True).start()
+
+    def _connection_checked(self, connected: bool) -> None:
+        """
+        Connection Checked
+        ==================
+
+        Show the Logik Portal button if the connection check reached the web address. Does
+        nothing if the window was closed in the meantime.
+
+        Args
+        ----
+            `connected` (bool):
+                True if the web address could be reached.
+        """
+
+        if not connected:
+            return
+
+        try:
+            self.logik_portal_button.show()
+        except RuntimeError:
+            pass
+
+    def _window_destroyed(self) -> None:
+        """
+        Window Destroyed
+        ================
+
+        Let go of the help window once Qt has deleted it.
+        """
+
+        PyFlameHelpWindow._open_windows.discard(self)

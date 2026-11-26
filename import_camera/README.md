@@ -1,10 +1,12 @@
 # Import Camera
 
-**Script Version:** 4.17.2  
+**Script Version:** 4.18.0  
 **Flame Version:** 2025.2  
 **Written by:** Michael Vaglienty  
 **Creation Date:** 06.02.18  
-**Update Date:** 11.06.26  
+**Update Date:** 11.26.26  
+
+**License:** MIT License (MIT) - see LICENSE file for details
 
 **Script Type:** Batch
 
@@ -30,259 +32,125 @@ Copy script into /opt/Autodesk/shared/python/import_camera
 
 # User Guide
 
-<!-- user-guide: v4.17.2 11.06.26 -->
+<!-- user-guide: v4.18.0 11.26.26 -->
 
 ## Contents
 
-- [Overview](#overview)
-- [Requirements and Installation](#requirements-and-installation)
-- [Where to Find It](#where-to-find-it)
-- [The Import Options Window](#the-import-options-window)
-- [The Setup Window](#the-setup-window)
-- [The Node Setups](#the-node-setups)
-- [How Importing Works](#how-importing-works)
-- [Workflows](#workflows)
-- [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq)
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Import Options Window](#import-options-window)
+- [Node Setups](#node-setups)
+- [ST Maps](#st-maps)
+- [Setup Window](#setup-window)
 
-## Overview
+## Quick Start
 
-Import Camera brings a 3D camera track (an FBX or Alembic file from a tracking or 3D app) into Batch. It creates an Action node called `imported_camera` with the file loaded, and can also build a whole comp setup around it: MUXes, a Divide comp, a recomp Action and a Regrain, with or without an ST Map undistort / redistort.
+Import Camera loads an FBX or Alembic camera file into a new Action node in Batch, called `imported_camera`. It can also build a comp setup around it.
 
-Example: a plate `PYT_0010_plate` is in Batch, and the tracking department delivered `PYT_0010_camera_v001.fbx`.
-
-1. Select the plate node, right-click and choose **Import... → Import FBX Camera**.
-2. Pick the FBX file in Flame's file browser.
-3. In the options window, keep **Action Node Only** and click **Load**.
+1. In Batch, select the plate node.
+2. Right-click → **Import... → Import FBX Camera** (or **Import Alembic Camera**).
+3. Pick the camera file in Flame's file browser.
+4. Choose your options and click **Load**.
 
 Before:
 
 ![Batch with the PYT_0010_plate clip node selected](assets/readme_images/schematic_before.png)
 
-After: an Action node `imported_camera` with the camera, models and lights from the FBX, placed to the right of the plate and connected to it.
+After:
 
 ![Batch after Import FBX Camera: PYT_0010_plate connected to the new imported_camera Action](assets/readme_images/schematic_after_action_node.png)
 
-The import options window:
+With a node selected, the new nodes are placed to its right and connected to it. With nothing selected, they are placed at the cursor.
 
-![Import FBX Camera options window](assets/readme_images/main_window_fbx.png)
+## Requirements
 
-## Requirements and Installation
+- Flame 2025.2 or newer.
 
-- Flame 2025.1 or newer. The menus don't appear in older versions.
-- Copy the whole `import_camera` folder (with its `lib` and `assets` folders) into `/opt/Autodesk/shared/python`, so the script is at `/opt/Autodesk/shared/python/import_camera/import_camera.py`.
-- In Flame, rescan Python hooks (or restart Flame) so the menus appear.
-- If the script folder isn't named `import_camera`, or Flame can't write to it, the script stops and shows a message when you run it. The script needs to write to its folder: during an import it makes a `temp` folder there and removes it when the import is done or cancelled.
-- The `assets` folder must be complete. It holds the Action setups loaded into the new Action nodes and the `uvmap_3vis` Matchbox used by the ST Map Matchbox Setup.
+## Import Options Window
 
-## Where to Find It
-
-| Where | Right-click on | Menu | What it does |
-| --- | --- | --- | --- |
-| Batch | Anywhere in the Batch schematic, or on a selected node | Import... → **Import FBX Camera** | Opens Flame's file browser for an `.fbx` file, then the import options window. |
-| Batch | Anywhere in the Batch schematic, or on a selected node | Import... → **Import Alembic Camera** | Opens Flame's file browser for an `.abc` file, then the import options window. |
-| Flame Main Menu | | Logik → Logik Portal Script Setup → **Import Camera Setup** | Opens the Setup window, where you choose where the file browser starts. |
-
-Notes:
-
-- In the **Import...** submenu, **Import FBX Camera** is listed before **Import Alembic Camera**.
-- **Where the new nodes go:**
-  - If a node is selected, the new setup is placed about 300 pixels to the right of it and connected to it. Only the first selected node is used. Select the plate (or the node with the plate's resolution) you want the camera to work on.
-  - If nothing is selected, the new setup is placed at the cursor position.
-
-## The Import Options Window
-
-This window opens after you pick a file in the browser. The title says **Import FBX Camera** or **Import Alembic Camera**.
+Opens after you pick a file.
 
 ![Import FBX Camera options window with numbered parts](assets/readme_images/main_window_fbx_numbered.png)
 
 | # | Part | What it does |
 | --- | --- | --- |
-| 1 | **Scene Scale** | How many pixels one unit of the 3D scene becomes in Action (1 to 1000, default 100). Drag to change it, or click it to type a value. |
-| 2 | **Import Type** | **Action Objects** imports the file's objects into Action as separate nodes you can edit. **Read File** keeps the file linked as a read file in Action. |
-| 3 | **Linearize Keyframes** | Sets the extrapolation of the imported camera's position, rotation and scale channels to linear, and sets every animation curve of that camera to linear interpolation. This helps with motion blur on the first and last frames. Only available with **Action Objects**, and only applied when **Cameras** (6) is on. See the known issue in [Tips, Troubleshooting and FAQ](#tips-troubleshooting-and-faq). |
-| 4 | **Consolidate Geometry** | Alembic only. Consolidates the geometry into a single object. Greyed out for FBX files and for **Read File**. |
-| 5 | **Create Object Group** | Alembic only. Creates a group for each object in the Alembic file. Only available when **Consolidate Geometry** (4) is on. |
-| 6 | **Cameras** | Load the cameras from the file. |
-| 7 | **Models** | Load the models (geometry) from the file. |
-| 8 | **Lights** | Load the lights from the file. |
-| 9 | **Mesh Animations** | Load mesh animations from the file. |
-| 10 | **Normals** | Load the normals from the file. |
-| 11 | **Create Nodes** | Choose one setup to build: **Action Node Only**, **No ST Map Setup**, **ST Map Matchbox Setup** or **ST Map Node Setup**. Only one can be on. See [The Node Setups](#the-node-setups). |
-| 12 | **Cancel** | Closes the window without importing. (Escape does the same.) |
-| 13 | **Load** | Saves the options, imports the file and builds the chosen setup. (Return does the same.) |
+| 1 | **Scene Scale** | Size of the scene in Action: pixels per scene unit (1 to 1000). |
+| 2 | **Import Type** | **Action Objects** imports the objects into Action. **Read File** keeps the file linked. |
+| 3 | **Linearize Keyframes** | Sets the camera's keyframes to linear. Helps with motion blur on the first and last frames. Needs **Action Objects** and **Cameras**. |
+| 4 | **Consolidate Geometry** | Alembic with **Action Objects** only. Consolidates the geometry into a single object. |
+| 5 | **Create Object Group** | Alembic only. Creates a group for each object. Needs **Consolidate Geometry**. |
+| 6-10 | **Load Objects** | What to load from the file: Cameras, Models, Lights, Mesh Animations, Normals. |
+| 11 | **Create Nodes** | The setup to build. See [Node Setups](#node-setups). |
+| 12 | **Setup** | Opens the [Setup Window](#setup-window) over this window. The options set here stay as they are. |
+| 13 | **Help** | Opens this guide. |
+| 14 | **Cancel** | Closes the window without importing (or press Escape). |
+| 15 | **Load** | Imports the file and builds the setup (or press Return). |
 
-The buttons under **Load Objects** (6 to 10) are on when they are highlighted, and apply to both Import Types.
+- A greyed-out button is never applied, even if it is still highlighted.
+- **Load** saves the options for next time. **Cancel** saves nothing.
 
-The same window for an Alembic file, where **Consolidate Geometry** can be turned on:
+With an Alembic file, **Consolidate Geometry** can be used:
 
 ![Import Alembic Camera options window](assets/readme_images/main_window_alembic.png)
 
-Which buttons can be used:
+## Node Setups
 
-| File | Import Type | Linearize Keyframes | Consolidate Geometry | Create Object Group |
-| --- | --- | --- | --- | --- |
-| FBX | Action Objects | Yes | No | No |
-| FBX | Read File | No | No | No |
-| Alembic | Action Objects | Yes | Yes | Only when Consolidate Geometry is on |
-| Alembic | Read File | No | No | No |
+Choose one under **Create Nodes**. Every setup includes the `imported_camera` Action.
 
-### What is saved, and when
+- **Action Node Only:** just the Action with the file loaded.
+- **No ST Map Setup:** adds MUXes, a Divide comp, a recomp Action and a Regrain, so work done in the camera Action is comped back over the original plate.
+- **ST Map Matchbox Setup:** the same, plus an undistort before the camera Action and a redistort after it, using the `uvmap_3vis` Matchbox that comes with the script.
+- **ST Map Node Setup:** the same as the Matchbox setup, using Flame's **STMap** node.
 
-- **Load** saves every option in this window, so the window opens with the same choices next time. It also remembers the file you picked, so the next **Browse To Path** import starts at that file.
-- **Cancel** (or Escape) saves nothing and removes the `temp` folder.
-- Settings are stored in the script's `config/config.json` and are shared by FBX and Alembic imports.
-
-## The Setup Window
-
-Open it from **Flame Main Menu → Logik → Logik Portal Script Setup → Import Camera Setup**. It sets where Flame's file browser starts when you import a camera.
-
-![Import Camera Setup window with numbered parts](assets/readme_images/setup_window_numbered.png)
-
-| # | Part | What it does |
-| --- | --- | --- |
-| 1 | **Import Method** | **Browse To Path**: the browser starts at the last camera file you imported (`/opt/Autodesk` the first time). **Use Tokenized Path**: the browser starts at the **Tokenized Import Path** (2), with its tokens filled in for the current batch group. |
-| 2 | **Tokenized Import Path** | The folder to start in, with tokens such as `<ShotName>`. Only available with **Use Tokenized Path**. |
-| 3 | **Add Token** | Menu of tokens. Choosing one inserts it into the Tokenized Import Path. |
-| 4 | **Browse** | Opens Flame's file browser to pick a folder. The chosen folder replaces everything in Tokenized Import Path. Only available with **Use Tokenized Path**. |
-| 5 | **Cancel** | Closes the window without saving. |
-| 6 | **Save** | Saves the Import Method and the Tokenized Import Path and closes the window. (Return does the same.) |
-
-The Import Method menu:
-
-![Import Method menu with Browse To Path and Use Tokenized Path](assets/readme_images/import_method_menu.png)
-
-The Add Token menu:
-
-![Add Token menu](assets/readme_images/token_menu.png)
-
-| Add Token menu | Token |
-| --- | --- |
-| Project Name | `<ProjectName>` |
-| Project Nick Name | `<ProjectNickName>` |
-| Sequence Name | `<SeqName>` |
-| SEQUENCE NAME | `<SEQNAME>` |
-| Shot Name | `<ShotName>` |
-
-> **Note:** A token with nothing to fill it in is left empty. For example, `<ProjectNickName>` in a project with no nickname leaves an empty part in the path (`/projects/Big_Job//shots`).
-
-### What is saved, and when
-
-- **Save** stores the Import Method and the Tokenized Import Path. **Cancel** stores nothing.
-- An empty Tokenized Import Path can be saved. (The script is meant to stop you with an error, but the check looks for an option name that doesn't exist, so it never runs.)
-
-## The Node Setups
-
-Choose one under **Create Nodes** in the import options window. Every setup includes the camera Action, `imported_camera`. If a node name is already used in the batch group, a number is added to the new one (for example `imported_camera1`).
-
-### Action Node Only
-
-Only the `imported_camera` Action is created, with the file loaded. If a node was selected, it is connected to the Action's background input. See the [Overview](#overview) for before and after images.
-
-### No ST Map Setup
-
-A setup for adding 3D elements with the camera and comping them back over the original plate, with no lens distortion step. The same plate as in the Overview, with **No ST Map Setup** chosen:
+No ST Map Setup:
 
 ![No ST Map Setup, left half: PYT_0010_plate, mux_in, action_in and imported_camera](assets/readme_images/schematic_after_no_st_map_left.png)
 
 ![No ST Map Setup, right half: imported_camera, action_out, divide, media1, recomp and regrain](assets/readme_images/schematic_after_no_st_map_right.png)
 
-- `mux_in`: the plate comes in here (from the selected node, if any).
-- `action_in` → `imported_camera`: the plate is the background of the camera Action, where you add your 3D work.
-- `action_out`: takes the Action's comp and matte outputs.
-- `divide`: a Comp node in Divide mode, fed by the result and matte of `action_out`.
-- `recomp`: an Action (collapsed) with the original plate as its background and the divided result as a media layer (`media1`) cut out by the matte.
-- `regrain`: a Regrain node after `recomp`.
+## ST Maps
 
-### ST Map Matchbox Setup
+For the two ST Map setups:
 
-The same idea, with lens distortion handled by ST maps. The plate is undistorted before the camera Action and the result is redistorted before it is comped back over the original plate. It uses the `uvmap_3vis` Matchbox that comes with the script. You are asked for the undistort and redistort ST map EXRs (see [How Importing Works](#how-importing-works)). The nodes:
+1. Select the plate (or a node with the plate's resolution) before importing. Without one, a warning asks whether to continue.
+2. After **Load**, pick the undistort map. It must be an EXR with `undistort` in its name.
+3. The redistort map is found automatically: the first EXR with `redistort` in its name, in the same folder or a folder below it. If none is found, you are asked to pick it.
+4. Both maps are imported into the `st_maps` schematic reel.
 
-- `mux_in` (plate in) → `uvmap_3vis_undistort` (Matchbox) → `imported_camera`. The undistort map comes in through the `st_map_undistort_map` MUX.
-- `mux` takes the Action's comp and matte outputs.
-- `uvmap_3vis_redistort` and `uvmap_3vis_redistort_matte` (Matchbox) redistort the result and its matte, using the redistort map from the `st_map_redistort_map` MUX.
-- `divide` (Comp in Divide mode) → `comp` (an Action with the original plate as background and the redistorted result as a media layer) → `regrain`.
-- The two ST map clips are imported into the batch group's `st_maps` schematic reel (made if it doesn't exist) and placed next to their MUXes.
+If you cancel or pick the wrong file, the options window comes back.
 
-### ST Map Node Setup
+## Setup Window
 
-Like the ST Map Matchbox Setup, but it uses Flame's own **STMap** node (`st_map_undistort` and `st_map_redistort`) instead of the Matchbox. The redistort STMap node gives the matte as well, so there is no separate matte node. The other nodes (`mux_in`, `st_map_undistort_map`, `mux`, `divide`, `st_map_redistort_map`, `comp`, `regrain`) and the `st_maps` reel are the same.
+**Flame Main Menu → Logik → Logik Portal Script Setup → Import Camera Setup**, or **Setup** in the import options window. Sets where the file browser starts when you import. A change saved from the import options window is used from the next import on.
 
-For both ST Map setups, select the plate (or a node with the plate's resolution) before importing. Without a selection you get a warning first.
+![Import Camera Setup window with numbered parts](assets/readme_images/setup_window_numbered.png)
 
-## How Importing Works
+| # | Part | What it does |
+| --- | --- | --- |
+| 1 | **Import Method** | **Browse To Path**: start at the last camera file you imported. **Use Tokenized Path**: start at the path in (2). |
+| 2 | **Tokenized Import Path** | The folder to start in. Tokens are filled in from the current batch group. |
+| 3 | **Add Token** | Adds a token to the path: `<ProjectName>`, `<ProjectNickName>`, `<SeqName>`, `<SEQNAME>`, `<ShotName>`. |
+| 4 | **Browse** | Pick the folder in Flame's file browser. |
+| 5 | **Cancel** | Closes the window without saving. |
+| 6 | **Save** | Saves and closes the window (or press Return). |
 
-1. You choose **Import FBX Camera** or **Import Alembic Camera**. A `temp` folder is created in the script folder.
-2. Flame's file browser opens: at the last camera file you imported with **Browse To Path**, or at the Tokenized Import Path filled in for the current batch group with **Use Tokenized Path**. Only `.fbx` or `.abc` files are shown. If you cancel the browser, the import stops and the `temp` folder is removed.
-3. The import options window opens. When you click **Load**, the options are saved and the window hides.
-4. For the ST Map setups only:
-   1. With nothing selected in Batch, a warning asks whether to continue.
-   2. A message asks you to select the undistort ST map, and the browser opens in the camera file's folder. Only `.exr` files are shown. The path must contain the word `undistort` (any case), or you get an error.
-   3. The script looks for the redistort map by itself, in the undistort map's folder and every folder below it, for a non-hidden file with `redistort` (any case) in its name. It doesn't check the file type. Within one folder the first match is taken, but a match in any folder searched later replaces it, so when several folders hold a match, the one in the last folder searched is used.
-   4. If none is found, a message asks you to select the redistort ST map and the browser opens again. Its title still says **Load Undistort ST Map (EXR)**. The path must contain `redistort`, or you get an error.
-   5. Both maps are imported into the `st_maps` schematic reel.
-   6. If you cancel a browser or pick a file with the wrong name, the options window comes back so you can try again or choose another setup.
-5. The `imported_camera` Action is created, loaded with the script's Action setup (which adds the Comp, Output Comp and Output Matte outputs), placed, and connected to the selected node.
-6. The file is imported with the options from the window: **Action Objects** imports it, **Read File** reads it.
-7. If **Linearize Keyframes**, **Cameras** and **Action Objects** are all on, the camera's animation is set to linear. Only the first camera in the file is changed.
-8. The rest of the chosen setup is built and connected.
-9. The window closes and the `temp` folder is removed.
-
-## Workflows
-
-### Import a camera onto a plate
-
-1. In Batch, select the plate node.
-2. Right-click → **Import... → Import FBX Camera** (or **Import Alembic Camera**).
-3. Pick the camera file.
-4. Check **Scene Scale** and the objects to load, choose **Action Node Only** and click **Load**.
-
-### Build a recomp setup
-
-1. Select the plate node.
-2. Import the camera as above, but choose **No ST Map Setup**.
-3. Do your 3D work in `imported_camera`. The result is comped back over the plate in `recomp` and regrained in `regrain`.
-
-### Import a camera with lens distortion
-
-1. Put the undistort and redistort ST map EXRs in the same folder (or the redistort map in a folder below it). Their names must contain `undistort` and `redistort`.
-2. Select the plate node.
-3. Import the camera and choose **ST Map Node Setup** (or **ST Map Matchbox Setup**). Click **Load**.
-4. Click **Ok** on the "Select Undistort ST Map" message and pick the undistort map. The redistort map is found automatically when it's in that folder.
-
-### Keep a camera file linked instead of importing it
-
-Choose **Read File** under **Import Type**. Linearize Keyframes and the Alembic buttons are greyed out.
-
-## Tips, Troubleshooting and FAQ
-
-**The camera is far too big or too small in Action.**
-Change **Scene Scale** and import again. It's the number of pixels one scene unit becomes.
-
-**Linearize Keyframes is greyed out.**
-It only works with **Import Type → Action Objects**.
-
-**The ST map setup didn't line up with my plate.**
-Select the plate (or a node with the plate's resolution) before importing, so the setup is connected to it.
-
-**The wrong redistort map was used.**
-The search looks at any file with `redistort` in its name in the undistort map's folder and the folders below it. Each folder with a match replaces the match from the folders searched before, so the match in the last folder searched is used. Keep only one redistort map in that folder tree.
-
-**I cancelled the ST Map warning and the window disappeared.**
-This is a known bug in this version: the options window stays hidden, nothing is imported, and the `temp` folder is left in the script folder. Select the plate and run the import again.
-
-**Known issue: Linearize Keyframes and curve settings.**
-When it sets a curve to linear, the script writes `CurveOrder linear` without a line break, so the next line of the saved camera setup (its tangent mode) is joined onto it before the setup is reloaded. How Flame reads that joined line hasn't been checked. If the camera's curves look wrong after importing, import again with **Linearize Keyframes** off.
-
-**My file has several cameras.**
-All of them are imported, but **Linearize Keyframes** only changes the first one.
-
-**My file has no camera.**
-Turn **Cameras** or **Linearize Keyframes** off. Linearize looks for an imported camera and may stop with an error when there is none.
-
-**Is there a `temp` folder in the script folder?**
-The script makes it during an import and removes it at the end. It can be left behind when an import stops early (for example after the ST Map warning is cancelled). It's safe to delete when no import is running.
+With **Use Tokenized Path**, the path can't be empty.
 
 ## Updates
+
+### v4.18.0 [11.26.26]
+- Updated to PyFlameLib v5.6.0.
+- Added a Help button to the import window. It opens the Import Camera guide (README.md) in its own window.
+- Added a Setup button to the import window. It opens Import Camera Setup over the import window.
+- Added an error message when an import fails. Any nodes the import added to Batch are removed, along with the st_maps reel if the import created it.
+- Fixed FBX and Alembic files with upper-case extensions (.FBX, .ABC) not being imported.
+- Fixed Alembic Consolidate Geometry and Create Object Group being applied when their buttons were greyed out in the window.
+- Fixed the import window disappearing when the ST Map warning was declined. The window now opens again so another setup can be picked or the import cancelled.
+- Fixed Linearize Keyframes joining the next line onto each CurveOrder line in the camera setup.
+- Fixed the redistort map search: the first map found is now used, and only EXR files are matched.
+- Fixed the redistort map file browser title saying Undistort.
+- Fixed Setup saving an empty Tokenized Import Path when Use Tokenized Path is selected. An error message now asks for a path.
+<br>
 
 ### v4.17.2 [11.06.26]
 - Fixed Use Tokenized Path: the script called pyflame.resolve_path_tokens, which no longer exists in PyFlameLib. It now uses pyflame.resolve_tokens.
